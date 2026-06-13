@@ -1,0 +1,65 @@
+# --- Build Directories ---
+# Ignore the primary build directory where compiler outputs are generated
+/build/
+/out/
+
+# --- Compiled Files & Binaries ---
+*.o
+*.obj
+*.o.d
+*.obj.d
+*.d
+*.a
+*.lib
+*.la
+*.lai
+*.so
+*.dll
+*.dylib
+*.exe
+*.out
+*.app
+
+# --- Precompiled Headers ---
+*.gch
+*.pch
+
+# --- Qt Specific ---
+# Ignore generated files if you happen to run uic/moc/rcc in the source tree
+*.moc
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+
+# --- CMake Artifacts ---
+# Ignore root-level CMake files if configured outside /build
+CMakeCache.txt
+CMakeFiles/
+CMakePresets.json
+CMakeSettings.json
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# --- VS Code & IDEs ---
+# Ignore all VS Code local workspace configurations...
+.vscode/*
+
+# VS Code history / backup files
+.history/
+
+# --- Clangd Language Server ---
+# Ignore clangd index/cache folder (do not ignore the .clangd config file)
+.clangd/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Local development persistent data ---
+/data/
+*.db
+*.sqlite
+*.sqlite3
