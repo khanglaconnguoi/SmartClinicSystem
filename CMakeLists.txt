@@ -30,6 +30,8 @@ if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /w14456 /w14457 /w14458 /w14459)
 endif()
 
+add_subdirectory(external/Bcrypt.cpp)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql)
 
-target_include_directories(${PROJECT_NAME} PRIVATE external src)
+target_include_directories(${PROJECT_NAME} PRIVATE external/Bcrypt.cpp/include src)
