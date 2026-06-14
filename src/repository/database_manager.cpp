@@ -79,12 +79,14 @@ bool DatabaseManager::createTables() {
 
     // 3. Bảng Login Information
     QString createLoginInformation = R"(
-        CREATE TABLE IF NOT EXISTS login_information (
-            staff_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE login_information (
+            user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
-            passwordHash TEXT NOT NULL,
-            createdAT TEXT NOT NULL
-        );
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            staff_id INTEGER NOT NULL, account_type TEXT NOT NULL,
+            CONSTRAINT login_information_staff_FK FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
+);
     )";
     if (!query.exec(createLoginInformation)) {
         qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();

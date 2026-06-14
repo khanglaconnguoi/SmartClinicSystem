@@ -9,8 +9,8 @@ private:
     double  m_consultationFee;  // Phí khám mặc định
 
 public:
-    Doctor(int id, const QString& username, const QString& fullName, const QString& specialty, const QString& licenseNo) : 
-        SystemUser(id, username, fullName, UserRole::DOCTOR), m_specialty(specialty), m_licenseNumber(licenseNo) {}
+    Doctor(int id, const QString& username, const QString& passwordHash, const QString& fullName, const QString& specialty, const QString& licenseNo) : 
+        SystemUser(id, username, passwordHash, fullName, UserRole::DOCTOR), m_specialty(specialty), m_licenseNumber(licenseNo) {}
 
     // --- Getters ---
     QString getSpecialty()       const { return m_specialty; }

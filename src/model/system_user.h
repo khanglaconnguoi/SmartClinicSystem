@@ -23,10 +23,10 @@ public:
     virtual ~SystemUser() = default;
 
     // --- Getters ---
-    QString    getPasswordHash()    const { return m_passwordHash; }
-    QString    getFullName()        const { return m_fullName; }
-    UserRole   getRole()            const { return m_role; }
-    bool       isActive()           const { return m_isActive; }
+    QString    getPasswordHash()    const override  { return m_passwordHash; }
+    QString    getFullName()        const           { return m_fullName; }
+    UserRole   getRole()            const           { return m_role; }
+    bool       isActive()           const           { return m_isActive; }
 
     // --- Setters ---
     void setActive(bool active) { m_isActive = active; }
@@ -39,7 +39,7 @@ public:
     // --- Implement IAuthenticatable ---
     int         getAccountId()    const override { return m_id; }
     QString     getUsername()     const override { return m_username; }
-    QString     getPasswordHash() const override { return m_passwordHash; }
+    // QString     getPasswordHash() const override { return m_passwordHash; }
     AccountType getAccountType()  const override { return AccountType::STAFF; }
 
     // --- Pure Virtual ---
