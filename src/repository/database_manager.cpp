@@ -16,10 +16,14 @@ DatabaseManager::DatabaseManager() {
         m_db = QSqlDatabase::addDatabase("QSQLITE");
     }
 
+    QString appDir = QCoreApplication::applicationDirPath();
+    QDir dir(appDir);
+    if(!dir.exists("database")) dir.mkdir("database");
+    QString dbPath = appDir + "/database/hospital.db";
+
     // Tên file database. Nó sẽ tự động được tạo ra ở thư mục 'build' khi chạy
-    m_db.setDatabaseName("../../hospital.db");
+    m_db.setDatabaseName(dbPath);
     initializeDatabase();
-    m_db.open();
 }
 
 
@@ -58,7 +62,7 @@ bool DatabaseManager::createTables() {
 
     // 2. Bảng Staff
     QString createStaff = R"(
-        CREATE TABLE IF NOT EXISTS Staffs (
+        CREATE TABLE IF NOT EXISTS staffs (
             staff_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             full_name TEXT NOT NULL,
             date_of_birth TEXT NOT NULL,
@@ -73,7 +77,21 @@ bool DatabaseManager::createTables() {
         success = false;
     }
 
-    // 3. Bảng Appointments
+    // 3. Bảng Login Information
+    QString createLoginInformation = R"(
+        CREATE TABLE IF NOT EXISTS login_information (
+            staff_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            passwordHash TEXT NOT NULL,
+            createdAT TEXT NOT NULL
+        );
+    )";
+    if (!query.exec(createLoginInformation)) {
+        qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();
+        success = false;
+    }
+
+    // 4. Bảng Appointments
     // QString createAppointments = R"(
     //     CREATE TABLE IF NOT EXISTS Appointments (
     //         appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -94,4 +112,44 @@ bool DatabaseManager::createTables() {
 
     if (success) qDebug() << "Hệ thống các bảng CSDL đã sẵn sàng!"; 
     return success;
+}
+
+
+bool DatabaseManager::executeQuery(const QString& sql, const QVariantList& params) {
+    QSqlQuery query(m_db);
+ 
+    if (!query.prepare(sql)) {
+        qDebug() << "Lỗi prepare query:" << query.lastError().text() << "| SQL:" << sql;
+        return false;
+    }
+ 
+    for (const QVariant& param : params) {
+        query.addBindValue(param);
+    }
+ 
+    if (!query.exec()) {
+        qDebug() << "Lỗi exec query:" << query.lastError().text() << "| SQL:" << sql;
+        return false;
+    }
+ 
+    return true;
+}
+ 
+QSqlQuery DatabaseManager::selectQuery(const QString& sql, const QVariantList& params) {
+    QSqlQuery query(m_db);
+ 
+    if (!query.prepare(sql)) {
+        qDebug() << "Lỗi prepare query:" << query.lastError().text() << "| SQL:" << sql;
+        return query;
+    }
+ 
+    for (const QVariant& param : params) {
+        query.addBindValue(param);
+    }
+ 
+    if (!query.exec()) {
+        qDebug() << "Lỗi exec select query:" << query.lastError().text() << "| SQL:" << sql;
+    }
+ 
+    return query;
 }

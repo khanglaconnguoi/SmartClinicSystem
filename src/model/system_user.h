@@ -18,14 +18,15 @@ protected:
     QDateTime   m_createdAt;
 
 public:
-    explicit SystemUser(int id, const QString& username, const QString& fullName, UserRole role) : 
-        m_id(id), m_username(username), m_fullName(fullName), m_role(role) {};
+    explicit SystemUser(int id, const QString& username, const QString& passwordHash, const QString& fullName, UserRole role) : 
+        m_id(id), m_username(username), m_passwordHash(passwordHash), m_fullName(fullName), m_role(role) {};
     virtual ~SystemUser() = default;
 
     // --- Getters ---
-    QString    getFullName()    const { return m_fullName; }
-    UserRole   getRole()        const { return m_role; }
-    bool       isActive()       const { return m_isActive; }
+    QString    getPasswordHash()    const { return m_passwordHash; }
+    QString    getFullName()        const { return m_fullName; }
+    UserRole   getRole()            const { return m_role; }
+    bool       isActive()           const { return m_isActive; }
 
     // --- Setters ---
     void setActive(bool active) { m_isActive = active; }

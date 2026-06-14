@@ -20,19 +20,19 @@ Hệ thống được chia thành **5 module lõi** hoạt động độc lập 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              SMART HOSPITAL MANAGEMENT SYSTEM            │
+│              SMART HOSPITAL MANAGEMENT SYSTEM           │
 ├──────────┬───────────┬──────────┬────────────┬──────────┤
 │  MODULE  │  MODULE   │  MODULE  │   MODULE   │  MODULE  │
-│  NHÂN    │  BỆNH     │  XẾP    │   DƯỢC     │  BÁO     │
-│  SỰ &    │  NHÂN &   │  HÀNG & │   PHẨM &   │  CÁO &   │
-│  PHÂN    │  HỒ SƠ    │  LỊCH   │   HÓA ĐƠN  │  PHÂN    │
-│  QUYỀN   │  Y TẾ     │  HẸN    │            │  TÍCH    │
+│  NHÂN    │  BỆNH     │  XẾP     │   DƯỢC     │  BÁO     │
+│  SỰ &    │  NHÂN &   │  HÀNG &  │   PHẨM &   │  CÁO &   │
+│  PHÂN    │  HỒ SƠ    │  LỊCH    │   HÓA ĐƠN  │  PHÂN    │
+│  QUYỀN   │  Y TẾ     │  HẸN     │            │  TÍCH    │
 └──────────┴───────────┴──────────┴────────────┴──────────┘
            ↕            ↕           ↕              ↕
 ┌─────────────────────────────────────────────────────────┐
-│         SERVICE LAYER — Business Logic (Pure C++)        │
+│         SERVICE LAYER — Business Logic (Pure C++)       │
 ├─────────────────────────────────────────────────────────┤
-│              DATA LAYER — SQLite / Repository            │
+│              DATA LAYER — SQLite / Repository           │
 └─────────────────────────────────────────────────────────┘
 ```
 

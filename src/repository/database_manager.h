@@ -10,14 +10,15 @@ private:
     DatabaseManager();
     ~DatabaseManager() { if (m_db.isOpen()) m_db.close(); }
 
-    QSqlDatabase m_db;
-
-    // Hàm thực thi mã SQL tạo bảng
+    // Hàm khởi tạo database và tạo bảng
+    bool initializeDatabase();
     bool createTables();
+
+    QSqlDatabase m_db;
 
 public:
     // 1. Điểm truy cập toàn cục duy nhất (Dấu hiệu của Singleton Pattern)
-    DatabaseManager &DatabaseManager::getInstance(){
+    static DatabaseManager& getInstance(){
         static DatabaseManager instance;
         return instance;
     }
@@ -26,8 +27,7 @@ public:
     DatabaseManager(const DatabaseManager&) = delete;
     DatabaseManager& operator=(const DatabaseManager&) = delete;
 
-    // Hàm khởi tạo database và tạo bảng
-    bool        initializeDatabase();
+    
     bool        executeQuery(const QString& sql, const QVariantList& params = {});
     QSqlQuery   selectQuery(const QString& sql, const QVariantList& params = {});
     bool        beginTransaction() { return m_db.transaction(); }
