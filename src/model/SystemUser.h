@@ -1,11 +1,16 @@
 #pragma once
-#include "i_authenticatable.h"
+#include "IAuthenticatable.h"
+#include "CommonEnums.h"
 #include <QString>
 #include <QDateTime>
 #include <vector>
 #include <memory>
 
-enum class UserRole { ADMIN, DOCTOR, NURSE, RECEPTIONIST };
+enum class UserRole { Admin, Doctor, Nurse, Receptionist };
+
+
+UserRole roleFromString(const QString& role);
+QString roleToString(UserRole role);
 
 class SystemUser : public IAuthenticatable {
 protected:
@@ -14,12 +19,13 @@ protected:
     QString     m_passwordHash;   // Lưu hash, không lưu plain text
     QString     m_fullName;
     UserRole    m_role;
+    QString     m_phoneNumber;
     bool        m_isActive;
     QDateTime   m_createdAt;
 
 public:
-    explicit SystemUser(int id, const QString& username, const QString& passwordHash, const QString& fullName, UserRole role) : 
-        m_id(id), m_username(username), m_passwordHash(passwordHash), m_fullName(fullName), m_role(role) {};
+    // explicit SystemUser(int id, const QString& username, const QString& passwordHash, const QString& fullName, UserRole role, const QString& phoneNumber ) : 
+    //     m_id(id), m_username(username), m_passwordHash(passwordHash), m_fullName(fullName), m_role(role) {};
     virtual ~SystemUser() = default;
 
     // --- Getters ---
@@ -39,8 +45,8 @@ public:
     // --- Implement IAuthenticatable ---
     int         getAccountId()    const override { return m_id; }
     QString     getUsername()     const override { return m_username; }
-    // QString     getPasswordHash() const override { return m_passwordHash; }
-    AccountType getAccountType()  const override { return AccountType::STAFF; }
+    QString     getPasswordHash() const override { return m_passwordHash; }
+    AccountType getAccountType()  const override { return AccountType::Staff; }
 
     // --- Pure Virtual ---
     std::vector<QString> getMenuItems()         const override = 0;

@@ -1,16 +1,20 @@
 #pragma once
-#include "system_user.h"
+#include "SystemUser.h"
 
 class Doctor : public SystemUser {
 private:
     QString m_specialty;        // Chuyên khoa
     QString m_licenseNumber;    // Số chứng chỉ hành nghề
     int     m_experienceYears;
-    double  m_consultationFee;  // Phí khám mặc định
+    int     m_consultationFee;  // Phí khám mặc định
 
 public:
-    Doctor(int id, const QString& username, const QString& passwordHash, const QString& fullName, const QString& specialty, const QString& licenseNo) : 
-        SystemUser(id, username, passwordHash, fullName, UserRole::DOCTOR), m_specialty(specialty), m_licenseNumber(licenseNo) {}
+    // Doctor(int id, const QString code, const QString& username, const QString& passwordHash, const QString& fullName, const QString& specialty, const QString& licenseNo, int experienceYears, int consultationFee) : 
+    //     SystemUser(id, username, passwordHash, fullName, UserRole::Doctor), 
+    //     m_specialty(specialty), 
+    //     m_licenseNumber(licenseNo), 
+    //     m_experienceYears(experienceYears), 
+    //     m_consultationFee(consultationFee) {}
 
     // --- Getters ---
     QString getSpecialty()       const { return m_specialty; }

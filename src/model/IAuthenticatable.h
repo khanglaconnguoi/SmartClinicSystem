@@ -1,7 +1,7 @@
 #pragma once
 #include <QString>
 #include <vector>
-enum class AccountType { STAFF, PATIENT };
+enum class AccountType { Staff, Patient };
 
 class IAuthenticatable {
 public:

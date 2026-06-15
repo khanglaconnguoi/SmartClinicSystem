@@ -1,5 +1,5 @@
-#include "../repository/staff_repository.h"
-#include "../model/i_authenticatable.h"
+#include "../repository/StaffRepository.h"
+#include "../model/IAuthenticatable.h"
 #include <memory>
 #include <optional>
 
@@ -14,4 +14,6 @@ public:
 
     void logout();
     std::shared_ptr<IAuthenticatable> getCurrentAccount() const;
+
+    
 };

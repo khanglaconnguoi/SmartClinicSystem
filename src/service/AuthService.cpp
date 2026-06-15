@@ -1,5 +1,5 @@
 #include "bcrypt.h"
-#include "auth_service.h"
+#include "AuthService.h"
 
 std::optional<std::shared_ptr<IAuthenticatable>> AuthService::login(const QString& username, const QString& plainPassword) {
     std::optional<std::shared_ptr<SystemUser>> user = m_staffRepo -> findByUsername(username);
