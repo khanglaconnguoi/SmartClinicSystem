@@ -9,12 +9,31 @@ private:
     int     m_consultationFee;  // Phí khám mặc định
 
 public:
-    // Doctor(int id, const QString code, const QString& username, const QString& passwordHash, const QString& fullName, const QString& specialty, const QString& licenseNo, int experienceYears, int consultationFee) : 
-    //     SystemUser(id, username, passwordHash, fullName, UserRole::Doctor), 
-    //     m_specialty(specialty), 
-    //     m_licenseNumber(licenseNo), 
-    //     m_experienceYears(experienceYears), 
-    //     m_consultationFee(consultationFee) {}
+    Doctor(
+        int staffId, 
+        const QString& staffCode,
+        const QString& passwordHash, 
+        const QString& fullName, 
+        UserRole role, 
+        bool isActive,
+        const QString& specialty,
+        const QString& licenseNumber,
+        int experienceYears,
+        int consultationFee
+    ) : 
+        SystemUser(
+            staffId, 
+            staffCode,
+            passwordHash, 
+            fullName, 
+            role, 
+            isActive
+        ), 
+        m_specialty(specialty), 
+        m_licenseNumber(licenseNumber), 
+        m_experienceYears(experienceYears), 
+        m_consultationFee(consultationFee) 
+    {}
 
     // --- Getters ---
     QString getSpecialty()       const { return m_specialty; }

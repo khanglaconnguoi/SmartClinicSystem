@@ -37,8 +37,13 @@ bool DatabaseManager::initializeDatabase() {
 }
 
 bool DatabaseManager::createTables() {
-    QSqlQuery query;
-    bool success = true;
+    QSqlQuery query(m_db);
+
+    if (!m_db.transaction()) {
+        qDebug() << "Không thể mở transaction:" << m_db.lastError().text();
+        return false; // Dừng lại luôn để bảo vệ dữ liệu
+    }
+// ============= TẠO CÁC BẢNG ===============
 
     // Bật tính năng Khóa ngoại (Foreign Keys) cho SQLite
     query.exec("PRAGMA foreign_keys = ON;");
@@ -56,9 +61,10 @@ bool DatabaseManager::createTables() {
         );
     )";
     if (!query.exec(createDepartments))
-    {
+    {   
         qDebug() << "Lỗi bảng Deparments:" << query.lastError().text();
-        success = false;
+        m_db.rollback();
+        return false;
     }
 
 // -------------------------------------------------
@@ -81,7 +87,8 @@ bool DatabaseManager::createTables() {
     if (!query.exec(createRooms))
     {
         qDebug() << "Lỗi bảng Rooms:" << query.lastError().text();
-        success = false;
+        m_db.rollback();
+        return false;
     }
 
 // -------------------------------------------------
@@ -112,7 +119,8 @@ bool DatabaseManager::createTables() {
     // if (!query.exec(createPatients))
     // {
     //     qDebug() << "Lỗi bảng Patients:" << query.lastError().text();
-    //     success = false;
+    //     m_db.rollback();
+    //     return false;
     // }
 
 // -------------------------------------------------
@@ -122,7 +130,6 @@ bool DatabaseManager::createTables() {
         CREATE TABLE IF NOT EXISTS staff (
             staff_id      INTEGER PRIMARY KEY AUTOINCREMENT,
             staff_code    TEXT    NOT NULL UNIQUE,
-            username      TEXT    NOT NULL UNIQUE,
             password_hash TEXT    NOT NULL,
             full_name     TEXT    NOT NULL,
             role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
@@ -144,7 +151,8 @@ bool DatabaseManager::createTables() {
     )";
     if (!query.exec(createStaff)) {
         qDebug() << "Lỗi bảng Staff:" << query.lastError().text();
-        success = false;
+        m_db.rollback();
+        return false;
     }
 
 // -------------------------------------------------
@@ -163,7 +171,8 @@ bool DatabaseManager::createTables() {
     )";
     if (!query.exec(createDoctorProfiles)) {
         qDebug() << "Lỗi bảng Doctor Profiles:" << query.lastError().text();
-        success = false;
+        m_db.rollback();
+        return false;
     }
 
 // -------------------------------------------------
@@ -179,24 +188,26 @@ bool DatabaseManager::createTables() {
     )";
     if (!query.exec(createNurseProfiles)) {
         qDebug() << "Lỗi bảng Nurse Profiles:" << query.lastError().text();
-        success = false;
+        m_db.rollback();
+        return false;
     }
 
     // Bảng Login Information
-    QString createLoginInformation = R"(
-        CREATE TABLE login_information (
-            user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            staff_id INTEGER NOT NULL, account_type TEXT NOT NULL,
-            CONSTRAINT login_information_staff_FK FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
-        );
-    )";
-    if (!query.exec(createLoginInformation)) {
-        qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();
-        success = false;
-    }
+    // QString createLoginInformation = R"(
+    //     CREATE TABLE login_information (
+    //         user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    //         username TEXT NOT NULL,
+    //         password_hash TEXT NOT NULL,
+    //         created_at TEXT NOT NULL,
+    //         staff_id INTEGER NOT NULL, account_type TEXT NOT NULL,
+    //         CONSTRAINT login_information_staff_FK FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
+    //     );
+    // )";
+    // if (!query.exec(createLoginInformation)) {
+    //     qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();
+    //     m_db.rollback();
+    //     return false;
+    // }
 
 // -------------------------------------------------
 
@@ -219,8 +230,73 @@ bool DatabaseManager::createTables() {
     //     success = false;
     // }
 
-    if (success) qDebug() << "Hệ thống các bảng CSDL đã sẵn sàng!"; 
-    return success;
+
+// ============= TẠO INDEX ===============
+    QStringList createIndexList = { 
+        R"( CREATE INDEX IF NOT EXISTS idx_staff_role               ON staff(role);             )",
+        R"( CREATE INDEX IF NOT EXISTS idx_staff_department         ON staff(department_id);    )",
+        R"( CREATE INDEX IF NOT EXISTS idx_patients_full_name       ON patients(full_name);     )"
+    };
+
+    for(const QString& createIndex: createIndexList) {
+        QString create = createIndex.trimmed();
+
+        if(create.isEmpty()) continue;
+
+        if(!query.exec(create)){
+            qDebug() << "Lỗi tạo index:" << query.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    }
+
+// ============= TẠO TRIGGER ===============
+
+    QStringList createTriggerList =  {
+        R"( 
+            CREATE TRIGGER IF NOT EXISTS trg_departments_updated_at
+            AFTER UPDATE ON departments FOR EACH ROW
+            BEGIN
+                UPDATE departments SET updated_at = datetime('now') WHERE department_id = OLD.department_id;
+            END;
+        )",
+        R"(
+            CREATE TRIGGER IF NOT EXISTS trg_rooms_updated_at
+            AFTER UPDATE ON rooms FOR EACH ROW
+            BEGIN
+                UPDATE rooms SET updated_at = datetime('now') WHERE room_id = OLD.room_id;
+            END;
+        )",
+        R"(
+            CREATE TRIGGER IF NOT EXISTS trg_staff_updated_at
+            AFTER UPDATE ON staff FOR EACH ROW
+            BEGIN
+                UPDATE staff SET updated_at = datetime('now') WHERE staff_id = OLD.staff_id;
+            END;
+        )"
+    };
+
+
+    for(const QString& createTrigger: createTriggerList) {
+        QString create = createTrigger.trimmed();
+
+        if(create.isEmpty()) continue;
+
+        if(!query.exec(create)){
+            qDebug() << "Lỗi tạo trigger:" << query.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    if (!m_db.commit()) {
+        qDebug() << "Ghi dữ liệu thất bại" << m_db.lastError().text();
+        m_db.rollback();
+        return false;
+    }
+
+    qDebug() << "Hệ thống các bảng CSDL đã sẵn sàng!"; 
+    return true;
 }
 
 

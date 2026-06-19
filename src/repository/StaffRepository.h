@@ -21,8 +21,7 @@ chứ không phải 1 lớp đối tượng
 
 struct StaffInsertDTO { 
     QString staffCode;
-    QString username;
-    QString plainPassword;
+    QString passwordHash;
     QString fullName;
     UserRole role;
     Gender gender;
@@ -54,15 +53,20 @@ struct NurseInsertDTO : public StaffInsertDTO {
 class StaffRepository {
 private:
     std::shared_ptr<SystemUser> mapRowToUser(const QSqlQuery& query) const;
+
+    bool insertStaffBase(const StaffInsertDTO& staff, int& staffId);
 public:
     // CRUD
-    bool insert(const StaffInsertDTO& user);
+    bool insertStaff(const StaffInsertDTO& staff);
+    bool insertDoctor(const DoctorInsertDTO& doctor);
+    bool insertNurse(const NurseInsertDTO& nurse);
+
     bool update(const StaffInsertDTO& user);
-    bool deactivate(const StaffInsertDTO& user);
-    bool reactivate(const StaffInsertDTO& user);
+    bool deactivate(int staffId);
+    bool reactivate(int staffId);
     
     // Tìm kiếm theo ID / username phục vụ Auth Service
     std::optional<std::shared_ptr<SystemUser>> findById(int userId) const;
-    std::optional<std::shared_ptr<SystemUser>> findByUsername(const QString& username) const;
+    std::optional<std::shared_ptr<SystemUser>> findByStaffCode(const QString& username) const;
     //bool usernameExists(const QString& username) const;
 };

@@ -14,22 +14,34 @@ QString roleToString(UserRole role);
 
 class SystemUser : public IAuthenticatable {
 protected:
-    int         m_id;
+    int         m_staffId;
+    QString     m_staffCode;
     QString     m_username;
     QString     m_passwordHash;   // Lưu hash, không lưu plain text
     QString     m_fullName;
     UserRole    m_role;
-    QString     m_phoneNumber;
     bool        m_isActive;
-    QDateTime   m_createdAt;
 
 public:
-    // explicit SystemUser(int id, const QString& username, const QString& passwordHash, const QString& fullName, UserRole role, const QString& phoneNumber ) : 
-    //     m_id(id), m_username(username), m_passwordHash(passwordHash), m_fullName(fullName), m_role(role) {};
+    explicit SystemUser(
+        int staffId, 
+        const QString& staffCode,
+        const QString& passwordHash, 
+        const QString& fullName, 
+        UserRole role,
+        bool isActive
+    ) :
+        m_staffId(staffId), 
+        m_staffCode(staffCode),
+        m_passwordHash(passwordHash), 
+        m_fullName(fullName), 
+        m_role(role),
+        m_isActive(isActive)
+
+    {}
     virtual ~SystemUser() = default;
 
     // --- Getters ---
-    QString    getPasswordHash()    const override  { return m_passwordHash; }
     QString    getFullName()        const           { return m_fullName; }
     UserRole   getRole()            const           { return m_role; }
     bool       isActive()           const           { return m_isActive; }
@@ -43,7 +55,7 @@ public:
     void setPassword(const QString& plainPassword);
 
     // --- Implement IAuthenticatable ---
-    int         getAccountId()    const override { return m_id; }
+    int         getAccountId()    const override { return m_staffId; }
     QString     getUsername()     const override { return m_username; }
     QString     getPasswordHash() const override { return m_passwordHash; }
     AccountType getAccountType()  const override { return AccountType::Staff; }

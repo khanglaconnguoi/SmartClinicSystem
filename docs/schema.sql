@@ -50,7 +50,6 @@ CREATE TABLE IF NOT EXISTS rooms (
 CREATE TABLE IF NOT EXISTS staff (
     staff_id      INTEGER PRIMARY KEY AUTOINCREMENT,
     staff_code    TEXT    NOT NULL UNIQUE,
-    username      TEXT    NOT NULL UNIQUE,
     password_hash TEXT    NOT NULL,
     full_name     TEXT    NOT NULL,
     role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),

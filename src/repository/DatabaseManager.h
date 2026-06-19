@@ -30,7 +30,19 @@ public:
     
     bool        executeQuery(const QString& sql, const QVariantList& params = {});
     QSqlQuery   selectQuery(const QString& sql, const QVariantList& params = {});
-    bool        beginTransaction() { return m_db.transaction(); }
-    bool        commitTransaction() { return m_db.commit(); }
+    bool        beginTransaction() { 
+                if (!m_db.transaction()) {
+                    qDebug() << "Không thể mở transaction:" << m_db.lastError().text();
+                    return false;
+                } 
+                return true;
+    }
+    bool        commitTransaction() { 
+                if (!m_db.commit()) {
+                    qDebug() << "Ghi dữ liệu thất bại:" << m_db.lastError().text();
+                    m_db.rollback();
+                    return false;
+                }
+    }
     bool        rollbackTransaction() { return m_db.rollback(); }
 };
