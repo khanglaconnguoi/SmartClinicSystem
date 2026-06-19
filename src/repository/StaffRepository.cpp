@@ -19,7 +19,7 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
             hire_date,
             shift
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     )";
 
     QVariantList params = {
@@ -179,33 +179,29 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
 std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(const QString& staffCode) const {
     QString sql = R"(
         SELECT
-            s.staff_id,
-            s.staff_code,
-            s.password_hash,
-            s.full_name,
-            s.role,
-            s.gender,
-            s.phoneNumber,
-            s.email,
-            s.departmentId,
-            s.shift,
-            s.is_active,
-
-            d.specialty,
-            d.license_number,
-            d.experience_years,
-            d.consultation_fee,
-            d.bio,
-
-            n.nurse_level,
-            n.certification
-
-        FROM Staffs s
-        LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
-        LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
-
-        WHERE s.staff_code  = ?
-          AND s.is_deleted = 0
+        s.staff_id,
+        s.staff_code,
+        s.password_hash,
+        s.full_name,
+        s.role,
+        s.gender,
+        s.phone_number,
+        s.email,
+        s.department_id,
+        s.shift,
+        s.is_active,
+        dp.specialty,
+        dp.license_number,
+        dp.experience_years,
+        dp.consultation_fee,
+        dp.bio,
+        np.nurse_level,
+        np.certification
+    FROM staff s
+    LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
+    LEFT JOIN nurse_profiles np ON s.staff_id = np.staff_id
+    WHERE s.staff_code = ?
+    AND s.is_deleted = 0;
     )";
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffCode });
@@ -215,7 +211,7 @@ std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(cons
     }
 
     return mapRowToUser(query);
-}
+};
 
 std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId) const {
     QString sql = R"(
@@ -241,7 +237,7 @@ std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId
             n.nurse_level,
             n.certification
 
-        FROM Staffs s
+        FROM staff s
         LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
         LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
 

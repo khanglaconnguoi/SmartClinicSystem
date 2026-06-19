@@ -19,7 +19,7 @@ DatabaseManager::DatabaseManager() {
     QString appDir = QCoreApplication::applicationDirPath();
     QDir dir(appDir);
     if(!dir.exists("database")) dir.mkdir("database");
-    QString dbPath = appDir + "/database/hospital.db";
+    QString dbPath = appDir + "/../database/hospital.db";
 
     // Tên file database. Nó sẽ tự động được tạo ra ở thư mục 'build' khi chạy
     m_db.setDatabaseName(dbPath);
