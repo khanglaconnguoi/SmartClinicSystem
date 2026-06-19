@@ -32,6 +32,6 @@ endif()
 
 add_subdirectory(external/Bcrypt.cpp)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql)
+target_link_libraries(${PROJECT_NAME} PRIVATE bcrypt Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql)
 
 target_include_directories(${PROJECT_NAME} PRIVATE external/Bcrypt.cpp/include src)

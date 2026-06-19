@@ -16,7 +16,6 @@ class SystemUser : public IAuthenticatable {
 protected:
     int         m_staffId;
     QString     m_staffCode;
-    QString     m_username;
     QString     m_passwordHash;   // Lưu hash, không lưu plain text
     QString     m_fullName;
     UserRole    m_role;
@@ -56,12 +55,12 @@ public:
 
     // --- Implement IAuthenticatable ---
     int         getAccountId()    const override { return m_staffId; }
-    QString     getUsername()     const override { return m_username; }
+    //QString     getUsername()     const override { return m_username; }
     QString     getPasswordHash() const override { return m_passwordHash; }
     AccountType getAccountType()  const override { return AccountType::Staff; }
 
     // --- Pure Virtual ---
-    std::vector<QString> getMenuItems()         const override = 0;
-    bool canAccess(const QString& moduleCode)   const override = 0;
+    // std::vector<QString> getMenuItems()         const override = 0;
+    // bool canAccess(const QString& moduleCode)   const override = 0;
     QString getDisplayRole()                    const override = 0;
 };

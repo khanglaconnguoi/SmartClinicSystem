@@ -41,8 +41,8 @@ public:
     double  getConsultationFee() const { return m_consultationFee; }
 
     // --- Override từ SystemUser ---
-    std::vector<QString> getMenuItems()           const override;
-    bool canAccess(const QString& moduleCode)     const override;
+    // std::vector<QString> getMenuItems()           const override = 0;
+    // bool canAccess(const QString& moduleCode)     const override = 0;
     QString getDisplayRole()                      const override { return "Bác sĩ"; }
 
     // --- Hành vi đặc thù của Doctor ---

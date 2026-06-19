@@ -149,7 +149,6 @@ bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
 std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query) const {
     int      staffId      = query.value("staff_id").toInt();
     QString  staffCode    = query.value("staff_code").toString();
-    QString  username     = query.value("username").toString();
     QString  passwordHash = query.value("password_hash").toString();
     QString  fullName     = query.value("full_name").toString();
     UserRole role         = roleFromString(query.value("role").toString());
@@ -163,7 +162,7 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
             double  consultationFee = query.value("consultation_fee").toDouble();
 
             return std::make_shared<Doctor>(
-                staffId, staffCode, username, passwordHash, fullName, isActive,
+                staffId, staffCode, passwordHash, fullName, role, isActive,
                 specialty, licenseNumber, experienceYears, consultationFee
             );
         }

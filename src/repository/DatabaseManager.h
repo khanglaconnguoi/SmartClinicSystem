@@ -32,17 +32,18 @@ public:
     QSqlQuery   selectQuery(const QString& sql, const QVariantList& params = {});
     bool        beginTransaction() { 
                 if (!m_db.transaction()) {
-                    qDebug() << "Không thể mở transaction:" << m_db.lastError().text();
+                    //qDebug() << "Không thể mở transaction:" << m_db.lastError().text();
                     return false;
                 } 
                 return true;
     }
     bool        commitTransaction() { 
                 if (!m_db.commit()) {
-                    qDebug() << "Ghi dữ liệu thất bại:" << m_db.lastError().text();
+                    //qDebug() << "Ghi dữ liệu thất bại:" << m_db.lastError().text();
                     m_db.rollback();
                     return false;
                 }
+                return true;
     }
     bool        rollbackTransaction() { return m_db.rollback(); }
 };
