@@ -1,11 +1,12 @@
 #pragma once
-#include "../model/SystemUser.h"
-#include "DatabaseManager.h"
-#include <QString>
 #include <QDateTime>
-#include <vector>
+#include <QString>
 #include <memory>
 #include <optional>
+#include <vector>
+
+#include "../model/SystemUser.h"
+#include "DatabaseManager.h"
 
 /*
 DTO: Data Transfer Object dùng để lưu trữ thông tin cần đẩy xuống database
@@ -13,13 +14,11 @@ DTO: Data Transfer Object dùng để lưu trữ thông tin cần đẩy xuống
 
 /*
 Sử dụng struct vì nó chỉ là một cấu trúc
-để lưu thông tin đẩy vào database 
+để lưu thông tin đẩy vào database
 chứ không phải 1 lớp đối tượng
 */
 
-
-
-struct StaffInsertDTO { 
+struct StaffInsertDTO {
     QString staffCode;
     QString passwordHash;
     QString fullName;
@@ -48,10 +47,8 @@ struct NurseInsertDTO : public StaffInsertDTO {
     QString certification;
 };
 
-
-
 class StaffRepository {
-private:
+   private:
     std::shared_ptr<SystemUser> mapRowToUser(const QSqlQuery& query) const;
 
     bool insertStaffBase(const StaffInsertDTO& staff, int& staffId);
@@ -62,11 +59,10 @@ public:
     bool insertNurse(const NurseInsertDTO& nurse);
 
     bool update(const StaffInsertDTO& user);
-    bool deactivate(int staffId);
-    bool reactivate(int staffId);
-    
+    bool deactivate(const StaffInsertDTO& user);
+    bool reactivate(const StaffInsertDTO& user);
+
     // Tìm kiếm theo ID / username phục vụ Auth Service
     std::optional<std::shared_ptr<SystemUser>> findById(int userId) const;
-    std::optional<std::shared_ptr<SystemUser>> findByStaffCode(const QString& username) const;
-    //bool usernameExists(const QString& username) const;
+    std::optional<std::shared_ptr<SystemUser>> findByStaffCode(const QString& staffCode) const;
 };
