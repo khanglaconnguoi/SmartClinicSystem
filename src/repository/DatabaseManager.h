@@ -45,5 +45,8 @@ public:
                 }
                 return true;
     }
+    return true;
+}
+
     bool        rollbackTransaction() { return m_db.rollback(); }
 };

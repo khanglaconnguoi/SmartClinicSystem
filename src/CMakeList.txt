@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.16)
+
+project(LoginhospitalWidgets VERSION 0.1 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Tự động xử lý Meta-Object Compiler (MOC) cho Signals/Slots của Widgets
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+set(CMAKE_PREFIX_PATH "C:/Qt/6.7.0/mingw_64") 
+
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
+add_executable(LoginhospitalWidgets
+    main.cpp
+    logindialog.h
+    logindialog.cpp
+)
+
+# Thiết lập thuộc tính chạy ẩn màn hình Console trên nền Windows giống WIN32_EXECUTABLE
+set_target_properties(LoginhospitalWidgets PROPERTIES
+    WIN32_EXECUTABLE TRUE
+)
+
+target_link_libraries(LoginhospitalWidgets PRIVATE Qt6::Widgets)
