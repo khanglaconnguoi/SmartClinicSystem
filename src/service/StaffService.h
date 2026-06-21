@@ -13,46 +13,46 @@ class StaffService {
     static QString validateNationalId(const QString& nationalId);
 
     // Validation helpers — trả về chuỗi lỗi rỗng nếu hợp lệ
-    static QString validateBaseInput(
-        const QString& staffCode,
-    const QString& plainPassword,
-    const QString& fullName,
-    const QDate& dateOfBirth,
-    const QString& nationalId,
-    const QString& phoneNumber,
-    const QString& email,
-    const QString& address,
-    int departmentId,
-    const QDate& hireDate,
-    const QString& shift,
-    const QString& specialty,
-    const QString& licenseNumber,
-    int experienceYears,
-    int consultationFee,
-    const QString& bio
-    );
+    static QString validateBaseInput(const QString& staffCode,
+            const QString& plainPassword,
+            const QString& fullName,
+            const QDate& dateOfBirth,
+            const QString& nationalId,
+            const QString& phoneNumber,
+            const QString& email,
+            const QString& address,
+            int departmentId,
+            const QDate& hireDate,
+            const QString& shift,
+            const QString& specialty,
+            const QString& licenseNumber,
+            int experienceYears,
+            int consultationFee,
+            const QString& bio);
+
+    QString generateStaffCode(int year, UserRole role);
 
    public:
     explicit StaffService(std::shared_ptr<StaffRepository> staffRepository)
         : m_staffRepository(staffRepository) {}
 
     bool hireNewDoctor(const QString& staffCode,
-        const QString& plainPassword,
-        const QString& fullName,
-        Gender gender,
-        const QDate& dateOfBirth,
-        const QString& nationalId,
-        const QString& phoneNumber,
-        const QString& email,
-        const QString& address,
-        int departmentId,
-        const QDate& hireDate,
-        const QString& shift,
-        const QString& specialty,
-        const QString& licenseNumber,
-        int experienceYears,
-        int consultationFee,
-        const QString& bio);
+            const QString& plainPassword,
+            const QString& fullName,
+            Gender gender,
+            const QDate& dateOfBirth,
+            const QString& nationalId,
+            const QString& phoneNumber,
+            const QString& email,
+            const QString& address,
+            int departmentId,
+            const QDate& hireDate,
+            const QString& shift,
+            const QString& specialty,
+            const QString& licenseNumber,
+            int experienceYears,
+            int consultationFee,
+            const QString& bio);
 
     bool hireNewNurse(/*...*/);
     bool hireNewReceptionist(/*...*/);
