@@ -58,7 +58,10 @@ class StaffRepository {
     bool insertDoctor(const DoctorInsertDTO& doctor);
     bool insertNurse(const NurseInsertDTO& nurse);
 
-    bool update(const StaffInsertDTO& user);
+    bool updateStaff(const StaffInsertDTO& staff);
+    bool updateDoctor(const DoctorInsertDTO& doctor);
+    bool updateNurse(const NurseInsertDTO& nurse);
+
     bool deactivate(const StaffInsertDTO& user);
     bool reactivate(const StaffInsertDTO& user);
 
