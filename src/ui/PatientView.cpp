@@ -50,11 +50,13 @@ void PatientView::setupUi() {
     m_btnAdd = new QPushButton(tr("Thêm"), this);
     m_btnEdit = new QPushButton(tr("Sửa"), this);
     m_btnDelete = new QPushButton(tr("Xóa"), this);
+    m_btnAdvanceState = new QPushButton(tr("Chuyển trạng thái \u25B6"), this);
 
     auto* actionLayout = new QHBoxLayout;
     actionLayout->addWidget(m_btnAdd);
     actionLayout->addWidget(m_btnEdit);
     actionLayout->addWidget(m_btnDelete);
+    actionLayout->addWidget(m_btnAdvanceState);
     actionLayout->addStretch();
 
     // --- Main layout ---
@@ -74,6 +76,8 @@ void PatientView::setupUi() {
             this, &PatientView::handleSearchClicked);
     connect(m_searchInput, &QLineEdit::textChanged,
             this, &PatientView::handleSearchTextChanged);
+    connect(m_btnAdvanceState, &QPushButton::clicked,
+            this, &PatientView::handleAdvanceStateClicked);
 }
 
 void PatientView::refreshTable() {
@@ -178,5 +182,48 @@ void PatientView::handleSearchTextChanged(const QString& text) {
     // Nếu ô tìm kiếm trống, load lại toàn bộ danh sách
     if (text.trimmed().isEmpty()) {
         refreshTable();
+    }
+}
+
+void PatientView::handleAdvanceStateClicked() {
+    int row = selectedRow();
+    if (row < 0) {
+        QMessageBox::information(this, tr("Thông báo"),
+                                 tr("Vui lòng chọn một bệnh nhân."));
+        return;
+    }
+
+    auto patient = m_model->patientAt(row);
+    if (!patient.has_value()) {
+        return;
+    }
+
+    if (!patient->canAdvance()) {
+        QMessageBox::information(
+            this, tr("Thông báo"),
+            tr("Bệnh nhân \"%1\" đang ở trạng thái \"%2\" — "
+               "đây là trạng thái cuối cùng.")
+                .arg(patient->fullName())
+                .arg(patient->stateName()));
+        return;
+    }
+
+    // Hiển thị xác nhận chuyển trạng thái
+    auto reply = QMessageBox::question(
+        this, tr("Xác nhận chuyển trạng thái"),
+        tr("Chuyển bệnh nhân \"%1\" từ trạng thái \"%2\" sang bước tiếp theo?")
+            .arg(patient->fullName())
+            .arg(patient->stateName()),
+        QMessageBox::Yes | QMessageBox::No
+    );
+
+    if (reply == QMessageBox::Yes) {
+        if (m_service->advancePatientState(patient->id())) {
+            refreshTable();
+            qDebug() << "Patient state advanced successfully.";
+        } else {
+            QMessageBox::warning(this, tr("Lỗi"),
+                                 tr("Không thể chuyển trạng thái bệnh nhân."));
+        }
     }
 }

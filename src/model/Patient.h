@@ -6,7 +6,8 @@
 
 #include <QDate>
 #include <QString>
-// #include <optional>
+#include <memory>
+#include "state/IPatientState.h"
 
 /**
  * @brief Giới tính bệnh nhân.
@@ -39,6 +40,22 @@ public:
   QString insurance() const;
   bool isActive() const;
 
+  // --- State Pattern ---
+  /**
+   * @brief Lấy enum type của trạng thái hiện tại (để lưu DB).
+   */
+  PatientStateType stateType() const;
+
+  /**
+   * @brief Lấy tên trạng thái hiển thị trên UI.
+   */
+  QString stateName() const;
+
+  /**
+   * @brief Kiểm tra có thể chuyển sang trạng thái kế tiếp không.
+   */
+  bool canAdvance() const;
+
   // --- Setters ---
   void setId(int id);
   void setFullName(const QString &fullName);
@@ -50,6 +67,22 @@ public:
   void setEmail(const QString &email);
   void setInsurance(const QString &insurance);
   void setIsActive(bool isActive);
+
+  /**
+   * @brief Gán trạng thái bằng state object.
+   */
+  void setState(std::shared_ptr<IPatientState> state);
+
+  /**
+   * @brief Gán trạng thái bằng enum type (tiện dùng khi đọc từ DB).
+   */
+  void setState(PatientStateType type);
+
+  /**
+   * @brief Chuyển sang trạng thái kế tiếp trong quy trình.
+   * @return true nếu chuyển thành công, false nếu đã ở trạng thái cuối.
+   */
+  bool advanceState();
 
   /**
    * @brief Kiểm tra dữ liệu bệnh nhân có hợp lệ không.
@@ -69,4 +102,5 @@ private:
   QString m_email;
   QString m_insurance;
   bool m_isActive = true;
+  std::shared_ptr<IPatientState> m_state;
 };

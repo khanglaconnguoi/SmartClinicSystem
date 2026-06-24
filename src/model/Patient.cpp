@@ -3,6 +3,8 @@
  * @brief   Implementation cho Patient entity.
  */
 #include "Patient.h"
+#include "state/PatientStateFactory.h"
+#include "state/RegisteredState.h"
 
 Patient::Patient(const QString &fullName, const QDate &birthDate, Gender gender,
                  const QString &phoneNumber, const QString &address,
@@ -10,7 +12,8 @@ Patient::Patient(const QString &fullName, const QDate &birthDate, Gender gender,
                  const QString &insurance)
     : m_fullName(fullName), m_birthDate(birthDate), m_gender(gender),
       m_phoneNumber(phoneNumber), m_address(address), m_citizenId(citizenId),
-      m_email(email), m_insurance(insurance) {}
+      m_email(email), m_insurance(insurance),
+      m_state(std::make_shared<RegisteredState>()) {}
 
 // --- Getters ---
 
@@ -61,6 +64,49 @@ void Patient::setInsurance(const QString &insurance) {
 }
 
 void Patient::setIsActive(bool isActive) { m_isActive = isActive; }
+
+// --- State Pattern ---
+
+PatientStateType Patient::stateType() const {
+  if (!m_state) {
+    return PatientStateType::Registered;
+  }
+  return m_state->type();
+}
+
+QString Patient::stateName() const {
+  if (!m_state) {
+    return QStringLiteral("Đã đăng ký");
+  }
+  return m_state->name();
+}
+
+bool Patient::canAdvance() const {
+  if (!m_state) {
+    return false;
+  }
+  return m_state->nextState() != nullptr;
+}
+
+void Patient::setState(std::shared_ptr<IPatientState> state) {
+  m_state = std::move(state);
+}
+
+void Patient::setState(PatientStateType type) {
+  m_state = std::shared_ptr<IPatientState>(createPatientState(type).release());
+}
+
+bool Patient::advanceState() {
+  if (!m_state) {
+    return false;
+  }
+  auto next = m_state->nextState();
+  if (!next) {
+    return false;
+  }
+  m_state = std::shared_ptr<IPatientState>(next.release());
+  return true;
+}
 
 // --- Validation ---
 

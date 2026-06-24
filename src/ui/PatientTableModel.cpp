@@ -52,6 +52,7 @@ QVariant PatientTableModel::data(const QModelIndex& index,
             case ColEmail:       return patient.email();
             case ColInsurance:   return patient.insurance();
             case ColAddress:     return patient.address();
+            case ColState:       return patient.stateName();
             default:             return {};
         }
     }
@@ -82,6 +83,7 @@ QVariant PatientTableModel::headerData(int section,
         case ColEmail:       return tr("Email");
         case ColInsurance:   return tr("Bảo Hiểm");
         case ColAddress:     return tr("Địa Chỉ");
+        case ColState:       return tr("Trạng Thái");
         default:             return {};
     }
 }

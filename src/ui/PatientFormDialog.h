@@ -6,6 +6,7 @@
 
 #include <QDialog>
 #include "model/Patient.h"
+#include "state/IPatientState.h"
 
 class QLineEdit;
 class QDateEdit;
@@ -59,7 +60,9 @@ private:
     QLineEdit*   m_editInsurance;
     QPushButton* m_btnSave;
     QPushButton* m_btnCancel;
+    QComboBox*   m_comboState;
 
     int  m_patientId = -1;
     bool m_isActive = true;
+    PatientStateType m_stateType = PatientStateType::Registered;
 };

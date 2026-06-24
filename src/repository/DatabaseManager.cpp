@@ -67,7 +67,8 @@ void DatabaseManager::createTables() {
         "  citizen_id   TEXT,"
         "  email        TEXT,"
         "  insurance    TEXT,"
-        "  is_active    INTEGER DEFAULT 1"
+        "  is_active    INTEGER DEFAULT 1,"
+        "  state        INTEGER DEFAULT 0"
         ")"
     );
 
@@ -77,4 +78,10 @@ void DatabaseManager::createTables() {
     } else {
         qDebug() << "Table 'patients' ready.";
     }
+
+    // Migration: thêm cột state cho database đã tồn tại trước khi có state
+    QSqlQuery alterQuery(m_db);
+    alterQuery.exec("ALTER TABLE patients ADD COLUMN state INTEGER DEFAULT 0");
+    // Lệnh ALTER TABLE sẽ thất bại nếu cột đã tồn tại — đây là hành vi
+    // mong muốn, không cần xử lý lỗi.
 }

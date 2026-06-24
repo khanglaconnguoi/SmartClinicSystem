@@ -59,3 +59,30 @@ QList<Patient> PatientService::searchPatients(const QString& keyword) {
     }
     return m_repo->searchByName(keyword);
 }
+
+bool PatientService::advancePatientState(int patientId) {
+    if (patientId < 0) {
+        qWarning() << "Cannot advance state: invalid patient ID";
+        return false;
+    }
+
+    auto optPatient = m_repo->findById(patientId);
+    if (!optPatient.has_value()) {
+        qWarning() << "Cannot advance state: patient not found (ID:"
+                   << patientId << ")";
+        return false;
+    }
+
+    Patient patient = optPatient.value();
+
+    if (!patient.advanceState()) {
+        qWarning() << "Cannot advance state for patient (ID:"
+                   << patientId << "): already at final state";
+        return false;
+    }
+
+    qDebug() << "Patient (ID:" << patientId
+             << ") state advanced to:" << patient.stateName();
+
+    return m_repo->update(patient);
+}

@@ -37,6 +37,7 @@ private slots:
     void handleDeleteClicked();
     void handleSearchClicked();
     void handleSearchTextChanged(const QString& text);
+    void handleAdvanceStateClicked();
 
 private:
     void setupUi();
@@ -56,4 +57,5 @@ private:
     QPushButton*       m_btnAdd;
     QPushButton*       m_btnEdit;
     QPushButton*       m_btnDelete;
+    QPushButton*       m_btnAdvanceState;
 };

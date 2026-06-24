@@ -71,6 +71,23 @@ void PatientFormDialog::setupUi() {
     formLayout->addRow(tr("Bảo Hiểm:"), m_editInsurance);
     formLayout->addRow(tr("Địa Chỉ:"), m_editAddress);
 
+    // Trạng thái bệnh nhân (chỉ đọc — state chuyển qua advanceState)
+    m_comboState = new QComboBox(this);
+    m_comboState->addItem(tr("Đã đăng ký"),
+                          static_cast<int>(PatientStateType::Registered));
+    m_comboState->addItem(tr("Chờ khám"),
+                          static_cast<int>(PatientStateType::WaitingForExamination));
+    m_comboState->addItem(tr("Đang khám"),
+                          static_cast<int>(PatientStateType::UnderExamination));
+    m_comboState->addItem(tr("Chờ thanh toán"),
+                          static_cast<int>(PatientStateType::WaitingForPayment));
+    m_comboState->addItem(tr("Hoàn thành"),
+                          static_cast<int>(PatientStateType::Completed));
+    m_comboState->addItem(tr("Đã lưu trữ"),
+                          static_cast<int>(PatientStateType::Archived));
+    m_comboState->setEnabled(false);  // Chỉ hiển thị, không cho chỉnh sửa trực tiếp
+    formLayout->addRow(tr("Trạng Thái:"), m_comboState);
+
     // Buttons
     m_btnSave = new QPushButton(tr("Lưu"), this);
     m_btnCancel = new QPushButton(tr("Hủy"), this);
@@ -95,6 +112,7 @@ void PatientFormDialog::setupUi() {
 void PatientFormDialog::populateForm(const Patient& patient) {
     m_patientId = patient.id();
     m_isActive = patient.isActive();
+    m_stateType = patient.stateType();
 
     m_editFullName->setText(patient.fullName());
     m_editBirthDate->setDate(patient.birthDate());
@@ -109,6 +127,13 @@ void PatientFormDialog::populateForm(const Patient& patient) {
         static_cast<int>(patient.gender()));
     if (genderIdx >= 0) {
         m_comboGender->setCurrentIndex(genderIdx);
+    }
+
+    // Chọn đúng trạng thái trong combo box
+    int stateIdx = m_comboState->findData(
+        static_cast<int>(patient.stateType()));
+    if (stateIdx >= 0) {
+        m_comboState->setCurrentIndex(stateIdx);
     }
 }
 
@@ -144,5 +169,6 @@ Patient PatientFormDialog::getPatient() const {
     p.setEmail(m_editEmail->text().trimmed());
     p.setInsurance(m_editInsurance->text().trimmed());
     p.setIsActive(m_isActive);
+    p.setState(m_stateType);
     return p;
 }

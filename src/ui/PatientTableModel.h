@@ -31,6 +31,7 @@ public:
         ColEmail,
         ColInsurance,
         ColAddress,
+        ColState,
         ColCount  // Tổng số cột
     };
 

@@ -18,10 +18,10 @@ bool PatientRepository::insert(Patient& patient) {
     query.prepare(
         "INSERT INTO patients "
         "(full_name, birth_date, gender, phone_number, address, "
-        " citizen_id, email, insurance, is_active) "
+        " citizen_id, email, insurance, is_active, state) "
         "VALUES "
         "(:full_name, :birth_date, :gender, :phone_number, :address, "
-        " :citizen_id, :email, :insurance, :is_active)"
+        " :citizen_id, :email, :insurance, :is_active, :state)"
     );
 
     query.bindValue(":full_name", patient.fullName());
@@ -33,6 +33,7 @@ bool PatientRepository::insert(Patient& patient) {
     query.bindValue(":email", patient.email());
     query.bindValue(":insurance", patient.insurance());
     query.bindValue(":is_active", patient.isActive() ? 1 : 0);
+    query.bindValue(":state", static_cast<int>(patient.stateType()));
 
     if (!query.exec()) {
         qCritical() << "Failed to insert patient:"
@@ -58,7 +59,8 @@ bool PatientRepository::update(const Patient& patient) {
         "  citizen_id   = :citizen_id,"
         "  email        = :email,"
         "  insurance    = :insurance,"
-        "  is_active    = :is_active "
+        "  is_active    = :is_active,"
+        "  state        = :state "
         "WHERE id = :id"
     );
 
@@ -72,6 +74,7 @@ bool PatientRepository::update(const Patient& patient) {
     query.bindValue(":email", patient.email());
     query.bindValue(":insurance", patient.insurance());
     query.bindValue(":is_active", patient.isActive() ? 1 : 0);
+    query.bindValue(":state", static_cast<int>(patient.stateType()));
 
     if (!query.exec()) {
         qCritical() << "Failed to update patient (ID:"
@@ -175,5 +178,6 @@ Patient PatientRepository::mapRowToPatient(const QSqlQuery& query) {
     p.setEmail(query.value("email").toString());
     p.setInsurance(query.value("insurance").toString());
     p.setIsActive(query.value("is_active").toInt() == 1);
+    p.setState(static_cast<PatientStateType>(query.value("state").toInt()));
     return p;
 }

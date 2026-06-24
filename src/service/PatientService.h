@@ -67,6 +67,13 @@ public:
      */
     QList<Patient> searchPatients(const QString& keyword);
 
+    /**
+     * @brief Chuyển trạng thái bệnh nhân sang bước kế tiếp.
+     * @param patientId ID bệnh nhân.
+     * @return true nếu chuyển trạng thái và lưu DB thành công.
+     */
+    bool advancePatientState(int patientId);
+
 private:
     PatientRepository* m_repo;
 };
