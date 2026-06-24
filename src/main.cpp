@@ -33,7 +33,11 @@ int main(int argc, char *argv[]) {
 
     // Ghi log ra file cùng thư mục exe
     logFile.setFileName(app.applicationDirPath() + "/debug.log");
-    logFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
+    if (!logFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        // Log file không mở được — không ảnh hưởng chức năng chính,
+        // messageHandler đã kiểm tra isOpen() nên sẽ tự bỏ qua.
+        qWarning() << "Cannot open log file:" << logFile.fileName();
+    }
     qInstallMessageHandler(messageHandler);
 
     qDebug() << "=== SmartClinicSystem started ===";
