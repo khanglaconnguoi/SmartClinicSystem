@@ -13,7 +13,7 @@ public:
     virtual AccountType getAccountType()    const = 0;
 
     // --- Đa hình điều khiển UI (dùng cho MainWindow) ---
-    // virtual std::vector<QString> getMenuItems()       const = 0;
-    // virtual bool canAccess(const QString& moduleCode) const = 0;
+    virtual QStringList getMenuItems()                const = 0;
+    virtual bool canAccess(const QString& moduleCode) const = 0;
     virtual QString getDisplayRole()                  const = 0;
 };

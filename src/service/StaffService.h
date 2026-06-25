@@ -5,7 +5,7 @@
 #include "repository/StaffRepository.h"
 
 class StaffService {
-   private:
+private:
     std::shared_ptr<StaffRepository> m_staffRepository;
 
     static QString validatePlainPassword(const QString& plainPassword);
@@ -14,7 +14,7 @@ class StaffService {
 
     // Validation helpers — trả về chuỗi lỗi rỗng nếu hợp lệ
     static QString validateBaseInput(
-        const QString& staffCode,
+    const QString& staffCode,
     const QString& plainPassword,
     const QString& fullName,
     const QDate& dateOfBirth,
@@ -32,7 +32,7 @@ class StaffService {
     const QString& bio
     );
 
-   public:
+public:
     explicit StaffService(std::shared_ptr<StaffRepository> staffRepository)
         : m_staffRepository(staffRepository) {}
 
@@ -56,4 +56,6 @@ class StaffService {
 
     bool hireNewNurse(/*...*/);
     bool hireNewReceptionist(/*...*/);
+
+    std::vector<std::shared_ptr<SystemUser>> searchDoctors(const )
 };

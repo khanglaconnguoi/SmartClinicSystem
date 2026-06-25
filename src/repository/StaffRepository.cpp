@@ -1,13 +1,22 @@
 #include "StaffRepository.h"
 #include "../model/Doctor.h"
-
+#include <QBuffer>
+#include <QIODevice>
 
 bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId) {
+    QByteArray avatarBytes;
+    if (!staff.avatar.isNull()) {
+        QBuffer buffer(&avatarBytes);
+        buffer.open(QIODevice::WriteOnly);
+        staff.avatar.save(&buffer, "PNG"); // Lưu dạng PNG để giữ chất lượng
+    }
+
     QString insert = R"(
         INSERT INTO staff (
             staff_code,
             password_hash,
             full_name,
+            avatar,
             role,
             gender,
             date_of_birth,
@@ -26,11 +35,14 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
         staff.staffCode,
         staff.passwordHash,
         staff.fullName,
+        avatarBytes,
         roleToString(staff.role),
         genderToString(staff.gender),
         staff.dateOfBirth,
         staff.nationalId,
         staff.phoneNumber,
+        staff.email,
+        staff.address,
         staff.departmentId,
         staff.hireDate,
         staff.shift
@@ -141,19 +153,59 @@ bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
 }
 
 
+bool StaffRepository::deactivate(int staffId){
+    DatabaseManager& db = DatabaseManager::getInstance();
+    QString deactivate = R"(
+        UPDATE  staff
+        SET     active = 0
+        WHERE   staff_id = ?
+    )";
 
+    if(!db.beginTransaction()) return false;
+    if(!db.executeQuery(deactivate, { staffId })){
+        db.rollbackTransaction();
+        qWarning() << "StaffRepository::deactivate - Lỗi update bảng staff";
+        return false;
+    }
+    if(!db.commitTransaction()) return false;
+    return true;
+}
 
+bool StaffRepository::reactivate(int staffId){
+    DatabaseManager& db = DatabaseManager::getInstance();
+    QString deactivate = R"(
+        UPDATE  staff
+        SET     active = 1
+        WHERE   staff_id = ?
+    )";
 
-
+    if(!db.beginTransaction()) return false;
+    if(!db.executeQuery(deactivate, { staffId })){
+        db.rollbackTransaction();
+        qWarning() << "StaffRepository::deactivate - Lỗi update bảng staff";
+        return false;
+    }
+    if(!db.commitTransaction()) return false;
+    return true;
+}
 
 std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query) const {
-    int      staffId      = query.value("staff_id").toInt();
-    QString  staffCode    = query.value("staff_code").toString();
-    QString  passwordHash = query.value("password_hash").toString();
-    QString  fullName     = query.value("full_name").toString();
-    UserRole role         = roleFromString(query.value("role").toString());
-    bool     isActive     = query.value("is_active").toBool();
+    int         staffId        = query.value("staff_id").toInt();
+    QString     staffCode      = query.value("staff_code").toString();
+    QString     passwordHash   = query.value("password_hash").toString();
+    QString     fullName       = query.value("full_name").toString();
+    UserRole    role           = roleFromString(query.value("role").toString());
+    bool        isActive       = query.value("is_active").toBool();
+    QByteArray  avatarBytes    = query.value("avatar").toByteArray();
+    QPixmap     avatar;
 
+    if (!avatarBytes.isEmpty()) {
+        avatar.loadFromData(avatarBytes);
+    } else {
+        avatar.load(":/assets/images/default_avatar.png");
+    }
+
+    
     switch(role) {
         case UserRole::Doctor: {
             QString specialty       = query.value("specialty").toString();
@@ -162,7 +214,7 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
             double  consultationFee = query.value("consultation_fee").toDouble();
 
             return std::make_shared<Doctor>(
-                staffId, staffCode, passwordHash, fullName, role, isActive,
+                staffId, staffCode, passwordHash, fullName, avatar, role, isActive,
                 specialty, licenseNumber, experienceYears, consultationFee
             );
         }
@@ -173,34 +225,117 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
         // //     return std::make_shared<Receptionist>(id, username, passwordHash, full_name, role);
         // }
     }
-
+    return nullptr;
 }
 
+
+QList<std::shared_ptr<SystemUser>> StaffRepository::search(const StaffSearchCriteria& criteria) const {
+    QString search = R"(
+        SELECT  
+            s.staff_id,
+            s.staff_code,
+            s.password_hash,
+            s.full_name,
+            s.avatar,
+            s.role,
+            s.gender,
+            s.phone_number,
+            s.email,
+            s.department_id,
+            s.shift,
+            s.is_active,
+
+            dp.specialty,
+            dp.license_number,
+            dp.experience_years,
+            dp.consultation_fee,
+            dp.bio,
+
+            np.nurse_level,
+            np.certification
+        FROM staff s
+        LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
+        LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
+        WHERE 1 = 1
+    )";
+
+    QVariantList params;
+
+    // Chỉ thêm điều kiện khi field thực sự có giá trị
+    if (!criteria.searchKey.trimmed().isEmpty()) {
+        search += " AND (s.staff_code LIKE ? OR s.full_name LIKE ?)";
+        QString keyword = "%" + criteria.searchKey + "%";
+        params << keyword << keyword;
+    }
+
+    if (criteria.role.has_value()) {
+        search += " AND s.role = ?";
+        params << roleToString(criteria.role.value());
+    }
+
+    if (!criteria.specialty.trimmed().isEmpty()) {
+        search += " AND dp.specialty LIKE ?";
+        params << "%" + criteria.specialty.trimmed() + "%";
+    }
+
+    if (criteria.departmentId != -1) {
+        search += " AND s.department_id = ?";
+        params << criteria.departmentId;
+    }
+
+    if (!criteria.shift.trimmed().isEmpty()) {
+        search += " AND s.shift = ?";
+        params << criteria.shift.trimmed();
+    }
+
+    if (criteria.onlyActive) {
+        search += " AND s.is_active = 1";
+    }
+
+    if (!criteria.includeDeleted) {
+        search += " AND s.is_deleted = 0";
+    }
+
+    search += " ORDER BY s.full_name ASC";
+
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(search, params);
+
+    QList<std::shared_ptr<SystemUser>> result;
+    while (query.next()) {
+        if (auto user = mapRowToUser(query)) {
+            result.append(user);
+        }
+    }
+    return result;
+}
+
+
 std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(const QString& staffCode) const {
-    QString sql = R"(
+    QString find = R"(
         SELECT
             s.staff_id,
             s.staff_code,
             s.password_hash,
             s.full_name,
+            s.avatar,
             s.role,
             s.gender,
-            s.phoneNumber,
+            s.phone_number,
             s.email,
-            s.departmentId,
+            s.department_id,
             s.shift,
             s.is_active,
 
-            d.specialty,
-            d.license_number,
-            d.experience_years,
-            d.consultation_fee,
-            d.bio,
+            dp.specialty,
+            dp.license_number,
+            dp.experience_years,
+            dp.consultation_fee,
+            dp.bio,
 
-            n.nurse_level,
-            n.certification
+            np.nurse_level,
+            np.certification
 
-        FROM Staffs s
+        FROM staff s
         LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
         LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
 
@@ -208,7 +343,7 @@ std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(cons
           AND s.is_deleted = 0
     )";
 
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffCode });
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(find, { staffCode });
 
     if (!query.next()) {
         return std::nullopt; // không tìm thấy
@@ -218,30 +353,31 @@ std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(cons
 }
 
 std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId) const {
-    QString sql = R"(
+    QString find = R"(
         SELECT
             s.staff_id,
             s.staff_code,
             s.password_hash,
             s.full_name,
+            s.avatar,
             s.role,
             s.gender,
-            s.phoneNumber,
+            s.phone_number,
             s.email,
-            s.departmentId,
+            s.department_id,
             s.shift,
             s.is_active,
 
-            d.specialty,
-            d.license_number,
-            d.experience_years,
-            d.consultation_fee,
-            d.bio,
+            dp.specialty,
+            dp.license_number,
+            dp.experience_years,
+            dp.consultation_fee,
+            dp.bio,
 
-            n.nurse_level,
-            n.certification
+            np.nurse_level,
+            np.certification
 
-        FROM Staffs s
+        FROM staff s
         LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
         LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
 
@@ -249,7 +385,7 @@ std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId
           AND s.is_deleted = 0
     )";
 
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffId });
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(find, { staffId });
 
     if (!query.next()) {
         return std::nullopt; // không tìm thấy

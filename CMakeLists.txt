@@ -35,3 +35,7 @@ add_subdirectory(external/Bcrypt.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE bcrypt Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql)
 
 target_include_directories(${PROJECT_NAME} PRIVATE external/Bcrypt.cpp/include src)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}"
+)

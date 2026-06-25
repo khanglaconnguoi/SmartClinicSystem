@@ -10,22 +10,24 @@ private:
 
 public:
     Doctor(
-        int staffId, 
-        const QString& staffCode,
-        const QString& passwordHash, 
-        const QString& fullName, 
-        UserRole role, 
-        bool isActive,
-        const QString& specialty,
-        const QString& licenseNumber,
-        int experienceYears,
-        int consultationFee
+        int             staffId, 
+        const QString&  staffCode,
+        const QString&  passwordHash, 
+        const QString&  fullName, 
+        QPixmap         avatar,
+        UserRole        role, 
+        bool            isActive,
+        const QString&  specialty,
+        const QString&  licenseNumber,
+        int             experienceYears,
+        int             consultationFee
     ) : 
         SystemUser(
             staffId, 
             staffCode,
             passwordHash, 
             fullName, 
+            avatar,
             role, 
             isActive
         ), 
@@ -41,9 +43,15 @@ public:
     double  getConsultationFee() const { return m_consultationFee; }
 
     // --- Override từ SystemUser ---
-    // std::vector<QString> getMenuItems()           const override = 0;
-    // bool canAccess(const QString& moduleCode)     const override = 0;
-    QString getDisplayRole()                      const override { return "Bác sĩ"; }
+    QStringList getMenuItems() const override {
+        return { "Dashboard", "Appointments", "Schedule", "Messages" };
+    }
+
+    bool canAccess(const QString& moduleCode) const override {
+        return getMenuItems().contains(moduleCode);
+    }
+
+    QString getDisplayRole() const override { return "Doctor"; }
 
     // --- Hành vi đặc thù của Doctor ---
     // bool prescribeMedication(int patientId, const std::vector<PrescriptionItem>& items);
