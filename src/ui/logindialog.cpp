@@ -3,8 +3,10 @@
 #include <QPainter>
 #include <QGraphicsDropShadowEffect>
 #include <QMessageBox> 
-#include "AuthService.h" 
-LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent)
+#include "../service/AuthService.h"
+
+LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *parent) 
+    : QDialog(parent), m_authService(authService)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -12,32 +14,37 @@ LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent)
 
     QString appPath = QApplication::applicationDirPath();
 
+    // tạo nút đóng cửa sổ 
     btnClose = new QPushButton("x", this);
     btnClose->setGeometry(955, 15, 30, 30);
     btnClose->setStyleSheet("QPushButton { color: white; font-size: 18px; background: transparent; border: none; }"
                            "QPushButton:hover { color: #FFCDD2; }");
     connect(btnClose, &QPushButton::clicked, this, &LoginDialog::close);
 
+    // khối center
     QWidget *cardWidget = new QWidget(this);
     cardWidget->setGeometry(40, 70, 920, 560);
     cardWidget->setStyleSheet("QWidget { background-color: #FFFFFF; border-radius: 12px; }");
 
+    // tạo hiệu ứng đổ bóng mờ cho Card trung tâm
     QGraphicsDropShadowEffect *cardShadow = new QGraphicsDropShadowEffect(this);
     cardShadow->setBlurRadius(15);
     cardShadow->setColor(QColor(0, 0, 0, 60));
     cardShadow->setOffset(0, 5);
     cardWidget->setGraphicsEffect(cardShadow);
 
+    // form đăng nhập bên tay trái
     QWidget *leftForm = new QWidget(cardWidget);
     leftForm->setGeometry(0, 100, 440, 460);
     leftForm->setStyleSheet("background: transparent;");
 
+    //logo bên trên trái
     lblLeftLogo = new QLabel(leftForm);
     lblLeftLogo->setGeometry(110, 10, 220, 110);
     lblLeftLogo->setPixmap(QPixmap(appPath + "/logo.png"));
     lblLeftLogo->setScaledContents(true);
 
-    lblSlogan = new QLabel("NovaCare - Nâng cao sức khỏe", leftForm);
+    lblSlogan = new QLabel("NovaCare - Nâng cao sức khỏe", leftForm); 
     lblSlogan->setGeometry(0, 130, 440, 20);
     lblSlogan->setAlignment(Qt::AlignCenter);
     lblSlogan->setStyleSheet("font-size: 13px; font-weight: bold; color: #757575;");
@@ -97,12 +104,31 @@ LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent)
         "QPushButton { background-color: #00969A; color: white; font-size: 16px; font-weight: bold; border-radius: 6px; border: none; }"
         "QPushButton:hover { background-color: #00838F; }");
 
+    connect(btnLogin, &QPushButton::clicked, this, [=]() {
+    QString username = txtAccount->text().trimmed();
+    QString password = txtPassword->text();
+
+    if (username.isEmpty() || password.isEmpty()) {
+        QMessageBox::warning(this, "Thông báo", "Vui lòng nhập đầy đủ thông tin!");
+        return;
+    }
+
+    auto result = m_authService->login(username, password);
+
+    if (!result.has_value()) {
+        QMessageBox::critical(this, "Thất bại", "Tài khoản hoặc mật khẩu không đúng.");
+    } else {
+        QMessageBox::information(this, "Thành công", "Đăng nhập thành công!");
+        this->accept(); 
+    }
+});
     btnForgot = new QPushButton("Quên mật khẩu?", leftForm);
     btnForgot->setGeometry(50, 385, 360, 30);
     btnForgot->setStyleSheet(
         "QPushButton { color: #007A7E; font-size: 13px; background: transparent; border: none; }"
         "QPushButton:hover { color: #00969A; }");
 
+    // Khối chào mừng phía bên phải.
     rightContainer = new QWidget(cardWidget);
     rightContainer->setGeometry(440, 0, 480, 560);
     rightContainer->setStyleSheet(
@@ -138,12 +164,15 @@ void LoginDialog::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
+    // Vẽ khối nền xanh lớn bao toàn bộ khung viền ngoài của ứng dụng (#00969A)
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor("#00969A"));
     painter.drawRoundedRect(rect(), 0, 0);
 
+    // Thiết lập hệ thống bút vẽ để tạo các đường tròn trang trí với độ mờ (opacity) tương đương
     painter.setBrush(Qt::NoBrush);
 
+    // 1. Hoa văn vòng tròn lớn góc trên bên trái của khối Pastel (Tọa độ tuyệt đối trên Window)
     QPen pen1(QColor("#B2DFDB"), 4);
     painter.setPen(pen1);
     painter.setOpacity(0.4);
@@ -154,6 +183,7 @@ void LoginDialog::paintEvent(QPaintEvent *event)
     painter.setPen(pen2);
     painter.drawEllipse(480, 170, 60, 60);
 
+    // 2. Hoa văn vòng tròn đôi góc trên bên phải
     painter.setOpacity(0.4);
     painter.drawEllipse(960 - 120, 170 + 20, 80, 80);
 
@@ -162,6 +192,7 @@ void LoginDialog::paintEvent(QPaintEvent *event)
     painter.setPen(pen3);
     painter.drawEllipse(960 - 105, 170 + 45, 40, 40);
 
+    // 3. Hoa văn vòng tròn mờ góc dưới bên trái khối phải
     painter.setOpacity(0.15);
     QPen pen4(QColor("#00969A"), 4);
     painter.setPen(pen4);

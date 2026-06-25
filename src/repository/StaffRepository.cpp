@@ -1,23 +1,13 @@
 #include "StaffRepository.h"
 #include "../model/Doctor.h"
-
+#include <QDebug>
 
 bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId) {
     QString insert = R"(
         INSERT INTO staff (
-            staff_code,
-            password_hash,
-            full_name,
-            role,
-            gender,
-            date_of_birth,
-            national_id,
-            phone_number,
-            email,
-            address,
-            department_id,
-            hire_date,
-            shift
+            staff_code, password_hash, full_name, role, gender,
+            date_of_birth, national_id, phone_number, email, address,
+            department_id, hire_date, shift
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     )";
@@ -31,6 +21,8 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
         staff.dateOfBirth,
         staff.nationalId,
         staff.phoneNumber,
+        staff.email,
+        staff.address,
         staff.departmentId,
         staff.hireDate,
         staff.shift
@@ -44,7 +36,6 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
     if (!lastId.next()) return false;
     staffId = lastId.value(0).toInt();
     return true;
-
 }
 
 bool StaffRepository::insertStaff(const StaffInsertDTO& staff) {
@@ -56,7 +47,6 @@ bool StaffRepository::insertStaff(const StaffInsertDTO& staff) {
         qWarning() << "StaffRepository::insertStaff - Lỗi ghi bảng staff";
         return false;
     }
-
     if(!db.commitTransaction()) return false;
     return true;
 }
@@ -73,12 +63,7 @@ bool StaffRepository::insertDoctor(const DoctorInsertDTO& doctor) {
 
     QString insert = R"(
         INSERT INTO doctor_profiles (
-            staff_id,
-            specialty,
-            license_number,
-            experience_years,
-            consultation_fee,
-            bio
+            staff_id, specialty, license_number, experience_years, consultation_fee, bio
         )
         VALUES (?, ?, ?, ?, ?, ?)
     )";
@@ -102,10 +87,8 @@ bool StaffRepository::insertDoctor(const DoctorInsertDTO& doctor) {
     return true;
 }
 
-
 bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
     DatabaseManager& db = DatabaseManager::getInstance();
-    
     if(!db.beginTransaction()) return false;
 
     int staffId = 0;
@@ -116,11 +99,7 @@ bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
     }
 
     QString insert = R"(
-        INSERT INTO nurse_profiles (
-            staff_id,
-            nurse_level,
-            certification
-        )
+        INSERT INTO nurse_profiles (staff_id, nurse_level, certification)
         VALUES (?, ?, ?)
     )";
 
@@ -139,12 +118,6 @@ bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
     if(!db.commitTransaction()) return false;
     return true;
 }
-
-
-
-
-
-
 
 std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query) const {
     int      staffId      = query.value("staff_id").toInt();
@@ -166,92 +139,48 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
                 specialty, licenseNumber, experienceYears, consultationFee
             );
         }
-        // case UserRole::Nurse: {
-        //     //return std::make_shared<Nurse>(id, username, passwordHash, full_name, role);
-        // }
-        // case UserRole::Receptionist: {
-        // //     return std::make_shared<Receptionist>(id, username, passwordHash, full_name, role);
-        // }
+        default: {
+            return nullptr;
+        }
     }
-
 }
 
 std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(const QString& staffCode) const {
     QString sql = R"(
         SELECT
-        s.staff_id,
-        s.staff_code,
-        s.password_hash,
-        s.full_name,
-        s.role,
-        s.gender,
-        s.phone_number,
-        s.email,
-        s.department_id,
-        s.shift,
-        s.is_active,
-        dp.specialty,
-        dp.license_number,
-        dp.experience_years,
-        dp.consultation_fee,
-        dp.bio,
-        np.nurse_level,
-        np.certification
-    FROM staff s
-    LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
-    LEFT JOIN nurse_profiles np ON s.staff_id = np.staff_id
-    WHERE s.staff_code = ?
-    AND s.is_deleted = 0;
+            s.staff_id, s.staff_code, s.password_hash, s.full_name, s.role, s.gender,
+            s.phone_number, s.email, s.department_id, s.shift, s.is_active,
+            dp.specialty, dp.license_number, dp.experience_years, dp.consultation_fee, dp.bio,
+            np.nurse_level, np.certification
+        FROM staff s
+        LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
+        LEFT JOIN nurse_profiles np ON s.staff_id = np.staff_id
+        WHERE s.staff_code = ? AND s.is_deleted = 0;
     )";
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffCode });
-
     if (!query.next()) {
-        return std::nullopt; // không tìm thấy
+        return std::nullopt;
     }
-
     return mapRowToUser(query);
-};
+}
 
 std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId) const {
     QString sql = R"(
         SELECT
-            s.staff_id,
-            s.staff_code,
-            s.password_hash,
-            s.full_name,
-            s.role,
-            s.gender,
-            s.phoneNumber,
-            s.email,
-            s.departmentId,
-            s.shift,
-            s.is_active,
-
-            d.specialty,
-            d.license_number,
-            d.experience_years,
-            d.consultation_fee,
-            d.bio,
-
-            n.nurse_level,
-            n.certification
-
+            s.staff_id, s.staff_code, s.password_hash, s.full_name, s.role, s.gender,
+            s.phone_number, s.email, s.department_id, s.shift, s.is_active,
+            dp.specialty, dp.license_number, dp.experience_years, dp.consultation_fee, dp.bio,
+            np.nurse_level, np.certification
         FROM staff s
         LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
         LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
-
-        WHERE s.staff_id  = ?
-          AND s.is_deleted = 0
+        WHERE s.staff_id  = ? AND s.is_deleted = 0;
     )";
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffId });
-
     if (!query.next()) {
-        return std::nullopt; // không tìm thấy
+        return std::nullopt;
     }
-
     return mapRowToUser(query);
 }
-
-

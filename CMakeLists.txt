@@ -10,7 +10,9 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql Charts)
+set(CMAKE_PREFIX_PATH "C:/Qt/6.11.1/mingw_64")
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
@@ -18,9 +20,15 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "src/*.hpp"
     "src/*.ui"
     "src/*.qrc"
+    "external/Bcrypt.cpp/*.cpp"
+    "external/Bcrypt.cpp/*.h"
 )
-
+list(FILTER SOURCES EXCLUDE REGEX "src/ui/MainWindow\\.(cpp|h)")
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    WIN32_EXECUTABLE TRUE
+)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow)
@@ -30,8 +38,15 @@ if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /w14456 /w14457 /w14458 /w14459)
 endif()
 
-add_subdirectory(external/Bcrypt.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    Qt6::Core 
+    Qt6::Gui 
+    Qt6::Widgets 
+    Qt6::Sql
+)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE bcrypt Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql Qt6::Charts)
-
-target_include_directories(${PROJECT_NAME} PRIVATE external/Bcrypt.cpp/include src)
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    "external/Bcrypt.cpp"
+    "external/Bcrypt.cpp/include"
+    "src"
+)
