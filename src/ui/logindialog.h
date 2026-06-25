@@ -21,12 +21,25 @@ public:
     explicit LoginDialog(std::shared_ptr<AuthService> authService, QWidget *parent = nullptr);
     ~LoginDialog();
 
+    // BỔ SUNG: Hàm tiện ích công khai giúp dọn dẹp các ô nhập liệu khi cần thiết (ví dụ lúc logout)
+    void clearFields();
+
 protected:
     void paintEvent(QPaintEvent *event) override;
+    // BỔ SUNG: Cho phép kéo giữ cửa sổ di chuyển khắp màn hình vì đã ẩn khung viền mặc định của Windows
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+
+private slots:
+    // BỔ SUNG: Slot xử lý sự kiện đăng nhập tập trung (dùng cho cả click chuột và nhấn Enter)
+    void handleLogin();
 
 private:
     // Lưu trữ thực thể dịch vụ xác thực tài khoản
     std::shared_ptr<AuthService> m_authService; 
+
+    // BỔ SUNG: Biến hỗ trợ việc di chuyển cửa sổ phẳng frameless
+    QPoint m_dragPosition;
 
     // Các biến giao diện đồ họa giữ nguyên vẹn
     QLabel *lblLeftLogo;

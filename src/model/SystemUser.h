@@ -3,6 +3,7 @@
 #include "CommonEnums.h"
 #include <QString>
 #include <QDateTime>
+#include <QPixmap>
 #include <vector>
 #include <memory>
 
@@ -18,22 +19,25 @@ protected:
     QString     m_staffCode;
     QString     m_passwordHash;   // Lưu hash, không lưu plain text
     QString     m_fullName;
+    QPixmap     m_avatar;
     UserRole    m_role;
     bool        m_isActive;
 
 public:
     explicit SystemUser(
-        int staffId, 
-        const QString& staffCode,
-        const QString& passwordHash, 
-        const QString& fullName, 
-        UserRole role,
-        bool isActive
+        int             staffId, 
+        const QString&  staffCode,
+        const QString&  passwordHash, 
+        const QString&  fullName, 
+        QPixmap         avatar,
+        UserRole        role,
+        bool            isActive
     ) :
         m_staffId(staffId), 
         m_staffCode(staffCode),
         m_passwordHash(passwordHash), 
         m_fullName(fullName), 
+        m_avatar(avatar),
         m_role(role),
         m_isActive(isActive)
 
@@ -41,9 +45,9 @@ public:
     virtual ~SystemUser() = default;
 
     // --- Getters ---
-    QString    getFullName()        const           { return m_fullName; }
-    UserRole   getRole()            const           { return m_role; }
-    bool       isActive()           const           { return m_isActive; }
+    UserRole   getRole()      const           { return m_role; }
+    bool       isActive()     const           { return m_isActive; }
+    QPixmap    getAvatar()    const           { return m_avatar; }
 
     // --- Setters ---
     void setActive(bool active) { m_isActive = active; }
@@ -55,12 +59,12 @@ public:
 
     // --- Implement IAuthenticatable ---
     int         getAccountId()    const override { return m_staffId; }
-    //QString     getUsername()     const override { return m_username; }
     QString     getPasswordHash() const override { return m_passwordHash; }
     AccountType getAccountType()  const override { return AccountType::Staff; }
+    QString     getFullName()     const override { return m_fullName; }
 
     // --- Pure Virtual ---
-    // std::vector<QString> getMenuItems()         const override = 0;
-    // bool canAccess(const QString& moduleCode)   const override = 0;
+    QStringList getMenuItems()                  const override = 0;
+    bool canAccess(const QString& moduleCode)   const override = 0;
     QString getDisplayRole()                    const override = 0;
 };

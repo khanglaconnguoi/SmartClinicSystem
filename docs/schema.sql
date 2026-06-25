@@ -47,19 +47,22 @@ CREATE TABLE IF NOT EXISTS rooms (
 -- =====================================================================
 
 -- 2.1 -- Unified Staff table (maps to SystemUser abstract class) ------
+-- NOTE: staff_code đóng vai trò login identifier (thay thế username riêng)
+--       Nhóm đã thống nhất dùng staff_code để đăng nhập thay vì tạo username riêng.
 CREATE TABLE IF NOT EXISTS staff (
     staff_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    staff_code    TEXT    NOT NULL UNIQUE,
+    staff_code    TEXT    NOT NULL UNIQUE,  -- login ID kiêm mã nhân viên
     password_hash TEXT    NOT NULL,
     full_name     TEXT    NOT NULL,
+    avatar        BLOB,
     role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
-    gender        TEXT    CHECK (gender IN ('MALE','FEMALE','OTHER')),
-    date_of_birth TEXT    CHECK (date_of_birth IS NULL OR date_of_birth <= date('now')),
-    national_id   TEXT    UNIQUE,
-    phone_number  TEXT,
-    email         TEXT    UNIQUE,
-    address       TEXT,
-    department_id INTEGER,
+    gender        TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
+    date_of_birth TEXT    NOT NULL,
+    citizen_id   TEXT     NOT NULL UNIQUE,
+    phone_number  TEXT    NOT NULL,                                         
+    email         TEXT    NOT NULL UNIQUE, 
+    address       TEXT    NOT NULL,
+    department_id INTEGER NOT NULL,
     hire_date     TEXT    NOT NULL DEFAULT (date('now')),
     shift         TEXT    NOT NULL DEFAULT 'FULL_DAY' CHECK (shift IN ('MORNING','AFTERNOON','NIGHT','FULL_DAY')),
     is_active     INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
@@ -100,10 +103,10 @@ CREATE TABLE IF NOT EXISTS patients (
     patient_id              INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_code            TEXT    NOT NULL UNIQUE,
     full_name               TEXT    NOT NULL,
-    date_of_birth           TEXT    NOT NULL CHECK (date_of_birth <= date('now')),
+    date_of_birth           TEXT    NOT NULL,
     gender                  TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
-    national_id             TEXT    UNIQUE,
-    phone                   TEXT,
+    citizen_id              TEXT    NOT NULL UNIQUE,
+    phone                   TEXT    NOT NULL,
     email                   TEXT,
     address                 TEXT,
     blood_type              TEXT    NOT NULL DEFAULT 'UNKNOWN'
@@ -357,7 +360,7 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     description     TEXT    NOT NULL,
     quantity        INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
     unit_price      REAL    NOT NULL CHECK (unit_price >= 0),
-    line_total      REAL    NOT NULL CHECK (line_total >= 0),
+    line_total      REAL    NOT NULL CHECK (line_total >= 0 AND line_total = quantity * unit_price),
     FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id) ON DELETE CASCADE
 );
 
@@ -367,14 +370,33 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 
 -- 8.1 ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS audit_logs (
-    log_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    staff_id    INTEGER,
-    action      TEXT NOT NULL,
-    module_code TEXT,
-    details     TEXT,
-    ip_address  TEXT,
-    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    log_id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    staff_id           INTEGER,
+    username_attempted TEXT,    -- ✅ Thêm mới: lưu username khi login thất bại (staff_id lúc đó là NULL)
+    action             TEXT NOT NULL,
+    module_code        TEXT,
+    details            TEXT,
+    ip_address         TEXT,
+    created_at         TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE SET NULL
+);
+
+-- 8.2 -- Attendance records (Smart Attendance Board) -------------------
+-- ✅ Bảng mới: lưu dữ liệu chấm công thực tế theo từng ngày
+-- (staff.shift chỉ là ca phân công cố định — không phải chấm công thực tế)
+CREATE TABLE IF NOT EXISTS attendance_records (
+    attendance_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    staff_id         INTEGER NOT NULL,
+    work_date        TEXT    NOT NULL DEFAULT (date('now')),
+    scheduled_shift  TEXT    NOT NULL CHECK (scheduled_shift IN ('MORNING','AFTERNOON','NIGHT','FULL_DAY')),
+    check_in_time    TEXT,
+    check_out_time   TEXT,
+    status           TEXT    NOT NULL DEFAULT 'PRESENT'
+                              CHECK (status IN ('PRESENT','LATE','ABSENT','ON_LEAVE')),
+    notes            TEXT,
+    FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE,
+    UNIQUE (staff_id, work_date),
+    CHECK (check_out_time IS NULL OR check_out_time > check_in_time)
 );
 
 -- =====================================================================
@@ -384,7 +406,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_staff_role               ON staff(role);
 CREATE INDEX IF NOT EXISTS idx_staff_department         ON staff(department_id);
 CREATE INDEX IF NOT EXISTS idx_patients_full_name       ON patients(full_name);
-CREATE INDEX IF NOT EXISTS idx_patients_phone           ON patients(phone);
+CREATE INDEX IF NOT EXISTS idx_patients_phone           ON patients(phone_number);    -- ✅ Cập nhật: phone → phone_number
 CREATE INDEX IF NOT EXISTS idx_appointments_doctor_date ON appointments(doctor_id, appointment_date);
 CREATE INDEX IF NOT EXISTS idx_appointments_patient     ON appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_queue_date_status        ON queue_tickets(queue_date, status);
@@ -395,61 +417,111 @@ CREATE INDEX IF NOT EXISTS idx_invoices_patient         ON invoices(patient_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_status          ON invoices(payment_status);
 CREATE INDEX IF NOT EXISTS idx_medications_name         ON medications(medication_name);
 CREATE INDEX IF NOT EXISTS idx_medications_low_stock    ON medications(stock_quantity);
+CREATE INDEX IF NOT EXISTS idx_attendance_staff_date    ON attendance_records(staff_id, work_date); -- ✅ Mới: index chấm công
 
 -- =====================================================================
 -- SECTION 10: TRIGGERS (auto-maintain updated_at timestamps)
 -- =====================================================================
 
+-- =====================================================================
+-- GIẢI THÍCH CÁCH FIX INFINITY LOOP:
+-- Thêm mệnh đề WHEN OLD.updated_at = NEW.updated_at vào mỗi trigger.
+-- Khi trigger tự chạy UPDATE ... SET updated_at = datetime('now'),
+-- lần kích hoạt kế tiếp sẽ thấy NEW.updated_at != OLD.updated_at
+-- → điều kiện WHEN sai → trigger KHÔNG chạy → vòng lặp dừng lại.
+-- =====================================================================
+
+CREATE TRIGGER IF NOT EXISTS validate_staff_dob_insert
+BEFORE INSERT ON staff
+FOR EACH ROW
+WHEN NEW.date_of_birth > date('now') -- Bỏ phần kiểm tra IS NOT NULL đi vì đã có NOT NULL ở định nghĩa bảng
+BEGIN
+    SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+END;
+
+CREATE TRIGGER IF NOT EXISTS validate_staff_dob_update
+BEFORE UPDATE ON staff
+FOR EACH ROW
+WHEN NEW.date_of_birth > date('now')
+BEGIN
+    SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+END;
+
+CREATE TRIGGER IF NOT EXISTS validate_staff_dob_insert
+BEFORE INSERT ON patients
+FOR EACH ROW
+WHEN NEW.date_of_birth > date('now') -- Bỏ phần kiểm tra IS NOT NULL đi vì đã có NOT NULL ở định nghĩa bảng
+BEGIN
+    SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+END;
+
+CREATE TRIGGER IF NOT EXISTS validate_staff_dob_update
+BEFORE UPDATE ON patients
+FOR EACH ROW
+WHEN NEW.date_of_birth > date('now')
+BEGIN
+    SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+END;
+
 CREATE TRIGGER IF NOT EXISTS trg_departments_updated_at
 AFTER UPDATE ON departments FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE departments SET updated_at = datetime('now') WHERE department_id = OLD.department_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_rooms_updated_at
 AFTER UPDATE ON rooms FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE rooms SET updated_at = datetime('now') WHERE room_id = OLD.room_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_staff_updated_at
 AFTER UPDATE ON staff FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE staff SET updated_at = datetime('now') WHERE staff_id = OLD.staff_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_patients_updated_at
 AFTER UPDATE ON patients FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE patients SET updated_at = datetime('now') WHERE patient_id = OLD.patient_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_appointments_updated_at
 AFTER UPDATE ON appointments FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE appointments SET updated_at = datetime('now') WHERE appointment_id = OLD.appointment_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_medical_records_updated_at
 AFTER UPDATE ON medical_records FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE medical_records SET updated_at = datetime('now') WHERE record_id = OLD.record_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_medications_updated_at
 AFTER UPDATE ON medications FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE medications SET updated_at = datetime('now') WHERE medication_id = OLD.medication_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_invoices_updated_at
 AFTER UPDATE ON invoices FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE invoices SET updated_at = datetime('now') WHERE invoice_id = OLD.invoice_id;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_inpatient_admissions_updated_at
 AFTER UPDATE ON inpatient_admissions FOR EACH ROW
+WHEN OLD.updated_at = NEW.updated_at
 BEGIN
     UPDATE inpatient_admissions SET updated_at = datetime('now') WHERE admission_id = OLD.admission_id;
 END;

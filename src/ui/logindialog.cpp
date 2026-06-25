@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QGraphicsDropShadowEffect>
 #include <QMessageBox> 
+#include <QMouseEvent>
 #include "../service/AuthService.h"
 
 LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *parent) 
@@ -14,11 +15,27 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *pare
 
     QString appPath = QApplication::applicationDirPath();
 
-    // tạo nút đóng cửa sổ 
-    btnClose = new QPushButton("x", this);
-    btnClose->setGeometry(955, 15, 30, 30);
-    btnClose->setStyleSheet("QPushButton { color: white; font-size: 18px; background: transparent; border: none; }"
-                           "QPushButton:hover { color: #FFCDD2; }");
+    // CHỈNH SỬA: Nút đóng cửa sổ chuẩn phong cách Windows (Nằm sát góc trên bên phải, hover nền đỏ chữ trắng)
+    btnClose = new QPushButton("✕", this);
+    btnClose->setGeometry(955, 0, 45, 30); // Chiều rộng 45px, chiều cao 30px chuẩn size nút bấm Windows
+    btnClose->setStyleSheet(
+        "QPushButton {"
+        "   color: #FFFFFF;"
+        "   font-size: 14px;"
+        "   font-family: 'Segoe UI', Arial;"
+        "   background-color: transparent;"
+        "   border: none;"
+        "   border-top-right-radius: 0px;" // Để bo góc phẳng khít với viền ngoài nếu có
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #E81123;" // Màu đỏ đặc trưng của nút Close trên Windows 10/11
+        "   color: #FFFFFF;"
+        "}"
+        "QPushButton:pressed {"
+        "   background-color: #F1707A;" // Màu đỏ nhạt hơn một chút khi nhấn giữ chuột xuống
+        "   color: #FFFFFF;"
+        "}"
+    );
     connect(btnClose, &QPushButton::clicked, this, &LoginDialog::close);
 
     // khối center
@@ -100,28 +117,22 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *pare
 
     btnLogin = new QPushButton("Đăng nhập", leftForm);
     btnLogin->setGeometry(50, 320, 360, 48);
+    btnLogin->setCursor(Qt::PointingHandCursor);
     btnLogin->setStyleSheet(
         "QPushButton { background-color: #00969A; color: white; font-size: 16px; font-weight: bold; border-radius: 6px; border: none; }"
         "QPushButton:hover { background-color: #00838F; }");
 
-    connect(btnLogin, &QPushButton::clicked, this, [=]() {
-    QString username = txtAccount->text().trimmed();
-    QString password = txtPassword->text();
+    // Hiệu ứng đổ bóng cho nút đăng nhập giống code mẫu
+    QGraphicsDropShadowEffect *buttonShadow = new QGraphicsDropShadowEffect(btnLogin);
+    buttonShadow->setBlurRadius(10);
+    buttonShadow->setColor(QColor(0, 150, 154, 100)); // Đổ bóng theo tông màu #00969A của bạn
+    buttonShadow->setOffset(0, 4);
+    btnLogin->setGraphicsEffect(buttonShadow);
 
-    if (username.isEmpty() || password.isEmpty()) {
-        QMessageBox::warning(this, "Thông báo", "Vui lòng nhập đầy đủ thông tin!");
-        return;
-    }
+    // Kết nối sự kiện nút đăng nhập & sự kiện nhấn Enter trong ô mật khẩu
+    connect(btnLogin, &QPushButton::clicked, this, &LoginDialog::handleLogin);
+    connect(txtPassword, &QLineEdit::returnPressed, this, &LoginDialog::handleLogin);
 
-    auto result = m_authService->login(username, password);
-
-    if (!result.has_value()) {
-        QMessageBox::critical(this, "Thất bại", "Tài khoản hoặc mật khẩu không đúng.");
-    } else {
-        QMessageBox::information(this, "Thành công", "Đăng nhập thành công!");
-        this->accept(); 
-    }
-});
     btnForgot = new QPushButton("Quên mật khẩu?", leftForm);
     btnForgot->setGeometry(50, 385, 360, 30);
     btnForgot->setStyleSheet(
@@ -157,6 +168,46 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *pare
 }
 
 LoginDialog::~LoginDialog() {}
+
+void LoginDialog::handleLogin() {
+    QString username = txtAccount->text().trimmed();
+    QString password = txtPassword->text();
+
+    if (username.isEmpty() || password.isEmpty()) {
+        QMessageBox::warning(this, "Thông báo", "Vui lòng nhập đầy đủ thông tin!");
+        return;
+    }
+
+    auto result = m_authService->login(username, password);
+
+    if (!result.has_value()) {
+        QMessageBox::critical(this, "Thất bại", "Tài khoản hoặc mật khẩu không đúng.");
+    } else {
+        QMessageBox::information(this, "Thành công", "Đăng nhập thành công!");
+        this->accept(); 
+    }
+}
+
+void LoginDialog::clearFields() {
+    if (txtAccount) txtAccount->clear();
+    if (txtPassword) txtPassword->clear();
+    if (txtAccount) txtAccount->setFocus();
+}
+
+// BỔ SUNG: Cho phép người dùng nhấn giữ chuột lên vùng bất kỳ trên cửa sổ nền để kéo đi khắp màn hình
+void LoginDialog::mousePressEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton) {
+        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
+        event->accept();
+    }
+}
+
+void LoginDialog::mouseMoveEvent(QMouseEvent *event) {
+    if (event->buttons() & Qt::LeftButton) {
+        move(event->globalPosition().toPoint() - m_dragPosition);
+        event->accept();
+    }
+}
 
 void LoginDialog::paintEvent(QPaintEvent *event)
 {

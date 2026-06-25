@@ -16,12 +16,19 @@ DatabaseManager::DatabaseManager() {
         m_db = QSqlDatabase::addDatabase("QSQLITE");
     }
 
-    QString appDir = QCoreApplication::applicationDirPath();
-    QDir dir(appDir);
-    if(!dir.exists("database")) dir.mkdir("database");
-    QString dbPath = appDir + "/../database/hospital.db";
-
-    // Tên file database. Nó sẽ tự động được tạo ra ở thư mục 'build' khi chạy
+    QString projectRoot = QString::fromUtf8(PROJECT_ROOT_DIR);
+ 
+    QDir databaseDir(projectRoot + "/database");
+ 
+    if (!databaseDir.exists()) {
+        if (!databaseDir.mkpath(".")) {
+            qWarning() << "Không thể tạo thư mục database tại:" << databaseDir.absolutePath();
+        }
+    }
+ 
+    QString dbPath = databaseDir.filePath("hospital.db");
+    qDebug() << "Đường dẫn Database:" << dbPath;
+ 
     m_db.setDatabaseName(dbPath);
     initializeDatabase();
 }
@@ -101,7 +108,7 @@ bool DatabaseManager::createTables() {
     //         full_name               TEXT    NOT NULL,
     //         date_of_birth           TEXT    NOT NULL CHECK (date_of_birth <= date('now')),
     //         gender                  TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
-    //         national_id             TEXT    UNIQUE,
+    //         citizen_id             TEXT    UNIQUE,
     //         phone                   TEXT,
     //         email                   TEXT,
     //         address                 TEXT,
@@ -132,14 +139,15 @@ bool DatabaseManager::createTables() {
             staff_code    TEXT    NOT NULL UNIQUE,
             password_hash TEXT    NOT NULL,
             full_name     TEXT    NOT NULL,
+            avatar        BLOB,
             role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
-            gender        TEXT    CHECK (gender IN ('MALE','FEMALE','OTHER')),
-            date_of_birth TEXT    CHECK (date_of_birth IS NULL OR date_of_birth <= date('now')),
-            national_id   TEXT    UNIQUE,
-            phone_number         TEXT,
-            email         TEXT    UNIQUE,
-            address       TEXT,
-            department_id INTEGER,
+            gender        TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
+            date_of_birth TEXT    NOT NULL,
+            citizen_id    TEXT    NOT NULL UNIQUE,
+            phone_number  TEXT    NOT NULL,                                         
+            email         TEXT    NOT NULL UNIQUE, 
+            address       TEXT    NOT NULL,
+            department_id INTEGER NOT NULL,
             hire_date     TEXT    NOT NULL DEFAULT (date('now')),
             shift         TEXT    NOT NULL DEFAULT 'FULL_DAY' CHECK (shift IN ('MORNING','AFTERNOON','NIGHT','FULL_DAY')),
             is_active     INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
@@ -147,7 +155,7 @@ bool DatabaseManager::createTables() {
             created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
             updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL
-        );      
+        );  
     )";
     if (!query.exec(createStaff)) {
         qDebug() << "Lỗi bảng Staff:" << query.lastError().text();
@@ -235,7 +243,7 @@ bool DatabaseManager::createTables() {
     QStringList createIndexList = { 
         R"( CREATE INDEX IF NOT EXISTS idx_staff_role               ON staff(role);             )",
         R"( CREATE INDEX IF NOT EXISTS idx_staff_department         ON staff(department_id);    )",
-        R"( CREATE INDEX IF NOT EXISTS idx_patients_full_name       ON patients(full_name);     )"
+        //R"( CREATE INDEX IF NOT EXISTS idx_patients_full_name       ON patients(full_name);     )"
     };
 
     for(const QString& createIndex: createIndexList) {
@@ -252,10 +260,11 @@ bool DatabaseManager::createTables() {
 
 // ============= TẠO TRIGGER ===============
 
-    QStringList createTriggerList =  {
+    QStringList createTriggerList = {
         R"( 
             CREATE TRIGGER IF NOT EXISTS trg_departments_updated_at
             AFTER UPDATE ON departments FOR EACH ROW
+            WHEN OLD.updated_at = NEW.updated_at
             BEGIN
                 UPDATE departments SET updated_at = datetime('now') WHERE department_id = OLD.department_id;
             END;
@@ -263,6 +272,7 @@ bool DatabaseManager::createTables() {
         R"(
             CREATE TRIGGER IF NOT EXISTS trg_rooms_updated_at
             AFTER UPDATE ON rooms FOR EACH ROW
+            WHEN OLD.updated_at = NEW.updated_at
             BEGIN
                 UPDATE rooms SET updated_at = datetime('now') WHERE room_id = OLD.room_id;
             END;
@@ -270,10 +280,30 @@ bool DatabaseManager::createTables() {
         R"(
             CREATE TRIGGER IF NOT EXISTS trg_staff_updated_at
             AFTER UPDATE ON staff FOR EACH ROW
+            WHEN OLD.updated_at = NEW.updated_at
             BEGIN
                 UPDATE staff SET updated_at = datetime('now') WHERE staff_id = OLD.staff_id;
             END;
+        )",
+        R"(
+            CREATE TRIGGER IF NOT EXISTS validate_staff_dob_insert
+            BEFORE INSERT ON staff
+            FOR EACH ROW
+            WHEN NEW.date_of_birth > date('now') -- Bỏ phần kiểm tra IS NOT NULL đi vì đã có NOT NULL ở định nghĩa bảng
+            BEGIN
+                SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+            END;
+        )",
+        R"(
+            CREATE TRIGGER IF NOT EXISTS validate_staff_dob_update
+            BEFORE UPDATE ON staff
+            FOR EACH ROW
+            WHEN NEW.date_of_birth > date('now')
+            BEGIN
+                SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+            END;
         )"
+
     };
 
 
