@@ -1,122 +1,393 @@
-/**
- * @file    DatabaseManager.cpp
- * @brief   Implementation cho DatabaseManager singleton.
- */
 #include "DatabaseManager.h"
-
 #include <QCoreApplication>
-#include <QDir>
-#include <QSqlError>
-#include <QSqlQuery>
 #include <QDebug>
-
-DatabaseManager& DatabaseManager::instance() {
-    static DatabaseManager inst;
-    return inst;
-}
+#include <QDir>
+#include <QFile>
+#include <QSqlError>
 
 DatabaseManager::DatabaseManager() {
+  // Khai báo sử dụng driver SQLite của Qt
+  if (QSqlDatabase::contains("qt_sql_default_connection")) {
+    m_db = QSqlDatabase::database("qt_sql_default_connection");
+  } else {
     m_db = QSqlDatabase::addDatabase("QSQLITE");
+  }
 
-    // Đặt file database cùng thư mục với executable
-    QString dbPath = QCoreApplication::applicationDirPath()
-                     + QDir::separator() + "clinic.db";
-    m_db.setDatabaseName(dbPath);
+  QString projectRoot = QString::fromUtf8(PROJECT_ROOT_DIR);
 
-    if (!m_db.open()) {
-        qCritical() << "Cannot open database:" << m_db.lastError().text();
-        return;
+  QDir databaseDir(projectRoot + "/database");
+
+  if (!databaseDir.exists()) {
+    if (!databaseDir.mkpath(".")) {
+      qWarning() << "Không thể tạo thư mục database tại:"
+                 << databaseDir.absolutePath();
     }
+  }
 
-    qDebug() << "Database opened:" << dbPath;
+  QString dbPath = databaseDir.filePath("hospital.db");
+  qDebug() << "Đường dẫn Database:" << dbPath;
 
-    // Bật foreign keys cho SQLite
-    QSqlQuery query(m_db);
-    query.exec("PRAGMA foreign_keys = ON");
-
-    createTables();
+  m_db.setDatabaseName(dbPath);
+  initializeDatabase();
 }
 
-DatabaseManager::~DatabaseManager() {
-    if (m_db.isOpen()) {
-        m_db.close();
-        qDebug() << "Database closed.";
-    }
+bool DatabaseManager::initializeDatabase() {
+  if (!m_db.open()) {
+    qDebug() << "Lỗi mở Database:" << m_db.lastError().text();
+    return false;
+  }
+  qDebug() << "Khởi tạo Database SQLite thành công!";
+  return createTables();
 }
 
-QSqlDatabase& DatabaseManager::database() {
-    return m_db;
+bool DatabaseManager::createTables() {
+  QSqlQuery query(m_db);
+
+  if (!m_db.transaction()) {
+    qDebug() << "Không thể mở transaction:" << m_db.lastError().text();
+    return false; // Dừng lại luôn để bảo vệ dữ liệu
+  }
+  // ============= TẠO CÁC BẢNG ===============
+
+  // Bật tính năng Khóa ngoại (Foreign Keys) cho SQLite
+  query.exec("PRAGMA foreign_keys = ON;");
+
+  // Bảng Deparments
+  QString createDepartments = R"(
+        CREATE TABLE IF NOT EXISTS departments (
+            department_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+            department_code TEXT    NOT NULL UNIQUE,
+            department_name TEXT    NOT NULL,
+            description      TEXT,
+            is_deleted        INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+            created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+            updated_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+        );
+    )";
+  if (!query.exec(createDepartments)) {
+    qDebug() << "Lỗi bảng Deparments:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // -------------------------------------------------
+
+  // Bảng Rooms
+  QString createRooms = R"(
+        CREATE TABLE IF NOT EXISTS rooms (
+            room_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            room_number   TEXT    NOT NULL UNIQUE,
+            department_id INTEGER,
+            room_type     TEXT    NOT NULL CHECK (room_type IN ('EXAM','SURGERY','WARD','LAB','PHARMACY','ADMIN')),
+            capacity      INTEGER NOT NULL DEFAULT 1 CHECK (capacity > 0),
+            status        TEXT    NOT NULL DEFAULT 'AVAILABLE' CHECK (status IN ('AVAILABLE','OCCUPIED','CLEANING','MAINTENANCE')),
+            is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+            created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+            updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL
+        );
+    )";
+  if (!query.exec(createRooms)) {
+    qDebug() << "Lỗi bảng Rooms:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // -------------------------------------------------
+
+  // Bảng Patients
+  // Bảng patients
+  QString createPatients = R"(
+    CREATE TABLE IF NOT EXISTS patients (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      patient_code TEXT,
+      full_name    TEXT    NOT NULL,
+      birth_date   TEXT,
+      gender       INTEGER DEFAULT 2,
+      phone_number TEXT,
+      address      TEXT,
+      blood_type   TEXT,
+      allergies    TEXT,
+      medical_history TEXT,
+      citizen_id   TEXT,
+      email        TEXT,
+      insurance    TEXT,
+      patient_type INTEGER DEFAULT 0,
+      is_active    INTEGER DEFAULT 1,
+      state        INTEGER DEFAULT 0
+    )
+  )";
+  if (!query.exec(createPatients)) {
+    qDebug() << "Lỗi bảng Patients:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // Bảng medical_records
+  QString createMedicalRecords = R"(
+    CREATE TABLE IF NOT EXISTS medical_records (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      patient_id       INTEGER NOT NULL,
+      doctor_id        INTEGER,
+      visit_date       TEXT,
+      vitals           TEXT,
+      chief_complaint  TEXT,
+      clinical_notes   TEXT,
+      treatment        TEXT,
+      test_results     TEXT,
+      next_visit       TEXT,
+      FOREIGN KEY(patient_id) REFERENCES patients(id)
+    )
+  )";
+  if (!query.exec(createMedicalRecords)) {
+    qDebug() << "Lỗi bảng medical_records:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // -------------------------------------------------
+
+  // Bảng Staff
+  QString createStaff = R"(
+        CREATE TABLE IF NOT EXISTS staff (
+            staff_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            staff_code    TEXT    NOT NULL UNIQUE,
+            password_hash TEXT    NOT NULL,
+            full_name     TEXT    NOT NULL,
+            avatar        BLOB,
+            role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
+            gender        TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
+            date_of_birth TEXT    NOT NULL,
+            national_id   TEXT    NOT NULL UNIQUE,
+            phone_number  TEXT    NOT NULL,                                         
+            email         TEXT    NOT NULL UNIQUE, 
+            address       TEXT    NOT NULL,
+            department_id INTEGER NOT NULL,
+            hire_date     TEXT    NOT NULL DEFAULT (date('now')),
+            shift         TEXT    NOT NULL DEFAULT 'FULL_DAY' CHECK (shift IN ('MORNING','AFTERNOON','NIGHT','FULL_DAY')),
+            is_active     INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+            is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+            created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+            updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL
+        );  
+    )";
+  if (!query.exec(createStaff)) {
+    qDebug() << "Lỗi bảng Staff:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // -------------------------------------------------
+
+  // Bảng Doctor Profiles
+  QString createDoctorProfiles = R"(
+        CREATE TABLE IF NOT EXISTS doctor_profiles (
+            staff_id         INTEGER PRIMARY KEY,
+            specialty        TEXT    NOT NULL,
+            license_number   TEXT    NOT NULL UNIQUE,
+            experience_years INTEGER NOT NULL DEFAULT 0 CHECK (experience_years >= 0),
+            consultation_fee REAL    NOT NULL DEFAULT 0 CHECK (consultation_fee >= 0),
+            bio              TEXT,
+            FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
+        );  
+    )";
+  if (!query.exec(createDoctorProfiles)) {
+    qDebug() << "Lỗi bảng Doctor Profiles:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // -------------------------------------------------
+
+  // Bảng Nurse Profiles
+  QString createNurseProfiles = R"(
+        CREATE TABLE IF NOT EXISTS nurse_profiles (
+            staff_id      INTEGER PRIMARY KEY,
+            nurse_level   TEXT NOT NULL DEFAULT 'JUNIOR' CHECK (nurse_level IN ('JUNIOR','SENIOR','HEAD')),
+            certification TEXT,
+            FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
+        ); 
+    )";
+  if (!query.exec(createNurseProfiles)) {
+    qDebug() << "Lỗi bảng Nurse Profiles:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // Bảng Login Information
+  // QString createLoginInformation = R"(
+  //     CREATE TABLE login_information (
+  //         user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  //         username TEXT NOT NULL,
+  //         password_hash TEXT NOT NULL,
+  //         created_at TEXT NOT NULL,
+  //         staff_id INTEGER NOT NULL, account_type TEXT NOT NULL,
+  //         CONSTRAINT login_information_staff_FK FOREIGN KEY (staff_id)
+  //         REFERENCES staff(staff_id)
+  //     );
+  // )";
+  // if (!query.exec(createLoginInformation)) {
+  //     qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();
+  //     m_db.rollback();
+  //     return false;
+  // }
+
+  // -------------------------------------------------
+
+  // 4. Bảng Appointments
+  // QString createAppointments = R"(
+  //     CREATE TABLE IF NOT EXISTS Appointments (
+  //         appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  //         patient_id INTEGER NOT NULL,
+  //         doctor_id INTEGER NOT NULL,
+  //         appointment_date TEXT NOT NULL,
+  //         status TEXT NOT NULL DEFAULT 'Chờ khám',
+  //         symptoms TEXT,
+  //         FOREIGN KEY (patient_id) REFERENCES Patients(patient_id) ON DELETE
+  //         CASCADE, FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id) ON
+  //         DELETE CASCADE
+  //     );
+  // )";
+  // if (!query.exec(createAppointments))
+  // {
+  //     qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
+  //     success = false;
+  // }
+
+  // ============= TẠO INDEX ===============
+  QStringList createIndexList = {
+      R"( CREATE INDEX IF NOT EXISTS idx_staff_role               ON staff(role);             )",
+      R"( CREATE INDEX IF NOT EXISTS idx_staff_department         ON staff(department_id);    )",
+      // R"( CREATE INDEX IF NOT EXISTS idx_patients_full_name       ON
+      // patients(full_name);     )"
+  };
+
+  for (const QString &createIndex : createIndexList) {
+    QString create = createIndex.trimmed();
+
+    if (create.isEmpty())
+      continue;
+
+    if (!query.exec(create)) {
+      qDebug() << "Lỗi tạo index:" << query.lastError().text();
+      m_db.rollback();
+      return false;
+    }
+  }
+
+  // ============= TẠO TRIGGER ===============
+
+  QStringList createTriggerList = {
+      R"( 
+            CREATE TRIGGER IF NOT EXISTS trg_departments_updated_at
+            AFTER UPDATE ON departments FOR EACH ROW
+            WHEN OLD.updated_at = NEW.updated_at
+            BEGIN
+                UPDATE departments SET updated_at = datetime('now') WHERE department_id = OLD.department_id;
+            END;
+        )",
+      R"(
+            CREATE TRIGGER IF NOT EXISTS trg_rooms_updated_at
+            AFTER UPDATE ON rooms FOR EACH ROW
+            WHEN OLD.updated_at = NEW.updated_at
+            BEGIN
+                UPDATE rooms SET updated_at = datetime('now') WHERE room_id = OLD.room_id;
+            END;
+        )",
+      R"(
+            CREATE TRIGGER IF NOT EXISTS trg_staff_updated_at
+            AFTER UPDATE ON staff FOR EACH ROW
+            WHEN OLD.updated_at = NEW.updated_at
+            BEGIN
+                UPDATE staff SET updated_at = datetime('now') WHERE staff_id = OLD.staff_id;
+            END;
+        )",
+      R"(
+            CREATE TRIGGER IF NOT EXISTS validate_staff_dob_insert
+            BEFORE INSERT ON staff
+            FOR EACH ROW
+            WHEN NEW.date_of_birth > date('now') -- Bỏ phần kiểm tra IS NOT NULL đi vì đã có NOT NULL ở định nghĩa bảng
+            BEGIN
+                SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+            END;
+        )",
+      R"(
+            CREATE TRIGGER IF NOT EXISTS validate_staff_dob_update
+            BEFORE UPDATE ON staff
+            FOR EACH ROW
+            WHEN NEW.date_of_birth > date('now')
+            BEGIN
+                SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+            END;
+        )"
+
+  };
+
+  for (const QString &createTrigger : createTriggerList) {
+    QString create = createTrigger.trimmed();
+
+    if (create.isEmpty())
+      continue;
+
+    if (!query.exec(create)) {
+      qDebug() << "Lỗi tạo trigger:" << query.lastError().text();
+      m_db.rollback();
+      return false;
+    }
+  }
+
+  if (!m_db.commit()) {
+    qDebug() << "Ghi dữ liệu thất bại" << m_db.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  qDebug() << "Hệ thống các bảng CSDL đã sẵn sàng!";
+  return true;
 }
 
-bool DatabaseManager::isOpen() const {
-    return m_db.isOpen();
+bool DatabaseManager::executeQuery(const QString &sql,
+                                   const QVariantList &params) {
+  QSqlQuery query(m_db);
+
+  if (!query.prepare(sql)) {
+    qDebug() << "Lỗi prepare query:" << query.lastError().text()
+             << "| SQL:" << sql;
+    return false;
+  }
+
+  for (const QVariant &param : params) {
+    query.addBindValue(param);
+  }
+
+  if (!query.exec()) {
+    qDebug() << "Lỗi exec query:" << query.lastError().text()
+             << "| SQL:" << sql;
+    return false;
+  }
+
+  return true;
 }
 
-void DatabaseManager::createTables() {
-    QSqlQuery query(m_db);
+QSqlQuery DatabaseManager::selectQuery(const QString &sql,
+                                       const QVariantList &params) {
+  QSqlQuery query(m_db);
 
-    // Bảng patients
-    bool ok = query.exec(
-        "CREATE TABLE IF NOT EXISTS patients ("
-        "  id           INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "  patient_code TEXT,"
-        "  full_name    TEXT    NOT NULL,"
-        "  birth_date   TEXT,"
-        "  gender       TEXT    DEFAULT 'Other',"
-        "  phone_number TEXT,"
-        "  address      TEXT,"
-        "  blood_type   TEXT,"
-        "  allergies    TEXT,"
-        "  medical_history TEXT,"
-        "  citizen_id   TEXT,"
-        "  email        TEXT,"
-        "  insurance    TEXT,"
-        "  patient_type INTEGER DEFAULT 0,"
-        "  is_active    INTEGER DEFAULT 1,"
-        "  state        INTEGER DEFAULT 0"
-        ")"
-    );
+  if (!query.prepare(sql)) {
+    qDebug() << "Lỗi prepare query:" << query.lastError().text()
+             << "| SQL:" << sql;
+    return query;
+  }
 
-    if (!ok) {
-        qCritical() << "Failed to create patients table:"
-                    << query.lastError().text();
-    } else {
-        qDebug() << "Table 'patients' ready.";
-    }
+  for (const QVariant &param : params) {
+    query.addBindValue(param);
+  }
 
-    // Bảng medical_records
-    bool ok2 = query.exec(
-        "CREATE TABLE IF NOT EXISTS medical_records ("
-        "  id               INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "  patient_id       INTEGER NOT NULL,"
-        "  doctor_id        INTEGER,"
-        "  visit_date       TEXT,"
-        "  vitals           TEXT,"
-        "  chief_complaint  TEXT,"
-        "  clinical_notes   TEXT,"
-        "  treatment        TEXT,"
-        "  test_results     TEXT,"
-        "  next_visit       TEXT,"
-        "  FOREIGN KEY(patient_id) REFERENCES patients(id)"
-        ")"
-    );
+  if (!query.exec()) {
+    qDebug() << "Lỗi exec select query:" << query.lastError().text()
+             << "| SQL:" << sql;
+  }
 
-    if (!ok2) {
-        qCritical() << "Failed to create medical_records table:"
-                    << query.lastError().text();
-    } else {
-        qDebug() << "Table 'medical_records' ready.";
-    }
-
-    // Migration: thêm cột state cho database đã tồn tại trước khi có state
-    QSqlQuery alterQuery(m_db);
-    alterQuery.exec("ALTER TABLE patients ADD COLUMN state INTEGER DEFAULT 0");
-    alterQuery.exec("ALTER TABLE patients ADD COLUMN patient_type INTEGER DEFAULT 0");
-    alterQuery.exec("ALTER TABLE patients ADD COLUMN patient_code TEXT");
-    alterQuery.exec("ALTER TABLE patients ADD COLUMN blood_type TEXT");
-    alterQuery.exec("ALTER TABLE patients ADD COLUMN allergies TEXT");
-    alterQuery.exec("ALTER TABLE patients ADD COLUMN medical_history TEXT");
-    alterQuery.exec("ALTER TABLE medical_records ADD COLUMN test_results TEXT");
-    // Lệnh ALTER TABLE sẽ thất bại nếu cột đã tồn tại — đây là hành vi
-    // mong muốn, không cần xử lý lỗi.
+  return query;
 }

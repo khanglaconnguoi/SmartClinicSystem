@@ -4,95 +4,142 @@
  */
 #pragma once
 
-#include "model/Patient.h"
 #include "model/MedicalRecord.h"
-#include "service/PatientService.h" // Để lấy PatientSearchCriteria
-#include <QSqlDatabase>
+#include "model/Patient.h"
+#include <QDate>
+#include <QSqlQuery>
 #include <QString>
 #include <memory>
 #include <optional>
-#include <vector>
 
+// ── Forward declarations
+// ──────────────────────────────────────────────────────
 class QSqlDatabase;
-class QSqlQuery;
+struct PatientSearchCriteria;
 
-/**
- * @brief Repository đóng gói toàn bộ SQL cho bảng patients.
- *
- * Tuân thủ convention: tất cả truy vấn dùng prepared statement,
- * không nối chuỗi SQL, lỗi được log qua qCritical().
+// ─────────────────────────────────────────────────────────────────────────────
+// DTOs
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+ * Dùng struct vì DTO chỉ là "túi dữ liệu" thuần tuý:
+ * không có invariant cần bảo vệ, không có behaviour —
+ * default public phù hợp hơn class.
  */
+
+struct PatientInsertDTO {
+  QString patientCode;
+  QString fullName;
+  QDate birthDate;
+  Gender gender;
+  QString phoneNumber;
+  QString address;
+  QString bloodType;
+  QString allergies;
+  QString medicalHistory;
+  QString citizenId;
+  QString email;
+  QString insurance;
+  bool isActive = true;
+  PatientStateType state = PatientStateType::Registered;
+  PatientType type = PatientType::OutPatient;
+};
+
+struct OutPatientInsertDTO : public PatientInsertDTO {
+  OutPatientInsertDTO() { type = PatientType::OutPatient; }
+};
+
+struct InPatientInsertDTO : public PatientInsertDTO {
+  QString roomNo;
+  QDate admitDate;
+  InPatientInsertDTO() { type = PatientType::InPatient; }
+};
+
+struct EmergencyPatientInsertDTO : public PatientInsertDTO {
+  int severity = 0;
+  EmergencyPatientInsertDTO() { type = PatientType::Emergency; }
+};
+
+struct MedicalRecordInsertDTO {
+  int patientId;
+  int doctorId;
+  QDateTime visitDateTime;
+  VitalSigns vitals;
+  QString chiefComplaint;
+  QString clinicalNotes;
+  QString treatment;
+  QString testResults;
+  QDateTime nextVisitDate; // invalid QDateTime = không có
+};
+
+struct PatientSearchCriteria {
+  // ── Nhóm 1: Text search ───────────────────────────────────────
+  QString nameKeyword;
+  QString phoneNumber;
+  QString patientCode;
+  QString citizenId;
+
+  // ── Nhóm 2: Dropdown filter ───────────────────────────────────
+  QString bloodType;
+  std::optional<PatientType> patientType;
+  std::optional<PatientStateType> state;
+
+  // ── Nhóm 3: Age range filter (lọc sau khi query) ──────────────
+  int minAge = -1; // -1 = không giới hạn
+  int maxAge = -1;
+
+  // ── Nhóm 4: Status filter ─────────────────────────────────────
+  bool onlyActive = true;
+  bool includeDeleted = false;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Repository
+// ─────────────────────────────────────────────────────────────────────────────
+
 class PatientRepository {
 public:
-  /**
-   * @brief Khởi tạo repository với kết nối database.
-   * @param db Tham chiếu đến QSqlDatabase đã mở.
-   */
-  explicit PatientRepository(QSqlDatabase &db);
+  PatientRepository() = default;
 
-  /**
-   * @brief Thêm bệnh nhân mới. ID sẽ được gán tự động.
-   * @param patient Đối tượng Patient cần lưu.
-   * @return true nếu thêm thành công.
-   */
-  bool insert(std::shared_ptr<Patient> patient);
+  // ── Insert ────────────────────────────────────────────────────
+  bool insertPatient(const PatientInsertDTO &patient);
+  bool insertOutPatient(const OutPatientInsertDTO &patient);
+  bool insertInPatient(const InPatientInsertDTO &patient);
+  bool insertEmergencyPatient(const EmergencyPatientInsertDTO &patient);
 
-  /**
-   * @brief Cập nhật thông tin bệnh nhân theo ID.
-   * @param patient Đối tượng Patient đã cập nhật thông tin.
-   * @return true nếu cập nhật thành công.
-   */
-  bool update(std::shared_ptr<Patient> patient);
+  // ── Update ────────────────────────────────────────────────────
+  bool updatePatient(const PatientInsertDTO &patient, int patientId);
+  bool updateInPatient(const InPatientInsertDTO &patient, int patientId);
+  bool updateEmergencyPatient(const EmergencyPatientInsertDTO &patient,
+                              int patientId);
 
-  /**
-   * @brief Xóa mềm (soft-delete) — đặt is_active = 0.
-   * @param patientId ID bệnh nhân cần xóa.
-   * @return true nếu xóa thành công.
-   */
-  bool softDelete(int patientId);
+  // ── Soft delete / restore ─────────────────────────────────────
+  bool deactivate(int patientId);
+  bool reactivate(int patientId);
 
-  /**
-   * @brief Lấy bệnh nhân theo ID.
-   * @param patientId ID cần tìm.
-   * @return Patient nếu tìm thấy, nullptr nếu không.
-   */
-  std::shared_ptr<Patient> findById(int patientId);
+  // ── Lookup ────────────────────────────────────────────────────
+  std::optional<std::shared_ptr<Patient>> findById(int patientId) const;
+  std::optional<std::shared_ptr<Patient>>
+  findByPatientCode(const QString &patientCode) const;
 
-  /**
-   * @brief Lấy tất cả bệnh nhân đang active.
-   * @return Danh sách Patient có is_active = 1.
-   */
-  QList<std::shared_ptr<Patient>> findAllActive();
+  // ── Search / list ─────────────────────────────────────────────
+  QList<std::shared_ptr<Patient>>
+  search(const PatientSearchCriteria &criteria) const;
 
-  /**
-   * @brief Tìm kiếm bệnh nhân theo tên (LIKE %keyword%).
-   * @param keyword Từ khóa tìm kiếm.
-   * @return Danh sách Patient phù hợp.
-   */
-  QList<std::shared_ptr<Patient>> searchByName(const QString &keyword);
+  // ── Medical records ───────────────────────────────────────────
+  bool addMedicalRecord(const MedicalRecordInsertDTO &record);
+  QList<MedicalRecord> getRecordsByPatientId(int patientId) const;
 
-  /**
-   * @brief Tìm kiếm bệnh nhân nâng cao.
-   */
-  std::vector<std::shared_ptr<Patient>> searchPatients(const PatientSearchCriteria& criteria) const;
-
-  /**
-   * @brief Thêm mới hồ sơ khám bệnh.
-   */
-  bool addMedicalRecord(const MedicalRecord& record);
-
-  /**
-   * @brief Lấy danh sách hồ sơ khám bệnh của bệnh nhân.
-   */
-  std::vector<MedicalRecord> getRecordsByPatientId(int patientId) const;
+  // ── Helpers ───────────────────────────────────────────────────
+  static std::optional<QString> getLatestCodeByYear(int year);
 
 private:
-  /**
-   * @brief Map một row kết quả SQL thành đối tượng Patient.
-   * @param query QSqlQuery đã trỏ đến row hiện tại.
-   * @return std::shared_ptr<Patient>.
-   */
+  // Tách phần insert base ra riêng để tái dùng
+  bool insertPatientBase(const PatientInsertDTO &dto, int &patientId);
+
   std::shared_ptr<Patient> mapRowToPatient(const QSqlQuery &query) const;
 
-  QSqlDatabase &m_db;
+  // Serialize / deserialize VitalSigns <-> pipe-separated string
+  static QString vitalsToString(const VitalSigns &v);
+  static VitalSigns vitalsFromString(const QString &s);
 };

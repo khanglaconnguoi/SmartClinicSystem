@@ -16,6 +16,7 @@ set(CMAKE_AUTOMOC ON)
 add_executable(PatientTest PatientTest.cpp ${SRC_SOURCES})
 
 target_include_directories(PatientTest PRIVATE ../src ../external)
+target_compile_definitions(PatientTest PRIVATE PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}")
 target_link_libraries(PatientTest PRIVATE Qt6::Core Qt6::Test Qt6::Sql)
 
 add_test(NAME PatientTest COMMAND PatientTest)

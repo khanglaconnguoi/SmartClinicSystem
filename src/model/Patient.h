@@ -32,7 +32,7 @@ enum class PatientType { OutPatient, InPatient, Emergency };
  */
 class Patient {
 protected:
-  int m_id = -1;
+  int m_patientId = -1;
   QString m_patientCode;
   QString m_fullName;
   QDate m_birthDate;

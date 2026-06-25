@@ -54,12 +54,8 @@ int main(int argc, char *argv[]) {
   qDebug() << "=== SmartClinicSystem started ===";
   qDebug() << "Available SQL drivers:" << QSqlDatabase::drivers();
 
-  auto &db = DatabaseManager::instance();
-  if (!db.isOpen()) {
-    QMessageBox::critical(nullptr, "Database Error",
-                          "Cannot open database! Check debug.log for details.");
-    return 1;
-  }
+  // Khởi tạo CSDL
+  DatabaseManager::getInstance();
 
   qDebug() << "Database connection OK";
 

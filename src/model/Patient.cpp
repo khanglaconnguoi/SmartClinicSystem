@@ -20,7 +20,7 @@ Patient::Patient(const QString &fullName, const QDate &birthDate, Gender gender,
 
 // --- Getters ---
 
-int Patient::id() const { return m_id; }
+int Patient::id() const { return m_patientId; }
 
 QString Patient::patientCode() const { return m_patientCode; }
 
@@ -64,7 +64,7 @@ bool Patient::isActive() const { return m_isActive; }
 // --- Setters ---
 
 void Patient::setId(int id) {
-  m_id = id;
+  m_patientId = id;
   if (m_patientCode.isEmpty()) {
     m_patientCode = generatePatientCode();
   }

@@ -4,26 +4,82 @@
  */
 #include "PatientService.h"
 #include "repository/PatientRepository.h"
-
+#include "model/InPatient.h"
+#include "model/EmergencyPatient.h"
 #include <QDebug>
 
 PatientService::PatientService(std::shared_ptr<PatientRepository> repo)
     : m_repo(std::move(repo)) {}
 
+static PatientInsertDTO mapBasePatient(std::shared_ptr<Patient> patient) {
+  PatientInsertDTO dto;
+  dto.patientCode = patient->patientCode();
+  dto.fullName = patient->fullName();
+  dto.birthDate = patient->birthDate();
+  dto.gender = patient->gender();
+  dto.phoneNumber = patient->phoneNumber();
+  dto.address = patient->address();
+  dto.bloodType = patient->bloodType();
+  dto.allergies = patient->allergies();
+  dto.medicalHistory = patient->medicalHistory();
+  dto.citizenId = patient->citizenId();
+  dto.email = patient->email();
+  dto.insurance = patient->insurance();
+  dto.isActive = patient->isActive();
+  dto.state = patient->stateType();
+  dto.type = patient->getType();
+  return dto;
+}
+
 bool PatientService::addPatient(std::shared_ptr<Patient> patient) {
   if (!patient || !patient->isValid()) {
-    qWarning() << "Cannot add patient: invalid data"
-               << "(fullName or phoneNumber is empty)";
+    qWarning() << "Cannot add patient: invalid data";
     return false;
   }
 
-  return m_repo->insert(patient);
+  // Nếu chưa có mã bệnh nhân, ta có thể sinh mã. Nhưng ở đây mặc định model đã có.
+  if (patient->patientCode().isEmpty()) {
+      patient->setPatientCode(Patient::generatePatientCode());
+  }
+
+  bool success = false;
+  PatientType type = patient->getType();
+  if (type == PatientType::OutPatient) {
+      OutPatientInsertDTO dto;
+      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
+      success = m_repo->insertOutPatient(dto);
+  } else if (type == PatientType::InPatient) {
+      InPatientInsertDTO dto;
+      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
+      auto inPatient = std::dynamic_pointer_cast<InPatient>(patient);
+      if (inPatient) {
+          dto.roomNo = inPatient->roomNo();
+          dto.admitDate = inPatient->admitDate();
+      }
+      success = m_repo->insertInPatient(dto);
+  } else if (type == PatientType::Emergency) {
+      EmergencyPatientInsertDTO dto;
+      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
+      auto emPatient = std::dynamic_pointer_cast<EmergencyPatient>(patient);
+      if (emPatient) {
+          dto.severity = emPatient->severity();
+      }
+      success = m_repo->insertEmergencyPatient(dto);
+  }
+
+  if (success) {
+      auto savedOpt = m_repo->findByPatientCode(patient->patientCode());
+      if (savedOpt) {
+          patient->setId((*savedOpt)->id());
+      }
+      return true;
+  }
+  return false;
 }
 
 bool PatientService::updatePatient(std::shared_ptr<Patient> patient) {
   if (!patient || !patient->isValid()) {
-    qWarning() << "Cannot update patient: invalid data"
-               << "(fullName or phoneNumber is empty)";
+    qWarning() << "Cannot update patient: invalid data";
     return false;
   }
 
@@ -32,7 +88,30 @@ bool PatientService::updatePatient(std::shared_ptr<Patient> patient) {
     return false;
   }
 
-  return m_repo->update(patient);
+  PatientType type = patient->getType();
+  if (type == PatientType::OutPatient) {
+      OutPatientInsertDTO dto;
+      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
+      return m_repo->updatePatient(dto, patient->id());
+  } else if (type == PatientType::InPatient) {
+      InPatientInsertDTO dto;
+      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
+      auto inPatient = std::dynamic_pointer_cast<InPatient>(patient);
+      if (inPatient) {
+          dto.roomNo = inPatient->roomNo();
+          dto.admitDate = inPatient->admitDate();
+      }
+      return m_repo->updateInPatient(dto, patient->id());
+  } else if (type == PatientType::Emergency) {
+      EmergencyPatientInsertDTO dto;
+      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
+      auto emPatient = std::dynamic_pointer_cast<EmergencyPatient>(patient);
+      if (emPatient) {
+          dto.severity = emPatient->severity();
+      }
+      return m_repo->updateEmergencyPatient(dto, patient->id());
+  }
+  return false;
 }
 
 bool PatientService::deletePatient(int patientId) {
@@ -41,15 +120,18 @@ bool PatientService::deletePatient(int patientId) {
     return false;
   }
 
-  return m_repo->softDelete(patientId);
+  return m_repo->deactivate(patientId);
 }
 
 std::shared_ptr<Patient> PatientService::getPatient(int patientId) {
-  return m_repo->findById(patientId);
+  return m_repo->findById(patientId).value_or(nullptr);
 }
 
 std::vector<std::shared_ptr<Patient>> PatientService::getAllPatients() const {
-  auto list = m_repo->findAllActive();
+  PatientSearchCriteria criteria;
+  criteria.onlyActive = true;
+  criteria.includeDeleted = false;
+  auto list = m_repo->search(criteria);
   return std::vector<std::shared_ptr<Patient>>(list.begin(), list.end());
 }
 
@@ -58,23 +140,28 @@ PatientService::searchPatients(const QString &keyword) {
   if (keyword.trimmed().isEmpty()) {
     return getAllPatients();
   }
-  auto list = m_repo->searchByName(keyword);
+  PatientSearchCriteria criteria;
+  criteria.nameKeyword = keyword;
+  criteria.onlyActive = true;
+  auto list = m_repo->search(criteria);
   return std::vector<std::shared_ptr<Patient>>(list.begin(), list.end());
 }
 
 std::vector<std::shared_ptr<Patient>>
 PatientService::searchPatients(const PatientSearchCriteria &criteria) const {
-  return m_repo->searchPatients(criteria);
+  auto list = m_repo->search(criteria);
+  return std::vector<std::shared_ptr<Patient>>(list.begin(), list.end());
 }
 
 bool PatientService::checkAllergyWarning(
     int patientId, const std::vector<QString> &medications,
     QString &outWarningMessage) const {
-  auto patient = m_repo->findById(patientId);
-  if (!patient) {
+  auto patientOpt = m_repo->findById(patientId);
+  if (!patientOpt) {
       outWarningMessage = "Không tìm thấy bệnh nhân để kiểm tra dị ứng.";
-      return true; // Return true as a generic warning if patient not found during drug prescribing
+      return true; // Return true as a generic warning if patient not found
   }
+  auto patient = *patientOpt;
   
   QStringList warnings;
 
@@ -97,11 +184,23 @@ bool PatientService::checkAllergyWarning(
 }
 
 bool PatientService::addMedicalRecord(const MedicalRecord& record) {
-  return m_repo->addMedicalRecord(record);
+  MedicalRecordInsertDTO dto;
+  dto.patientId = record.getPatientId();
+  dto.doctorId = record.getDoctorId();
+  dto.visitDateTime = record.getVisitDateTime();
+  dto.vitals = record.getVitals();
+  dto.chiefComplaint = record.getChiefComplaint();
+  dto.clinicalNotes = record.getClinicalNotes();
+  dto.treatment = record.getTreatment();
+  dto.testResults = record.getTestResults();
+  dto.nextVisitDate = record.getNextVisitDate();
+  
+  return m_repo->addMedicalRecord(dto);
 }
 
 std::vector<MedicalRecord> PatientService::getMedicalRecords(int patientId) const {
-  return m_repo->getRecordsByPatientId(patientId);
+  auto list = m_repo->getRecordsByPatientId(patientId);
+  return std::vector<MedicalRecord>(list.begin(), list.end());
 }
 
 bool PatientService::advancePatientState(int patientId) {
@@ -110,12 +209,13 @@ bool PatientService::advancePatientState(int patientId) {
     return false;
   }
 
-  auto patient = m_repo->findById(patientId);
-  if (!patient) {
+  auto patientOpt = m_repo->findById(patientId);
+  if (!patientOpt) {
     qWarning() << "Cannot advance state: patient not found (ID:" << patientId
                << ")";
     return false;
   }
+  auto patient = *patientOpt;
 
   if (!patient->advanceState()) {
     qWarning() << "Cannot advance state for patient (ID:" << patientId
@@ -126,5 +226,5 @@ bool PatientService::advancePatientState(int patientId) {
   qDebug() << "Patient (ID:" << patientId
            << ") state advanced to:" << patient->stateName();
 
-  return m_repo->update(patient);
+  return updatePatient(patient);
 }

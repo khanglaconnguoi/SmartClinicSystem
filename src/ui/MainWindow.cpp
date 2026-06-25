@@ -18,8 +18,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setWindowTitle("Nova Care");
   resize(1200, 700);
 
-  auto &dbManager = DatabaseManager::instance();
-  auto repo = std::make_shared<PatientRepository>(dbManager.database());
+  auto repo = std::make_shared<PatientRepository>();
   m_patientService = new PatientService(repo);
 
   setupUi();

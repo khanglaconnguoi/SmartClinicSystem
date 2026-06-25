@@ -11,18 +11,8 @@
 #include <memory>
 #include <optional>
 
+#include "repository/PatientRepository.h"
 
-class PatientRepository;
-
-struct PatientSearchCriteria {
-  QString nameKeyword;
-  QString phoneNumber;
-  QString patientCode;
-  int minAge = -1;
-  int maxAge = -1;
-  QString bloodType;
-  QString citizenId;
-};
 
 /**
  * @brief Lớp chứa logic nghiệp vụ cho module Patient.

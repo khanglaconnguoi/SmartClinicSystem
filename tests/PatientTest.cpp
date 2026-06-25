@@ -17,14 +17,13 @@ private:
 private slots:
     void initTestCase() {
         // Khởi tạo DatabaseManager sẽ tự tạo database và tables
-        auto& dbManager = DatabaseManager::instance();
+        DatabaseManager::getInstance();
         
         // Đảm bảo bảng trống trước khi test (tuỳ chọn)
-        QSqlQuery q(dbManager.database());
-        q.exec("DELETE FROM medical_records");
-        q.exec("DELETE FROM patients");
+        DatabaseManager::getInstance().executeQuery("DELETE FROM medical_records");
+        DatabaseManager::getInstance().executeQuery("DELETE FROM patients");
 
-        auto repo = std::make_shared<PatientRepository>(dbManager.database());
+        auto repo = std::make_shared<PatientRepository>();
         m_service = std::make_shared<PatientService>(repo);
     }
 
