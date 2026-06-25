@@ -1,13 +1,12 @@
 #pragma once
 #include <QDateTime>
+#include <QSqlQuery>
 #include <QString>
 #include <QPixmap>
 #include <memory>
 #include <optional>
-#include <vector>
 
-#include "../model/SystemUser.h"
-#include "DatabaseManager.h"
+#include "model/SystemUser.h"
 
 /*
 DTO: Data Transfer Object dùng để lưu trữ thông tin cần đẩy xuống database
@@ -70,13 +69,17 @@ class StaffRepository {
     std::shared_ptr<SystemUser> mapRowToUser(const QSqlQuery& query) const;
 
     bool insertStaffBase(const StaffInsertDTO& staff, int& staffId);
-public:
+
+   public:
     // CRUD
     bool insertStaff(const StaffInsertDTO& staff);
     bool insertDoctor(const DoctorInsertDTO& doctor);
     bool insertNurse(const NurseInsertDTO& nurse);
 
-    bool update(const StaffInsertDTO& user);
+    bool updateStaff(const StaffInsertDTO& staff);
+    bool updateDoctor(const DoctorInsertDTO& doctor);
+    bool updateNurse(const NurseInsertDTO& nurse);
+
     bool deactivate(int staffId);
     bool reactivate(int staffId);
 
@@ -84,7 +87,7 @@ public:
     std::optional<std::shared_ptr<SystemUser>> findById(int staffId) const;
     std::optional<std::shared_ptr<SystemUser>> findByStaffCode(const QString& staffCode) const;
 
-
+    static std::optional<QString> getLatestIdByYear(int year);
 
     // // --- Danh sách & Tìm kiếm ---
     // std::vector<std::shared_ptr<SystemUser>> findAll(bool includeInactive = false) const;

@@ -28,7 +28,7 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
             hire_date,
             shift
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     )";
 
     QVariantList params = {
@@ -48,36 +48,33 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
         staff.shift
     };
 
-    if(!DatabaseManager::getInstance().executeQuery(insert, params)) {
-        return false;
-    }
+    if (!DatabaseManager::getInstance().executeQuery(insert, params)) { return false; }
 
     QSqlQuery lastId = DatabaseManager::getInstance().selectQuery("SELECT last_insert_rowid()");
     if (!lastId.next()) return false;
     staffId = lastId.value(0).toInt();
     return true;
-
 }
 
 bool StaffRepository::insertStaff(const StaffInsertDTO& staff) {
     DatabaseManager& db = DatabaseManager::getInstance();
-    if(!db.beginTransaction()) return false;
+    if (!db.beginTransaction()) return false;
     int staffId = 0;
-    if(!insertStaffBase(staff, staffId)){
+    if (!insertStaffBase(staff, staffId)) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::insertStaff - Lỗi ghi bảng staff";
         return false;
     }
 
-    if(!db.commitTransaction()) return false;
+    if (!db.commitTransaction()) return false;
     return true;
 }
 
 bool StaffRepository::insertDoctor(const DoctorInsertDTO& doctor) {
     DatabaseManager& db = DatabaseManager::getInstance();
-    if(!db.beginTransaction()) return false;
+    if (!db.beginTransaction()) return false;
     int staffId = 0;
-    if(!insertStaffBase(doctor, staffId)){
+    if (!insertStaffBase(doctor, staffId)) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::insertStaff - Lỗi ghi bảng staff";
         return false;
@@ -95,33 +92,26 @@ bool StaffRepository::insertDoctor(const DoctorInsertDTO& doctor) {
         VALUES (?, ?, ?, ?, ?, ?)
     )";
 
-    QVariantList params = {
-        staffId,
-        doctor.specialty,
-        doctor.licenseNumber,
-        doctor.experienceYears,
-        doctor.consultationFee,
-        doctor.bio
-    };
+    QVariantList params = {staffId, doctor.specialty, doctor.licenseNumber, doctor.experienceYears,
+            doctor.consultationFee, doctor.bio};
 
-    if(!db.executeQuery(insert, params)){
+    if (!db.executeQuery(insert, params)) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::insertDoctor - Lỗi ghi bảng doctor_profiles";
         return false;
     }
 
-    if(!db.commitTransaction()) return false;
+    if (!db.commitTransaction()) return false;
     return true;
 }
 
-
 bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
     DatabaseManager& db = DatabaseManager::getInstance();
-    
-    if(!db.beginTransaction()) return false;
+
+    if (!db.beginTransaction()) return false;
 
     int staffId = 0;
-    if(!insertStaffBase(nurse, staffId)){
+    if (!insertStaffBase(nurse, staffId)) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::insertStaff - Lỗi ghi bảng staff";
         return false;
@@ -136,19 +126,15 @@ bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
         VALUES (?, ?, ?)
     )";
 
-    QVariantList params = {
-        staffId,
-        nurse.nurseLevel,
-        nurse.certification
-    };
+    QVariantList params = {staffId, nurse.nurseLevel, nurse.certification};
 
-    if(!db.executeQuery(insert, params)){
+    if (!db.executeQuery(insert, params)) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::insertNurse - Lỗi ghi bảng nurse_profiles";
         return false;
     }
 
-    if(!db.commitTransaction()) return false;
+    if (!db.commitTransaction()) return false;
     return true;
 }
 
@@ -208,22 +194,23 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
     
     switch(role) {
         case UserRole::Doctor: {
-            QString specialty       = query.value("specialty").toString();
-            QString licenseNumber   = query.value("license_number").toString();
-            int     experienceYears = query.value("experience_years").toInt();
-            double  consultationFee = query.value("consultation_fee").toDouble();
+            QString specialty = query.value("specialty").toString();
+            QString licenseNumber = query.value("license_number").toString();
+            int experienceYears = query.value("experience_years").toInt();
+            double consultationFee = query.value("consultation_fee").toDouble();
 
             return std::make_shared<Doctor>(
                 staffId, staffCode, passwordHash, fullName, avatar, role, isActive,
                 specialty, licenseNumber, experienceYears, consultationFee
             );
         }
-        // case UserRole::Nurse: {
-        //     //return std::make_shared<Nurse>(id, username, passwordHash, full_name, role);
-        // }
-        // case UserRole::Receptionist: {
-        // //     return std::make_shared<Receptionist>(id, username, passwordHash, full_name, role);
-        // }
+            // case UserRole::Nurse: {
+            //     //return std::make_shared<Nurse>(id, username, passwordHash, full_name, role);
+            // }
+            // case UserRole::Receptionist: {
+            // //     return std::make_shared<Receptionist>(id, username, passwordHash, full_name,
+            // role);
+            // }
     }
     return nullptr;
 }
@@ -334,23 +321,21 @@ std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(cons
 
             np.nurse_level,
             np.certification
-
         FROM staff s
         LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
-        LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
+        LEFT JOIN nurse_profiles np ON s.staff_id = np.staff_id
 
-        WHERE s.staff_code  = ?
-          AND s.is_deleted = 0
+        WHERE s.staff_code = ? AND s.is_deleted = 0;
     )";
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(find, { staffCode });
 
     if (!query.next()) {
-        return std::nullopt; // không tìm thấy
+        return std::nullopt;  // không tìm thấy
     }
 
     return mapRowToUser(query);
-}
+};
 
 std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId) const {
     QString find = R"(
@@ -381,17 +366,118 @@ std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId
         LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
         LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
 
-        WHERE s.staff_id  = ?
-          AND s.is_deleted = 0
+        WHERE s.staff_id = ? AND s.is_deleted = 0
     )";
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(find, { staffId });
 
     if (!query.next()) {
-        return std::nullopt; // không tìm thấy
+        return std::nullopt;  // không tìm thấy
     }
 
     return mapRowToUser(query);
 }
 
+std::optional<QString> StaffRepository::getLatestIdByYear(int year) {
+    QString sql = R"(
+        SELECT staff_code AS largest_staff_code
+            FROM staff
+            WHERE substr(staff_code, 2, 2) = substr(CAST(:year AS TEXT), -2)
+            ORDER BY CAST(substr(staff_code, 4, 2) AS INTEGER) DESC
+            LIMIT 1;
+        )";
 
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {year});
+
+    if (!query.next()) return std::nullopt;
+
+    QVariant val = query.value("largest_staff_code");
+    if (val.isNull()) return std::nullopt;
+    return val.toString();
+}
+
+bool StaffRepository::updateStaff(const StaffInsertDTO& staff) {
+    QString sql = R"(
+        UPDATE staff
+        SET password_hash = ?,
+            full_name = ?,
+            role = ?,
+            gender = ?,
+            date_of_birth = ?,
+            national_id = ?,
+            phone_number = ?,
+            email = ?,
+            address = ?,
+            department_id = ?,
+            hire_date = ?,
+            shift = ?,
+            updated_at = datetime('now')
+        WHERE staff_code = ?;
+    )";
+
+    QVariantList params = {staff.passwordHash, staff.fullName, roleToString(staff.role),
+            genderToString(staff.gender), staff.dateOfBirth, staff.nationalId, staff.phoneNumber,
+            staff.email, staff.address, staff.departmentId, staff.hireDate, staff.shift,
+            staff.staffCode};
+
+    if (!DatabaseManager::getInstance().executeQuery(sql, params)) return false;
+    return true;
+}
+
+bool StaffRepository::updateDoctor(const DoctorInsertDTO& doctor) {
+    DatabaseManager& db = DatabaseManager::getInstance();
+    if (!db.beginTransaction()) return false;
+
+    if (!updateStaff(doctor)) {
+        db.rollbackTransaction();
+        return false;
+    }
+
+    QString sql = R"(
+        UPDATE doctor_profiles
+        SET specialty = ?,
+            license_number = ?,
+            experience_years = ?,
+            consultation_fee = ?,
+            bio = ?
+        WHERE staff_id = (SELECT staff_id FROM staff WHERE staff_code = ?);
+    )";
+
+    QVariantList params = {doctor.specialty, doctor.licenseNumber, doctor.experienceYears,
+            doctor.consultationFee, doctor.bio, doctor.staffCode};
+
+    if (!db.executeQuery(sql, params)) {
+        db.rollbackTransaction();
+        return false;
+    }
+
+    if (!db.commitTransaction()) return false;
+    return true;
+}
+
+bool StaffRepository::updateNurse(const NurseInsertDTO& nurse) {
+    DatabaseManager& db = DatabaseManager::getInstance();
+    if (!db.beginTransaction()) return false;
+
+    if (!updateStaff(nurse)) {
+        db.rollbackTransaction();
+        return false;
+    }
+
+    QString sql = R"(
+        UPDATE nurse_profiles
+        SET nurse_level = ?,
+            certification = ?
+        WHERE staff_id = (SELECT staff_id FROM staff WHERE staff_code = ?);
+    )";
+
+    QVariantList params = {nurse.nurseLevel, nurse.certification, nurse.staffCode};
+
+    if (!db.executeQuery(sql, params)) {
+        db.rollbackTransaction();
+        return false;
+    }
+
+    if (!db.commitTransaction()) return false;
+    return true;
+}
