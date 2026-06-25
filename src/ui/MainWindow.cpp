@@ -3,30 +3,34 @@
  * @brief   Implementation cho MainWindow — khởi tạo module Patient.
  */
 #include "MainWindow.h"
-#include "PatientView.h"
 #include "repository/DatabaseManager.h"
 #include "repository/PatientRepository.h"
 #include "service/PatientService.h"
 
-MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent) {
-    setWindowTitle("Smart Clinic System");
-    resize(1000, 600);
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QStackedWidget>
+#include <QVBoxLayout>
 
-    // Khởi tạo dependency chain:
-    // DatabaseManager (singleton) → PatientRepository → PatientService → PatientView
-    auto& dbManager = DatabaseManager::instance();
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+  setWindowTitle("Nova Care");
+  resize(1200, 700);
 
-    m_patientRepo = new PatientRepository(dbManager.database());
-    m_patientService = new PatientService(m_patientRepo);
-    m_patientView = new PatientView(m_patientService, this);
+  auto &dbManager = DatabaseManager::instance();
+  auto repo = std::make_shared<PatientRepository>(dbManager.database());
+  m_patientService = new PatientService(repo);
 
-    setCentralWidget(m_patientView);
+  setupUi();
+}
+
+void MainWindow::setupUi() {
+  auto *centralWidget = new QWidget(this);
+  setCentralWidget(centralWidget);
 }
 
 MainWindow::~MainWindow() {
-    // m_patientView được Qt tự delete (có parent = this)
-    // m_patientService và m_patientRepo cần delete thủ công
-    delete m_patientService;
-    delete m_patientRepo;
+  // m_patientService cần delete thủ công, repo là shared_ptr sẽ tự giải phóng.
+  delete m_patientService;
 }

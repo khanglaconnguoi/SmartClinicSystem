@@ -14,11 +14,10 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
-    "src/*.h"
-    "src/*.hpp"
-    "src/*.ui"
-    "src/*.qrc"
 )
+
+enable_testing()
+add_subdirectory(tests)
 
 add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
 

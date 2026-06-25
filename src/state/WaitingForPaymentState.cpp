@@ -6,17 +6,17 @@
 #include "CompletedState.h"
 
 QString WaitingForPaymentState::name() const {
-    return QStringLiteral("Chờ thanh toán");
+  return QStringLiteral("Chờ thanh toán");
 }
 
 PatientStateType WaitingForPaymentState::type() const {
-    return PatientStateType::WaitingForPayment;
+  return PatientStateType::WaitingForPayment;
 }
 
 std::unique_ptr<IPatientState> WaitingForPaymentState::nextState() const {
-    return std::make_unique<CompletedState>();
+  return std::make_unique<CompletedState>();
 }
 
 bool WaitingForPaymentState::canTransitionTo(PatientStateType target) const {
-    return target == PatientStateType::Completed;
+  return target == PatientStateType::Completed;
 }

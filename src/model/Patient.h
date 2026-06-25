@@ -4,15 +4,25 @@
  */
 #pragma once
 
+#include "state/IPatientState.h"
 #include <QDate>
 #include <QString>
 #include <memory>
-#include "state/IPatientState.h"
 
 /**
  * @brief Giới tính bệnh nhân.
  */
 enum class Gender { Male, Female, Other };
+
+/**
+ * @brief Mức độ ưu tiên của bệnh nhân.
+ */
+enum class PatientPriority { Low, Normal, High, Critical };
+
+/**
+ * @brief Loại bệnh nhân.
+ */
+enum class PatientType { OutPatient, InPatient, Emergency };
 
 /**
  * @brief Data class (POCO) chứa thông tin bệnh nhân.
@@ -21,8 +31,26 @@ enum class Gender { Male, Female, Other };
  * nghiệp vụ hay SQL. Validation cơ bản qua isValid().
  */
 class Patient {
+protected:
+  int m_id = -1;
+  QString m_patientCode;
+  QString m_fullName;
+  QDate m_birthDate;
+  Gender m_gender = Gender::Other;
+  QString m_phoneNumber;
+  QString m_address;
+  QString m_bloodType;
+  QString m_allergies;
+  QString m_medicalHistory;
+  QString m_citizenId;
+  QString m_email;
+  QString m_insurance;
+  bool m_isActive = true;
+  std::shared_ptr<IPatientState> m_state;
+
 public:
   Patient() = default;
+  virtual ~Patient() = default;
   Patient(const QString &fullName, const QDate &birthDate, Gender gender,
           const QString &phoneNumber, const QString &address,
           const QString &citizenId = {}, const QString &email = {},
@@ -30,11 +58,16 @@ public:
 
   // --- Getters ---
   int id() const;
+  QString patientCode() const;
   QString fullName() const;
   QDate birthDate() const;
+  int getAge() const;
   Gender gender() const;
   QString phoneNumber() const;
   QString address() const;
+  QString bloodType() const;
+  QString allergies() const;
+  QString medicalHistory() const;
   QString citizenId() const;
   QString email() const;
   QString insurance() const;
@@ -56,13 +89,28 @@ public:
    */
   bool canAdvance() const;
 
+  // --- Pure Virtual (Đa hình) ---
+  virtual PatientPriority getPriority() const = 0;
+  virtual QString getBillingType() const = 0;
+  virtual QString getStatusLabel() const = 0;
+  virtual double getBaseFee() const = 0;
+  virtual PatientType getType() const = 0;
+
+  // --- Utility ---
+  bool hasAllergy(const QString &medicationName) const;
+  static QString generatePatientCode();
+
   // --- Setters ---
   void setId(int id);
+  void setPatientCode(const QString &code);
   void setFullName(const QString &fullName);
   void setBirthDate(const QDate &birthDate);
   void setGender(Gender gender);
   void setPhoneNumber(const QString &phoneNumber);
   void setAddress(const QString &address);
+  void setBloodType(const QString &bloodType);
+  void setAllergies(const QString &allergies);
+  void setMedicalHistory(const QString &history);
   void setCitizenId(const QString &citizenId);
   void setEmail(const QString &email);
   void setInsurance(const QString &insurance);
@@ -90,17 +138,4 @@ public:
    * cccd(đủ 12 số, là số), email(đúng định dạng, nếu có), bảo hiểm (nếu có)
    */
   bool isValid() const;
-
-private:
-  int m_id = -1;
-  QString m_fullName;
-  QDate m_birthDate;
-  Gender m_gender = Gender::Other;
-  QString m_phoneNumber;
-  QString m_address;
-  QString m_citizenId;
-  QString m_email;
-  QString m_insurance;
-  bool m_isActive = true;
-  std::shared_ptr<IPatientState> m_state;
 };

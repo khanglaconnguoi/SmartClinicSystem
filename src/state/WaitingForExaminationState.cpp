@@ -6,17 +6,18 @@
 #include "UnderExaminationState.h"
 
 QString WaitingForExaminationState::name() const {
-    return QStringLiteral("Chờ khám");
+  return QStringLiteral("Chờ khám");
 }
 
 PatientStateType WaitingForExaminationState::type() const {
-    return PatientStateType::WaitingForExamination;
+  return PatientStateType::WaitingForExamination;
 }
 
 std::unique_ptr<IPatientState> WaitingForExaminationState::nextState() const {
-    return std::make_unique<UnderExaminationState>();
+  return std::make_unique<UnderExaminationState>();
 }
 
-bool WaitingForExaminationState::canTransitionTo(PatientStateType target) const {
-    return target == PatientStateType::UnderExamination;
+bool WaitingForExaminationState::canTransitionTo(
+    PatientStateType target) const {
+  return target == PatientStateType::UnderExamination;
 }
