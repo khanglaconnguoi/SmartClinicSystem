@@ -3,10 +3,11 @@
  * @brief   Implementation cho PatientService — business logic.
  */
 #include "PatientService.h"
-#include "repository/PatientRepository.h"
-#include "model/InPatient.h"
 #include "model/EmergencyPatient.h"
+#include "model/InPatient.h"
+#include "repository/PatientRepository.h"
 #include <QDebug>
+
 
 PatientService::PatientService(std::shared_ptr<PatientRepository> repo)
     : m_repo(std::move(repo)) {}
@@ -37,42 +38,43 @@ bool PatientService::addPatient(std::shared_ptr<Patient> patient) {
     return false;
   }
 
-  // Nếu chưa có mã bệnh nhân, ta có thể sinh mã. Nhưng ở đây mặc định model đã có.
+  // Nếu chưa có mã bệnh nhân, ta có thể sinh mã. Nhưng ở đây mặc định model đã
+  // có.
   if (patient->patientCode().isEmpty()) {
-      patient->setPatientCode(Patient::generatePatientCode());
+    patient->setPatientCode(Patient::generatePatientCode());
   }
 
   bool success = false;
   PatientType type = patient->getType();
   if (type == PatientType::OutPatient) {
-      OutPatientInsertDTO dto;
-      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
-      success = m_repo->insertOutPatient(dto);
+    OutPatientInsertDTO dto;
+    static_cast<PatientInsertDTO &>(dto) = mapBasePatient(patient);
+    success = m_repo->insertOutPatient(dto);
   } else if (type == PatientType::InPatient) {
-      InPatientInsertDTO dto;
-      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
-      auto inPatient = std::dynamic_pointer_cast<InPatient>(patient);
-      if (inPatient) {
-          dto.roomNo = inPatient->roomNo();
-          dto.admitDate = inPatient->admitDate();
-      }
-      success = m_repo->insertInPatient(dto);
+    InPatientInsertDTO dto;
+    static_cast<PatientInsertDTO &>(dto) = mapBasePatient(patient);
+    auto inPatient = std::dynamic_pointer_cast<InPatient>(patient);
+    if (inPatient) {
+      dto.roomNo = inPatient->roomNo();
+      dto.admitDate = inPatient->admitDate();
+    }
+    success = m_repo->insertInPatient(dto);
   } else if (type == PatientType::Emergency) {
-      EmergencyPatientInsertDTO dto;
-      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
-      auto emPatient = std::dynamic_pointer_cast<EmergencyPatient>(patient);
-      if (emPatient) {
-          dto.severity = emPatient->severity();
-      }
-      success = m_repo->insertEmergencyPatient(dto);
+    EmergencyPatientInsertDTO dto;
+    static_cast<PatientInsertDTO &>(dto) = mapBasePatient(patient);
+    auto emPatient = std::dynamic_pointer_cast<EmergencyPatient>(patient);
+    if (emPatient) {
+      dto.severity = emPatient->severity();
+    }
+    success = m_repo->insertEmergencyPatient(dto);
   }
 
   if (success) {
-      auto savedOpt = m_repo->findByPatientCode(patient->patientCode());
-      if (savedOpt) {
-          patient->setId((*savedOpt)->id());
-      }
-      return true;
+    auto savedOpt = m_repo->findByPatientCode(patient->patientCode());
+    if (savedOpt) {
+      patient->setId((*savedOpt)->id());
+    }
+    return true;
   }
   return false;
 }
@@ -90,26 +92,26 @@ bool PatientService::updatePatient(std::shared_ptr<Patient> patient) {
 
   PatientType type = patient->getType();
   if (type == PatientType::OutPatient) {
-      OutPatientInsertDTO dto;
-      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
-      return m_repo->updatePatient(dto, patient->id());
+    OutPatientInsertDTO dto;
+    static_cast<PatientInsertDTO &>(dto) = mapBasePatient(patient);
+    return m_repo->updatePatient(dto, patient->id());
   } else if (type == PatientType::InPatient) {
-      InPatientInsertDTO dto;
-      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
-      auto inPatient = std::dynamic_pointer_cast<InPatient>(patient);
-      if (inPatient) {
-          dto.roomNo = inPatient->roomNo();
-          dto.admitDate = inPatient->admitDate();
-      }
-      return m_repo->updateInPatient(dto, patient->id());
+    InPatientInsertDTO dto;
+    static_cast<PatientInsertDTO &>(dto) = mapBasePatient(patient);
+    auto inPatient = std::dynamic_pointer_cast<InPatient>(patient);
+    if (inPatient) {
+      dto.roomNo = inPatient->roomNo();
+      dto.admitDate = inPatient->admitDate();
+    }
+    return m_repo->updateInPatient(dto, patient->id());
   } else if (type == PatientType::Emergency) {
-      EmergencyPatientInsertDTO dto;
-      static_cast<PatientInsertDTO&>(dto) = mapBasePatient(patient);
-      auto emPatient = std::dynamic_pointer_cast<EmergencyPatient>(patient);
-      if (emPatient) {
-          dto.severity = emPatient->severity();
-      }
-      return m_repo->updateEmergencyPatient(dto, patient->id());
+    EmergencyPatientInsertDTO dto;
+    static_cast<PatientInsertDTO &>(dto) = mapBasePatient(patient);
+    auto emPatient = std::dynamic_pointer_cast<EmergencyPatient>(patient);
+    if (emPatient) {
+      dto.severity = emPatient->severity();
+    }
+    return m_repo->updateEmergencyPatient(dto, patient->id());
   }
   return false;
 }
@@ -158,11 +160,11 @@ bool PatientService::checkAllergyWarning(
     QString &outWarningMessage) const {
   auto patientOpt = m_repo->findById(patientId);
   if (!patientOpt) {
-      outWarningMessage = "Không tìm thấy bệnh nhân để kiểm tra dị ứng.";
-      return true; // Return true as a generic warning if patient not found
+    outWarningMessage = "Không tìm thấy bệnh nhân để kiểm tra dị ứng.";
+    return true; // Return true as a generic warning if patient not found
   }
   auto patient = *patientOpt;
-  
+
   QStringList warnings;
 
   for (const QString &med : medications) {
@@ -183,7 +185,7 @@ bool PatientService::checkAllergyWarning(
   return false;
 }
 
-bool PatientService::addMedicalRecord(const MedicalRecord& record) {
+bool PatientService::addMedicalRecord(const MedicalRecord &record) {
   MedicalRecordInsertDTO dto;
   dto.patientId = record.getPatientId();
   dto.doctorId = record.getDoctorId();
@@ -194,11 +196,12 @@ bool PatientService::addMedicalRecord(const MedicalRecord& record) {
   dto.treatment = record.getTreatment();
   dto.testResults = record.getTestResults();
   dto.nextVisitDate = record.getNextVisitDate();
-  
+
   return m_repo->addMedicalRecord(dto);
 }
 
-std::vector<MedicalRecord> PatientService::getMedicalRecords(int patientId) const {
+std::vector<MedicalRecord>
+PatientService::getMedicalRecords(int patientId) const {
   auto list = m_repo->getRecordsByPatientId(patientId);
   return std::vector<MedicalRecord>(list.begin(), list.end());
 }
