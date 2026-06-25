@@ -11,6 +11,7 @@ public:
     virtual int         getAccountId()      const = 0;
     virtual QString     getPasswordHash()   const = 0;
     virtual AccountType getAccountType()    const = 0;
+    virtual QString     getFullName()       const = 0;
 
     // --- Đa hình điều khiển UI (dùng cho MainWindow) ---
     virtual QStringList getMenuItems()                const = 0;

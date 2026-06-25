@@ -1,4 +1,5 @@
 #include "StaffRepository.h"
+#include "DatabaseManager.h"
 #include "../model/Doctor.h"
 #include <QBuffer>
 #include <QIODevice>
@@ -20,7 +21,7 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
             role,
             gender,
             date_of_birth,
-            national_id,
+            citizen_id,
             phone_number,
             email,
             address,
@@ -28,7 +29,7 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
             hire_date,
             shift
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     )";
 
     QVariantList params = {
@@ -39,7 +40,7 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
         roleToString(staff.role),
         genderToString(staff.gender),
         staff.dateOfBirth,
-        staff.nationalId,
+        staff.citizenId,
         staff.phoneNumber,
         staff.email,
         staff.address,
@@ -198,10 +199,10 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
             QString licenseNumber = query.value("license_number").toString();
             int experienceYears = query.value("experience_years").toInt();
             double consultationFee = query.value("consultation_fee").toDouble();
-
+            QString bio = query.value("bio").toString();
             return std::make_shared<Doctor>(
                 staffId, staffCode, passwordHash, fullName, avatar, role, isActive,
-                specialty, licenseNumber, experienceYears, consultationFee
+                specialty, licenseNumber, experienceYears, consultationFee, bio
             );
         }
             // case UserRole::Nurse: {
@@ -249,7 +250,7 @@ QList<std::shared_ptr<SystemUser>> StaffRepository::search(const StaffSearchCrit
     QVariantList params;
 
     // Chỉ thêm điều kiện khi field thực sự có giá trị
-    if (!criteria.searchKey.trimmed().isEmpty()) {
+    if (!criteria.searchKey.isEmpty()) {
         search += " AND (s.staff_code LIKE ? OR s.full_name LIKE ?)";
         QString keyword = "%" + criteria.searchKey + "%";
         params << keyword << keyword;
@@ -260,7 +261,7 @@ QList<std::shared_ptr<SystemUser>> StaffRepository::search(const StaffSearchCrit
         params << roleToString(criteria.role.value());
     }
 
-    if (!criteria.specialty.trimmed().isEmpty()) {
+    if (!criteria.specialty.isEmpty()) {
         search += " AND dp.specialty LIKE ?";
         params << "%" + criteria.specialty.trimmed() + "%";
     }
@@ -270,7 +271,7 @@ QList<std::shared_ptr<SystemUser>> StaffRepository::search(const StaffSearchCrit
         params << criteria.departmentId;
     }
 
-    if (!criteria.shift.trimmed().isEmpty()) {
+    if (!criteria.shift.isEmpty()) {
         search += " AND s.shift = ?";
         params << criteria.shift.trimmed();
     }
@@ -404,7 +405,7 @@ bool StaffRepository::updateStaff(const StaffInsertDTO& staff) {
             role = ?,
             gender = ?,
             date_of_birth = ?,
-            national_id = ?,
+            citizen_id = ?,
             phone_number = ?,
             email = ?,
             address = ?,
@@ -416,7 +417,7 @@ bool StaffRepository::updateStaff(const StaffInsertDTO& staff) {
     )";
 
     QVariantList params = {staff.passwordHash, staff.fullName, roleToString(staff.role),
-            genderToString(staff.gender), staff.dateOfBirth, staff.nationalId, staff.phoneNumber,
+            genderToString(staff.gender), staff.dateOfBirth, staff.citizenId, staff.phoneNumber,
             staff.email, staff.address, staff.departmentId, staff.hireDate, staff.shift,
             staff.staffCode};
 

@@ -45,9 +45,9 @@ public:
     virtual ~SystemUser() = default;
 
     // --- Getters ---
-    QString    getFullName()        const           { return m_fullName; }
-    UserRole   getRole()            const           { return m_role; }
-    bool       isActive()           const           { return m_isActive; }
+    UserRole   getRole()      const           { return m_role; }
+    bool       isActive()     const           { return m_isActive; }
+    QPixmap    getAvatar()    const           { return m_avatar; }
 
     // --- Setters ---
     void setActive(bool active) { m_isActive = active; }
@@ -61,6 +61,7 @@ public:
     int         getAccountId()    const override { return m_staffId; }
     QString     getPasswordHash() const override { return m_passwordHash; }
     AccountType getAccountType()  const override { return AccountType::Staff; }
+    QString     getFullName()     const override { return m_fullName; }
 
     // --- Pure Virtual ---
     QStringList getMenuItems()                  const override = 0;

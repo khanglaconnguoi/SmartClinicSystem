@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS staff (
     role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
     gender        TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
     date_of_birth TEXT    NOT NULL,
-    national_id   TEXT    NOT NULL UNIQUE,
+    citizen_id   TEXT     NOT NULL UNIQUE,
     phone_number  TEXT    NOT NULL,                                         
     email         TEXT    NOT NULL UNIQUE, 
     address       TEXT    NOT NULL,
@@ -103,10 +103,10 @@ CREATE TABLE IF NOT EXISTS patients (
     patient_id              INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_code            TEXT    NOT NULL UNIQUE,
     full_name               TEXT    NOT NULL,
-    date_of_birth           TEXT    NOT NULL CHECK (date_of_birth <= date('now')),
+    date_of_birth           TEXT    NOT NULL,
     gender                  TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
-    national_id             TEXT    UNIQUE,
-    phone                   TEXT,
+    citizen_id              TEXT    NOT NULL UNIQUE,
+    phone                   TEXT    NOT NULL,
     email                   TEXT,
     address                 TEXT,
     blood_type              TEXT    NOT NULL DEFAULT 'UNKNOWN'
@@ -441,6 +441,22 @@ END;
 
 CREATE TRIGGER IF NOT EXISTS validate_staff_dob_update
 BEFORE UPDATE ON staff
+FOR EACH ROW
+WHEN NEW.date_of_birth > date('now')
+BEGIN
+    SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+END;
+
+CREATE TRIGGER IF NOT EXISTS validate_staff_dob_insert
+BEFORE INSERT ON patients
+FOR EACH ROW
+WHEN NEW.date_of_birth > date('now') -- Bỏ phần kiểm tra IS NOT NULL đi vì đã có NOT NULL ở định nghĩa bảng
+BEGIN
+    SELECT RAISE(ABORT, 'LỖI_SQLITE: Ngày sinh không được lớn hơn ngày hiện tại!');
+END;
+
+CREATE TRIGGER IF NOT EXISTS validate_staff_dob_update
+BEFORE UPDATE ON patients
 FOR EACH ROW
 WHEN NEW.date_of_birth > date('now')
 BEGIN

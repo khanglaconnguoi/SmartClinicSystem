@@ -26,7 +26,7 @@ struct StaffInsertDTO {
     UserRole role;
     Gender gender;
     QString dateOfBirth;
-    QString nationalId;
+    QString citizenId;
     QString phoneNumber;
     QString email;
     QString address;

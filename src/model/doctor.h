@@ -1,5 +1,6 @@
 #pragma once
 #include "SystemUser.h"
+#include "MedicalRecord.h"
 
 class Doctor : public SystemUser {
 private:
@@ -7,9 +8,10 @@ private:
     QString m_licenseNumber;    // Số chứng chỉ hành nghề
     int     m_experienceYears;
     int     m_consultationFee;  // Phí khám mặc định
+    QString m_bio;
 
 public:
-    Doctor(
+    explicit Doctor(
         int             staffId, 
         const QString&  staffCode,
         const QString&  passwordHash, 
@@ -20,7 +22,8 @@ public:
         const QString&  specialty,
         const QString&  licenseNumber,
         int             experienceYears,
-        int             consultationFee
+        int             consultationFee,
+        const QString&  bio
     ) : 
         SystemUser(
             staffId, 
@@ -34,13 +37,25 @@ public:
         m_specialty(specialty), 
         m_licenseNumber(licenseNumber), 
         m_experienceYears(experienceYears), 
-        m_consultationFee(consultationFee) 
+        m_consultationFee(consultationFee),
+        m_bio(bio)
     {}
 
+    ~Doctor() override = default;
+
     // --- Getters ---
-    QString getSpecialty()       const { return m_specialty; }
-    QString getLicenseNumber()   const { return m_licenseNumber; }
-    double  getConsultationFee() const { return m_consultationFee; }
+    QString getSpecialty()         const { return m_specialty; }
+    QString getLicenseNumber()     const { return m_licenseNumber; }
+    int     getExperienceYears()   const { return m_experienceYears; }
+    double  getConsultationFee()   const { return m_consultationFee; }
+    QString getBio()               const { return m_bio; }
+    
+    // ── Setters (Admin/Doctor cập nhật hồ sơ — qua StaffService) ─
+    // void setSpecialty(const QString& specialty);
+    // void setConsultationFee(double fee);
+    // void setExperienceYears(int years);
+    // void setBio(const QString& bio);
+
 
     // --- Override từ SystemUser ---
     QStringList getMenuItems() const override {
@@ -51,9 +66,10 @@ public:
         return getMenuItems().contains(moduleCode);
     }
 
-    QString getDisplayRole() const override { return "Doctor"; }
-
-    // --- Hành vi đặc thù của Doctor ---
-    // bool prescribeMedication(int patientId, const std::vector<PrescriptionItem>& items);
-    // bool createMedicalRecord(int patientId, const MedicalRecord& record);
+    QString getDisplayRole() const override {
+        if (!m_specialty.isEmpty()) {
+            return "Doctor " + m_specialty;
+        }
+        return "Doctor";
+    }
 };

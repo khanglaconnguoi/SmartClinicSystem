@@ -6,12 +6,12 @@
 
 static constexpr qsizetype MOBILE_PHONE_NUMBER_LENGTH = 10;
 static constexpr qsizetype LANDLINE_PHONE_NUMBER_LENGTH = 11;
-static constexpr qsizetype NATIONAL_ID_LENGTH = 12;
+static constexpr qsizetype CITIZEN_ID_LENGTH = 12;
 static constexpr qsizetype PASSWORD_MINIMUM_LENGTH = 12;
 static constexpr qsizetype NUMBER_BASE = 10;
 static constexpr qsizetype LAST_TWO_DIGITS_FACTOR = 100;
 
-static constexpr std::array<QStringView, 63> NATIONAL_ID_VALID_PREFIXES = {u"001", u"002", u"004",
+static constexpr std::array<QStringView, 63> CITIZEN_ID_VALID_PREFIXES = {u"001", u"002", u"004",
         u"006", u"008", u"010", u"011", u"012", u"014", u"015", u"017", u"019", u"020", u"022",
         u"023", u"025", u"026", u"027", u"030", u"031", u"033", u"034", u"035", u"036", u"037",
         u"038", u"040", u"042", u"044", u"045", u"046", u"048", u"049", u"051", u"052", u"054",
@@ -44,18 +44,18 @@ QString StaffService::validatePhoneNumber(const QString& phoneNumber) {
     return "";
 }
 
-QString StaffService::validateNationalId(const QString& nationalId) {
-    const QString msgInvalidNationalId = "Invalid value for national ID.";
+QString StaffService::validateCitizenId(const QString& citizenId) {
+    const QString msgInvalidCitizenId = "Invalid value for citizen ID.";
 
-    if (nationalId.length() != NATIONAL_ID_LENGTH) return msgInvalidNationalId;
+    if (citizenId.length() != CITIZEN_ID_LENGTH) return msgInvalidCitizenId;
 
     if (!std::all_of(
-                nationalId.begin(), nationalId.end(), [](const QChar& c) { return c.isDigit(); }))
-        return msgInvalidNationalId;
+                citizenId.begin(), citizenId.end(), [](const QChar& c) { return c.isDigit(); }))
+        return msgInvalidCitizenId;
 
-    if (std::find(NATIONAL_ID_VALID_PREFIXES.begin(), NATIONAL_ID_VALID_PREFIXES.end(),
-                QStringView(nationalId).left(3)) == NATIONAL_ID_VALID_PREFIXES.end())
-        return msgInvalidNationalId;
+    if (std::find(CITIZEN_ID_VALID_PREFIXES.begin(), CITIZEN_ID_VALID_PREFIXES.end(),
+                QStringView(citizenId).left(3)) == CITIZEN_ID_VALID_PREFIXES.end())
+        return msgInvalidCitizenId;
 
     return "";
 }
@@ -85,7 +85,7 @@ QString StaffService::validateBaseInput(const QString& staffCode,
         const QString& plainPassword,
         const QString& fullName,
         const QDate& dateOfBirth,
-        const QString& nationalId,
+        const QString& citizenId,
         const QString& phoneNumber,
         const QString& email,
         const QString& address,
@@ -110,7 +110,7 @@ QString StaffService::validateBaseInput(const QString& staffCode,
     if (licenseNumber.isEmpty()) return "License number is required";
     if (bio.isEmpty()) return "Bio is required";
 
-    if (QString errorMsg = validateNationalId(nationalId); !errorMsg.isEmpty()) return errorMsg;
+    if (QString errorMsg = validateCitizenId(citizenId); !errorMsg.isEmpty()) return errorMsg;
     if (QString errorMsg = validatePhoneNumber(phoneNumber); !errorMsg.isEmpty()) return errorMsg;
     if (QString errorMsg = validatePlainPassword(plainPassword); !errorMsg.isEmpty())
         return errorMsg;
@@ -150,12 +150,14 @@ QString StaffService::generateStaffCode(int year, UserRole role) {
     return staffCode;
 }
 
-bool StaffService::hireNewDoctor(const QString& staffCode,
+bool StaffService::hireNewDoctor(
+        const QString& staffCode,
         const QString& plainPassword,
         const QString& fullName,
+        QPixmap avatar,
         Gender gender,
         const QDate& dateOfBirth,
-        const QString& nationalId,
+        const QString& citizenId,
         const QString& phoneNumber,
         const QString& email,
         const QString& address,
@@ -167,7 +169,7 @@ bool StaffService::hireNewDoctor(const QString& staffCode,
         int experienceYears,
         int consultationFee,
         const QString& bio) {
-    if (!validateBaseInput(staffCode, plainPassword, fullName, dateOfBirth, nationalId, phoneNumber,
+    if (!validateBaseInput(staffCode, plainPassword, fullName, dateOfBirth, citizenId, phoneNumber,
                 email, address, departmentId, hireDate, shift, specialty, licenseNumber,
                 experienceYears, consultationFee, bio)
                     .isEmpty()) {
@@ -175,10 +177,30 @@ bool StaffService::hireNewDoctor(const QString& staffCode,
     }
 
     DoctorInsertDTO dto = {
-            {staffCode, plainPassword, fullName, UserRole::Doctor, gender,
-                    dateOfBirth.toString("yyyy-MM-dd"), nationalId, phoneNumber, email, address,
+            {staffCode, plainPassword, fullName, avatar, UserRole::Doctor, gender,
+                    dateOfBirth.toString("yyyy-MM-dd"), citizenId, phoneNumber, email, address,
                     departmentId, hireDate.toString("yyyy-MM-dd"), shift},
             specialty, licenseNumber, experienceYears, consultationFee, bio};
 
     return this->m_staffRepository->insertDoctor(dto);
+}
+
+QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
+    QString searchKey,    
+    QString specialty,                  
+    int     departmentId,          
+    QString shift,                     
+    bool    onlyActive,
+    bool    includeDeleted
+) const {
+    StaffSearchCriteria criteria;
+    criteria.searchKey      = searchKey.trimmed();
+    criteria.role           = UserRole::Doctor;
+    criteria.specialty      = specialty.trimmed();
+    criteria.departmentId   = departmentId;
+    criteria.shift          = shift.trimmed();
+    criteria.onlyActive     = onlyActive;
+    criteria.includeDeleted = includeDeleted;
+
+    return m_staffRepository->search(criteria);
 }
