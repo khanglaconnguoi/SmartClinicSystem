@@ -2,6 +2,7 @@
 #include "DatabaseManager.h"
 #include "../model/Doctor.h"
 #include <QBuffer>
+#include <QDir>
 #include <QIODevice>
 
 bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId) {
@@ -189,8 +190,14 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
     if (!avatarBytes.isEmpty()) {
         avatar.loadFromData(avatarBytes);
     } else {
-        avatar.load(":/assets/images/default_avatar.png");
+        QString projectRoot = QString::fromUtf8(PROJECT_ROOT_DIR);
+ 
+        QDir imagesDir(projectRoot + "/assets/images");
+    
+        QString defaultAvatarPath = imagesDir.filePath("default_avatar.png");
+        avatar.load(defaultAvatarPath);
     }
+
 
     
     switch(role) {

@@ -69,17 +69,36 @@ void BaseDashboardWidget::setupMainContentFrame() {
 
     // Thanh Topbar tĩnh
     QHBoxLayout* topbarLayout = new QHBoxLayout();
+
     m_searchInput = new QLineEdit(m_mainContentWidget);
     m_searchInput->setPlaceholderText("🔍 Search for patients, doctors and etc...");
     m_searchInput->setFixedWidth(350);
     m_searchInput->setStyleSheet("padding: 10px 15px; border: 1px solid #DADCE0; border-radius: 8px; background-color: #FFFFFF; font-size: 13px; color: #333333;");
     
-    m_docInfo = new QLabel("👨‍⚕️ Loading... (Doctor)", m_mainContentWidget);
-    m_docInfo->setStyleSheet("font-size: 14px; font-weight: bold; color: #3C4043;");
+    // 🌟 CHỖ NÀY ĐÂY: Phải có chữ "QHBoxLayout*" để khởi tạo biến nhé bạn!
+    QHBoxLayout* userInfoLayout = new QHBoxLayout();
+    userInfoLayout->setSpacing(10); 
 
+    // Khởi tạo Text hiển thị tên bác sĩ
+    m_docNameLabel = new QLabel("Loading...", m_mainContentWidget);
+    m_docNameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #3C4043; font-family: 'Arial';");
+
+    // Khởi tạo Button tròn chứa Avatar cá nhân
+    m_docAvatarBtn = new QPushButton(m_mainContentWidget);
+    m_docAvatarBtn->setFixedSize(36, 36);
+    m_docAvatarBtn->setCursor(Qt::PointingHandCursor);
+    m_docAvatarBtn->setStyleSheet("QPushButton { background-color: transparent; border: none; padding: 0px; margin: 0px; }");
+
+    // Thả chữ và nút bấm vào cụm Layout con
+    userInfoLayout->addWidget(m_docNameLabel);
+    userInfoLayout->addWidget(m_docAvatarBtn);
+
+    // Xếp các thành phần lên thanh Topbar lớn
     topbarLayout->addWidget(m_searchInput);
     topbarLayout->addStretch();
-    topbarLayout->addWidget(m_docInfo);
+    topbarLayout->addLayout(userInfoLayout); // Hút cụm user sang tận cùng bên phải
+
+    // Đẩy thanh Topbar vào Layout tổng bên phải
     m_mainContentLayout->addLayout(topbarLayout);
 
     m_globalLayout->addWidget(m_mainContentWidget, 1);
