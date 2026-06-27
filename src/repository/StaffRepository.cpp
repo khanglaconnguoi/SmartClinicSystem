@@ -166,7 +166,7 @@ bool StaffRepository::updateStaff(const StaffUpdateDTO& staff) {
             email = ?,
             address = ?,
             department_id = ?,
-            shift = ?,
+            shift = ?
         WHERE staff_id = ?;
     )";
 
@@ -518,7 +518,7 @@ bool StaffRepository::existsByEmail(const QString& email, int excludeStaffId) co
 }
 
 bool StaffRepository::existsByLicenseNumber(const QString& licenseNumber, int excludeStaffId) const {
-    QString sql = "SELECT COUNT(*) FROM staff WHERE license_number = ?";
+    QString sql = "SELECT COUNT(*) FROM doctor_profiles WHERE license_number = ?";
     QVariantList params;
     params << licenseNumber;
 

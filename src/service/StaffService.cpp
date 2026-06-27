@@ -1,148 +1,61 @@
 #include "StaffService.h"
+#include "Validation.h"
 #include "model/SystemUser.h"
 #include "ext/bcrypt.h"
-#include <algorithm>
 #include <QDate>
 #include <QPixmap>
 #include <QRegularExpression>
 #include <QRandomGenerator>
 
 
-static constexpr qsizetype MOBILE_PHONE_NUMBER_LENGTH = 10;
-static constexpr qsizetype LANDLINE_PHONE_NUMBER_LENGTH = 11;
-static constexpr qsizetype CITIZEN_ID_LENGTH = 12;
-static constexpr qsizetype PASSWORD_MINIMUM_LENGTH = 12;
 static constexpr qsizetype NUMBER_BASE = 10;
 static constexpr qsizetype LAST_TWO_DIGITS_FACTOR = 100;
 static constexpr qsizetype RANDOM_PASSWORD_LENGTH = 16;
+static constexpr qsizetype LEGAL_WORKING_AGE = 18;
 
-static constexpr std::array<QStringView, 63> CITIZEN_ID_VALID_PREFIXES = {u"001", u"002", u"004",
-        u"006", u"008", u"010", u"011", u"012", u"014", u"015", u"017", u"019", u"020", u"022",
-        u"023", u"025", u"026", u"027", u"030", u"031", u"033", u"034", u"035", u"036", u"037",
-        u"038", u"040", u"042", u"044", u"045", u"046", u"048", u"049", u"051", u"052", u"054",
-        u"056", u"058", u"060", u"062", u"064", u"066", u"067", u"068", u"070", u"072", u"074",
-        u"075", u"077", u"079", u"080", u"082", u"083", u"084", u"086", u"087", u"089", u"091",
-        u"092", u"093", u"094", u"095", u"096"};
 
 
 // -- Field chung cho moi role ────────────────────────────────────
 
 QString StaffService::validatePlainPassword(const QString& plainPassword) {
-    if (plainPassword.length() < PASSWORD_MINIMUM_LENGTH)
-        return QString("Password too weak. Must have at least %1 characters.")
-                .arg(PASSWORD_MINIMUM_LENGTH);
-
-    bool hasUpper = false, hasLower = false, hasDigit = false, hasSpecial = false;
-    for (const QChar& c : plainPassword) {
-        if (c.isUpper()) hasUpper = true;
-        else if (c.isLower()) hasLower = true;
-        else if (c.isDigit()) hasDigit = true;
-        else if (!c.isSpace()) hasSpecial = true;
-    }
-
-    if (!hasUpper) return "Password too weak. Must have at least 1 uppercase letter.";
-    if (!hasLower) return "Password too weak. Must have at least 1 lowercase letter.";
-    if (!hasDigit) return "Password too weak. Must have at least 1 digit.";
-    if (!hasSpecial) return "Password too weak. Must have at least 1 special character.";
-
-    return "";
+    return Validation::validatePlainPassword(plainPassword);
 }
 
-
-
-
-/** @brief fullName: khong duoc rong, toi da 100 ky tu */
 QString StaffService::validateFullName(const QString& fullName) {
-    if (fullName.trimmed().isEmpty()) {
-        return "Full name is required.";
-    }
-    if (fullName.trimmed().length() > 100) {
-        return "Full name must not exceed 100 characters.";
-    }
-    return "";
+    return Validation::validateFullName(fullName);
 }
+
+QString StaffService::validateCitizenId(const QString& citizenId) {
+    return Validation::validateCitizenId(citizenId);
+}
+
+QString StaffService::validatePhoneNumber(const QString& phoneNumber) {
+    return Validation::validatePhoneNumber(phoneNumber);
+}
+
+QString StaffService::validateEmail(const QString& email) {
+    return Validation::validateEmail(email);
+}
+
+QString StaffService::validateAddress(const QString& address) {
+    return Validation::validateAddress(address);
+}
+
 
 /**
  * @brief dateOfBirth: khong duoc tuong lai, phai it nhat 18 tuoi
  *        (Nhan vien phai du tuoi lao dong)
  */
 QString StaffService::validateDateOfBirth(const QDate& dateOfBirth) {
-    if (dateOfBirth.isNull()) {
-        return "Date of birth is required.";
+    QString err = Validation::validateDateOfBirth(dateOfBirth);
+    if (!err.isEmpty()) {
+        return err;
     }
     
     QDate today = QDate::currentDate();
-    if (dateOfBirth > today) {
-        return "Date of birth cannot be in the future.";
-    }
-    
     // Kiểm tra đủ 18 tuổi lao động
-    if (dateOfBirth.addYears(18) > today) {
-        return "Staff member must be at least 18 years old.";
-    }
-    return "";
-}
-
-
-QString StaffService::validateCitizenId(const QString& citizenId) {
-    const QString msgInvalidCitizenId = "Invalid value for citizen ID.";
-
-    if (citizenId.length() != CITIZEN_ID_LENGTH) return msgInvalidCitizenId;
-
-    if (!std::all_of(citizenId.begin(), citizenId.end(), [](const QChar& c) { return c.isDigit(); }))
-        return msgInvalidCitizenId;
-
-    if (std::find(CITIZEN_ID_VALID_PREFIXES.begin(), CITIZEN_ID_VALID_PREFIXES.end(), 
-                QStringView(citizenId).left(3)) == CITIZEN_ID_VALID_PREFIXES.end())
-        return msgInvalidCitizenId;
-
-    return "";
-}
-
-
-QString StaffService::validatePhoneNumber(const QString& phoneNumber) {
-    const QString msgInvalidPhoneNumber = "Invalid phone number.";
-
-    if (phoneNumber.isEmpty() || phoneNumber[0] != '0') return msgInvalidPhoneNumber;
-
-    if (!std::all_of(
-                phoneNumber.begin(), phoneNumber.end(), [](const QChar& c) { return c.isDigit(); }))
-        return msgInvalidPhoneNumber;
-
-    switch (phoneNumber.length()) {
-        case MOBILE_PHONE_NUMBER_LENGTH:
-            if (phoneNumber[1] == '0' || phoneNumber[1] == '1' || phoneNumber[1] == '2' ||
-                    phoneNumber[1] == '6')
-                return msgInvalidPhoneNumber;
-            break;
-        case LANDLINE_PHONE_NUMBER_LENGTH:
-            if (phoneNumber[1] != '2') return msgInvalidPhoneNumber;
-            break;
-        default:
-            return msgInvalidPhoneNumber;
-    }
-
-    return "";
-}
-
-
-/** @brief email: dinh dang co ban (co @, co domain, co dot sau @) */
-QString StaffService::validateEmail(const QString& email) {
-    if (email.trimmed().isEmpty()) {
-        return "Email is required.";
-    }
-    // Regex chuẩn hóa kiểm tra định dạng email cơ bản
-    static const QRegularExpression emailRegex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)");
-    if (!emailRegex.match(email).hasMatch()) {
-        return "Invalid email format (e.g., example@domain.com).";
-    }
-    return "";
-}
-
-/** @brief address: khong duoc rong */
-QString StaffService::validateAddress(const QString& address) {
-    if (address.trimmed().isEmpty()) {
-        return "Address is required.";
+    if (dateOfBirth.addYears(LEGAL_WORKING_AGE) > today) {
+        return QString("Staff member must be at least %1 years old.").arg(LEGAL_WORKING_AGE);
     }
     return "";
 }
@@ -189,7 +102,7 @@ QString StaffService::validateLicenseNumber(const QString& licenseNumber) {
     }
     // Giới hạn chỉ chứa chữ và số (Ký tự alphanumeric)
     static const QRegularExpression alphanumericRegex("^[a-zA-Z0-9]+$");
-    if (!alphanumericRegex.match(licenseNumber).hasMatch()) {
+    if (!alphanumericRegex.match(licenseNumber.trimmed()).hasMatch()) {
         return "License number must contain only letters and digits.";
     }
     return "";
@@ -237,7 +150,7 @@ QString StaffService::validateNurseLevel(const QString& nurseLevel) {
  * @param excludeStaffId Bo qua staff_id nay khi kiem tra (dung cho update)
  */
 QString StaffService::validateCitizenIdUnique(const QString& citizenId, int excludeStaffId) const {
-    if (m_staffRepository->existsByCitizenId(citizenId, excludeStaffId)) {
+    if (m_staffRepository->existsByCitizenId(citizenId.trimmed(), excludeStaffId)) {
         return "This Citizen ID is already registered in the system.";
     }
     return "";
@@ -248,10 +161,10 @@ QString StaffService::validateCitizenIdUnique(const QString& citizenId, int excl
  * @param excludeStaffId Bo qua staff_id nay khi kiem tra (dung cho update)
  */
 QString StaffService::validatePhoneNumberUnique(const QString& phoneNumber, int excludeStaffId) const {
-    if (phoneNumber.length() == LANDLINE_PHONE_NUMBER_LENGTH) {
+    if (phoneNumber.length() == Validation::LANDLINE_PHONE_NUMBER_LENGTH) {
         return "";
     }
-    if (m_staffRepository->existsByPhoneNumber(phoneNumber, excludeStaffId)) {
+    if (m_staffRepository->existsByPhoneNumber(phoneNumber.trimmed(), excludeStaffId)) {
         return "This Phone number is already registered in the system.";
     }
     return "";
@@ -262,7 +175,7 @@ QString StaffService::validatePhoneNumberUnique(const QString& phoneNumber, int 
  * @param excludeStaffId Bo qua staff_id nay khi kiem tra (dung cho update)
  */
 QString StaffService::validateEmailUnique(const QString& email, int excludeStaffId) const {
-    if (m_staffRepository->existsByEmail(email, excludeStaffId)) {
+    if (m_staffRepository->existsByEmail(email.trimmed(), excludeStaffId)) {
         return "This Email address is already in use.";
     }
     return "";
@@ -273,7 +186,7 @@ QString StaffService::validateEmailUnique(const QString& email, int excludeStaff
  * @param excludeStaffId Bo qua staff_id nay khi kiem tra (dung cho update)
  */
 QString StaffService::validateLicenseNumberUnique(const QString& licenseNumber, int excludeStaffId) const {
-    if (m_staffRepository->existsByLicenseNumber(licenseNumber, excludeStaffId)) {
+    if (m_staffRepository->existsByLicenseNumber(licenseNumber.trimmed(), excludeStaffId)) {
         return "This License number is already registered.";
     }
     return "";
@@ -337,8 +250,8 @@ QString StaffService::validateNurseInput(const NurseInputDTO& nurse, int staffId
 
 
 
-QString StaffService::generateStaffCode(int year, UserRole role) const {
-    // int year = QDate::currentDate().year();
+QString StaffService::generateStaffCode(UserRole role) const {
+    int year = QDate::currentDate().year();
     QString yearCode = QString("%1").arg(year % LAST_TWO_DIGITS_FACTOR, 2, NUMBER_BASE, QChar('0'));
     QString roleCode;
     switch (role) {
@@ -393,26 +306,26 @@ bool StaffService::hireNewDoctor(const DoctorInputDTO& doctor) {
     }
 
     DoctorInsertDTO dto = {
-        generateStaffCode(QDate::currentDate().year(), UserRole::Doctor), 
+        generateStaffCode(UserRole::Doctor), 
         QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12)),
-        doctor.fullName, 
+        doctor.fullName.trimmed(), 
         doctor.avatar, 
         UserRole::Doctor, 
         doctor.gender,
         doctor.dateOfBirth.toString("yyyy-MM-dd"),
-        doctor.citizenId, 
-        doctor.phoneNumber, 
-        doctor.email, 
-        doctor.address,     
+        doctor.citizenId.trimmed(), 
+        doctor.phoneNumber.trimmed(), 
+        doctor.email.trimmed(), 
+        doctor.address.trimmed(),     
         doctor.departmentId, 
         QDate::currentDate().toString("yyyy-MM-dd"), 
         doctor.shift,
 
-        doctor.specialty, 
-        doctor.licenseNumber, 
+        doctor.specialty.trimmed(), 
+        doctor.licenseNumber.trimmed(), 
         doctor.experienceYears, 
         doctor.consultationFee, 
-        doctor.bio
+        doctor.bio.trimmed()
     };
 
     return this->m_staffRepository->insertDoctor(dto);
@@ -424,23 +337,23 @@ bool StaffService::hireNewNurse(const NurseInputDTO& nurse) {
     }
 
     NurseInsertDTO dto = {
-        generateStaffCode(QDate::currentDate().year(), UserRole::Nurse), 
+        generateStaffCode(UserRole::Nurse), 
         QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12)),
-        nurse.fullName, 
+        nurse.fullName.trimmed(), 
         nurse.avatar, 
         UserRole::Nurse, 
         nurse.gender,
         nurse.dateOfBirth.toString("yyyy-MM-dd"),
-        nurse.citizenId, 
-        nurse.phoneNumber, 
-        nurse.email, 
-        nurse.address,     
+        nurse.citizenId.trimmed(), 
+        nurse.phoneNumber.trimmed(), 
+        nurse.email.trimmed(), 
+        nurse.address.trimmed(),     
         nurse.departmentId, 
         QDate::currentDate().toString("yyyy-MM-dd"), 
         nurse.shift,
 
-        nurse.nurseLevel,
-        nurse.certification
+        nurse.nurseLevel.trimmed(),
+        nurse.certification.trimmed()
     };
 
     return this->m_staffRepository->insertNurse(dto);
@@ -464,4 +377,22 @@ QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
     criteria.includeDeleted = includeDeleted;
 
     return m_staffRepository->search(criteria);
+}
+
+bool StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
+    if (!validateStaffBaseInput(staffInformation, staffId).isEmpty()) return false;
+    StaffUpdateDTO staffUpdateDto{staffInformation, staffId};
+    return m_staffRepository->updateStaff(staffUpdateDto);
+}
+
+bool StaffService::editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId) {
+    if (!validateDoctorInput(doctorInformation, staffId).isEmpty()) return false;
+    DoctorUpdateDTO doctorUpdateDto{doctorInformation, staffId};
+    return m_staffRepository->updateDoctor(doctorUpdateDto);
+}
+
+bool StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, int staffId) {
+    if (!validateNurseInput(nurseInformation, staffId).isEmpty()) return false;
+    NurseUpdateDTO nurseUpdateDto{nurseInformation, staffId};
+    return m_staffRepository->updateNurse(nurseUpdateDto);
 }

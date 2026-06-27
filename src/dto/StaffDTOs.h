@@ -8,6 +8,7 @@
 #include <QDate>
 #include <QPixmap>
 #include "model/CommonEnums.h"
+#include "model/SystemUser.h"
 
 // ── INPUT DTOs ───────────────────────────────────────────────────────
 // Dùng khi đọc thông tin nhân viên mới từ form đăng kí (UI → Service)
@@ -98,6 +99,21 @@ struct StaffUpdateDTO {
     QString     address;            // ADMIN & DOCTOR
     int         departmentId;       // ADMIN   
     QString     shift;              // ADMIN
+
+    StaffUpdateDTO() = default;
+    StaffUpdateDTO(const StaffInputDTO& inputInformation, int inputId)
+        : staffId(inputId),
+          fullName(inputInformation.fullName.trimmed()),
+          avatar(inputInformation.avatar),
+          role(inputInformation.role),
+          gender(inputInformation.gender),
+          dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
+          citizenId(inputInformation.citizenId.trimmed()),
+          phoneNumber(inputInformation.phoneNumber.trimmed()),
+          email(inputInformation.email.trimmed()),
+          address(inputInformation.address.trimmed()),
+          departmentId(inputInformation.departmentId),
+          shift(inputInformation.shift) {}
 };
 
 struct DoctorUpdateDTO : public StaffUpdateDTO {
@@ -106,11 +122,26 @@ struct DoctorUpdateDTO : public StaffUpdateDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
+
+    DoctorUpdateDTO() = default;
+    DoctorUpdateDTO(const DoctorInputDTO& inputInformation, int inputId)
+        : StaffUpdateDTO(inputInformation, inputId),
+          specialty(inputInformation.specialty.trimmed()),
+          licenseNumber(inputInformation.licenseNumber.trimmed()),
+          experienceYears(inputInformation.experienceYears),
+          consultationFee(inputInformation.consultationFee),
+          bio(inputInformation.bio.trimmed()) {}
 };
 
 struct NurseUpdateDTO : public StaffUpdateDTO {
     QString nurseLevel;
     QString certification;
+
+    NurseUpdateDTO() = default;
+    NurseUpdateDTO(const NurseInputDTO inputInformation, int inputId)
+        : StaffUpdateDTO(inputInformation, inputId),
+          nurseLevel(inputInformation.nurseLevel.trimmed()),
+          certification(inputInformation.certification.trimmed()) {}
 };
 
 // ── SEARCH CRITERIA ───────────────────────────────────────────────────

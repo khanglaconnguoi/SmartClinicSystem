@@ -39,7 +39,7 @@ private:
     QString validateDoctorInput(const DoctorInputDTO& doctor, int staffId = -1);
     QString validateNurseInput(const NurseInputDTO& nurse, int staffId = -1);
 
-    QString generateStaffCode(int year, UserRole role) const;
+    QString generateStaffCode(UserRole role) const;
     QString generateRandomPassword() const;
 
 public:
@@ -59,11 +59,11 @@ public:
     // -- Field chung cho moi role ────────────────────────────────────
     static QString validatePlainPassword(const QString& plainPassword);
     static QString validateFullName(const QString& fullName);
-    static QString validateDateOfBirth(const QDate& dateOfBirth);
     static QString validateCitizenId(const QString& citizenId);
     static QString validatePhoneNumber(const QString& phoneNumber);
     static QString validateEmail(const QString& email);
     static QString validateAddress(const QString& address);
+    static QString validateDateOfBirth(const QDate& dateOfBirth);
     static QString validateDepartmentId(int departmentId);
     //static QString validateShift(const QString& shift);
  
@@ -96,6 +96,10 @@ public:
     bool hireNewDoctor(const DoctorInputDTO& doctor);
     bool hireNewNurse(const NurseInputDTO& nurse);
     //bool hireNewReceptionist(/*...*/);
+
+    bool editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId);
+    bool editDoctorInformation(const DoctorInputDTO& doctor, int staffId);
+    bool editNurseInformation(const NurseInputDTO& nurse, int staffId);
 
     QList<std::shared_ptr<SystemUser>> searchDoctors(
         QString searchKey,    
