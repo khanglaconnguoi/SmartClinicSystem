@@ -3,12 +3,11 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <memory>
-#include "LoginWidget.h"
+#include "LoginDialog.h"
 #include "BaseDashboard.h"
 #include "../service/AuthService.h" 
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
@@ -22,6 +21,6 @@ private:
     void registerDashboardPage(BaseDashboardWidget* page);
 
     QStackedWidget* m_stackedWidget;
-    LoginWidget* m_loginWidget;
+    LoginDialog* m_loginWidget;
     std::shared_ptr<AuthService> m_authService;
 };

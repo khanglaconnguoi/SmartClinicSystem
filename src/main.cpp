@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 /*#include "ui/Doctor/DoctorDashboard.h"
 #include "repository/DatabaseManager.h"
 #include <QApplication>
-#include <memory>
+#include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);

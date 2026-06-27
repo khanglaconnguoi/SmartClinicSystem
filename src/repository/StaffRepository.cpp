@@ -176,11 +176,8 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
         avatar.load(defaultAvatarPath);
     }
 
-<<<<<<< ours
-=======
 
     
->>>>>>> theirs
     switch(role) {
         case UserRole::Doctor: {
             QString specialty = query.value("specialty").toString();
