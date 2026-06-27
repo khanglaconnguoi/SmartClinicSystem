@@ -1,6 +1,7 @@
 #pragma once
 #include <QString>
 #include <vector>
+#include <QPixmap>
 enum class AccountType { Staff, Patient };
 
 class IAuthenticatable {
@@ -12,6 +13,7 @@ public:
     virtual QString     getPasswordHash()   const = 0;
     virtual AccountType getAccountType()    const = 0;
     virtual QString     getFullName()       const = 0;
+    virtual QPixmap     getAvatar()         const = 0;
 
     // --- Đa hình điều khiển UI (dùng cho MainWindow) ---
     virtual QStringList getMenuItems()                const = 0;

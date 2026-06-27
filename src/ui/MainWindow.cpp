@@ -1,57 +1,34 @@
 #include "MainWindow.h"
 #include "Doctor/DoctorDashboard.h" 
-#include "../model/IAuthenticatable.h"   
+#include "model/IAuthenticatable.h"   
 #include <QLabel>
-#include <QDebug>
 #include <QMessageBox>
 #include <QPushButton>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {    
     setWindowTitle("Smart Clinic System");
     resize(1000, 600);
-    m_authService = std::make_shared<AuthService>();
+    m_authService = std::make_shared<AuthService>(std::make_shared<StaffRepository>());
 
     m_stackedWidget = new QStackedWidget(this);
     setCentralWidget(m_stackedWidget);
 
-    m_loginWidget = new LoginWidget(this);
+    m_loginWidget = new LoginDialog(m_authService, this);
     m_stackedWidget->addWidget(m_loginWidget);
 
-    connect(m_loginWidget, &LoginWidget::loginButtonClicked, this, [this]() {
-        
-        QString staffCode = m_loginWidget->getStaffCode();
-        QString plainPassword = m_loginWidget->getPlainPassword();
+    connect(m_loginWidget, &LoginDialog::loginSucceeded, this, [this](std::shared_ptr<IAuthenticatable> user) {
+        if (!user) return;
 
-        if (staffCode.isEmpty() || plainPassword.isEmpty()) {
-            qDebug() << "khong duoc de trong";
-            return;
+        if (user->getAccountType() == AccountType::Staff) {
+            auto* doctorDash = new DoctorDashboardWidget(user, this);
+            registerDashboardPage(doctorDash);
+            this->showMaximized();
         }
-
-        std::optional<std::shared_ptr<IAuthenticatable>> authResult = m_authService->login(staffCode, plainPassword);
-
-        if (authResult.has_value()) {
-            qDebug() << "Thanh cong" << staffCode;
-            
-            std::shared_ptr<IAuthenticatable> loggedInUser = authResult.value();
-
-            if (!loggedInUser) return;
-
-            if (loggedInUser->getAccountType() == AccountType::Staff) {
-                auto* doctorDash = new DoctorDashboardWidget(loggedInUser, this);
-                registerDashboardPage(doctorDash);
-                this->showMaximized();
-            } 
-            else if (loggedInUser->getAccountType() == AccountType::Patient) {
-                // Sau này làm Dashboard bệnh nhân thì bạn thêm ở đây:
-                // auto* patientDash = new PatientDashboardWidget(loggedInUser, this);
-                // registerDashboardPage(patientDash);
-                // this->showMaximized();
-            }
-            m_loginWidget->clearFields();
-        } 
-        else {
-            qDebug() << "Sai mk";
-            QMessageBox::critical(this, "Lỗi đăng nhập", "Tài khoản hoặc mật khẩu không chính xác!");
+        else if (user->getAccountType() == AccountType::Patient) {
+            // Sau này làm Dashboard bệnh nhân thì bạn thêm ở đây:
+            // auto* patientDash = new PatientDashboardWidget(user, this);
+            // registerDashboardPage(patientDash);
+            // this->showMaximized();
         }
     });
 }
@@ -120,6 +97,7 @@ void MainWindow::handleGlobalLogout() {
         
         this->showNormal();
         this->resize(1000, 600); 
+        m_loginWidget->clearFields();
         
         QWidget* currentDash = m_stackedWidget->widget(1);
         if (currentDash && currentDash != m_loginWidget) {

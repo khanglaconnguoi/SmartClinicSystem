@@ -40,10 +40,10 @@ protected:
     QWidget* m_mainContentWidget;
     QVBoxLayout* m_mainContentLayout;
     QLineEdit* m_searchInput;
-    QLabel* m_docInfo;
-
+    QLabel* m_docNameLabel;
+    QPushButton* m_docAvatarBtn;
     // Bảng và các danh sách dùng chung
-    QTableWidget* m_patientTable;
+    QTableWidget* m_patientTable;   
 
 private:
     QHBoxLayout* m_globalLayout;
