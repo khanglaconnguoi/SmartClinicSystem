@@ -1,20 +1,18 @@
-
 #ifndef PROFILE_H
 #define PROFILE_H
 
 #include <QDialog>
-#include <QWidget>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QComboBox>
 
-class ProfileWidget : public QDialog
-{
+class ProfileWidget : public QDialog {
     Q_OBJECT
 
 public:
     explicit ProfileWidget(QWidget *parent = nullptr);
-    ~ProfileWidget() = default;
+    void loadDoctorProfile(const QString &staffCode);
 
 private slots:
     void onEditClicked();
@@ -24,20 +22,27 @@ private:
     QWidget* createLeftPanel();
     QWidget* createRightPanel();
 
-    QWidget* createInfoCard(const QString &title, const QList<QPair<QString, QString>> &items);
-    QWidget* createSecurityCard();
-
-    // Các thành phần cần quản lý con trỏ để cập nhật dữ liệu
     QLabel *lblAvatar;
     QLabel *lblStatus;
     QLabel *lblName;
     QLabel *lblRole;
     QLabel *lblStaffCode;
-    QLabel *lblStaffId;
-    QLabel *lblShift;
-
+    QComboBox *cmbShift;
     QPushButton *btnEdit;
-    QPushButton *btnExport;
+
+    QLineEdit *txtFullName;
+    QLineEdit *txtGender;
+    QLineEdit *txtDob;
+    QLineEdit *txtCitizenId;
+    QLineEdit *txtPhone;
+    QLineEdit *txtEmail;
+    QLineEdit *txtAddress;
+
+    QLabel *lblDepartment;
+    QLabel *lblHireDate;
+
+    int currentStaffId;
+    QString currentStaffCode;
 };
 
-#endif // PROFILE_H
+#endif
