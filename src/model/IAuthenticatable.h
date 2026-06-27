@@ -20,3 +20,4 @@ public:
     virtual bool canAccess(const QString& moduleCode) const = 0;
     virtual QString getDisplayRole()                  const = 0;
 };
+

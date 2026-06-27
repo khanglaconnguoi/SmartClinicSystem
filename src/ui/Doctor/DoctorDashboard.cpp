@@ -16,47 +16,74 @@ DoctorDashboardWidget::DoctorDashboardWidget(std::shared_ptr<IAuthenticatable> u
 }
 
 void DoctorDashboardWidget::fillDashboardData() {
+    // 1. 👨‍⚕️ Nạp chữ tên bác sĩ thật lên Topbar lớp cha
     if (m_currentUser && m_docNameLabel) {
         m_docNameLabel->setText(m_currentUser->getFullName());
     }
 
+    // 2. 🖼️ NẠP VÀ VẼ AVATAR TRỰC TIẾP TỪ QPIXMAP CỦA MODEL
     if (m_docAvatarBtn && m_currentUser) {
         QPixmap rawPixmap = m_currentUser->getAvatar();
 
+        // Nếu đối tượng QPixmap trống, nạp tạm một ảnh màu xanh ngọc mặc định
         if (rawPixmap.isNull()) {
             rawPixmap = QPixmap(36, 36);
-            rawPixmap.fill(QColor("#00969A")); 
+            rawPixmap.fill(QColor("#00966C")); 
         }
 
         int size = 36;
+        
+        // 🌟 BỔ SUNG: Ép cứng kích thước của chính nút bấm trước khi nạp Icon vào
         m_docAvatarBtn->setFixedSize(size, size);
 
+        // Thực hiện căn tỷ lệ scale ảnh mượt mà cho vừa vặn khung 36x36
         QPixmap scaledPixmap = rawPixmap.scaled(size, size, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
 
+        // Tạo bộ đệm trong suốt để thực hiện kỹ thuật cắt mặt nạ (Mask) hình tròn
         QPixmap targetPixmap(size, size);
         targetPixmap.fill(Qt::transparent);
 
         QPainter painter(&targetPixmap);
-        painter.setRenderHint(QPainter::Antialiasing); 
+        painter.setRenderHint(QPainter::Antialiasing); // Khử răng cưa cho viền tròn láng mịn
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
+        // Tạo khuôn cắt hình elip (hình tròn)
         QPainterPath path;
         path.addEllipse(0, 0, size, size);
         painter.setClipPath(path);
         
+        // Vẽ đè ảnh đã scale vào khuôn hình tròn
         painter.drawPixmap(0, 0, scaledPixmap);
         painter.end();
 
+        // 🌟 THAY ĐỔI QUAN TRỌNG: Thiết lập thuộc tính hiển thị Icon trước rồi mới gán Icon
         m_docAvatarBtn->setIconSize(QSize(size, size)); 
         m_docAvatarBtn->setIcon(QIcon(targetPixmap));
 
+        // 🌟 BỔ SUNG BẢO HIỂM: Ép QSS để đảm bảo nút bấm không bị thu nhỏ và trong suốt viền hoàn toàn
         m_docAvatarBtn->setStyleSheet(
-            "QPushButton { background-color: transparent; border: none; width: 36px; height: 36px; padding: 0px; margin: 0px; }"
+            "QPushButton { "
+            "   background-color: transparent; "
+            "   border: none; "
+            "   width: 36px; "
+            "   height: 36px; "
+            "   padding: 0px; "
+            "   margin: 0px; "
+            "}"
         );
 
+        // Đảm bảo nút bấm cập nhật lại trạng thái hiển thị đồ họa
         m_docAvatarBtn->update();
+
+        // Bắt sự kiện click chuột dắt tới trang profile cá nhân
+        // (Chỉ connect 1 lần duy nhất, nên dùng Qt::UniqueConnection để tránh bị lặp sự kiện khi hàm này gọi lại)
+        disconnect(m_docAvatarBtn, &QPushButton::clicked, nullptr, nullptr); // Reset connection cũ nếu có
+        connect(m_docAvatarBtn, &QPushButton::clicked, this, [this]() {
+            qDebug() << "Đang mở trang Profile của bác sĩ...";
+        });
     }
 
+    // Giữ nguyên các hàm vẽ Card, Biểu đồ và Bảng của bạn ở phía dưới
     createDoctorCards();
     createDoctorCharts();
     createDoctorTable();

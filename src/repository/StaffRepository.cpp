@@ -2,6 +2,7 @@
 #include "DatabaseManager.h"
 #include "model/Doctor.h"
 #include <QBuffer>
+#include <QDir>
 #include <QIODevice>
 #include <QDir>
 
@@ -307,6 +308,7 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
             avatar.load(defaultPath);
         #endif
     }
+
 
     
     switch(role) {
