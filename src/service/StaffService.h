@@ -23,6 +23,10 @@
 #include <QList>
 #include <memory>
 
+struct ResetPasswordResult {
+    bool result;
+    QString newPassword;
+};
 
 class StaffService {
 private:
@@ -109,4 +113,7 @@ public:
         bool onlyActive,
         bool includeDeleted
     ) const;
+
+    bool changePassword(int staffId, const QString& plainPassword);
+    ResetPasswordResult resetPassword(int staffId);
 };

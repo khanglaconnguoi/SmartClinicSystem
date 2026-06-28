@@ -1,19 +1,19 @@
 #include "StaffService.h"
-#include "Validation.h"
-#include "model/SystemUser.h"
-#include "ext/bcrypt.h"
+
 #include <QDate>
 #include <QPixmap>
-#include <QRegularExpression>
 #include <QRandomGenerator>
+#include <QRegularExpression>
 
+#include "Validation.h"
+#include "ext/bcrypt.h"
+#include "model/SystemUser.h"
 
 static constexpr qsizetype NUMBER_BASE = 10;
 static constexpr qsizetype LAST_TWO_DIGITS_FACTOR = 100;
 static constexpr qsizetype RANDOM_PASSWORD_LENGTH = 16;
 static constexpr qsizetype LEGAL_WORKING_AGE = 18;
-
-
+static constexpr unsigned int PASSWORD_HASH_COST_FACTOR = 12;
 
 // -- Field chung cho moi role ────────────────────────────────────
 
@@ -283,22 +283,28 @@ QString StaffService::generateStaffCode(UserRole role) const {
 }
 
 QString StaffService::generateRandomPassword() const {
-    static QString validChars =
-            R"(!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~)";
+    static QString chars = R"(0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz)";
+    static QString specialChars = R"(#@)";
     QRandomGenerator* generator = QRandomGenerator::global();
 
-    QString password;
-    password.reserve(RANDOM_PASSWORD_LENGTH);
+    QString password(RANDOM_PASSWORD_LENGTH, ' ');
+
+    for (int count = 0; count < 2;) {
+        auto i = generator->bounded(RANDOM_PASSWORD_LENGTH);
+        if (password[i] != ' ') continue;
+        auto charIndex = generator->bounded(specialChars.length());
+        password[i] = specialChars[charIndex];
+        ++count;
+    }
 
     for (int i = 0; i < RANDOM_PASSWORD_LENGTH; ++i) {
-        auto index = generator->bounded(validChars.length());
-        password.append(validChars[index]);
+        if (password[i] != ' ') continue;
+        auto charIndex = generator->bounded(chars.length());
+        password[i] = chars[charIndex];
     }
 
     return password;
 }
-
-
 
 bool StaffService::hireNewDoctor(const DoctorInputDTO& doctor) {
     if (!validateDoctorInput(doctor).isEmpty()) {
@@ -307,7 +313,7 @@ bool StaffService::hireNewDoctor(const DoctorInputDTO& doctor) {
 
     DoctorInsertDTO dto = {
         generateStaffCode(UserRole::Doctor), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12)),
+        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR)),
         doctor.fullName.trimmed(), 
         doctor.avatar, 
         UserRole::Doctor, 
@@ -338,7 +344,7 @@ bool StaffService::hireNewNurse(const NurseInputDTO& nurse) {
 
     NurseInsertDTO dto = {
         generateStaffCode(UserRole::Nurse), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12)),
+        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR)),
         nurse.fullName.trimmed(), 
         nurse.avatar, 
         UserRole::Nurse, 
@@ -395,4 +401,27 @@ bool StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, i
     if (!validateNurseInput(nurseInformation, staffId).isEmpty()) return false;
     NurseUpdateDTO nurseUpdateDto{nurseInformation, staffId};
     return m_staffRepository->updateNurse(nurseUpdateDto);
+}
+
+bool StaffService::changePassword(int staffId, const QString& plainPassword) {
+    if (staffId <= 0) return false;
+    if (!validatePlainPassword(plainPassword).isEmpty()) return false;
+    if (!m_staffRepository->existsByStaffId(staffId)) return false;
+
+    QString passwordHash = QString::fromStdString(
+            bcrypt::generateHash(plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
+    return m_staffRepository->updatePasswordInformation(staffId, passwordHash);
+}
+
+ResetPasswordResult StaffService::resetPassword(int staffId) {
+    if (staffId <= 0 || !m_staffRepository->existsByStaffId(staffId))
+        return ResetPasswordResult{false, ""};
+
+    QString password = generateRandomPassword();
+    QString passwordHash = QString::fromStdString(
+            bcrypt::generateHash(password.toStdString(), PASSWORD_HASH_COST_FACTOR));
+
+    bool result = m_staffRepository->updatePasswordInformation(staffId, passwordHash, true);
+    if (!result) return ResetPasswordResult{false, ""};
+    return ResetPasswordResult{true, password};
 }

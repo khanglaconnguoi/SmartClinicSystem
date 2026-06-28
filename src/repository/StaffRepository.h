@@ -40,15 +40,16 @@ public:
     bool existsByCitizenId(const QString& citizenId, int excludeStaffId = -1) const;
     bool existsByEmail(const QString& email, int excludeStaffId = -1) const;
     bool existsByPhoneNumber(const QString& licenseNumber, int excludeStaffId = -1) const;
-    bool existsByLicenseNumber(const QString& licenseNumber, int excludeStaffId = -1) const;
-    
+    bool existsByLicenseNumber(const QString& licenseNumber, int excludeStaffId = -1) const; 
+    bool existsByStaffId(int staffId) const;
 
     // // --- Phân trang (cho QTableView) ---
     // std::vector<std::shared_ptr<SystemUser>> findPaged(int offset, int limit) const;
     // int countTotal(bool includeInactive = false) const;
 
-    // // --- Mật khẩu ---
-    // bool updatePasswordHash(int userId, const QString& newHash);
+    // --- Mật khẩu ---
+    bool updatePasswordInformation(
+            int userId, const QString& newHash, bool mustChangePassword = false);
 
     // // --- Audit Log (tính năng nâng cao Module 1) ---
     // bool logLoginAttempt(int userId, const QString& ipAddress, bool success, const QString& moduleAccessed = "");

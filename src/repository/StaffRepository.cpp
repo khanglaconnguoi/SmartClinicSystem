@@ -536,5 +536,48 @@ bool StaffRepository::existsByLicenseNumber(const QString& licenseNumber, int ex
     return false;
 }
 
+bool StaffRepository::existsByStaffId(int staffId) const {
+    QString sql = R"(SELECT COUNT(*) FROM staff WHERE staff_id = ?;)";
+    QVariantList params;
+    params << staffId;
 
-    
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+    if (query.next()) {
+        int count = query.value(0).toInt();
+        return count > 0;
+    }
+
+    return false;
+}
+
+bool StaffRepository::updatePasswordInformation(
+        int userId, const QString& newHash, bool mustChangePassword) {
+    DatabaseManager& db = DatabaseManager::getInstance();
+    if (!db.beginTransaction()) return false;
+
+    if (!existsByStaffId(userId)) {
+        db.rollbackTransaction();
+        return false;
+    }
+
+    QString sql = R"(
+        UPDATE staff 
+        SET 
+            password_hash = ?,
+            must_change_password = ?
+        WHERE staff_id = ?;
+    )";
+    QVariantList params;
+    params << newHash;
+    params << (mustChangePassword ? 1 : 0);
+    params << userId;
+
+    if (!DatabaseManager::getInstance().executeQuery(sql, params)) {
+        db.rollbackTransaction();
+        qWarning() << "StaffRepository::updatePasswordInformation - Lỗi ghi bảng staff";
+        return false;
+    };
+
+    if (!db.commitTransaction()) return false;
+    return true;
+}
