@@ -16,32 +16,6 @@ static constexpr qsizetype LEGAL_WORKING_AGE = 18;
 
 
 // -- Field chung cho moi role ────────────────────────────────────
-
-QString StaffService::validatePlainPassword(const QString& plainPassword) {
-    return Validation::validatePlainPassword(plainPassword);
-}
-
-QString StaffService::validateFullName(const QString& fullName) {
-    return Validation::validateFullName(fullName);
-}
-
-QString StaffService::validateCitizenId(const QString& citizenId) {
-    return Validation::validateCitizenId(citizenId);
-}
-
-QString StaffService::validatePhoneNumber(const QString& phoneNumber) {
-    return Validation::validatePhoneNumber(phoneNumber);
-}
-
-QString StaffService::validateEmail(const QString& email) {
-    return Validation::validateEmail(email);
-}
-
-QString StaffService::validateAddress(const QString& address) {
-    return Validation::validateAddress(address);
-}
-
-
 /**
  * @brief dateOfBirth: khong duoc tuong lai, phai it nhat 18 tuoi
  *        (Nhan vien phai du tuoi lao dong)
@@ -55,7 +29,7 @@ QString StaffService::validateDateOfBirth(const QDate& dateOfBirth) {
     QDate today = QDate::currentDate();
     // Kiểm tra đủ 18 tuổi lao động
     if (dateOfBirth.addYears(LEGAL_WORKING_AGE) > today) {
-        return QString("Staff member must be at least %1 years old.").arg(LEGAL_WORKING_AGE);
+        return QString("Staff member must be at least 18 years old.").arg(LEGAL_WORKING_AGE);
     }
     return "";
 }
@@ -200,12 +174,12 @@ QString StaffService::validateLicenseNumberUnique(const QString& licenseNumber, 
 QString StaffService::validateStaffBaseInput(const StaffInputDTO& staff, int staffId) {
     QString err;
     
-    if (!(err = validateFullName(staff.fullName)).isEmpty()) return err;
-    if (!(err = validateDateOfBirth(staff.dateOfBirth)).isEmpty()) return err;
-    if (!(err = validateCitizenId(staff.citizenId)).isEmpty()) return err;
-    if (!(err = validatePhoneNumber(staff.phoneNumber)).isEmpty()) return err;
-    if (!(err = validateEmail(staff.email)).isEmpty()) return err;
-    if (!(err = validateAddress(staff.address)).isEmpty()) return err;
+    if (!(err = Validation::validateFullName(staff.fullName)).isEmpty()) return err;
+    if (!(err = Validation::validateDateOfBirth(staff.dateOfBirth)).isEmpty()) return err;
+    if (!(err = Validation::validateCitizenId(staff.citizenId)).isEmpty()) return err;
+    if (!(err = Validation::validatePhoneNumber(staff.phoneNumber)).isEmpty()) return err;
+    if (!(err = Validation::validateEmail(staff.email)).isEmpty()) return err;
+    if (!(err = Validation::validateAddress(staff.address)).isEmpty()) return err;
     if (!(err = validateDepartmentId(staff.departmentId)).isEmpty()) return err;
     //if (!(err = validateShift(staff.shift)).isEmpty()) return err;
 
@@ -217,7 +191,6 @@ QString StaffService::validateStaffBaseInput(const StaffInputDTO& staff, int sta
 
     return "";
 }
-
 
 QString StaffService::validateDoctorInput(const DoctorInputDTO& doctor, int staffId) {
     // Check các trường cơ bản trước
@@ -305,30 +278,11 @@ bool StaffService::hireNewDoctor(const DoctorInputDTO& doctor) {
         return false;
     }
 
-    DoctorInsertDTO dto = {
+    return this->m_staffRepository->insertDoctor({
+        doctor, 
         generateStaffCode(UserRole::Doctor), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12)),
-        doctor.fullName.trimmed(), 
-        doctor.avatar, 
-        UserRole::Doctor, 
-        doctor.gender,
-        doctor.dateOfBirth.toString("yyyy-MM-dd"),
-        doctor.citizenId.trimmed(), 
-        doctor.phoneNumber.trimmed(), 
-        doctor.email.trimmed(), 
-        doctor.address.trimmed(),     
-        doctor.departmentId, 
-        QDate::currentDate().toString("yyyy-MM-dd"), 
-        doctor.shift,
-
-        doctor.specialty.trimmed(), 
-        doctor.licenseNumber.trimmed(), 
-        doctor.experienceYears, 
-        doctor.consultationFee, 
-        doctor.bio.trimmed()
-    };
-
-    return this->m_staffRepository->insertDoctor(dto);
+        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12))
+    });
 }
 
 bool StaffService::hireNewNurse(const NurseInputDTO& nurse) {
@@ -336,28 +290,30 @@ bool StaffService::hireNewNurse(const NurseInputDTO& nurse) {
         return false;
     }
 
-    NurseInsertDTO dto = {
+    return this->m_staffRepository->insertNurse({
+        nurse,
         generateStaffCode(UserRole::Nurse), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12)),
-        nurse.fullName.trimmed(), 
-        nurse.avatar, 
-        UserRole::Nurse, 
-        nurse.gender,
-        nurse.dateOfBirth.toString("yyyy-MM-dd"),
-        nurse.citizenId.trimmed(), 
-        nurse.phoneNumber.trimmed(), 
-        nurse.email.trimmed(), 
-        nurse.address.trimmed(),     
-        nurse.departmentId, 
-        QDate::currentDate().toString("yyyy-MM-dd"), 
-        nurse.shift,
-
-        nurse.nurseLevel.trimmed(),
-        nurse.certification.trimmed()
-    };
-
-    return this->m_staffRepository->insertNurse(dto);
+        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12))
+    });
 }
+
+
+bool StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
+    if (!validateStaffBaseInput(staffInformation, staffId).isEmpty()) return false;
+    return m_staffRepository->updateStaff(StaffUpdateDTO(staffInformation, staffId));
+}
+
+bool StaffService::editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId) {
+    if (!validateDoctorInput(doctorInformation, staffId).isEmpty()) return false;
+    return m_staffRepository->updateDoctor(DoctorUpdateDTO(doctorInformation, staffId));
+}
+
+bool StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, int staffId) {
+    if (!validateNurseInput(nurseInformation, staffId).isEmpty()) return false;
+    return m_staffRepository->updateNurse(NurseUpdateDTO(nurseInformation, staffId));
+}
+
+
 
 QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
     QString searchKey,    
@@ -377,22 +333,4 @@ QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
     criteria.includeDeleted = includeDeleted;
 
     return m_staffRepository->search(criteria);
-}
-
-bool StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
-    if (!validateStaffBaseInput(staffInformation, staffId).isEmpty()) return false;
-    StaffUpdateDTO staffUpdateDto{staffInformation, staffId};
-    return m_staffRepository->updateStaff(staffUpdateDto);
-}
-
-bool StaffService::editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId) {
-    if (!validateDoctorInput(doctorInformation, staffId).isEmpty()) return false;
-    DoctorUpdateDTO doctorUpdateDto{doctorInformation, staffId};
-    return m_staffRepository->updateDoctor(doctorUpdateDto);
-}
-
-bool StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, int staffId) {
-    if (!validateNurseInput(nurseInformation, staffId).isEmpty()) return false;
-    NurseUpdateDTO nurseUpdateDto{nurseInformation, staffId};
-    return m_staffRepository->updateNurse(nurseUpdateDto);
 }

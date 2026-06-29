@@ -1,16 +1,12 @@
 #pragma once
 #include "IAuthenticatable.h"
-#include "CommonEnums.h"
+#include "dto/StaffDTOs.h"
 #include <QString>
 #include <QDateTime>
 #include <vector>
 #include <memory>
 
-enum class UserRole { Admin, Doctor, Nurse, Receptionist };
 
-
-UserRole roleFromString(const QString& role);
-QString roleToString(UserRole role);
 
 class SystemUser : public IAuthenticatable {
 protected:
@@ -43,29 +39,33 @@ public:
     {}
     virtual ~SystemUser() = default;
 
-    // --- Getters ---
-    UserRole   getRole()      const           { return m_role; }
-    bool       isActive()     const           { return m_isActive; }
+    int         getAccountId()    const override { return m_staffId; }
+    QString     getStaffCode()    const override { return m_staffCode; }
+    AccountType getAccountType()  const override { return AccountType::Staff; }
+    UserRole    getRole()         const override { return m_role; }
     
 
-    // --- Setters ---
-    void setActive(bool active) { m_isActive = active; }
-    void setFullName(const QString& name) { m_fullName = name; }
-
-    // --- Business Logic ---
-    bool verifyPassword(const QString& plainPassword) const;
-    void setPassword(const QString& plainPassword);
-
-    // --- Implement IAuthenticatable ---
-    int         getAccountId()    const override { return m_staffId; }
-    QString     getPasswordHash() const override { return m_passwordHash; }
-    AccountType getAccountType()  const override { return AccountType::Staff; }
     QString     getFullName()     const override { return m_fullName; }
     QPixmap     getAvatar()       const override { return m_avatar; }
 
-    // --- Pure Virtual ---
-    QStringList getMenuItems()                  const override = 0;
-    bool canAccess(const QString& moduleCode)   const override = 0;
-    QString getDisplayRole()                    const override = 0;
+    // ── Staff-specific: KHÔNG có ở IAuthenticatable ──────────
 
+    QString  getPasswordHash()  const { return m_passwordHash; }
+
+    // Trạng thái hoạt động của nhân viên
+    bool isActive()        const { return m_isActive; }
+    void setActive(bool active)  { m_isActive = active; }
+
+    // Cập nhật profile — staff management operations
+    // void setFullName(const QString& name) { m_fullName = name.trimmed(); }
+    // void setPassword(const QString& plainPassword); // hash rồi lưu vào m_passwordHash
+
+    // Public profile — trả về StaffPublicProfileDTO (staff-specific DTO)
+    // PatientAccount sẽ có toPublicProfile() trả về kiểu khác → không đặt ở interface
+    virtual QStringList getMenuItems()                       const = 0;
+    virtual bool        canAccess(const QString& moduleCode) const = 0;
+    virtual QString     getDisplayRole()                     const = 0;
+
+    bool verifyPassword(const QString& plainPassword) const override;
+    virtual std::unique_ptr<StaffPublicProfileDTO> toPublicProfile() const = 0;
 };

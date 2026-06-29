@@ -18,7 +18,7 @@ public:
         const QString&  fullName, 
         const QPixmap&  avatar,
         UserRole        role, 
-        bool            isActive,
+        bool            isActive, 
         const QString&  specialty,
         const QString&  licenseNumber,
         int             experienceYears,
@@ -58,7 +58,7 @@ public:
 
 
     // --- Override từ SystemUser ---
-    QStringList getMenuItems() const override {
+    QStringList getMenuItems()                const override {
         return { "Dashboard", "Appointments", "Schedule", "Messages" };
     }
 
@@ -66,14 +66,17 @@ public:
         return getMenuItems().contains(moduleCode);
     }
 
-    QString getDisplayRole() const override {
+    QString getDisplayRole()                  const override {
         if (!m_specialty.isEmpty()) {
             return "Doctor " + m_specialty;
         }
         return "Doctor";
     }
 
+    std::unique_ptr<StaffPublicProfileDTO> toPublicProfile() const override;
+
     // ── Domain Validation (thuần business logic, không cần DB) ───
+
     /**
      * @brief Bác sĩ có đủ điều kiện kê đơn không?
      *        PharmacyService gọi hàm này trước khi tạo prescription.

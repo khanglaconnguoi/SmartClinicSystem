@@ -48,6 +48,8 @@ public:
 
     // =================================================================
     // FORMAT VALIDATORS — public static
+    // Chỉ chứa các hàm validate chuyên biệt cho staff, 
+    // các hàm validate thông dụng khác thì dùng bên namespace Validation
     // UI goi real-time tren tung QLineEdit::editingFinished()
     // Khong can DB, khong co side effect.
     // Tra ve: "" = hop le | chuoi loi = khong hop le
@@ -55,14 +57,9 @@ public:
  
     // -- Giu nguyen (khong sua implementation) ──────────────────────
     
- 
+    
     // -- Field chung cho moi role ────────────────────────────────────
     static QString validatePlainPassword(const QString& plainPassword);
-    static QString validateFullName(const QString& fullName);
-    static QString validateCitizenId(const QString& citizenId);
-    static QString validatePhoneNumber(const QString& phoneNumber);
-    static QString validateEmail(const QString& email);
-    static QString validateAddress(const QString& address);
     static QString validateDateOfBirth(const QDate& dateOfBirth);
     static QString validateDepartmentId(int departmentId);
     //static QString validateShift(const QString& shift);
@@ -90,7 +87,13 @@ public:
     QString validateLicenseNumberUnique(const QString& licenseNumber, int excludeStaffId = -1) const;
 
 
+    std::unique_ptr<StaffProfileDTO> getOwnProfile(int staffId) const {
+        return m_staffRepository->findProfileById(staffId);
+    }
 
+    std::unique_ptr<StaffPublicProfileDTO> getPublicProfile(const SystemUser& user) const {
+        return user.toPublicProfile();  
+    }
 
 
     bool hireNewDoctor(const DoctorInputDTO& doctor);
@@ -98,9 +101,19 @@ public:
     //bool hireNewReceptionist(/*...*/);
 
     bool editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId);
-    bool editDoctorInformation(const DoctorInputDTO& doctor, int staffId);
-    bool editNurseInformation(const NurseInputDTO& nurse, int staffId);
+    bool editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId);
+    bool editNurseInformation(const NurseInputDTO& nurseInformation, int staffId);
 
+
+    bool deactivateStaff(int staffId) {
+        return m_staffRepository->deactivate(staffId);
+    }
+    
+    bool reactivateStaff(int staffId) {
+        return m_staffRepository->reactivate(staffId);
+    }
+
+    
     QList<std::shared_ptr<SystemUser>> searchDoctors(
         QString searchKey,    
         QString specialty,                  

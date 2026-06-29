@@ -1,20 +1,12 @@
 #include "StaffRepository.h"
 #include "DatabaseManager.h"
 #include "model/Doctor.h"
-#include <QBuffer>
 #include <QDir>
 #include <QIODevice>
 #include <QDir>
 
 
 bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId) {
-    QByteArray avatarBytes;
-    if (!staff.avatar.isNull()) {
-        QBuffer buffer(&avatarBytes);
-        buffer.open(QIODevice::WriteOnly);
-        staff.avatar.save(&buffer, "PNG"); // Lưu dạng PNG để giữ chất lượng
-    }
-
     QString insert = R"(
         INSERT INTO staff (
             staff_code,
@@ -39,9 +31,9 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
         staff.staffCode,
         staff.passwordHash,
         staff.fullName,
-        avatarBytes,
-        roleToString(staff.role),
-        genderToString(staff.gender),
+        staff.avatarBytes,
+        staff.role,
+        staff.gender,
         staff.dateOfBirth,
         staff.citizenId,
         staff.phoneNumber,
@@ -158,7 +150,6 @@ bool StaffRepository::updateStaff(const StaffUpdateDTO& staff) {
         SET
             full_name = ?,
             avatar = ?,
-            role = ?,
             gender = ?,
             date_of_birth = ?,
             citizen_id = ?,
@@ -170,18 +161,10 @@ bool StaffRepository::updateStaff(const StaffUpdateDTO& staff) {
         WHERE staff_id = ?;
     )";
 
-    QByteArray avatarBytes;
-    if (!staff.avatar.isNull()) {
-        QBuffer buffer(&avatarBytes);
-        buffer.open(QIODevice::WriteOnly);
-        staff.avatar.save(&buffer, "PNG"); // Lưu dạng PNG để giữ chất lượng
-    }
-
     QVariantList params = {
         staff.fullName, 
-        avatarBytes,
-        roleToString(staff.role),
-        genderToString(staff.gender), 
+        staff.avatarBytes,
+        staff.gender, 
         staff.dateOfBirth, 
         staff.citizenId, 
         staff.phoneNumber,
@@ -274,6 +257,7 @@ bool StaffRepository::deactivate(int staffId) {
     }
     return db.commitTransaction();
 }
+
 bool StaffRepository::reactivate(int staffId) {
     QString sql = "UPDATE staff SET is_active = 1 WHERE staff_id = ?";
  
@@ -308,8 +292,6 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
             avatar.load(defaultPath);
         #endif
     }
-
-
     
     switch(role) {
         case UserRole::Doctor: {
@@ -355,6 +337,37 @@ static const QString SELECT_STAFF_SQL = R"(
         s.phone_number,
         s.email,
         s.department_id,
+        s.shift,
+        s.is_active,
+
+        dp.specialty,
+        dp.license_number,
+        dp.experience_years,
+        dp.consultation_fee,
+        dp.bio,
+
+        np.nurse_level,
+        np.certification
+    FROM staff s
+    LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
+    LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
+)";
+
+static const QString SELECT_STAFF_PROFILE_SQL = R"(
+    SELECT  
+        s.staff_id,
+        s.staff_code,
+        s.full_name,
+        s.avatar,
+        s.role,
+        s.gender,
+        s.date_of_birth
+        s.citizen_id
+        s.phone_number,
+        s.email,
+        s.address,
+        s.department_id,
+        s.hire_date
         s.shift,
         s.is_active,
 
@@ -424,21 +437,144 @@ QList<std::shared_ptr<SystemUser>> StaffRepository::search(const StaffSearchCrit
     return result;
 }
 
-
-std::optional<std::shared_ptr<SystemUser>> StaffRepository::findByStaffCode(const QString& staffCode) const {
-    QString sql = SELECT_STAFF_SQL + " WHERE s.staff_code = ? AND s.is_deleted = 0";
+std::shared_ptr<SystemUser> StaffRepository::findByStaffCode(const QString& staffCode) const {
+    QString sql = SELECT_STAFF_SQL + " WHERE s.staff_code = ? AND s.is_active = 1 AND s.is_deleted = 0";
  
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffCode });
-    if (!query.next()) return std::nullopt;
+    if (!query.next()) return nullptr;
     return mapRowToUser(query);
 };
 
-std::optional<std::shared_ptr<SystemUser>> StaffRepository::findById(int staffId) const {
-    QString sql = SELECT_STAFF_SQL + " WHERE s.staff_id = ? AND s.is_deleted = 0";
+std::shared_ptr<SystemUser> StaffRepository::findById(int staffId) const {
+    QString sql = SELECT_STAFF_SQL + " WHERE s.staff_id = ? AND s.is_active = 1 AND s.is_deleted = 0";
  
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffId });
-    if (!query.next()) return std::nullopt;
+    if (!query.next()) return nullptr;
     return mapRowToUser(query);
+}
+
+std::unique_ptr<StaffProfileDTO> StaffRepository::findProfileById(int staffId) const {
+    QString sql = SELECT_STAFF_PROFILE_SQL + " WHERE s.staff_id = ? AND s.is_active = 1 AND s.is_deleted = 0";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(SELECT_STAFF_PROFILE_SQL, { staffId });
+    if (!query.next()) return nullptr;
+
+    UserRole role = roleFromString(query.value("role").toString());
+    // Helper lambda fill base fields — tránh lặp code
+    auto fillBase = [&](StaffProfileDTO& dto) {
+        dto.staffId        = query.value("staff_id").toInt();
+        dto.staffCode      = query.value("staff_code").toString();
+        dto.role           = role;
+        dto.isActive       = query.value("is_active").toBool();
+        dto.hireDate       = QDate::fromString(query.value("hire_date").toString(), "yyyy-MM-dd");
+        //dto.departmentName = query.value("department_name").toString();
+        dto.fullName       = query.value("full_name").toString();
+        dto.gender         = genderFromString(query.value("gender").toString());
+        dto.dateOfBirth    = QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
+        dto.citizenId      = query.value("citizen_id").toString();
+        dto.phoneNumber    = query.value("phone_number").toString();
+        dto.email          = query.value("email").toString();
+        dto.address        = query.value("address").toString();
+        dto.departmentId   = query.value("department_id").toInt();
+        dto.shift          = query.value("shift").toString();
+        QByteArray avatarBytes = query.value("avatar").toByteArray();
+        if (!avatarBytes.isEmpty()) {
+        dto.avatar.loadFromData(avatarBytes);
+        } 
+        else {
+            #ifdef PROJECT_ROOT_DIR
+                QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/default_avatar.png";
+                dto.avatar.load(defaultPath);
+            #endif
+        }
+    };
+
+    // Tạo đúng subtype dựa trên role → không bị slicing
+    switch (role) {
+        case UserRole::Doctor: {
+            auto dto = std::make_unique<DoctorProfileDTO>();
+            fillBase(*dto);
+            dto->specialty       = query.value("specialty").toString();
+            dto->licenseNumber   = query.value("license_number").toString();
+            dto->experienceYears = query.value("experience_years").toInt();
+            dto->consultationFee = query.value("consultation_fee").toInt();
+            dto->bio             = query.value("bio").toString();
+            return dto;
+        }
+        case UserRole::Nurse: {
+            auto dto = std::make_unique<NurseProfileDTO>();
+            fillBase(*dto);
+            dto->nurseLevel    = query.value("nurse_level").toString();
+            dto->certification = query.value("certification").toString();
+            return dto;
+        }
+        default: {
+            // auto dto = std::make_unique<ReceptionistProfileDTO>();
+            // fillBase(*dto);
+            // return dto;
+        }
+    }
+}
+
+std::unique_ptr<StaffProfileDTO> StaffRepository::findProfileByStaffCode(const QString& staffCode) const {
+    QString sql = SELECT_STAFF_PROFILE_SQL + " WHERE s.staff_code = ? AND s.is_active = 1 AND s.is_deleted = 0";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(SELECT_STAFF_PROFILE_SQL, { staffCode });
+    if (!query.next()) return nullptr;
+
+    UserRole role = roleFromString(query.value("role").toString());
+    // Helper lambda fill base fields — tránh lặp code
+    auto fillBase = [&](StaffProfileDTO& dto) {
+        dto.staffId        = query.value("staff_id").toInt();
+        dto.staffCode      = query.value("staff_code").toString();
+        dto.role           = role;
+        dto.isActive       = query.value("is_active").toBool();
+        dto.hireDate       = QDate::fromString(query.value("hire_date").toString(), "yyyy-MM-dd");
+        //dto.departmentName = query.value("department_name").toString();
+        dto.fullName       = query.value("full_name").toString();
+        dto.gender         = genderFromString(query.value("gender").toString());
+        dto.dateOfBirth    = QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
+        dto.citizenId      = query.value("citizen_id").toString();
+        dto.phoneNumber    = query.value("phone_number").toString();
+        dto.email          = query.value("email").toString();
+        dto.address        = query.value("address").toString();
+        dto.departmentId   = query.value("department_id").toInt();
+        dto.shift          = query.value("shift").toString();
+        QByteArray avatarBytes = query.value("avatar").toByteArray();
+        if (!avatarBytes.isEmpty()) {
+        dto.avatar.loadFromData(avatarBytes);
+        } 
+        else {
+            #ifdef PROJECT_ROOT_DIR
+                QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/default_avatar.png";
+                dto.avatar.load(defaultPath);
+            #endif
+        }
+    };
+
+    // Tạo đúng subtype dựa trên role → không bị slicing
+    switch (role) {
+        case UserRole::Doctor: {
+            auto dto = std::make_unique<DoctorProfileDTO>();
+            fillBase(*dto);
+            dto->specialty       = query.value("specialty").toString();
+            dto->licenseNumber   = query.value("license_number").toString();
+            dto->experienceYears = query.value("experience_years").toInt();
+            dto->consultationFee = query.value("consultation_fee").toInt();
+            dto->bio             = query.value("bio").toString();
+            return dto;
+        }
+        case UserRole::Nurse: {
+            auto dto = std::make_unique<NurseProfileDTO>();
+            fillBase(*dto);
+            dto->nurseLevel    = query.value("nurse_level").toString();
+            dto->certification = query.value("certification").toString();
+            return dto;
+        }
+        default: {
+            // auto dto = std::make_unique<ReceptionistProfileDTO>();
+            // fillBase(*dto);
+            // return dto;
+        }
+    }
 }
 
 std::optional<QString> StaffRepository::getLatestStaffCodeByYear(int year) {

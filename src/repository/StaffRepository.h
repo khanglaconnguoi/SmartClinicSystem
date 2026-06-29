@@ -13,6 +13,8 @@ private:
 
     bool insertStaffBase(const StaffInsertDTO& staff, int& staffId);
 public:
+    StaffRepository() = default;
+    ~StaffRepository() = default;
     // CRUD
     bool insertStaff(const StaffInsertDTO& staff);
     bool insertDoctor(const DoctorInsertDTO& doctor);
@@ -29,12 +31,18 @@ public:
     static std::optional<QString> getLatestStaffCodeByYear(int year);
 
     // // --- Danh sách & Tìm kiếm ---
-    // Tìm kiếm theo ID / staff code phục vụ Auth Service
-    std::optional<std::shared_ptr<SystemUser>> findById(int staffId) const;
-    std::optional<std::shared_ptr<SystemUser>> findByStaffCode(const QString& staffCode) const;
+    // Tìm kiếm cá nhân theo ID / staff code phục vụ Auth Service
+    std::shared_ptr<SystemUser> findById(int staffId) const;
+    std::shared_ptr<SystemUser> findByStaffCode(const QString& staffCode) const;
     // std::vector<std::shared_ptr<SystemUser>> findAll(bool includeInactive = false) const;
     QList<std::shared_ptr<SystemUser>> search(const StaffSearchCriteria& criteria) const;
     // std::vector<std::shared_ptr<SystemUser>> findByRole(UserRole role) const;
+
+
+    // Tìm kiếm profile theo ID / staff code
+    std::unique_ptr<StaffProfileDTO> findProfileById(int staffId) const;
+    std::unique_ptr<StaffProfileDTO> findProfileByStaffCode(const QString& staffCode) const;
+
 
     // // --- Kiểm tra uniqueness ---
     bool existsByCitizenId(const QString& citizenId, int excludeStaffId = -1) const;
@@ -42,6 +50,8 @@ public:
     bool existsByPhoneNumber(const QString& licenseNumber, int excludeStaffId = -1) const;
     bool existsByLicenseNumber(const QString& licenseNumber, int excludeStaffId = -1) const;
     
+    
+
 
     // // --- Phân trang (cho QTableView) ---
     // std::vector<std::shared_ptr<SystemUser>> findPaged(int offset, int limit) const;

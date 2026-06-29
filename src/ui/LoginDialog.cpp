@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include "service/AuthService.h"
 #include "model/IAuthenticatable.h"
+#include "service/UserSession.h"
 
 LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *parent)
     : QWidget(parent), m_authService(authService)
@@ -166,12 +167,11 @@ void LoginDialog::handleLogin()
         return;
     }
 
-    auto result = m_authService->login(username, password);
 
-    if (!result.has_value()) {
+    if (!m_authService->login(username, password)) {
         QMessageBox::critical(this, "Lỗi đăng nhập", "Tài khoản hoặc mật khẩu không chính xác.");
     } else {
-        emit loginSucceeded(result.value());
+        emit loginSucceeded(UserSession::getInstance().getCurrentAccount());
     }
 }
 
