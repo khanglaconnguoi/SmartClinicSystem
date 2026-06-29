@@ -50,25 +50,26 @@ CREATE TABLE IF NOT EXISTS rooms (
 -- NOTE: staff_code đóng vai trò login identifier (thay thế username riêng)
 --       Nhóm đã thống nhất dùng staff_code để đăng nhập thay vì tạo username riêng.
 CREATE TABLE IF NOT EXISTS staff (
-    staff_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    staff_code    TEXT    NOT NULL UNIQUE,  -- login ID kiêm mã nhân viên
-    password_hash TEXT    NOT NULL,
-    full_name     TEXT    NOT NULL,
-    avatar        BLOB,
-    role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
-    gender        TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
-    date_of_birth TEXT    NOT NULL,
-    citizen_id    TEXT    NOT NULL UNIQUE,
-    phone_number  TEXT    NOT NULL UNIQUE,                                         
-    email         TEXT    NOT NULL UNIQUE, 
-    address       TEXT    NOT NULL,
-    department_id INTEGER NOT NULL,
-    hire_date     TEXT    NOT NULL DEFAULT (date('now')),
-    shift         TEXT    NOT NULL DEFAULT 'FULL_DAY' CHECK (shift IN ('MORNING','AFTERNOON','NIGHT','FULL_DAY')),
-    is_active     INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
-    is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
-    created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+    staff_id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    staff_code           TEXT    NOT NULL UNIQUE,  -- login ID kiêm mã nhân viên
+    password_hash        TEXT    NOT NULL,
+    must_change_password INTEGER NOT NULL DEFAULT 1 CHECK (must_change_password IN (0,1)),
+    full_name            TEXT    NOT NULL,
+    avatar               BLOB,
+    role                 TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
+    gender               TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
+    date_of_birth        TEXT    NOT NULL,
+    citizen_id           TEXT    NOT NULL UNIQUE,
+    phone_number         TEXT    NOT NULL UNIQUE,                                         
+    email                TEXT    NOT NULL UNIQUE, 
+    address              TEXT    NOT NULL,
+    department_id        INTEGER NOT NULL,
+    hire_date            TEXT    NOT NULL DEFAULT (date('now')),
+    shift                TEXT    NOT NULL DEFAULT 'FULL_DAY' CHECK (shift IN ('MORNING','AFTERNOON','NIGHT','FULL_DAY')),
+    is_active            INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+    is_deleted           INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+    created_at           TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at           TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL
 );
 
