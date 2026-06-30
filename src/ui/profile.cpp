@@ -440,7 +440,7 @@ void ProfileWidget::onEditClicked() {
             cmbShift->setEnabled(false);
 
             btnEdit->setText("Chỉnh Sửa");
-            btnEdit->setStyleSheet("QPushButton { background-color: #0052CC; color: white; font-weight: bold; border-radius: 6px; border: none; } QPushButton:hover { background-color: #0043A4; }");
+            btnEdit->setStyleSheet("QPushButton { background-color: #4988e7; color: white; font-weight: bold; border-radius: 6px; border: none; } QPushButton:hover { background-color: #0043A4; }");
             
             loadDoctorProfile(currentStaffCode);
         } else {
