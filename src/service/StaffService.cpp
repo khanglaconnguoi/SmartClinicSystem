@@ -344,7 +344,10 @@ QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
 bool StaffService::changePassword(int staffId, const QString& plainPassword) {
     if (staffId <= 0) return false;
     if (!Validation::validatePlainPassword(plainPassword).isEmpty()) return false;
-    if (!m_staffRepository->existsByStaffId(staffId)) return false;
+
+    auto user = m_staffRepository->findById(staffId);
+    if (!user) return false;
+    if (user->verifyPassword(plainPassword)) return false;
 
     QString passwordHash = QString::fromStdString(
             bcrypt::generateHash(plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
