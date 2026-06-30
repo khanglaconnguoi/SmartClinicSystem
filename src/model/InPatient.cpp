@@ -1,34 +1,57 @@
+/**
+ * @file    InPatient.cpp
+ * @brief   Implementation cho InPatient entity (Bệnh nhân nội trú).
+ */
 #include "InPatient.h"
 
-InPatient::InPatient(const QString &fullName, const QDate &birthDate, Gender gender,
-                     const QString &phoneNumber, const QString &address,
-                     const QString &citizenId, const QString &email,
-                     const QString &insurance, const QString &roomNo)
-    : Patient(fullName, birthDate, gender, phoneNumber, address, citizenId, email, insurance),
-      m_roomNo(roomNo), m_admitDate(QDate::currentDate()) {}
+// ---------------------------------------------------------------------------
+// Constructors
+// ---------------------------------------------------------------------------
 
-PatientPriority InPatient::getPriority() const {
-    return PatientPriority::High; // Nội trú ưu tiên cao hơn ngoại trú
-}
+/**
+ * @brief Constructor mặc định — tạo đối tượng InPatient rỗng.
+ */
+InPatient::InPatient()
+    : Patient(0, QString(), QString(), QDate(), QString(), QString(), QString(),
+              QString(), QString(), QString(), QString(), QString(),
+              PatientType::INPATIENT, QString(), QString(), false),
+      m_admissionId(QString()), m_roomId(QString()),
+      m_admittingDoctorId(QString()), m_admissionDate(QDate()),
+      m_dischargeDate(QDate()), m_reason(QString()), m_status(QString()) {}
+// ---------------------------------------------------------------------------
+// Pure Virtual Overrides
+// ---------------------------------------------------------------------------
 
+/**
+ * @brief Trả về mức độ ưu tiên của bệnh nhân nội trú.
+ *
+ * @return PatientPriority::High
+ */
+PatientPriority InPatient::getPriority() const { return PatientPriority::HIGH; }
+
+/**
+ * @brief Trả về loại hình thanh toán của bệnh nhân nội trú.
+ *
+ * @return Chuỗi "Inpatient Billing".
+ */
 QString InPatient::getBillingType() const {
-    return QStringLiteral("Nội trú");
+  return QString("Inpatient Billing");
 }
 
+/**
+ * @brief Trả về nhãn trạng thái hiển thị cho bệnh nhân nội trú.
+ *
+ * @return Giá trị của m_status nếu có, ngược lại trả về "Inpatient".
+ */
 QString InPatient::getStatusLabel() const {
-    return QStringLiteral("Bệnh nhân nội trú");
+  return m_status.isEmpty() ? QString("Inpatient") : m_status;
 }
 
+/**
+ * @brief Trả về phí cơ bản cho bệnh nhân nội trú mỗi ngày.
+ *
+ * @return Phí cơ bản (đơn vị: VNĐ).
+ */
 double InPatient::getBaseFee() const {
-    return 500000.0; // Phí giường bệnh/ngày
+  return 500000.0; // 500,000 VNĐ — phí nội trú cơ bản mỗi ngày
 }
-
-PatientType InPatient::getType() const {
-    return PatientType::InPatient;
-}
-
-QString InPatient::roomNo() const { return m_roomNo; }
-void InPatient::setRoomNo(const QString &roomNo) { m_roomNo = roomNo; }
-
-QDate InPatient::admitDate() const { return m_admitDate; }
-void InPatient::setAdmitDate(const QDate &date) { m_admitDate = date; }

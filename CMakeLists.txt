@@ -35,12 +35,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt
 
 target_include_directories(${PROJECT_NAME} PRIVATE external src)
 
-# Tự động copy Qt SQL plugin (qsqlite) vào thư mục build
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sqldrivers"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Qt6_DIR}/../../../plugins/sqldrivers/qsqlite.dll"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sqldrivers/"
-    COMMENT "Deploying qsqlite.dll plugin..."
-)
+# Automatically deploy all required Qt DLLs after every build
+find_program(WINDEPLOYQT windeployqt6 HINTS "C:/Qt/6.11.1/mingw_64/bin")
+
+if(WINDEPLOYQT)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${WINDEPLOYQT}
+            --no-translations
+            "$<TARGET_FILE:${PROJECT_NAME}>"
+        COMMENT "Deploying Qt DLLs with windeployqt6..."
+    )
+else()
+    message(WARNING "windeployqt6 not found — Qt DLLs will not be auto-deployed.")
+endif()

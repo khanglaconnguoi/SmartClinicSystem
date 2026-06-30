@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QSqlError>
+#include <qcoreapplication.h>
 
 DatabaseManager::DatabaseManager() {
   // Khai báo sử dụng driver SQLite của Qt
@@ -52,20 +53,20 @@ bool DatabaseManager::createTables() {
   // Bật tính năng Khóa ngoại (Foreign Keys) cho SQLite
   query.exec("PRAGMA foreign_keys = ON;");
 
-  // Bảng Deparments
+  // Bảng Departments
   QString createDepartments = R"(
-        CREATE TABLE IF NOT EXISTS departments (
-            department_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-            department_code TEXT    NOT NULL UNIQUE,
-            department_name TEXT    NOT NULL,
-            description      TEXT,
-            is_deleted        INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
-            created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
-            updated_at        TEXT    NOT NULL DEFAULT (datetime('now'))
-        );
-    )";
+      CREATE TABLE IF NOT EXISTS departments (
+          department_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+          department_code TEXT    NOT NULL UNIQUE,
+          department_name TEXT    NOT NULL,
+          description     TEXT,
+          is_deleted      INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+          created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+      )
+  )";
   if (!query.exec(createDepartments)) {
-    qDebug() << "Lỗi bảng Deparments:" << query.lastError().text();
+    qDebug() << "Lỗi bảng Departments:" << query.lastError().text();
     m_db.rollback();
     return false;
   }
@@ -74,19 +75,19 @@ bool DatabaseManager::createTables() {
 
   // Bảng Rooms
   QString createRooms = R"(
-        CREATE TABLE IF NOT EXISTS rooms (
-            room_id       INTEGER PRIMARY KEY AUTOINCREMENT,
-            room_number   TEXT    NOT NULL UNIQUE,
-            department_id INTEGER,
-            room_type     TEXT    NOT NULL CHECK (room_type IN ('EXAM','SURGERY','WARD','LAB','PHARMACY','ADMIN')),
-            capacity      INTEGER NOT NULL DEFAULT 1 CHECK (capacity > 0),
-            status        TEXT    NOT NULL DEFAULT 'AVAILABLE' CHECK (status IN ('AVAILABLE','OCCUPIED','CLEANING','MAINTENANCE')),
-            is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
-            created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-            updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-            FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL
-        );
-    )";
+      CREATE TABLE IF NOT EXISTS rooms (
+          room_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+          room_number   TEXT    NOT NULL UNIQUE,
+          department_id INTEGER,
+          room_type     TEXT    NOT NULL CHECK (room_type IN ('EXAM','SURGERY','WARD','LAB','PHARMACY','ADMIN')),
+          capacity      INTEGER NOT NULL DEFAULT 1 CHECK (capacity > 0),
+          status        TEXT    NOT NULL DEFAULT 'AVAILABLE' CHECK (status IN ('AVAILABLE','OCCUPIED','CLEANING','MAINTENANCE')),
+          is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+          created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL
+      )
+  )";
   if (!query.exec(createRooms)) {
     qDebug() << "Lỗi bảng Rooms:" << query.lastError().text();
     m_db.rollback();
@@ -96,26 +97,26 @@ bool DatabaseManager::createTables() {
   // -------------------------------------------------
 
   // Bảng Patients
-  // Bảng patients
+  // Bảng Patients
   QString createPatients = R"(
-    CREATE TABLE IF NOT EXISTS patients (
-      id           INTEGER PRIMARY KEY AUTOINCREMENT,
-      patient_code TEXT,
-      full_name    TEXT    NOT NULL,
-      birth_date   TEXT,
-      gender       INTEGER DEFAULT 2,
-      phone_number TEXT,
-      address      TEXT,
-      blood_type   TEXT,
-      allergies    TEXT,
-      medical_history TEXT,
-      citizen_id   TEXT,
-      email        TEXT,
-      insurance    TEXT,
-      patient_type INTEGER DEFAULT 0,
-      is_active    INTEGER DEFAULT 1,
-      state        INTEGER DEFAULT 0
-    )
+      CREATE TABLE IF NOT EXISTS patients (
+          patient_id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          patient_code            TEXT    NOT NULL UNIQUE,
+          full_name               TEXT    NOT NULL,
+          date_of_birth           TEXT    NOT NULL,
+          gender                  TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
+          citizen_id              TEXT    UNIQUE,
+          phone                   TEXT,
+          email                   TEXT,
+          address                 TEXT,
+          blood_type              TEXT    NOT NULL DEFAULT 'UNKNOWN' CHECK (blood_type IN ('A+','A-','B+','B-','AB+','AB-','O+','O-','UNKNOWN')),
+          default_patient_type    TEXT    NOT NULL DEFAULT 'OUTPATIENT' CHECK (default_patient_type IN ('OUTPATIENT','INPATIENT','EMERGENCY')),
+          emergency_contact_name  TEXT,
+          emergency_contact_phone TEXT,
+          is_deleted              INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+          created_at              TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at              TEXT    NOT NULL DEFAULT (datetime('now'))
+      )
   )";
   if (!query.exec(createPatients)) {
     qDebug() << "Lỗi bảng Patients:" << query.lastError().text();
@@ -123,24 +124,138 @@ bool DatabaseManager::createTables() {
     return false;
   }
 
-  // Bảng medical_records
-  QString createMedicalRecords = R"(
-    CREATE TABLE IF NOT EXISTS medical_records (
-      id               INTEGER PRIMARY KEY AUTOINCREMENT,
-      patient_id       INTEGER NOT NULL,
-      doctor_id        INTEGER,
-      visit_date       TEXT,
-      vitals           TEXT,
-      chief_complaint  TEXT,
-      clinical_notes   TEXT,
-      treatment        TEXT,
-      test_results     TEXT,
-      next_visit       TEXT,
-      FOREIGN KEY(patient_id) REFERENCES patients(id)
-    )
+  // Bảng Out Patient
+
+  QString createOutPatientTable = R"(
+      CREATE TABLE IF NOT EXISTS out_patients (
+          patient_id INTEGER PRIMARY KEY,
+          doctor_id           INTEGER,
+          status              TEXT    NOT NULL DEFAULT 'REGISTERED' CHECK (status IN ('REGISTERED','WAITING FOR TREATMENT','TREATMENT','DISCHARGED')),
+          created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+          FOREIGN KEY (doctor_id) REFERENCES staff(staff_id) ON DELETE SET NULL
+      );
   )";
+  if (!query.exec(createOutPatientTable)) {
+    qDebug() << "Lỗi bảng Out Patient:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // Bảng Emergency Patient
+  QString createEmergencyPatientsTable = R"(
+      CREATE TABLE IF NOT EXISTS emergency_patients (
+          patient_id INTEGER PRIMARY KEY,
+          room_id             INTEGER,
+          doctor_id INTEGER,
+          injury_cause        TEXT,
+          injury_description  TEXT,
+          admission_date      TEXT    NOT NULL DEFAULT (datetime('now')),
+          discharge_date      TEXT,
+          status              TEXT    NOT NULL DEFAULT 'EMERGENCY' CHECK (status IN ('EMERGENCY','DISCHARGED','TRANSFERRED')),
+          created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+          FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE SET NULL,
+          FOREIGN KEY (doctor_id) REFERENCES staff(staff_id) ON DELETE SET NULL
+      );
+  )";
+  if (!query.exec(createEmergencyPatientsTable)) {
+    qDebug() << "Lỗi bảng Emergency Patients:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // Bảng In Patient
+  QString createInPatientTable = R"(
+    CREATE TABLE IF NOT EXISTS in_patients (
+    patient_id INTEGER PRIMARY KEY,
+    room_id             INTEGER,
+    doctor_id INTEGER,
+    admission_date      TEXT    NOT NULL DEFAULT (datetime('now')),
+    discharge_date      TEXT,
+    reason              TEXT,
+    status              TEXT    NOT NULL DEFAULT 'ADMITTED' CHECK (status IN ('ADMITTED','DISCHARGED','TRANSFERRED')),
+    created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE SET NULL,
+    FOREIGN KEY (doctor_id) REFERENCES staff(staff_id) ON DELETE SET NULL,
+    CHECK (discharge_date IS NULL OR discharge_date >= admission_date)
+  )
+  )";
+
+  //  Bảng Patient Allergies (commented out — not yet active)
+  // CREATE TABLE IF NOT EXISTS patient_allergies (
+  //     allergy_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+  //     patient_id    INTEGER NOT NULL,
+  //     allergen_name TEXT    NOT NULL,
+  //     severity      TEXT    NOT NULL DEFAULT 'MODERATE' CHECK (severity IN
+  //     ('MILD','MODERATE','SEVERE')), notes         TEXT, recorded_at   TEXT
+  //     NOT NULL DEFAULT (datetime('now')), FOREIGN KEY (patient_id) REFERENCES
+  //     patients(patient_id) ON DELETE CASCADE, UNIQUE (patient_id,
+  //     allergen_name)
+  // );
+
+  if (!query.exec(createInPatientTable)) {
+    qDebug() << "Lỗi bảng InPatientAdmissions:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+  //   -- =====================================================================
+  // -- SECTION 5: CLINICAL / ELECTRONIC MEDICAL RECORDS (EMR)
+  // -- =====================================================================
+
+  // -- 5.1 ------------------------------------------------------------------
+  QString createMedicalRecords = R"(
+CREATE TABLE IF NOT EXISTS medical_records (
+    record_id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id               INTEGER NOT NULL,
+    doctor_id                INTEGER NOT NULL,
+    appointment_id           INTEGER,
+    encounter_type           TEXT    NOT NULL DEFAULT 'OUTPATIENT'
+                                      CHECK (encounter_type IN ('OUTPATIENT','INPATIENT','EMERGENCY')),
+    visit_datetime           TEXT    NOT NULL DEFAULT (datetime('now')),
+    chief_complaint          TEXT,
+    clinical_notes           TEXT,
+    temperature_celsius      REAL    CHECK (temperature_celsius IS NULL OR temperature_celsius BETWEEN 30 AND 45),
+    blood_pressure_systolic  INTEGER CHECK (blood_pressure_systolic  IS NULL OR blood_pressure_systolic  > 0),
+    blood_pressure_diastolic INTEGER CHECK (blood_pressure_diastolic IS NULL OR blood_pressure_diastolic > 0),
+    heart_rate_bpm           INTEGER CHECK (heart_rate_bpm IS NULL OR heart_rate_bpm > 0),
+    weight_kg                REAL    CHECK (weight_kg IS NULL OR weight_kg > 0),
+    height_cm                REAL    CHECK (height_cm IS NULL OR height_cm > 0),
+    treatment_plan           TEXT,
+    next_visit_date          TEXT,
+    created_at               TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at               TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patient_id)     REFERENCES patients(patient_id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id)      REFERENCES staff(staff_id) ON DELETE RESTRICT,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL
+);
+)";
+
   if (!query.exec(createMedicalRecords)) {
-    qDebug() << "Lỗi bảng medical_records:" << query.lastError().text();
+    qDebug() << "Lỗi bảng Medical Records:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // -- 5.2 -- Diagnoses (1 record -> many diagnoses) ------------------------
+  QString createDiagnoses = R"(
+CREATE TABLE IF NOT EXISTS diagnoses (
+    diagnosis_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    record_id    INTEGER NOT NULL,
+    icd_code     TEXT,
+    description  TEXT    NOT NULL,
+    severity     TEXT    NOT NULL DEFAULT 'MILD' CHECK (severity IN ('MILD','MODERATE','SEVERE')),
+    is_primary   INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0,1)),
+    FOREIGN KEY (record_id) REFERENCES medical_records(record_id) ON DELETE CASCADE
+);
+)";
+
+  if (!query.exec(createDiagnoses)) {
+    qDebug() << "Lỗi bảng Diagnoses:" << query.lastError().text();
     m_db.rollback();
     return false;
   }
@@ -155,22 +270,24 @@ bool DatabaseManager::createTables() {
             password_hash TEXT    NOT NULL,
             full_name     TEXT    NOT NULL,
             avatar        BLOB,
-            role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
-            gender        TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
+            role          TEXT    NOT NULL CHECK (role IN
+            ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')), gender        TEXT
+            NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
             date_of_birth TEXT    NOT NULL,
-            national_id   TEXT    NOT NULL UNIQUE,
-            phone_number  TEXT    NOT NULL,                                         
-            email         TEXT    NOT NULL UNIQUE, 
+            citizen_id    TEXT    NOT NULL UNIQUE,
+            phone_number  TEXT    NOT NULL,
+            email         TEXT    NOT NULL UNIQUE,
             address       TEXT    NOT NULL,
             department_id INTEGER NOT NULL,
             hire_date     TEXT    NOT NULL DEFAULT (date('now')),
-            shift         TEXT    NOT NULL DEFAULT 'FULL_DAY' CHECK (shift IN ('MORNING','AFTERNOON','NIGHT','FULL_DAY')),
-            is_active     INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
-            is_deleted    INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
-            created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-            updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-            FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL
-        );  
+            shift         TEXT    NOT NULL DEFAULT 'FULL_DAY' CHECK (shift IN
+            ('MORNING','AFTERNOON','NIGHT','FULL_DAY')), is_active INTEGER
+            NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)), is_deleted INTEGER
+            NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)), created_at TEXT
+            NOT NULL DEFAULT (datetime('now')), updated_at    TEXT    NOT
+            NULL DEFAULT (datetime('now')), FOREIGN KEY (department_id)
+            REFERENCES departments(department_id) ON DELETE SET NULL
+        );
     )";
   if (!query.exec(createStaff)) {
     qDebug() << "Lỗi bảng Staff:" << query.lastError().text();
@@ -186,11 +303,12 @@ bool DatabaseManager::createTables() {
             staff_id         INTEGER PRIMARY KEY,
             specialty        TEXT    NOT NULL,
             license_number   TEXT    NOT NULL UNIQUE,
-            experience_years INTEGER NOT NULL DEFAULT 0 CHECK (experience_years >= 0),
-            consultation_fee REAL    NOT NULL DEFAULT 0 CHECK (consultation_fee >= 0),
-            bio              TEXT,
-            FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
-        );  
+            experience_years INTEGER NOT NULL DEFAULT 0 CHECK
+            (experience_years >= 0), consultation_fee REAL    NOT NULL
+            DEFAULT 0 CHECK (consultation_fee >= 0), bio              TEXT,
+            FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE
+            CASCADE
+        );
     )";
   if (!query.exec(createDoctorProfiles)) {
     qDebug() << "Lỗi bảng Doctor Profiles:" << query.lastError().text();
@@ -204,10 +322,10 @@ bool DatabaseManager::createTables() {
   QString createNurseProfiles = R"(
         CREATE TABLE IF NOT EXISTS nurse_profiles (
             staff_id      INTEGER PRIMARY KEY,
-            nurse_level   TEXT NOT NULL DEFAULT 'JUNIOR' CHECK (nurse_level IN ('JUNIOR','SENIOR','HEAD')),
-            certification TEXT,
-            FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
-        ); 
+            nurse_level   TEXT NOT NULL DEFAULT 'JUNIOR' CHECK (nurse_level
+            IN ('JUNIOR','SENIOR','HEAD')), certification TEXT, FOREIGN KEY
+            (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
+        );
     )";
   if (!query.exec(createNurseProfiles)) {
     qDebug() << "Lỗi bảng Nurse Profiles:" << query.lastError().text();
@@ -216,44 +334,46 @@ bool DatabaseManager::createTables() {
   }
 
   // Bảng Login Information
-  // QString createLoginInformation = R"(
-  //     CREATE TABLE login_information (
-  //         user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  //         username TEXT NOT NULL,
-  //         password_hash TEXT NOT NULL,
-  //         created_at TEXT NOT NULL,
-  //         staff_id INTEGER NOT NULL, account_type TEXT NOT NULL,
-  //         CONSTRAINT login_information_staff_FK FOREIGN KEY (staff_id)
-  //         REFERENCES staff(staff_id)
-  //     );
-  // )";
-  // if (!query.exec(createLoginInformation)) {
-  //     qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();
-  //     m_db.rollback();
-  //     return false;
-  // }
+  QString createLoginInformation = R"(
+      CREATE TABLE IF NOT EXISTS login_information (
+          user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          username TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          staff_id INTEGER NOT NULL, account_type TEXT NOT NULL,
+          CONSTRAINT login_information_staff_FK FOREIGN KEY (staff_id)
+          REFERENCES staff(staff_id)
+      );
+  )";
+  if (!query.exec(createLoginInformation)) {
+    qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
 
   // -------------------------------------------------
 
   // 4. Bảng Appointments
-  // QString createAppointments = R"(
-  //     CREATE TABLE IF NOT EXISTS Appointments (
-  //         appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  //         patient_id INTEGER NOT NULL,
-  //         doctor_id INTEGER NOT NULL,
-  //         appointment_date TEXT NOT NULL,
-  //         status TEXT NOT NULL DEFAULT 'Chờ khám',
-  //         symptoms TEXT,
-  //         FOREIGN KEY (patient_id) REFERENCES Patients(patient_id) ON DELETE
-  //         CASCADE, FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id) ON
-  //         DELETE CASCADE
-  //     );
-  // )";
-  // if (!query.exec(createAppointments))
-  // {
-  //     qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
-  //     success = false;
-  // }
+  QString createAppointments = R"(
+      CREATE TABLE IF NOT EXISTS appointments (
+          appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+          patient_id       INTEGER NOT NULL,
+          doctor_id        INTEGER NOT NULL,
+          appointment_date TEXT    NOT NULL,
+          status           TEXT    NOT NULL DEFAULT 'PENDING'
+                                   CHECK (status IN ('PENDING','CONFIRMED','COMPLETED','CANCELLED')),
+          symptoms         TEXT,
+          created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+          FOREIGN KEY (doctor_id)  REFERENCES staff(staff_id)    ON DELETE CASCADE
+      )
+  )";
+  if (!query.exec(createAppointments)) {
+    qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
 
   // ============= TẠO INDEX ===============
   QStringList createIndexList = {

@@ -48,4 +48,5 @@ public:
     return true;
   }
   bool rollbackTransaction() { return m_db.rollback(); }
+  bool isOpen() const { return m_db.isOpen(); }
 };
