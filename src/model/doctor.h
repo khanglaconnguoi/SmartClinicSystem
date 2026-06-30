@@ -19,6 +19,7 @@ public:
         const QPixmap&  avatar,
         UserRole        role, 
         bool            isActive, 
+        bool            mustChangePassword,
         const QString&  specialty,
         const QString&  licenseNumber,
         int             experienceYears,
@@ -32,7 +33,8 @@ public:
             fullName, 
             avatar,
             role, 
-            isActive
+            isActive,
+            mustChangePassword
         ), 
         m_specialty(specialty), 
         m_licenseNumber(licenseNumber), 

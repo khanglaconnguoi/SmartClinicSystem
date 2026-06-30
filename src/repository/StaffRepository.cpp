@@ -280,6 +280,7 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
     QString     fullName       = query.value("full_name").toString();
     UserRole    role           = roleFromString(query.value("role").toString());
     bool        isActive       = query.value("is_active").toBool();
+    bool        mustChangePassword = query.value("must_change_password").toBool();
     QByteArray  avatarBytes    = query.value("avatar").toByteArray();
     QPixmap     avatar;
 
@@ -296,7 +297,7 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
     switch(role) {
         case UserRole::Doctor: {
             return std::make_shared<Doctor>(
-                staffId, staffCode, passwordHash, fullName, avatar, role, isActive,
+                staffId, staffCode, passwordHash, fullName, avatar, role, isActive, mustChangePassword,
                 query.value("specialty").toString(),
                 query.value("license_number").toString(),
                 query.value("experience_years").toInt(),
@@ -339,6 +340,7 @@ static const QString SELECT_STAFF_SQL = R"(
         s.department_id,
         s.shift,
         s.is_active,
+        s.must_change_password,
 
         dp.specialty,
         dp.license_number,

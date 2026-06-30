@@ -287,7 +287,7 @@ bool StaffService::hireNewDoctor(const DoctorInputDTO& doctor) {
     return this->m_staffRepository->insertDoctor({
         doctor, 
         generateStaffCode(UserRole::Doctor), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12))
+        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR))
     });
 }
 
@@ -299,7 +299,7 @@ bool StaffService::hireNewNurse(const NurseInputDTO& nurse) {
     return this->m_staffRepository->insertNurse({
         nurse,
         generateStaffCode(UserRole::Nurse), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), 12))
+        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR))
     });
 }
 
@@ -343,7 +343,7 @@ QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
 
 bool StaffService::changePassword(int staffId, const QString& plainPassword) {
     if (staffId <= 0) return false;
-    if (!validatePlainPassword(plainPassword).isEmpty()) return false;
+    if (!Validation::validatePlainPassword(plainPassword).isEmpty()) return false;
     if (!m_staffRepository->existsByStaffId(staffId)) return false;
 
     QString passwordHash = QString::fromStdString(

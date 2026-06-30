@@ -17,6 +17,7 @@ protected:
     QPixmap     m_avatar;
     UserRole    m_role;
     bool        m_isActive;
+    bool        m_mustChangePassword;
 
 public:
     explicit SystemUser(
@@ -26,7 +27,8 @@ public:
         const QString&  fullName, 
         const QPixmap&  avatar,
         UserRole        role,
-        bool            isActive
+        bool            isActive,
+        bool            mustChangePassword
     ) :
         m_staffId(staffId), 
         m_staffCode(staffCode),
@@ -34,7 +36,8 @@ public:
         m_fullName(fullName), 
         m_avatar(avatar),
         m_role(role),
-        m_isActive(isActive)
+        m_isActive(isActive),
+        m_mustChangePassword(mustChangePassword)
 
     {}
     virtual ~SystemUser() = default;
@@ -51,6 +54,7 @@ public:
     // ── Staff-specific: KHÔNG có ở IAuthenticatable ──────────
 
     QString  getPasswordHash()  const { return m_passwordHash; }
+    bool     mustChangePassword() const { return m_mustChangePassword; }
 
     // Trạng thái hoạt động của nhân viên
     bool isActive()        const { return m_isActive; }

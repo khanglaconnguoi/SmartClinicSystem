@@ -18,10 +18,11 @@
  */
 
 #pragma once
-#include "repository/StaffRepository.h"
-#include <QString>
 #include <QList>
+#include <QString>
 #include <memory>
+
+#include "repository/StaffRepository.h"
 
 struct ResetPasswordResult {
     bool result;
