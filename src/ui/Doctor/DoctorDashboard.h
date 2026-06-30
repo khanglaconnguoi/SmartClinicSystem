@@ -55,4 +55,16 @@ private:
     void switchPage(int index, QPushButton* activeBtn);
     void openClinicalExam(const QString& name, const QString& id, const QString& time, const QString& specialty, int rowIndex);
     void handlePatientExamFinished();
+
+public:
+    struct ApptMeta {
+        int appointmentId;
+        int patientId;
+        QString name;
+        QString code;
+        QString time;
+        QString reason;
+    };
+private:
+    QList<ApptMeta> m_rowApptMeta;
 };

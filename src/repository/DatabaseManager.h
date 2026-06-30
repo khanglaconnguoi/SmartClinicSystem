@@ -28,6 +28,24 @@ public:
     DatabaseManager& operator=(const DatabaseManager&) = delete;
 
     
+    struct AppointmentRecord {
+        int appointmentId;
+        int patientId;
+        int doctorId;
+        QString appointmentDate;
+        QString startTime;
+        QString endTime;
+        QString status;
+        QString reason;
+        QString notes;
+        QString patientName;
+        QString patientCode;
+        QString roomNumber;
+    };
+
+    QList<AppointmentRecord> getDoctorAppointments(int doctorId, const QString& date = "");
+    bool updateAppointmentStatus(int appointmentId, const QString& status);
+    
     bool        executeQuery(const QString& sql, const QVariantList& params = {});
     QSqlQuery   selectQuery(const QString& sql, const QVariantList& params = {});
     bool        beginTransaction() { 

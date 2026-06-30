@@ -220,23 +220,36 @@ bool DatabaseManager::createTables() {
 // -------------------------------------------------
 
     // 4. Bảng Appointments
-    // QString createAppointments = R"(
-    //     CREATE TABLE IF NOT EXISTS Appointments (
-    //         appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    //         patient_id INTEGER NOT NULL,
-    //         doctor_id INTEGER NOT NULL,
-    //         appointment_date TEXT NOT NULL,
-    //         status TEXT NOT NULL DEFAULT 'Chờ khám',
-    //         symptoms TEXT,
-    //         FOREIGN KEY (patient_id) REFERENCES Patients(patient_id) ON DELETE CASCADE,
-    //         FOREIGN KEY (doctor_id) REFERENCES Doctors(doctor_id) ON DELETE CASCADE
-    //     );
-    // )";
-    // if (!query.exec(createAppointments))
-    // {
-    //     qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
-    //     success = false;
-    // }
+    QString createAppointments = R"(
+        CREATE TABLE IF NOT EXISTS appointments (
+            appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id       INTEGER NOT NULL,
+            doctor_id        TEXT    NOT NULL,
+            room_id          INTEGER,
+            created_by       INTEGER,
+            appointment_date TEXT    NOT NULL,
+            start_time       TEXT    NOT NULL,
+            end_time         TEXT,
+            status           TEXT    NOT NULL DEFAULT 'SCHEDULED'
+                              CHECK (status IN ('SCHEDULED','CONFIRMED','CHECKED_IN','COMPLETED','CANCELLED','NO_SHOW')),
+            reason           TEXT,
+            notes            TEXT,
+            created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+            updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+            FOREIGN KEY (doctor_id)  REFERENCES staff(staff_code) ON DELETE RESTRICT,
+            FOREIGN KEY (room_id)    REFERENCES rooms(room_id) ON DELETE SET NULL,
+            FOREIGN KEY (created_by) REFERENCES staff(staff_id) ON DELETE SET NULL,
+            UNIQUE (doctor_id, appointment_date, start_time),
+            CHECK (end_time IS NULL OR end_time > start_time)
+        );
+    )";
+    if (!query.exec(createAppointments))
+    {
+        qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
+        m_db.rollback();
+        return false;
+    }
 
 
 // ============= TẠO INDEX ===============
@@ -367,4 +380,54 @@ QSqlQuery DatabaseManager::selectQuery(const QString& sql, const QVariantList& p
     }
  
     return query;
+}
+
+QList<DatabaseManager::AppointmentRecord> DatabaseManager::getDoctorAppointments(int doctorId, const QString& date) {
+    QList<AppointmentRecord> list;
+
+    QString sql = R"(
+        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, p.full_name, p.patient_code, r.room_number
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.patient_id
+        LEFT JOIN rooms r ON a.room_id = r.room_id
+        JOIN staff s ON (a.doctor_id = s.staff_id OR a.doctor_id = s.staff_code)
+        WHERE s.staff_id = ?
+    )";
+    QVariantList params = { doctorId };
+    if (!date.isEmpty()) {
+        sql += " AND a.appointment_date = ?";
+        params << date;
+    }
+    sql += " ORDER BY a.appointment_date DESC, a.start_time ASC";
+
+    qDebug() << "getDoctorAppointments - Executing query for doctorId:" << doctorId << "| Date:" << (date.isEmpty() ? "All" : date);
+    QSqlQuery query = selectQuery(sql, params);
+    
+    int rowCount = 0;
+    while (query.next()) {
+        rowCount++;
+        AppointmentRecord rec;
+        rec.appointmentId = query.value(0).toInt();
+        rec.patientId = query.value(1).toInt();
+        rec.doctorId = query.value(2).toInt();
+        rec.appointmentDate = query.value(3).toString();
+        rec.startTime = query.value(4).toString();
+        rec.endTime = query.value(5).toString();
+        rec.status = query.value(6).toString();
+        rec.reason = query.value(7).toString();
+        rec.notes = query.value(8).toString();
+        rec.patientName = query.value(9).toString();
+        rec.patientCode = query.value(10).toString();
+        rec.roomNumber = query.value(11).toString();
+        if (rec.roomNumber.isEmpty()) rec.roomNumber = "N/A";
+        
+        qDebug() << "  -> Row" << rowCount << ":" << rec.startTime << "|" << rec.patientName << "|" << rec.status;
+        list.append(rec);
+    }
+    qDebug() << "getDoctorAppointments - Loaded" << rowCount << "records.";
+    return list;
+}
+
+bool DatabaseManager::updateAppointmentStatus(int appointmentId, const QString& status) {
+    return executeQuery("UPDATE appointments SET status = ? WHERE appointment_id = ?", { status, appointmentId });
 }

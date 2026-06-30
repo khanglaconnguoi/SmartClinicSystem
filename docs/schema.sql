@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS inpatient_admissions (
 CREATE TABLE IF NOT EXISTS appointments (
     appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id       INTEGER NOT NULL,
-    doctor_id        INTEGER NOT NULL,
+    doctor_id        TEXT    NOT NULL,
     room_id          INTEGER,
     created_by       INTEGER,
     appointment_date TEXT    NOT NULL,
@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
-    FOREIGN KEY (doctor_id)  REFERENCES staff(staff_id) ON DELETE RESTRICT,
+    FOREIGN KEY (doctor_id)  REFERENCES staff(staff_code) ON DELETE RESTRICT,
     FOREIGN KEY (room_id)    REFERENCES rooms(room_id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES staff(staff_id) ON DELETE SET NULL,
     UNIQUE (doctor_id, appointment_date, start_time),
