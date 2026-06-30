@@ -74,8 +74,8 @@
 |---|---|
 | **Task** | Feature Implementation / Application Entry Point |
 | **AI** | Claude Sonnet 4.6 (Thinking) |
-| **Prompt/Instruction** | Rewrite `main.cpp` để chương trình tạo `hospital.db`; tìm hiểu tại sao file `.db` và `.log` không xuất hiện sau khi build; sửa lỗi thiếu Qt DLLs khiến app không chạy được. |
-| **Student / Verification or Modification** | - Làm rõ khái niệm **build ≠ run**: `.db` và `.log` chỉ được tạo khi `.exe` thực sự chạy, không phải lúc biên dịch. <br>- Thêm `isOpen()` vào `DatabaseManager` và cập nhật `main.cpp` để kiểm tra sau khởi động — hiện dialog lỗi mô tả chi tiết và thoát với code 1 nếu DB không mở được. <br>- Thêm `#include <QTextStream>` bị thiếu (gây lỗi compile tại dòng `QTextStream out(&logFile)`). <br>- Sửa lỗi `cmake_check_build_system Error 1` do `add_subdirectory(tests)` trỏ đến thư mục `tests/` rỗng — tạo `tests/CMakeLists.txt` tối giản. <br>- Chạy `windeployqt6` để copy tất cả Qt DLL (`Qt6Core.dll`, `Qt6Sql.dll`, `Qt6Gui.dll`, ...) vào cùng thư mục với `.exe`; cập nhật `CMakeLists.txt` để tự động chạy `windeployqt6` như POST_BUILD step. |
+| **Prompt/Instruction** | Rewrite `main.cpp` so the program creates `hospital.db`; find out why the `.db` and `.log` files do not appear after building; fix the missing Qt DLLs error causing the app to crash on start. |
+| **Student / Verification or Modification** | - Clarified the concept **build ≠ run**: `.db` and `.log` are only created when the `.exe` actually runs, not during compilation. <br>- Added `isOpen()` to `DatabaseManager` and updated `main.cpp` to verify DB connection after startup — a detailed error dialog is displayed, and the app exits with code 1 if the DB fails to open. <br>- Added missing `#include <QTextStream>` (which caused a compile error at `QTextStream out(&logFile)`). <br>- Fixed `cmake_check_build_system Error 1` caused by `add_subdirectory(tests)` pointing to an empty `tests/` folder by creating a minimal `tests/CMakeLists.txt`. <br>- Executed `windeployqt6` to copy all required Qt DLLs (`Qt6Core.dll`, `Qt6Sql.dll`, `Qt6Gui.dll`, etc.) to the `.exe` directory; updated `CMakeLists.txt` to automatically run `windeployqt6` as a POST_BUILD step. |
 
 ---
 
@@ -85,8 +85,8 @@
 |---|---|
 | **Task** | Debugging / SQL Syntax Errors in `DatabaseManager.cpp` |
 | **AI** | Claude Sonnet 4.6 (Thinking) |
-| **Prompt/Instruction** | Đọc `debug.log` và sửa các lỗi tạo bảng trong `hospital.db`; các bảng trong `hospital.db` khác với câu lệnh CREATE TABLE đã viết; sửa tất cả lỗi bảng hiển thị trong debug.log. |
-| **Student / Verification or Modification** | - Nguyên nhân 1: Comment `//` trong C++ đặt **bên trong** raw string `R"(...)"` được gửi nguyên văn cho SQLite — SQLite không hiểu `//` và báo `"near '/': syntax error"`. Sửa: chuyển tất cả comment ra **ngoài** dấu `)"`. <br>- Nguyên nhân 2: `CREATE TABLE IF NOT EXISTS` bỏ qua tạo lại nếu bảng đã tồn tại, kể cả khi schema đã thay đổi. Sửa: xóa `hospital.db` và chạy lại app để tái tạo từ code `createTables()` hiện tại. <br>- Nguyên nhân 3: SQL bảng `Appointments` bị vỡ `ON DELETE CASCADE` qua nhiều dòng với các fragment comment lẫn vào. Sửa: viết lại SQL gọn gàng, mỗi cột một dòng. <br>- Định dạng lại SQL bảng `departments` và `rooms` từ kiểu nén một dòng sang nhiều dòng dễ đọc để tránh lỗi trong tương lai. |
+| **Prompt/Instruction** | Read `debug.log` and fix the table creation errors in `hospital.db`; the tables in `hospital.db` do not match the written CREATE TABLE statements; fix all table errors shown in debug.log. |
+| **Student / Verification or Modification** | - Cause 1: C++ comments `//` placed **inside** the raw string `R"(...)"` were sent verbatim to SQLite — SQLite does not understand `//` and reported `"near '/': syntax error"`. Fix: moved all comments **outside** the `)"` boundary. <br>- Cause 2: `CREATE TABLE IF NOT EXISTS` skips recreation if the table already exists, even if the schema has changed. Fix: deleted `hospital.db` and reran the app to recreate from the updated `createTables()` code. <br>- Cause 3: The SQL for the `Appointments` table had its `ON DELETE CASCADE` split across multiple lines with fragment comments mixed in. Fix: rewrote the SQL cleanly, one line per column. <br>- Reformatted the SQL for `departments` and `rooms` tables from a single-line compressed format to a readable multi-line format to prevent future errors. |
 
 ---
 
@@ -96,5 +96,60 @@
 |---|---|
 | **Task** | Testing / Integration Test + DBeaver Inspection |
 | **AI** | Claude Sonnet 4.6 (Thinking) |
-| **Prompt/Instruction** | Test tất cả các hàm dùng để insert bệnh nhân vào database; xem kết quả trong DBeaver. |
-| **Student / Verification or Modification** | - Phát hiện và sửa lỗi tên cột trong `PatientRepository.cpp`: `insertInPatient` dùng cột `admitting_doctor_id` nhưng schema DB thực tế là `doctor_id`. <br>- Tạo `tests/PatientInsertTest.cpp` với 4 bài test tích hợp: `testInsertOutPatient`, `testInsertInPatient`, `testInsertEmergencyPatient`, và `testDuplicatePatientCode` (kiểm tra ràng buộc UNIQUE từ chối chèn trùng). Mỗi test tự dọn dữ liệu sau khi chạy. <br>- Cập nhật `tests/CMakeLists.txt` để build `PatientInsertTest` thành file exe độc lập, link với `Qt6::Core` và `Qt6::Sql`. <br>- Hướng dẫn từng bước dùng DBeaver: kết nối đến `hospital.db` qua driver SQLite, duyệt bảng trong `main → Tables`, dùng SQL Editor với câu JOIN để kiểm tra dữ liệu đã insert, nhấn F5 để refresh sau mỗi lần chạy test. |
+| **Prompt/Instruction** | Test all functions used to insert patients into the database; view the results in DBeaver. |
+| **Student / Verification or Modification** | - Discovered and fixed a column name error in `PatientRepository.cpp`: `insertInPatient` was using `admitting_doctor_id` but the actual DB schema is `doctor_id`. <br>- Created `tests/PatientInsertTest.cpp` with 4 integration tests: `testInsertOutPatient`, `testInsertInPatient`, `testInsertEmergencyPatient`, and `testDuplicatePatientCode` (verified the UNIQUE constraint rejects duplicate inserts). Each test cleans up data after running. <br>- Updated `tests/CMakeLists.txt` to build `PatientInsertTest` as a standalone executable linked with `Qt6::Core` and `Qt6::Sql`. <br>- Provided step-by-step instructions on using DBeaver: connecting to `hospital.db` via SQLite driver, browsing tables in `main → Tables`, using the SQL Editor with JOIN queries to inspect inserted data, and pressing F5 to refresh after each test run. |
+
+---
+
+## Prompt #10
+
+| Field | Details |
+|---|---|
+| **Task** | Debugging / Bug Fix |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Explain what this problem is and help me fix it: Member access into incomplete type 'PatientRepository' (fix available) @[PatientService.h:L203] |
+| **Student / Verification or Modification** | - Root cause: `PatientRepository` was only forward-declared (`class PatientRepository;`) in `PatientService.h`, so the compiler lacked the full class definition needed to resolve inline method calls.<br>- Fix applied: Moved the inline definitions of `softDeletePatient` and `restorePatient` from the header `.h` file to the source `.cpp` file, where `PatientRepository.h` is fully included. |
+
+---
+
+## Prompt #11
+
+| Field | Details |
+|---|---|
+| **Task** | Testing / Integration Test |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Add test code to check if deletion works in main.cpp |
+| **Student / Verification or Modification** | - Added a test case to verify soft deletion and restoration functionality within the `runIntegrationTests()` function in `main.cpp`.<br>- The test retrieves a patient (`TEST-MAIN-OUT`), executes `softDeletePatient`, logs the success, subsequently calls `restorePatient`, and logs the final result. |
+
+---
+
+## Prompt #12
+
+| Field | Details |
+|---|---|
+| **Task** | Code Analysis / Explanation |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Which keywords can my search function use and how does it work? |
+| **Student / Verification or Modification** | - Analyzed the `buildSearchWhereClause` function in `PatientRepository.cpp`.<br>- Explained the `LIKE` logic: The keyword performs a partial match across 4 fields (`full_name`, `patient_code`, `citizen_id`, `phone`).<br>- Clarified how the function uses SQL escaping for special characters, and how other conditions (patient type, room, status, date) are dynamically combined into a `UNION ALL` query. |
+
+---
+
+## Prompt #13
+
+| Field | Details |
+|---|---|
+| **Task** | Code Review / QA |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Please thoroughly analyze my project to see if there are any errors and run it again to check if anything is wrong. |
+| **Student / Verification or Modification** | - Performed a complete rebuild of the project (`cmake --build build`) and test-ran the executable.<br>- Confirmed the system runs stably and all integration tests (Insert, Update, Search, Delete) pass successfully.<br>- Detected and suggested an improvement: The `emergency_patients` table in `DatabaseManager.cpp` was missing the `CHECK (discharge_date IS NULL OR discharge_date >= admission_date)` constraint, which existed in the inpatient schema. |
+
+---
+
+## Prompt #14
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / CRUD Completion |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | So have I completed the patient CRUD? & Please write these support functions |
+| **Student / Verification or Modification** | - Analyzed CRUD completion: Identified the system was missing the Read Detail (`getPatientById`) function to fetch detailed data for UI editing forms.<br>- Introduced a new `PatientDetailDTO` (a flattened structure containing all comprehensive info) in `PatientDTOs.h` instead of splitting it into 3 separate structs.<br>- Implemented the `getPatientById` function in `PatientRepository.cpp` using a `UNION ALL` query to aggregate data from all tables, and exposed it through `PatientService.cpp` to achieve 100% CRUD flow completion. |

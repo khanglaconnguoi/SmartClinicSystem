@@ -45,6 +45,8 @@ struct PatientInputDTO {
   QString email;                 // email                (nullable)
   QString address;               // address              (nullable)
   QString bloodType;             // blood_type           DEFAULT 'UNKNOWN'
+  QString allergies;             // allergies            (nullable, future use)
+  QString insurance;             // insurance            (nullable, future use)
   PatientType type;              // default_patient_type DEFAULT 'OUTPATIENT'
   QString emergencyContactName;  // emergency_contact_name  (nullable)
   QString emergencyContactPhone; // emergency_contact_phone (nullable)
@@ -207,63 +209,100 @@ struct PatientUpdateDTO {
   int patientId; // PK – bắt buộc
 
   QString fullName;
-  QDate dateOfBirth;
-  Gender gender;
+  QString dateOfBirth;
+  QString gender;
   QString citizenId;
   QString phone;
   QString email;
   QString address;
   QString bloodType;
-  PatientType defaultPatientType;
   QString emergencyContactName;
   QString emergencyContactPhone;
+  PatientUpdateDTO() = default;
+  virtual ~PatientUpdateDTO() = default;
+  PatientUpdateDTO(const PatientInputDTO &inputInformation, int patientId) {
+    this->patientId = patientId;
+    this->fullName = inputInformation.fullName.trimmed();
+    this->dateOfBirth = inputInformation.dateOfBirth.toString("yyyy-MM-dd");
+    this->gender = GenderToString(inputInformation.gender);
+    this->citizenId = inputInformation.citizenId.trimmed();
+    this->phone = inputInformation.phone.trimmed();
+    this->email = inputInformation.email.trimmed();
+    this->address = inputInformation.address.trimmed();
+    this->bloodType = inputInformation.bloodType;
+    this->emergencyContactName = inputInformation.emergencyContactName;
+    this->emergencyContactPhone = inputInformation.emergencyContactPhone;
+  }
 };
 
 /**
  * @brief UPDATE bảng `out_patients` (chỉ status thay đổi theo nghiệp vụ).
  */
-struct OutPatientUpdateDTO {
-  int patientId; // PK
-  OutPatientState status;
+struct OutPatientUpdateDTO : public PatientUpdateDTO {
+  QString status;
+  std::optional<int> doctorId;
+  OutPatientUpdateDTO(const OutPatientInputDTO &inputInformation, int patientId,
+                      const QString &status = "REGISTERED")
+      : PatientUpdateDTO(inputInformation, patientId), status(status),
+        doctorId(inputInformation.doctorId) {}
 };
 
 /**
  * @brief UPDATE bảng `in_patients`.
  */
-struct InPatientUpdateDTO {
-  int patientId; // PK
+struct InPatientUpdateDTO : public PatientUpdateDTO {
   std::optional<int> roomId;
-  std::optional<int> admittingDoctorId;
-  QDate admissionDate;
-  std::optional<QDate> dischargeDate;
+  std::optional<int> doctorId;
+  QString admissionDate;
+  QString dischargeDate;
   QString reason;
-  InPatientState status;
+  QString status;
+  InPatientUpdateDTO(const InPatientInputDTO &inputInformation, int patientId,
+                     const QString &status = "ADMITTED")
+      : PatientUpdateDTO(inputInformation, patientId),
+        roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
+        admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
+        dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
+            "yyyy-MM-dd")),
+        reason(inputInformation.reason), status(status) {}
 };
 
 /**
  * @brief UPDATE bảng `emergency_patients_admissions`.
  */
-struct EmergencyPatientUpdateDTO {
-  int patientId; // PK
+struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
   std::optional<int> roomId;
-  std::optional<int> emergencyDoctorId;
+  std::optional<int> doctorId;
   QString injuryCause;
   QString injuryDescription;
-  QDate admissionDate;
-  std::optional<QDate> dischargeDate;
-  EmergencyPatientState status;
+  QString admissionDate;
+  QString dischargeDate;
+  QString status;
+  EmergencyPatientUpdateDTO(const EmergencyPatientInputDTO &inputInformation,
+                            int patientId, const QString &status = "EMERGENCY")
+      : PatientUpdateDTO(inputInformation, patientId),
+        roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
+        injuryCause(inputInformation.injuryCause),
+        injuryDescription(inputInformation.injuryDescription),
+        admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
+        dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
+            "yyyy-MM-dd")),
+        status(status) {}
 };
 
+// //
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 4 – RESULT DTOs  (Repository → Service → UI)
-//   Kết quả đọc từ DB. Bao gồm tất cả cột, kể cả PK và timestamp.
-//   Dùng cho getById, getByCode, getAll, search.
+// // SECTION 4 – RESULT DTOs  (Repository → Service → UI)
+// //   Kết quả đọc từ DB. Bao gồm tất cả cột, kể cả PK và timestamp.
+// //   Dùng cho getById, getByCode, getAll, search.
+// //
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Kết quả JOIN patients + out_patients.
+ * @brief Kết quả lấy chi tiết một bệnh nhân (Dùng cho getById).
+ *        Cấu trúc làm phẳng (flatten) tất cả các trường để UI dễ dàng bind dữ liệu.
  */
-struct OutPatientDTO {
+struct PatientDetailDTO {
   // ── patients ──────────────────────────────────────────
   int patientId;
   QString patientCode;
@@ -275,79 +314,27 @@ struct OutPatientDTO {
   QString email;
   QString address;
   QString bloodType;
+  QString allergies;
+  QString insurance;
+  PatientType defaultPatientType;
   QString emergencyContactName;
   QString emergencyContactPhone;
-
-  // ── out_patients ──────────────────────────────────────
-  OutPatientState
-      status; // REGISTERED | WAITING FOR TREATMENT | TREATMENT | DISCHARGED
-
-  // ── metadata ──────────────────────────────────────────
+  bool isDeleted;
   QDateTime createdAt;
   QDateTime updatedAt;
-};
 
-/**
- * @brief Kết quả JOIN patients + in_patients.
- */
-struct InPatientDTO {
-  // ── patients ──────────────────────────────────────────
-  int patientId;
-  QString patientCode;
-  QString fullName;
-  QDate dateOfBirth;
-  Gender gender;
-  QString citizenId;
-  QString phone;
-  QString email;
-  QString address;
-  QString bloodType;
-  QString emergencyContactName;
-  QString emergencyContactPhone;
-
-  // ── in_patients ───────────────────────────────────────
-  std::optional<int> roomId;
-  std::optional<int> admittingDoctorId;
-  QDate admissionDate;
-  std::optional<QDate> dischargeDate;
-  QString reason;
-  InPatientState status; // ADMITTED | DISCHARGED | TRANSFERRED
-
-  // ── metadata ──────────────────────────────────────────
-  QDateTime createdAt;
-  QDateTime updatedAt;
-};
-
-/**
- * @brief Kết quả JOIN patients + emergency_patients_admissions.
- */
-struct EmergencyPatientDTO {
-  // ── patients ──────────────────────────────────────────
-  int patientId;
-  QString patientCode;
-  QString fullName;
-  QDate dateOfBirth;
-  Gender gender;
-  QString citizenId;
-  QString phone;
-  QString email;
-  QString address;
-  QString bloodType;
-  QString emergencyContactName;
-  QString emergencyContactPhone;
-
-  // ── emergency_patients_admissions ─────────────────────
-  std::optional<int> roomId;
-  std::optional<int> emergencyDoctorId;
-  QString injuryCause;
-  QString injuryDescription;
-  QDate admissionDate;
-  std::optional<QDate> dischargeDate;
-  EmergencyPatientState status; // EMERGENCY | DISCHARGED | TRANSFERRED
-
-  // ── metadata ──────────────────────────────────────────
-  QDateTime createdAt;
-  QDateTime updatedAt;
+  // ── thông tin chuyên biệt từ bảng con ──────────────────
+  PatientType currentType; // OUTPATIENT / INPATIENT / EMERGENCY
+  QString status;          // Trạng thái từ bảng con (REGISTERED, ADMITTED...)
+  
+  std::optional<int> roomId;          // Dùng cho INPATIENT / EMERGENCY
+  std::optional<int> doctorId;        // Bác sĩ phụ trách (Dùng chung)
+  std::optional<QDate> admissionDate; // Dùng cho INPATIENT / EMERGENCY
+  std::optional<QDate> dischargeDate; // Dùng cho INPATIENT / EMERGENCY
+  
+  QString reason;            // Lý do nhập viện (INPATIENT)
+  QString injuryCause;       // Nguyên nhân tai nạn (EMERGENCY)
+  QString injuryDescription; // Mô tả chấn thương (EMERGENCY)
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -357,30 +344,82 @@ struct EmergencyPatientDTO {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Tìm kiếm / lọc bệnh nhân ngoại trú.
+ * @brief Tiêu chí tìm kiếm bệnh nhân (mọi loại:
+ * OutPatient/InPatient/Emergency).
+ *
+ *  Tất cả trường để rỗng / std::nullopt / -1 nghĩa là "không lọc theo
+ *  trường đó". Service sẽ validate (vd. fromDate <= toDate) trước khi
+ *  truyền xuống Repository.
  */
-struct OutPatientFindDTO {
-  QString keyword; // tìm theo full_name, patient_code, citizen_id
-  std::optional<OutPatientState>
-      status; // lọc theo trạng thái (nullopt = tất cả)
+struct PatientSearchCriteria {
+  // ── TEXT search ───────────────────────────────────────
+  // So khớp (LIKE) với: full_name, patient_code, citizen_id, phone
+  QString searchKey;
+
+  // ── Dropdown filter ───────────────────────────────────
+  std::optional<PatientType> type; // nullopt = tìm cả 3 loại
+  int roomId = -1;                 // -1 = tất cả phòng
+
+  // ── Status filter ─────────────────────────────────────
+  QString status; // rỗng = tất cả trạng thái (REGISTERED/ADMITTED/...)
+  bool onlyActive = true;
+  bool includeDeleted = false;
+
+  // ── Date range filter (theo admission_date) ──────────
+  std::optional<QDate> fromDate;
+  std::optional<QDate> toDate;
+
+  // ── Phân trang ────────────────────────────────────────
+  int limit = 50;
+  int offset = 0;
 };
 
 /**
- * @brief Tìm kiếm / lọc bệnh nhân nội trú.
+ * @brief Một dòng kết quả tìm kiếm bệnh nhân.
+ *
+ *  Vì OutPatient/InPatient/EmergencyPatient nằm ở 3 bảng con khác cột
+ *  nhau, DTO này được "làm phẳng" để UI hiển thị thống nhất trên 1
+ *  QTableView, bất kể bệnh nhân thuộc loại nào.
  */
-struct InPatientFindDTO {
-  QString keyword;                      // full_name, patient_code, citizen_id
-  std::optional<InPatientState> status; // nullopt = tất cả
-  std::optional<int> roomId;            // lọc theo phòng
-  std::optional<int> admittingDoctorId;
-};
+struct PatientSearchResultDTO {
+  int patientId;
+  QString patientCode;
+  QString fullName;
+  QDate dateOfBirth;
+  Gender gender;
+  QString phone;
 
-/**
- * @brief Tìm kiếm / lọc bệnh nhân cấp cứu.
- */
-struct EmergencyPatientFindDTO {
-  QString keyword; // full_name, patient_code, citizen_id
-  std::optional<EmergencyPatientState> status; // nullopt = tất cả
-  std::optional<int> roomId;
-  std::optional<int> emergencyDoctorId;
+  PatientType type;    // OUTPATIENT / INPATIENT / EMERGENCY
+  QString statusLabel; // status tương ứng lấy từ bảng con
+  QString roomId;      // rỗng nếu là OutPatient (không có phòng)
 };
+// struct OutPatientFindDTO {
+//   QString keyword; // tìm theo full_name, patient_code, citizen_id
+//   std::optional<OutPatientState>
+//       status; // lọc theo trạng thái (nullopt = tất cả)
+// };
+// struct OutPatientFindDTO {
+//   QString keyword; // tìm theo full_name, patient_code, citizen_id
+//   std::optional<OutPatientState>
+//       status; // lọc theo trạng thái (nullopt = tất cả)
+// };
+
+// /**
+//  * @brief Tìm kiếm / lọc bệnh nhân nội trú.
+//  */
+// struct InPatientFindDTO {
+//   QString keyword;                      // full_name, patient_code,
+//   citizen_id std::optional<InPatientState> status; // nullopt = tất cả
+//   std::optional<int> roomId;            // lọc theo phòng
+//   std::optional<int> admittingDoctorId;
+// };
+
+// /**
+//  * @brief Tìm kiếm / lọc bệnh nhân cấp cứu.
+//  */
+// struct EmergencyPatientFindDTO {
+//   QString keyword; // full_name, patient_code, citizen_id
+//   std::optional<EmergencyPatientState> status; // nullopt = tất cả
+//   std::optional<int> roomId;
+//   std::optional<int> emergencyDoctorId;
+// };

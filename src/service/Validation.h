@@ -35,3 +35,16 @@ QString validateEmail(const QString &email);
  * @brief Kiểm tra nhóm máu (A+/A-/B+/B-/AB+/AB-/O+/O-/UNKNOWN).
  */
 QString validateBloodType(const QString &bloodType);
+
+/**
+ * @brief Kiểm tra khoảng ngày hợp lệ, dùng cho bộ lọc tìm kiếm theo ngày.
+ *
+ *  Hợp lệ khi:
+ *    - Cả hai ngày đều rỗng (không lọc theo ngày), hoặc
+ *    - Chỉ một trong hai ngày được cung cấp, hoặc
+ *    - Cả hai ngày hợp lệ và fromDate <= toDate.
+ *
+ * @param fromDate Ngày bắt đầu khoảng lọc (có thể rỗng — QDate không hợp lệ).
+ * @param toDate   Ngày kết thúc khoảng lọc (có thể rỗng — QDate không hợp lệ).
+ */
+QString validateDateRange(const QDate &fromDate, const QDate &toDate);

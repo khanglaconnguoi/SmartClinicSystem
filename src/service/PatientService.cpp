@@ -7,7 +7,6 @@
 #include "PatientService.h"
 #include "Validation.h"
 #include "dto/PatientDTOs.h"
-#include "dto/patientDTOs.h"
 #include "repository/PatientRepository.h"
 #include <QDateTime>
 #include <QMessageBox>
@@ -80,6 +79,8 @@ bool PatientService::AddOutPatient(
   inputInformation.email = email;
   inputInformation.address = address;
   inputInformation.bloodType = bloodType;
+  inputInformation.allergies = allergies;
+  inputInformation.insurance = insurance;
   inputInformation.type = type;
   inputInformation.emergencyContactName = emergencyContactName;
   inputInformation.emergencyContactPhone = emergencyContactPhone;
@@ -130,6 +131,8 @@ bool PatientService::AddInPatient(
   inputInformation.email = email;
   inputInformation.address = address;
   inputInformation.bloodType = bloodType;
+  inputInformation.allergies = allergies;
+  inputInformation.insurance = insurance;
   inputInformation.type = type;
   inputInformation.emergencyContactName = emergencyContactName;
   inputInformation.emergencyContactPhone = emergencyContactPhone;
@@ -201,6 +204,8 @@ bool PatientService::AddEmergencyPatient(
   inputInformation.email = email;
   inputInformation.address = address;
   inputInformation.bloodType = bloodType;
+  inputInformation.allergies = allergies;
+  inputInformation.insurance = insurance;
   inputInformation.type = type;
   inputInformation.emergencyContactName = emergencyContactName;
   inputInformation.emergencyContactPhone = emergencyContactPhone;
@@ -325,4 +330,291 @@ QString PatientService::validateEmergencyPatientInput(
     return "Admission date must be before discharge date.";
 
   return "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// validateUpdateBaseInput
+// ─────────────────────────────────────────────────────────────────────────────
+
+QString PatientService::validateUpdateBaseInput(
+    int patientId, const QString &fullName, const QDate &dateOfBirth,
+    const QString &gender, const QString &citizenId, const QString &phone,
+    const QString &email, const QString &bloodType, const QString &allergies,
+    const QString &insurance) {
+  if (patientId <= 0)
+    return "Invalid patient ID.";
+  if (fullName.isEmpty())
+    return "Full name is required.";
+  if (!dateOfBirth.isValid() || dateOfBirth > QDate::currentDate())
+    return "Date of birth is invalid.";
+  if (gender.isEmpty())
+    return "Gender is required.";
+  if (allergies.isEmpty())
+    return "Allergies is required.";
+  if (insurance.isEmpty())
+    return "Insurance is required.";
+
+  QString err;
+  err = validateCitizenId(citizenId);
+  if (!err.isEmpty())
+    return err;
+
+  err = validatePhoneNumber(phone);
+  if (!err.isEmpty())
+    return err;
+
+  err = validateEmail(email);
+  if (!err.isEmpty())
+    return err;
+
+  err = validateBloodType(bloodType);
+  if (!err.isEmpty())
+    return err;
+
+  return "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UpdatePatient
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool PatientService::UpdatePatient(
+    int patientId, const QString &fullName, const QDate &dateOfBirth,
+    const QString &gender, const QString &citizenId, const QString &phone,
+    const QString &email, const QString &address, const QString &bloodType,
+    const QString &allergies, const QString &insurance,
+    const QString &emergencyContactName, const QString &emergencyContactPhone) {
+  QString err = validateUpdateBaseInput(patientId, fullName, dateOfBirth,
+                                        gender, citizenId, phone, email,
+                                        bloodType, allergies, insurance);
+  if (!err.isEmpty()) {
+    QMessageBox::warning(nullptr, "Validation Error", err);
+    return false;
+  }
+
+  PatientInputDTO inputInformation;
+  inputInformation.fullName = fullName;
+  inputInformation.dateOfBirth = dateOfBirth;
+  inputInformation.gender = stringToGender(gender);
+  inputInformation.citizenId = citizenId;
+  inputInformation.phone = phone;
+  inputInformation.email = email;
+  inputInformation.address = address;
+  inputInformation.bloodType = bloodType;
+  inputInformation.emergencyContactName = emergencyContactName;
+  inputInformation.emergencyContactPhone = emergencyContactPhone;
+
+  PatientUpdateDTO dto(inputInformation, patientId);
+  return m_patientRepository->updatePatient(dto);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UpdateOutPatient
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool PatientService::UpdateOutPatient(
+    int patientId, int doctorId, const QString &fullName,
+    const QDate &dateOfBirth, const QString &gender, const QString &citizenId,
+    const QString &phone, const QString &email, const QString &address,
+    const QString &bloodType, const QString &allergies,
+    const QString &insurance, const QString &emergencyContactName,
+    const QString &emergencyContactPhone, const QString &status) {
+  QString err = validateUpdateBaseInput(patientId, fullName, dateOfBirth,
+                                        gender, citizenId, phone, email,
+                                        bloodType, allergies, insurance);
+  if (!err.isEmpty()) {
+    QMessageBox::warning(nullptr, "Validation Error", err);
+    return false;
+  }
+
+  OutPatientInputDTO inputInformation;
+  inputInformation.fullName = fullName;
+  inputInformation.dateOfBirth = dateOfBirth;
+  inputInformation.gender = stringToGender(gender);
+  inputInformation.citizenId = citizenId;
+  inputInformation.phone = phone;
+  inputInformation.email = email;
+  inputInformation.address = address;
+  inputInformation.bloodType = bloodType;
+  inputInformation.allergies = allergies;
+  inputInformation.insurance = insurance;
+  inputInformation.emergencyContactName = emergencyContactName;
+  inputInformation.emergencyContactPhone = emergencyContactPhone;
+  inputInformation.doctorId =
+      doctorId > 0 ? std::optional<int>(doctorId) : std::nullopt;
+
+  OutPatientUpdateDTO dto(inputInformation, patientId, status);
+
+  if (!m_patientRepository->updatePatient(dto))
+    return false;
+
+  return m_patientRepository->updateOutPatient(dto);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UpdateInPatient
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool PatientService::UpdateInPatient(
+    int patientId, const QString &fullName, const QDate &dateOfBirth,
+    const QString &gender, const QString &citizenId, const QString &phone,
+    const QString &email, const QString &address, const QString &bloodType,
+    const QString &allergies, const QString &insurance,
+    const QString &emergencyContactName, const QString &emergencyContactPhone,
+    const QString &roomId, const QString &doctorId, const QDate &admissionDate,
+    const QDate &dischargeDate, const QString &reason, const QString &status) {
+  QString err = validateUpdateBaseInput(patientId, fullName, dateOfBirth,
+                                        gender, citizenId, phone, email,
+                                        bloodType, allergies, insurance);
+  if (!err.isEmpty()) {
+    QMessageBox::warning(nullptr, "Validation Error", err);
+    return false;
+  }
+
+  err = validateInPatientInput(roomId, doctorId, admissionDate, dischargeDate,
+                               reason);
+  if (!err.isEmpty()) {
+    QMessageBox::warning(nullptr, "Validation Error", err);
+    return false;
+  }
+
+  InPatientInputDTO inputInformation;
+  inputInformation.fullName = fullName;
+  inputInformation.dateOfBirth = dateOfBirth;
+  inputInformation.gender = stringToGender(gender);
+  inputInformation.citizenId = citizenId;
+  inputInformation.phone = phone;
+  inputInformation.email = email;
+  inputInformation.address = address;
+  inputInformation.bloodType = bloodType;
+  inputInformation.allergies = allergies;
+  inputInformation.insurance = insurance;
+  inputInformation.emergencyContactName = emergencyContactName;
+  inputInformation.emergencyContactPhone = emergencyContactPhone;
+
+  inputInformation.roomId =
+      roomId.isEmpty() ? std::nullopt : std::optional<int>(roomId.toInt());
+  inputInformation.doctorId =
+      doctorId.isEmpty() ? std::nullopt : std::optional<int>(doctorId.toInt());
+  inputInformation.admissionDate = admissionDate;
+  inputInformation.dischargeDate = dischargeDate.isValid()
+                                       ? std::optional<QDate>(dischargeDate)
+                                       : std::nullopt;
+  inputInformation.reason = reason;
+
+  InPatientUpdateDTO dto(inputInformation, patientId, status);
+
+  if (!m_patientRepository->updatePatient(dto))
+    return false;
+
+  return m_patientRepository->updateInPatient(dto);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UpdateEmergencyPatient
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool PatientService::UpdateEmergencyPatient(
+    int patientId, const QString &fullName, const QDate &dateOfBirth,
+    const QString &gender, const QString &citizenId, const QString &phone,
+    const QString &email, const QString &address, const QString &bloodType,
+    const QString &allergies, const QString &insurance,
+    const QString &emergencyContactName, const QString &emergencyContactPhone,
+    const QString &roomId, const QString &doctorId, const QString &injuryCause,
+    const QString &injuryDescription, const QDate &admissionDate,
+    const QDate &dischargeDate, const QString &status) {
+
+  QString err = validateUpdateBaseInput(patientId, fullName, dateOfBirth,
+                                        gender, citizenId, phone, email,
+                                        bloodType, allergies, insurance);
+  if (!err.isEmpty()) {
+    QMessageBox::warning(nullptr, "Validation Error", err);
+    return false;
+  }
+
+  err = validateEmergencyPatientInput(roomId, doctorId, injuryCause,
+                                      injuryDescription, admissionDate,
+                                      dischargeDate);
+  if (!err.isEmpty()) {
+    QMessageBox::warning(nullptr, "Validation Error", err);
+    return false;
+  }
+
+  EmergencyPatientInputDTO inputInformation;
+  inputInformation.fullName = fullName;
+  inputInformation.dateOfBirth = dateOfBirth;
+  inputInformation.gender = stringToGender(gender);
+  inputInformation.citizenId = citizenId;
+  inputInformation.phone = phone;
+  inputInformation.email = email;
+  inputInformation.address = address;
+  inputInformation.bloodType = bloodType;
+  inputInformation.allergies = allergies;
+  inputInformation.insurance = insurance;
+  inputInformation.emergencyContactName = emergencyContactName;
+  inputInformation.emergencyContactPhone = emergencyContactPhone;
+
+  inputInformation.roomId =
+      roomId.isEmpty() ? std::nullopt : std::optional<int>(roomId.toInt());
+  inputInformation.doctorId =
+      doctorId.isEmpty() ? std::nullopt : std::optional<int>(doctorId.toInt());
+  inputInformation.injuryCause = injuryCause;
+  inputInformation.injuryDescription = injuryDescription;
+  inputInformation.admissionDate = admissionDate;
+  inputInformation.dischargeDate = dischargeDate.isValid()
+                                       ? std::optional<QDate>(dischargeDate)
+                                       : std::nullopt;
+
+  EmergencyPatientUpdateDTO dto(inputInformation, patientId, status);
+
+  if (!m_patientRepository->updatePatient(dto))
+    return false;
+
+  return m_patientRepository->updateEmergencyPatient(dto);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Search / Lọc bệnh nhân
+// ─────────────────────────────────────────────────────────────────────────────
+
+QVector<PatientSearchResultDTO>
+PatientService::searchPatients(const PatientSearchCriteria &criteria) {
+  QString err = validateDateRange(criteria.fromDate.value_or(QDate()),
+                                  criteria.toDate.value_or(QDate()));
+  if (!err.isEmpty()) {
+    QMessageBox::warning(nullptr, "Validation Error", err);
+    return QVector<PatientSearchResultDTO>();
+  }
+
+  return m_patientRepository->searchPatients(criteria);
+}
+
+std::optional<PatientDetailDTO> PatientService::getPatientById(int patientId) {
+  if (patientId <= 0) {
+    QMessageBox::warning(nullptr, "Lỗi", "ID bệnh nhân không hợp lệ.");
+    return std::nullopt;
+  }
+  return m_patientRepository->getPatientById(patientId);
+}
+
+int PatientService::countSearchResults(const PatientSearchCriteria &criteria) {
+  QString err = validateDateRange(criteria.fromDate.value_or(QDate()),
+                                  criteria.toDate.value_or(QDate()));
+  if (!err.isEmpty()) {
+    return 0; // Trả về 0 nếu có lỗi validate ngày tháng
+  }
+
+  return m_patientRepository->countSearchResults(criteria);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Xóa / Khôi phục bệnh nhân
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool PatientService::softDeletePatient(int patientId) {
+  return m_patientRepository->softDeletePatient(patientId);
+}
+
+bool PatientService::restorePatient(int patientId) {
+  return m_patientRepository->restorePatient(patientId);
 }

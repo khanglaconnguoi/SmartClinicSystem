@@ -28,6 +28,8 @@ inline QString GenderToString(Gender gender) {
     return QString("FEMALE");
   case Gender::Other:
     return QString("OTHER");
+  default:
+    return QString("UNKNOWN");
   }
 }
 
@@ -39,6 +41,8 @@ inline QString PatientTypeToString(PatientType type) {
     return QString("INPATIENT");
   case PatientType::EMERGENCY:
     return QString("EMERGENCY");
+  default:
+    return QString("UNKNOWN");
   }
 }
 

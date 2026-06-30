@@ -38,6 +38,11 @@ bool DatabaseManager::initializeDatabase() {
     return false;
   }
   qDebug() << "Khởi tạo Database SQLite thành công!";
+
+  // Bật tính năng Khóa ngoại (Foreign Keys) cho SQLite (Phải gọi ngoài transaction)
+  QSqlQuery query(m_db);
+  query.exec("PRAGMA foreign_keys = ON;");
+
   return createTables();
 }
 
@@ -49,9 +54,6 @@ bool DatabaseManager::createTables() {
     return false; // Dừng lại luôn để bảo vệ dữ liệu
   }
   // ============= TẠO CÁC BẢNG ===============
-
-  // Bật tính năng Khóa ngoại (Foreign Keys) cho SQLite
-  query.exec("PRAGMA foreign_keys = ON;");
 
   // Bảng Departments
   QString createDepartments = R"(
@@ -133,7 +135,7 @@ bool DatabaseManager::createTables() {
           status              TEXT    NOT NULL DEFAULT 'REGISTERED' CHECK (status IN ('REGISTERED','WAITING FOR TREATMENT','TREATMENT','DISCHARGED')),
           created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
           updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-          FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE
+          FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
           FOREIGN KEY (doctor_id) REFERENCES staff(staff_id) ON DELETE SET NULL
       );
   )";

@@ -96,3 +96,14 @@ QString validateBloodType(const QString &bloodType) {
     return "Invalid blood type. If unknown, please enter UNKNOWN.";
   return "";
 }
+
+QString validateDateRange(const QDate &fromDate, const QDate &toDate) {
+  // Không lọc theo ngày, hoặc chỉ lọc một đầu mốc → luôn hợp lệ.
+  if (!fromDate.isValid() || !toDate.isValid())
+    return "";
+
+  if (fromDate > toDate)
+    return "Ngày bắt đầu (fromDate) không được sau ngày kết thúc (toDate).";
+
+  return "";
+}
