@@ -36,27 +36,12 @@ void BaseDashboardWidget::setupSidebarFrame() {
     m_sidebarLayout->setContentsMargins(15, 30, 15, 30);
     m_sidebarLayout->setSpacing(10);
 
+    // Logo — lớp con có thể đổi text trong fillDashboardData()
     m_logoLabel = new QLabel("Nova Care Clinic", m_sidebarFrame);
     m_logoLabel->setStyleSheet("font-size: 20px; font-weight: bold; color: #00966C; margin-bottom: 20px;");
     m_sidebarLayout->addWidget(m_logoLabel);
 
-    m_btnDash = new QPushButton("📊 Dashboard", m_sidebarFrame);
-    m_btnDash->setObjectName("activeBtn"); 
-    m_btnPatients = new QPushButton("👥 Patients", m_sidebarFrame);
-    m_btnAppoint = new QPushButton("📅 Appointments", m_sidebarFrame);
-    m_btnSetting = new QPushButton("⚙️ Settings", m_sidebarFrame);
-    m_sidebarLayout->addWidget(m_btnDash);
-    m_sidebarLayout->addWidget(m_btnPatients);
-    m_sidebarLayout->addWidget(m_btnAppoint);
-    m_sidebarLayout->addWidget(m_btnSetting);
-
-    m_sidebarLayout->addStretch();
-
-    m_btnLogout = new QPushButton("🚪 Log Out", m_sidebarFrame);
-    m_btnLogout->setStyleSheet("color: #D93025;"); 
-    m_sidebarLayout->addWidget(m_btnLogout);
-
-    connect(m_btnLogout, &QPushButton::clicked, this, &BaseDashboardWidget::logoutRequested);
+    // Lớp con sẽ addStretch() + m_btnLogout trong buildPatientSidebar()/buildDoctorSidebar()
 
     m_globalLayout->addWidget(m_sidebarFrame);
 }

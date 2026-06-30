@@ -1,6 +1,13 @@
 #include "DoctorDashboard.h"
 #include "../../model/IAuthenticatable.h"
+#include "ClinicalExamWidget.h"
 #include <QHeaderView>
+#include <QStackedWidget>
+#include <QCalendarWidget>
+#include <QPainter>
+#include <QPainterPath>
+#include <QMessageBox>
+#include <QDebug>
 
 // Thêm các thư viện Chart bắt buộc để vẽ cột
 #include <QtCharts/QChartView>
@@ -10,6 +17,9 @@
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QValueAxis>
 
+// =============================================================================
+// CONSTRUCTOR
+// =============================================================================
 DoctorDashboardWidget::DoctorDashboardWidget(std::shared_ptr<IAuthenticatable> user, QWidget *parent)
     : BaseDashboardWidget(parent), m_currentUser(user)
 {
@@ -17,52 +27,44 @@ DoctorDashboardWidget::DoctorDashboardWidget(std::shared_ptr<IAuthenticatable> u
     initializeDashboard();
 }
 
+// =============================================================================
+// fillDashboardData() - Hàm Template Method của lớp cha gọi vào
+// =============================================================================
 void DoctorDashboardWidget::fillDashboardData() {
-    // 1. 👨‍⚕️ Nạp chữ tên bác sĩ thật lên Topbar lớp cha
+    // 0. 🪪 Dựng sidebar của bác sĩ
+    buildSidebar();
+
+    // 1. 👨‍⚕️ Nạp thông tin bác sĩ trên Topbar
     if (m_currentUser && m_docNameLabel) {
         m_docNameLabel->setText(m_currentUser->getFullName());
     }
 
-    // 2. 🖼️ NẠP VÀ VẼ AVATAR TRỰC TIẾP TỪ QPIXMAP CỦA MODEL
     if (m_docAvatarBtn && m_currentUser) {
         QPixmap rawPixmap = m_currentUser->getAvatar();
-
-        // Nếu đối tượng QPixmap trống, nạp tạm một ảnh màu xanh ngọc mặc định
         if (rawPixmap.isNull()) {
             rawPixmap = QPixmap(36, 36);
             rawPixmap.fill(QColor("#00966C")); 
         }
 
         int size = 36;
-        
-        // 🌟 BỔ SUNG: Ép cứng kích thước của chính nút bấm trước khi nạp Icon vào
         m_docAvatarBtn->setFixedSize(size, size);
-
-        // Thực hiện căn tỷ lệ scale ảnh mượt mà cho vừa vặn khung 36x36
         QPixmap scaledPixmap = rawPixmap.scaled(size, size, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
 
-        // Tạo bộ đệm trong suốt để thực hiện kỹ thuật cắt mặt nạ (Mask) hình tròn
         QPixmap targetPixmap(size, size);
         targetPixmap.fill(Qt::transparent);
 
         QPainter painter(&targetPixmap);
-        painter.setRenderHint(QPainter::Antialiasing); // Khử răng cưa cho viền tròn láng mịn
+        painter.setRenderHint(QPainter::Antialiasing);
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
-        // Tạo khuôn cắt hình elip (hình tròn)
         QPainterPath path;
         path.addEllipse(0, 0, size, size);
         painter.setClipPath(path);
-        
-        // Vẽ đè ảnh đã scale vào khuôn hình tròn
         painter.drawPixmap(0, 0, scaledPixmap);
         painter.end();
 
-        // 🌟 THAY ĐỔI QUAN TRỌNG: Thiết lập thuộc tính hiển thị Icon trước rồi mới gán Icon
         m_docAvatarBtn->setIconSize(QSize(size, size)); 
         m_docAvatarBtn->setIcon(QIcon(targetPixmap));
-
-        // 🌟 BỔ SUNG BẢO HIỂM: Ép QSS để đảm bảo nút bấm không bị thu nhỏ và trong suốt viền hoàn toàn
         m_docAvatarBtn->setStyleSheet(
             "QPushButton { "
             "   background-color: transparent; "
@@ -73,34 +75,184 @@ void DoctorDashboardWidget::fillDashboardData() {
             "   margin: 0px; "
             "}"
         );
-
-        // Đảm bảo nút bấm cập nhật lại trạng thái hiển thị đồ họa
         m_docAvatarBtn->update();
 
-        // Bắt sự kiện click chuột dắt tới trang profile cá nhân
-        // (Chỉ connect 1 lần duy nhất, nên dùng Qt::UniqueConnection để tránh bị lặp sự kiện khi hàm này gọi lại)
-        disconnect(m_docAvatarBtn, &QPushButton::clicked, nullptr, nullptr); // Reset connection cũ nếu có
+        disconnect(m_docAvatarBtn, &QPushButton::clicked, nullptr, nullptr);
         connect(m_docAvatarBtn, &QPushButton::clicked, this, [this]() {
             qDebug() << "Đang mở trang Profile của bác sĩ...";
         });
     }
 
-    // Giữ nguyên các hàm vẽ Card, Biểu đồ và Bảng của bạn ở phía dưới
-    createDoctorCards();
-    createDoctorCharts();
-    createDoctorTable();
+    // 2. Khởi tạo QStackedWidget cho vùng nội dung chính
+    m_stackedWidget = new QStackedWidget(m_mainContentWidget);
+    m_mainContentLayout->addWidget(m_stackedWidget, 1);
+
+    // 3. Xây dựng cấu trúc các trang con
+    buildOverviewPage();
+    buildPatientsPage();
+    buildAppointmentsPage();
+    buildSettingsPage();
+    buildClinicalExamPage();
+
+    // 4. Chọn trang mặc định (Dashboard Overview)
+    switchPage(0, m_btnDash);
 }
 
-void DoctorDashboardWidget::createDoctorCards() {
+// =============================================================================
+// SIDEBAR BUILDER
+// =============================================================================
+void DoctorDashboardWidget::buildSidebar() {
+    if (!m_sidebarLayout) return;
+
+    m_btnDash     = new QPushButton("📊 Dashboard",    m_sidebarFrame);
+    m_btnPatients = new QPushButton("👥 Patients",     m_sidebarFrame);
+    m_btnAppoint  = new QPushButton("📅 Appointments", m_sidebarFrame);
+    m_btnSetting  = new QPushButton("⚙️ Settings",     m_sidebarFrame);
+
+    m_sidebarLayout->addWidget(m_btnDash);
+    m_sidebarLayout->addWidget(m_btnPatients);
+    m_sidebarLayout->addWidget(m_btnAppoint);
+    m_sidebarLayout->addWidget(m_btnSetting);
+    m_sidebarLayout->addStretch();
+
+    m_btnLogout = new QPushButton("🚪 Log Out", m_sidebarFrame);
+    m_btnLogout->setStyleSheet("color: #D93025;");
+    m_sidebarLayout->addWidget(m_btnLogout);
+
+    connect(m_btnLogout, &QPushButton::clicked, this, &BaseDashboardWidget::logoutRequested);
+
+    connect(m_btnDash,     &QPushButton::clicked, this, [this]() { switchPage(0, m_btnDash); });
+    connect(m_btnPatients, &QPushButton::clicked, this, [this]() { switchPage(1, m_btnPatients); });
+    connect(m_btnAppoint,  &QPushButton::clicked, this, [this]() { switchPage(2, m_btnAppoint); });
+    connect(m_btnSetting,  &QPushButton::clicked, this, [this]() { switchPage(3, m_btnSetting); });
+}
+
+// =============================================================================
+// PAGE BUILDERS
+// =============================================================================
+void DoctorDashboardWidget::buildOverviewPage() {
+    m_overviewPage = new QWidget(this);
+    QVBoxLayout* pageLayout = new QVBoxLayout(m_overviewPage);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+    pageLayout->setSpacing(20);
+
+    createDoctorCards(m_overviewPage, pageLayout);
+    createDoctorCharts(m_overviewPage, pageLayout);
+    createDoctorTable(m_overviewPage, pageLayout);
+
+    m_stackedWidget->addWidget(m_overviewPage);
+}
+
+void DoctorDashboardWidget::buildPatientsPage() {
+    m_patientsPage = new QWidget(this);
+    QVBoxLayout* pageLayout = new QVBoxLayout(m_patientsPage);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+    pageLayout->setSpacing(20);
+
+    QLabel* title = new QLabel("👥 Quản Lý Bệnh Nhân", m_patientsPage);
+    title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;");
+    pageLayout->addWidget(title);
+
+    QTableWidget* fullPatientTable = new QTableWidget(m_patientsPage);
+    fullPatientTable->setColumnCount(6);
+    fullPatientTable->setHorizontalHeaderLabels({"Mã BN", "Họ Tên", "Ngày Sinh", "Giới Tính", "Số Điện Thoại", "Bệnh Án"});
+    fullPatientTable->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 8px; gridline-color: #F1F3F4; }"
+        "QHeaderView::section { background-color: #F8F9FA; padding: 10px; font-weight: bold; border: none; border-bottom: 2px solid #EAEAEA; color: #5F6368; }"
+        "QTableWidget::item { padding: 12px; color: #3C4043; }"
+    );
+    fullPatientTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    fullPatientTable->verticalHeader()->setVisible(false);
+    
+    fullPatientTable->setRowCount(4);
+    auto addRow = [&](int r, QString code, QString name, QString dob, QString gender, QString phone, QString record) {
+        fullPatientTable->setItem(r, 0, new QTableWidgetItem(code));
+        fullPatientTable->setItem(r, 1, new QTableWidgetItem(name));
+        fullPatientTable->setItem(r, 2, new QTableWidgetItem(dob));
+        fullPatientTable->setItem(r, 3, new QTableWidgetItem(gender));
+        fullPatientTable->setItem(r, 4, new QTableWidgetItem(phone));
+        fullPatientTable->setItem(r, 5, new QTableWidgetItem(record));
+    };
+    addRow(0, "BN-0029", "Trần Văn Nam", "12/04/1988", "Nam", "0912345678", "Viêm dạ dày");
+    addRow(1, "BN-1082", "Lê Thị Hồng", "24/09/1995", "Nữ", "0987654321", "Suy nhược cơ thể");
+    addRow(2, "BN-4820", "Phan Hoàng Bách", "05/01/2002", "Nam", "0909998888", "Chấn thương phần mềm");
+    addRow(3, "BN-3921", "Vũ Minh Ánh", "18/07/1990", "Nữ", "0911223344", "Viêm đường hô hấp");
+
+    pageLayout->addWidget(fullPatientTable, 1);
+    m_stackedWidget->addWidget(m_patientsPage);
+}
+
+void DoctorDashboardWidget::buildAppointmentsPage() {
+    m_appointmentsPage = new QWidget(this);
+    QVBoxLayout* pageLayout = new QVBoxLayout(m_appointmentsPage);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+    pageLayout->setSpacing(20);
+
+    QLabel* title = new QLabel("📅 Lịch Hẹn Khám & Điều Trị", m_appointmentsPage);
+    title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;");
+    pageLayout->addWidget(title);
+
+    QTableWidget* apptTable = new QTableWidget(m_appointmentsPage);
+    apptTable->setColumnCount(6);
+    apptTable->setHorizontalHeaderLabels({"Thời Gian", "Mã BN", "Tên Bệnh Nhân", "Dịch Vụ Khám", "Phòng Khám", "Trạng Thái"});
+    apptTable->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 8px; gridline-color: #F1F3F4; }"
+        "QHeaderView::section { background-color: #F8F9FA; padding: 10px; font-weight: bold; border: none; border-bottom: 2px solid #EAEAEA; color: #5F6368; }"
+        "QTableWidget::item { padding: 12px; color: #3C4043; }"
+    );
+    apptTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    apptTable->verticalHeader()->setVisible(false);
+
+    apptTable->setRowCount(5);
+    auto addAppt = [&](int r, QString time, QString code, QString name, QString type, QString room, QString status) {
+        apptTable->setItem(r, 0, new QTableWidgetItem(time));
+        apptTable->setItem(r, 1, new QTableWidgetItem(code));
+        apptTable->setItem(r, 2, new QTableWidgetItem(name));
+        apptTable->setItem(r, 3, new QTableWidgetItem(type));
+        apptTable->setItem(r, 4, new QTableWidgetItem(room));
+        apptTable->setItem(r, 5, new QTableWidgetItem(status));
+    };
+    addAppt(0, "08:30", "BN-0029", "Trần Văn Nam", "Khám nội tổng quát", "Phòng số 4", "Đang chờ");
+    addAppt(1, "09:15", "BN-1082", "Lê Thị Hồng", "Hội chẩn chuyên sâu", "Phòng số 4", "Đang khám");
+    addAppt(2, "10:30", "BN-4820", "Phan Hoàng Bách", "Kiểm tra định kỳ", "Phòng số 2", "Đã khám");
+    addAppt(3, "11:00", "BN-3921", "Vũ Minh Ánh", "Khám da liễu", "Phòng số 3", "Đã hủy");
+    addAppt(4, "14:30", "BN-8821", "Nguyễn Văn Hải", "Đo điện tâm đồ", "Phòng điện tim", "Đã xác nhận");
+
+    pageLayout->addWidget(apptTable, 1);
+    m_stackedWidget->addWidget(m_appointmentsPage);
+}
+
+void DoctorDashboardWidget::buildSettingsPage() {
+    m_settingsPage = new QWidget(this);
+    QVBoxLayout* pageLayout = new QVBoxLayout(m_settingsPage);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+    pageLayout->setSpacing(20);
+
+    QLabel* title = new QLabel("⚙️ Cấu Hình Hệ Thống", m_settingsPage);
+    title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;");
+    pageLayout->addWidget(title);
+
+    QLabel* desc = new QLabel("Trang cấu hình và cài đặt thông tin cá nhân dành cho bác sĩ.", m_settingsPage);
+    desc->setStyleSheet("color: #5F6368; font-size: 14px;");
+    pageLayout->addWidget(desc);
+    pageLayout->addStretch();
+
+    m_stackedWidget->addWidget(m_settingsPage);
+}
+
+// =============================================================================
+// SUB-LAYOUTS FOR OVERVIEW PAGE
+// =============================================================================
+void DoctorDashboardWidget::createDoctorCards(QWidget* parentPage, QVBoxLayout* pageLayout) {
     QHBoxLayout* cardsLayout = new QHBoxLayout();
     cardsLayout->setSpacing(20);
 
     QStringList titles = {"Tổng số ca khám hôm nay", "Số ca phẫu thuật", "Doanh thu phòng khám"};
-    QStringList values = {"18", "3", "3,500,000đ"}; // Điền số liệu thực tế thay vì số 0
+    QStringList values = {"18", "3", "3,500,000đ"};
     QStringList rates = {"▲ 12%", "▲ 8%", "▼ 1%"};
 
     for(int i = 0; i < 3; ++i) {
-        QFrame* card = new QFrame(this);
+        QFrame* card = new QFrame(parentPage);
         card->setStyleSheet("background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 12px;");
         QVBoxLayout* cardLayout = new QVBoxLayout(card);
         cardLayout->setContentsMargins(20, 15, 20, 15);
@@ -120,20 +272,19 @@ void DoctorDashboardWidget::createDoctorCards() {
 
         cardsLayout->addWidget(card);
     }
-    m_mainContentLayout->addLayout(cardsLayout);
+    pageLayout->addLayout(cardsLayout);
 }
 
-void DoctorDashboardWidget::createDoctorCharts() {
+void DoctorDashboardWidget::createDoctorCharts(QWidget* parentPage, QVBoxLayout* pageLayout) {
     QHBoxLayout* row2Layout = new QHBoxLayout();
     row2Layout->setSpacing(20);
 
     // Khung trắng bọc biểu đồ
-    QFrame* chartCard = new QFrame(this);
+    QFrame* chartCard = new QFrame(parentPage);
     chartCard->setStyleSheet("background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 12px;");
     QVBoxLayout* cardLayout = new QVBoxLayout(chartCard);
     cardLayout->setContentsMargins(15, 15, 15, 15);
 
-    // 🌟 VẼ BIỂU ĐỒ CỘT ĐÔI XANH NGỌC ĐẶC TRƯNG CỦA BẠN
     QBarSet *setMedical = new QBarSet("Bệnh nhân nội trú");
     QBarSet *setAppointed = new QBarSet("Bệnh nhân vãng lai");
     setMedical->setColor(QColor("#00966C"));   
@@ -169,33 +320,92 @@ void DoctorDashboardWidget::createDoctorCharts() {
     chartView->setMinimumHeight(230);
 
     cardLayout->addWidget(chartView);
-    row2Layout->addWidget(chartCard, 2); // Tỷ lệ chiếm 2 phần
+    row2Layout->addWidget(chartCard, 2);
 
     // Khung Lịch trực bên phải
-    QFrame* scheduleCard = new QFrame(this);
+    QFrame* scheduleCard = new QFrame(parentPage);
     scheduleCard->setStyleSheet("background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 12px;");
     QVBoxLayout* schedLayout = new QVBoxLayout(scheduleCard);
-    schedLayout->setContentsMargins(20, 20, 20, 20);
+    schedLayout->setContentsMargins(15, 15, 15, 15);
+    schedLayout->setSpacing(8);
     
+    // Header có liên kết chuyển hướng
+    QHBoxLayout* headerLayout = new QHBoxLayout();
     QLabel* schedTitle = new QLabel("📅 Lịch trực hôm nay", scheduleCard);
-    schedTitle->setStyleSheet("font-size: 15px; font-weight: bold; color: #202124;");
-    schedLayout->addWidget(schedTitle);
-    schedLayout->addWidget(new QLabel("• 08:00 - 10:00: Hội chẩn ca bệnh nặng"));
-    schedLayout->addWidget(new QLabel("• 10:30 - 12:00: Khám bệnh tại phòng số 4"));
-    schedLayout->addWidget(new QLabel("• 14:00 - 17:30: Đi buồng & Kiểm tra nội trú"));
-    schedLayout->addStretch();
+    schedTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #202124;");
+    
+    QPushButton* btnLink = new QPushButton("Xem lịch hẹn →", scheduleCard);
+    btnLink->setCursor(Qt::PointingHandCursor);
+    btnLink->setStyleSheet(
+        "QPushButton { background: transparent; color: #00966C; font-size: 11px; font-weight: bold; border: none; padding: 0; }"
+        "QPushButton:hover { color: #007D5A; text-decoration: underline; }"
+    );
+    headerLayout->addWidget(schedTitle);
+    headerLayout->addStretch();
+    headerLayout->addWidget(btnLink);
+    schedLayout->addLayout(headerLayout);
 
-    row2Layout->addWidget(scheduleCard, 1); // Tỷ lệ chiếm 1 phần
+    // 🌟 Sử dụng QCalendarWidget đã được tinh chỉnh UI cực kỳ hiện đại
+    QCalendarWidget* calendar = new QCalendarWidget(scheduleCard);
+    calendar->setGridVisible(false);
+    calendar->setNavigationBarVisible(true);
+    calendar->setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
+    calendar->setHorizontalHeaderFormat(QCalendarWidget::SingleLetterDayNames);
+    calendar->setStyleSheet(
+        "QCalendarWidget {"
+        "   background-color: #FFFFFF;"
+        "   border: none;"
+        "}"
+        "QCalendarWidget QWidget#qt_calendar_navigationbar {"
+        "   background-color: #FFFFFF;"
+        "   border-bottom: 1px solid #F1F3F4;"
+        "}"
+        "QCalendarWidget QToolButton {"
+        "   color: #3C4043;"
+        "   font-family: 'Segoe UI';"
+        "   font-size: 11px;"
+        "   font-weight: bold;"
+        "   background-color: transparent;"
+        "   border: none;"
+        "   border-radius: 4px;"
+        "   padding: 3px;"
+        "}"
+        "QCalendarWidget QToolButton:hover {"
+        "   background-color: #F1F3F4;"
+        "}"
+        "QCalendarWidget QAbstractItemView:enabled {"
+        "   color: #3C4043;"
+        "   background-color: #FFFFFF;"
+        "   selection-background-color: #00966C;"
+        "   selection-color: #FFFFFF;"
+        "   font-family: 'Segoe UI';"
+        "   font-size: 11px;"
+        "   border: none;"
+        "}"
+        "QCalendarWidget QAbstractItemView:disabled {"
+        "   color: #C5CAD4;"
+        "}"
+    );
+    schedLayout->addWidget(calendar, 1);
 
-    m_mainContentLayout->addLayout(row2Layout);
+    // Kết nối click từ Lịch và nút liên kết để chuyển trang sang Appointments
+    auto handleNavigation = [this]() {
+        switchPage(2, m_btnAppoint);
+    };
+    connect(btnLink, &QPushButton::clicked, this, handleNavigation);
+    connect(calendar, &QCalendarWidget::clicked, this, handleNavigation);
+
+    row2Layout->addWidget(scheduleCard, 1);
+
+    pageLayout->addLayout(row2Layout);
 }
 
-void DoctorDashboardWidget::createDoctorTable() {
-    QLabel* tblTitle = new QLabel("Danh sách bệnh nhân hẹn khám hôm nay", this);
-    tblTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #202124; margin-top: 5px;");
-    m_mainContentLayout->addWidget(tblTitle);
+void DoctorDashboardWidget::createDoctorTable(QWidget* parentPage, QVBoxLayout* pageLayout) {
+    QLabel* tblTitle = new QLabel("Danh sách bệnh nhân hẹn khám hôm nay", parentPage);
+    tblTitle->setStyleSheet("font-size: 15px; font-weight: bold; color: #202124; margin-top: 5px;");
+    pageLayout->addWidget(tblTitle);
 
-    m_patientTable = new QTableWidget(this);
+    m_patientTable = new QTableWidget(parentPage);
     m_patientTable->setColumnCount(5);
     m_patientTable->setHorizontalHeaderLabels({"Tên Bệnh Nhân", "Mã Định Danh", "Giờ Hẹn", "Chuyên Khoa", "Trạng Thái"});
     
@@ -223,6 +433,97 @@ void DoctorDashboardWidget::createDoctorTable() {
     addPatientRow(1, "Murad Mamedli", "PT-15287353", "13:30", "Ophthalmology", "Đã khám xong");
     addPatientRow(2, "Diana Huseynova", "PT-89789765", "14:00", "Radiology", "Đã hủy ca");
 
-    m_patientTable->setFixedHeight(160);
-    m_mainContentLayout->addWidget(m_patientTable);
+    // Click đơn vào bệnh nhân bất kỳ trong danh sách sẽ mở ra màn hình khám lâm sàng ngay lập tức
+    connect(m_patientTable, &QTableWidget::cellClicked, this, [this](int row, int /*col*/) {
+        QString name = m_patientTable->item(row, 0)->text();
+        QString id = m_patientTable->item(row, 1)->text();
+        QString time = m_patientTable->item(row, 2)->text();
+        QString dept = m_patientTable->item(row, 3)->text();
+        openClinicalExam(name, id, time, dept, row);
+    });
+
+    m_patientTable->setFixedHeight(140);
+    pageLayout->addWidget(m_patientTable);
+}
+
+// =============================================================================
+// NAVIGATION & PAGE SWITCHING HELPERS
+// =============================================================================
+void DoctorDashboardWidget::switchPage(int index, QPushButton* activeBtn) {
+    if (!m_stackedWidget) return;
+
+    // Đổi trạng thái active class của các nút sidebar
+    QPushButton* btns[] = { m_btnDash, m_btnPatients, m_btnAppoint, m_btnSetting };
+    for (auto* btn : btns) {
+        if (btn) btn->setObjectName("");
+    }
+    if (activeBtn) activeBtn->setObjectName("activeBtn");
+
+    // Yêu cầu sidebar vẽ lại stylesheet để nhận diện cấu trúc CSS mới
+    if (m_sidebarFrame) {
+        m_sidebarFrame->setStyleSheet(m_sidebarFrame->styleSheet());
+    }
+
+    // Chuyển trang stacked widget
+    m_stackedWidget->setCurrentIndex(index);
+}
+
+void DoctorDashboardWidget::buildClinicalExamPage() {
+    m_clinicalExamPage = new ClinicalExamWidget(this);
+    m_stackedWidget->addWidget(m_clinicalExamPage);
+
+    // Khi người dùng bấm thoát/hủy ở giao diện Khám lâm sàng -> quay lại Dashboard chính
+    connect(m_clinicalExamPage, &ClinicalExamWidget::backToDashboardRequested, this, [this]() {
+        switchPage(0, m_btnDash);
+    });
+
+    // Khi người dùng bấm tab Danh Sách trên giao diện Khám lâm sàng -> chuyển tới trang Appointments (lịch hẹn khám)
+    connect(m_clinicalExamPage, &ClinicalExamWidget::viewAppointmentsListRequested, this, [this]() {
+        switchPage(2, m_btnAppoint);
+    });
+
+    // Khi kết thúc khám một bệnh nhân -> tự động chuyển tiếp tới ca khám tiếp theo
+    connect(m_clinicalExamPage, &ClinicalExamWidget::finishExamRequested, this, &DoctorDashboardWidget::handlePatientExamFinished);
+}
+
+void DoctorDashboardWidget::openClinicalExam(const QString& name, const QString& id, const QString& time, const QString& specialty, int rowIndex) {
+    if (!m_clinicalExamPage || !m_stackedWidget) return;
+
+    m_currentExaminingRow = rowIndex;
+    m_clinicalExamPage->loadPatientInfo(name, id, time, specialty);
+
+    // Tìm chỉ số của m_clinicalExamPage trong stacked widget
+    int idx = m_stackedWidget->indexOf(m_clinicalExamPage);
+    if (idx != -1) {
+        switchPage(idx, nullptr); // ActiveBtn = nullptr vì đây là trang chi tiết, không nằm trên sidebar chính
+    }
+}
+
+void DoctorDashboardWidget::handlePatientExamFinished() {
+    if (m_currentExaminingRow == -1 || !m_patientTable) return;
+
+    // 1. Cập nhật trạng thái của bệnh nhân vừa khám xong thành "Đã khám xong"
+    m_patientTable->setItem(m_currentExaminingRow, 4, new QTableWidgetItem("Đã khám xong"));
+    m_patientTable->item(m_currentExaminingRow, 4)->setForeground(QBrush(QColor("#059669"))); // Màu xanh ngọc
+
+    // 2. Tìm bệnh nhân tiếp theo trong danh sách
+    int nextRow = m_currentExaminingRow + 1;
+    if (nextRow < m_patientTable->rowCount()) {
+        m_currentExaminingRow = nextRow;
+        
+        QString name = m_patientTable->item(nextRow, 0)->text();
+        QString id = m_patientTable->item(nextRow, 1)->text();
+        QString time = m_patientTable->item(nextRow, 2)->text();
+        QString dept = m_patientTable->item(nextRow, 3)->text();
+        
+        m_clinicalExamPage->loadPatientInfo(name, id, time, dept);
+        
+        QMessageBox::information(this, "Nova Care Clinic",
+            QString("Đã kết thúc ca khám hiện tại.\nChuyển sang bệnh nhân tiếp theo: %1").arg(name));
+    } else {
+        QMessageBox::information(this, "Nova Care Clinic",
+            "Đã hoàn thành khám cho toàn bộ bệnh nhân trong danh sách hôm nay!");
+        m_currentExaminingRow = -1;
+        switchPage(0, m_btnDash); // Quay lại trang chủ dashboard
+    }
 }

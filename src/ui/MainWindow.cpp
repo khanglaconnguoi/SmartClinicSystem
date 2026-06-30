@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "Doctor/DoctorDashboard.h" 
+#include "Patient/PatientDashboard.h"
 #include "../model/IAuthenticatable.h"   
 #include <QLabel>
 #include <QMessageBox>
@@ -20,15 +21,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
         if (!user) return;
 
         if (user->getAccountType() == AccountType::Staff) {
-            auto* doctorDash = new DoctorDashboardWidget(user, this);
-            registerDashboardPage(doctorDash);
-            this->showMaximized();
+            switchToDoctorDashboard(user);
         }
         else if (user->getAccountType() == AccountType::Patient) {
-            // Sau này làm Dashboard bệnh nhân thì bạn thêm ở đây:
-            // auto* patientDash = new PatientDashboardWidget(user, this);
-            // registerDashboardPage(patientDash);
-            // this->showMaximized();
+            switchToPatientDashboard(user);
         }
     });
 }
@@ -36,11 +32,30 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 void MainWindow::registerDashboardPage(BaseDashboardWidget* page) {
     if (!page) return;
 
+    // Dọn dẹp dashboard cũ đang ở trong stack (từ chỉ số 1 trở đi) để tránh rò rỉ bộ nhớ
+    while (m_stackedWidget->count() > 1) {
+        QWidget* oldDash = m_stackedWidget->widget(1);
+        m_stackedWidget->removeWidget(oldDash);
+        oldDash->deleteLater();
+    }
+
     int newIndex = m_stackedWidget->addWidget(page);
     
     connect(page, &BaseDashboardWidget::logoutRequested, this, &MainWindow::handleGlobalLogout);
     
     m_stackedWidget->setCurrentIndex(newIndex);
+}
+
+void MainWindow::switchToDoctorDashboard(std::shared_ptr<IAuthenticatable> user) {
+    auto* doctorDash = new DoctorDashboardWidget(user, this);
+    registerDashboardPage(doctorDash);
+    this->showMaximized();
+}
+
+void MainWindow::switchToPatientDashboard(std::shared_ptr<IAuthenticatable> user) {
+    auto* patientDash = new PatientDashboardWidget(user, this);
+    registerDashboardPage(patientDash);
+    this->showMaximized();
 }
 
 void MainWindow::handleGlobalLogout() {
