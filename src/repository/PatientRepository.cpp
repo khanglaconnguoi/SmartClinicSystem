@@ -17,6 +17,7 @@
 
 #include "PatientRepository.h"
 #include "DatabaseManager.h"
+#include <QSqlError>
 #include <QSqlQuery>
 #include <QVariant>
 #include <QtDebug>
@@ -62,20 +63,28 @@ bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
                                           : dto.emergencyContactPhone,
   };
 
-  if (!DatabaseManager::getInstance().executeQuery(sql, params)) {
-    qWarning()
-        << "PatientRepository::insertBasePatient - INSERT patients thất bại";
+  // Dùng QSqlQuery trực tiếp để lấy lastInsertId() ngay sau exec()
+  // tránh race condition khi tạo QSqlQuery mới reset last_insert_rowid()
+  QSqlQuery query(DatabaseManager::getInstance().database());
+  if (!query.prepare(sql)) {
+    qWarning() << "PatientRepository::insertBasePatient - prepare thất bại:"
+               << query.lastError().text();
     return false;
   }
-
-  QSqlQuery lastId =
-      DatabaseManager::getInstance().selectQuery("SELECT last_insert_rowid()");
-  if (!lastId.isActive() || !lastId.next()) {
-    qWarning() << "PatientRepository::insertBasePatient - Không lấy được "
-                  "last_insert_rowid";
+  for (const QVariant &param : params) {
+    query.addBindValue(param);
+  }
+  if (!query.exec()) {
+    qWarning() << "PatientRepository::insertBasePatient - INSERT patients thất bại:"
+               << query.lastError().text();
     return false;
   }
-  patientId = lastId.value(0).toInt();
+  patientId = query.lastInsertId().toInt();
+  if (patientId <= 0) {
+    qWarning() << "PatientRepository::insertBasePatient - lastInsertId() trả về"
+               << patientId;
+    return false;
+  }
   return true;
 }
 

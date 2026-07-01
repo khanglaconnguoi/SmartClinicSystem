@@ -49,89 +49,97 @@ void messageHandler(QtMsgType type, const QMessageLogContext &ctx,
 // ─────────────────────────────────────────────────────────────────────────────
 // Tích hợp Code Test trực tiếp vào main
 // ─────────────────────────────────────────────────────────────────────────────
-static void cleanupTestPatient(const QString &patientCode) {
-  DatabaseManager::getInstance().executeQuery(
-      "DELETE FROM patients WHERE patient_code = ?", {patientCode});
+
+// Helper: lấy patient_id của bản ghi vừa insert (MAX = mới nhất)
+static int getLastInsertedPatientId() {
+  QSqlQuery q = DatabaseManager::getInstance().selectQuery(
+      "SELECT MAX(patient_id) FROM patients");
+  if (q.next())
+    return q.value(0).toInt();
+  return -1;
 }
 
 static void runIntegrationTests() {
   DatabaseManager::getInstance().executeQuery(
-      "INSERT OR IGNORE INTO departments (department_id, department_code, department_name) VALUES (1, 'D01', 'Test Dept')");
+      "INSERT OR IGNORE INTO departments (department_id, department_code, "
+      "department_name) VALUES (1, 'D01', 'Test Dept')");
   DatabaseManager::getInstance().executeQuery(
-      "INSERT OR IGNORE INTO rooms (room_id, room_number, room_type, status) VALUES (1, '101', 'WARD', 'AVAILABLE')");
+      "INSERT OR IGNORE INTO rooms (room_id, room_number, room_type, status) "
+      "VALUES (1, '101', 'WARD', 'AVAILABLE')");
   DatabaseManager::getInstance().executeQuery(
-      "INSERT OR IGNORE INTO staff (staff_id, staff_code, password_hash, full_name, role, gender, date_of_birth, citizen_id, phone_number, email, address, department_id) VALUES (1, 'S01', 'hash', 'Dr. Test', 'DOCTOR', 'MALE', '1980-01-01', '001234567890', '0901234567', 'test@test.com', 'Address', 1)");
+      "INSERT OR IGNORE INTO staff (staff_id, staff_code, password_hash, "
+      "full_name, role, gender, date_of_birth, citizen_id, phone_number, "
+      "email, address, department_id) VALUES (1, 'S01', 'hash', 'Dr. Test', "
+      "'DOCTOR', 'MALE', '1980-01-01', '001234567890', '0901234567', "
+      "'test@test.com', 'Address', 1)");
 
   qDebug() << "========================================";
   qDebug() << "  Running Patient Insert Tests in main()";
   qDebug() << "========================================";
 
-  PatientRepository repo;
+  auto sharedRepo = std::make_shared<PatientRepository>();
+  PatientService service(sharedRepo);
 
-  // Test 1: OutPatient
+  // patient_id lưu lại để dùng cho Update / Delete test
+  int idOut = -1, idIn = -1, idEmer = -1;
+
+  // ── Test 1: AddOutPatient qua Service ──────────────────────────────────────
   {
-    const QString code = "TEST-MAIN-OUT";
-    cleanupTestPatient(code);
-    OutPatientInputDTO input;
-    input.fullName = "Nguyen Van A";
-    input.dateOfBirth = QDate(1990, 5, 15);
-    input.gender = Gender::Male;
-    input.bloodType = "A+";
-    input.type = PatientType::OUTPATIENT;
-    input.doctorId = std::nullopt;
-    OutPatientInsertDTO dto(input, code);
-    if (repo.insertOutPatient(dto)) {
-      qDebug() << "[PASS] Insert OutPatient (patient_code: TEST-MAIN-OUT)";
+    if (service.AddOutPatient(
+            0, // patientId = 0 (DB tự tăng)
+            0, // doctorId (0 = chưa gán)
+            "Nguyen Van A", QDate(1990, 5, 15), "Male",
+            "001012345678", // CCCD 12 số, mã tỉnh 001 (HN) hợp lệ
+            "0987654321",   // SĐT di động hợp lệ
+            "nguyenvana@test.com", "123 Le Loi, Ha Noi", "A+",
+            "None",    // allergies
+            "BaoViet", // insurance
+            PatientType::OUTPATIENT,
+            "Contact A",     // emergencyContactName
+            "0912345678")) { // emergencyContactPhone
+      idOut = getLastInsertedPatientId();
+      qDebug() << "[PASS] AddOutPatient via Service (patient_id:" << idOut
+               << ")";
     } else {
-      qDebug() << "[FAIL] Insert OutPatient";
+      qDebug() << "[FAIL] AddOutPatient via Service";
     }
   }
 
-  // Test 2: InPatient
+  // ── Test 2: AddInPatient qua Service ───────────────────────────────────────
   {
-    const QString code = "TEST-MAIN-IN";
-    cleanupTestPatient(code);
-    InPatientInputDTO input;
-    input.fullName = "Tran Thi B";
-    input.dateOfBirth = QDate(1985, 11, 20);
-    input.gender = Gender::Female;
-    input.bloodType = "B+";
-    input.type = PatientType::INPATIENT;
-    input.roomId = std::nullopt;
-    input.doctorId = std::nullopt;
-    input.admissionDate = QDate::currentDate();
-    input.dischargeDate = std::nullopt;
-    input.reason = "Abdominal pain";
-    InPatientInsertDTO dto(input, code);
-    if (repo.insertInPatient(dto)) {
-      qDebug() << "[PASS] Insert InPatient (patient_code: TEST-MAIN-IN)";
+    if (service.AddInPatient(
+            0, "Tran Thi B", QDate(1985, 11, 20), "Female",
+            "079085012345", // CCCD mã tỉnh 079 (TP.HCM) hợp lệ
+            "0901234567", "tranthib@test.com", "456 Nguyen Hue, HCM", "B+",
+            "Penicillin", "Bao Minh", PatientType::INPATIENT, "Contact B",
+            "0923456789",
+            "1", // roomId = "1" (phòng đã tạo sẵn)
+            "1", // doctorId = "1" (bác sĩ đã tạo sẵn)
+            QDate::currentDate(), QDate::currentDate().addDays(5),
+            "Abdominal pain")) {
+      idIn = getLastInsertedPatientId();
+      qDebug() << "[PASS] AddInPatient via Service (patient_id:" << idIn << ")";
     } else {
-      qDebug() << "[FAIL] Insert InPatient";
+      qDebug() << "[FAIL] AddInPatient via Service";
     }
   }
 
-  // Test 3: EmergencyPatient
+  // ── Test 3: AddEmergencyPatient qua Service ────────────────────────────────
   {
-    const QString code = "TEST-MAIN-EMER";
-    cleanupTestPatient(code);
-    EmergencyPatientInputDTO input;
-    input.fullName = "Le Van C";
-    input.dateOfBirth = QDate(2000, 3, 8);
-    input.gender = Gender::Male;
-    input.bloodType = "O+";
-    input.type = PatientType::EMERGENCY;
-    input.roomId = std::nullopt;
-    input.doctorId = std::nullopt;
-    input.injuryCause = "Traffic accident";
-    input.injuryDescription = "Multiple lacerations";
-    input.admissionDate = QDate::currentDate();
-    input.dischargeDate = std::nullopt;
-    EmergencyPatientInsertDTO dto(input, code);
-    if (repo.insertEmergencyPatient(dto)) {
-      qDebug()
-          << "[PASS] Insert EmergencyPatient (patient_code: TEST-MAIN-EMER)";
+    if (service.AddEmergencyPatient(
+            0, "Le Van C", QDate(2000, 3, 8), "Male",
+            "048000012345", // CCCD mã tỉnh 048 (Da Nang) hợp lệ
+            "0978901234", "levanc@test.com", "789 Tran Phu, Da Nang", "O+",
+            "None", "BHYT", PatientType::EMERGENCY, "Contact C", "0934567890",
+            "1", // roomId
+            "1", // doctorId
+            "Traffic accident", "Multiple lacerations", QDate::currentDate(),
+            QDate::currentDate().addDays(3))) {
+      idEmer = getLastInsertedPatientId();
+      qDebug() << "[PASS] AddEmergencyPatient via Service (patient_id:"
+               << idEmer << ")";
     } else {
-      qDebug() << "[FAIL] Insert EmergencyPatient";
+      qDebug() << "[FAIL] AddEmergencyPatient via Service";
     }
   }
 
@@ -139,93 +147,80 @@ static void runIntegrationTests() {
   qDebug() << "  Running Patient Update Tests in main()";
   qDebug() << "========================================";
 
-  auto sharedRepo = std::make_shared<PatientRepository>();
-  PatientService service(sharedRepo);
-
-  // Test 1: Update OutPatient
-  {
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(
-        "SELECT patient_id FROM patients WHERE patient_code = 'TEST-MAIN-OUT'");
-    if (query.next()) {
-      int patientId = query.value(0).toInt();
-      if (service.UpdateOutPatient(
-              patientId, 0, "Nguyen Van A Updated", QDate(1990, 5, 15), "Male",
-              "001012345678", "0987654321", "a@test.com", "Address 1", "A+",
-              "None", "BaoViet", "Contact A", "0987654321", "TREATMENT")) {
-        qDebug() << "[PASS] Update OutPatient (patient_id:" << patientId << ")";
-      } else {
-        qDebug() << "[FAIL] Update OutPatient";
-      }
+  // ── Test Update OutPatient qua Service ─────────────────────────────────────
+  if (idOut > 0) {
+    if (service.UpdateOutPatient(idOut, 1, "Nguyen Van A Updated",
+                                 QDate(1990, 5, 15), "Male", "001012345678",
+                                 "0987654321", "nguyenvana@test.com",
+                                 "123 Le Loi, Ha Noi", "A+", "None", "BaoViet",
+                                 "Contact A", "0912345678", "TREATMENT")) {
+      qDebug() << "[PASS] UpdateOutPatient via Service (patient_id:" << idOut
+               << ")";
     } else {
-      qDebug() << "[FAIL] Could not find OutPatient for Update test";
+      qDebug() << "[FAIL] UpdateOutPatient via Service";
     }
+  } else {
+    qDebug() << "[SKIP] UpdateOutPatient — Insert failed";
   }
 
-      InPatientInputDTO inInput;
-      inInput.roomId = 1;
-      inInput.doctorId = 1;
-      inInput.admissionDate = QDate::currentDate();
-      inInput.dischargeDate = QDate::currentDate().addDays(2);
-      inInput.reason = "Cured";
-      
-  {
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(
-        "SELECT patient_id FROM patients WHERE patient_code = 'TEST-MAIN-IN'");
-    if (query.next()) {
-      int patientId = query.value(0).toInt();
-      InPatientUpdateDTO inDto(inInput, patientId, "DISCHARGED");
-      if (repo.updateInPatient(inDto)) {
-        qDebug() << "[PASS] Update InPatient (patient_id:" << patientId << ")";
-      } else {
-        qDebug() << "[FAIL] Update InPatient";
-      }
+  // ── Test Update InPatient qua Service ──────────────────────────────────────
+  if (idIn > 0) {
+    if (service.UpdateInPatient(
+            idIn, "Tran Thi B Updated", QDate(1985, 11, 20), "Female",
+            "079085012345", "0901234567", "tranthib@test.com",
+            "456 Nguyen Hue, HCM", "B+", "Penicillin", "Bao Minh", "Contact B",
+            "0923456789",
+            "1", // roomId
+            "1", // doctorId
+            QDate::currentDate(), QDate::currentDate().addDays(7), "Cured",
+            "DISCHARGED")) {
+      qDebug() << "[PASS] UpdateInPatient via Service (patient_id:" << idIn
+               << ")";
     } else {
-      qDebug() << "[FAIL] Could not find InPatient for Update test";
+      qDebug() << "[FAIL] UpdateInPatient via Service";
     }
+  } else {
+    qDebug() << "[SKIP] UpdateInPatient — Insert failed";
   }
 
-      // Thử Update EmergencyPatient
-      EmergencyPatientInputDTO emerInput;
-      emerInput.roomId = 1;
-      emerInput.doctorId = 1;
-      emerInput.injuryCause = "Recovered";
-      emerInput.injuryDescription = "Treated";
-      emerInput.admissionDate = QDate::currentDate();
-      emerInput.dischargeDate = QDate::currentDate().addDays(1);
-  {
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(
-        "SELECT patient_id FROM patients WHERE patient_code = "
-        "'TEST-MAIN-EMER'");
-    if (query.next()) {
-      int patientId = query.value(0).toInt();
-      EmergencyPatientUpdateDTO emerDto(emerInput, patientId, "DISCHARGED");
-      if (repo.updateEmergencyPatient(emerDto)) {
-        qDebug() << "[PASS] Update EmergencyPatient (patient_id:" << patientId
-                 << ")";
-      } else {
-        qDebug() << "[FAIL] Update EmergencyPatient";
-      }
+  // ── Test Update EmergencyPatient qua Service ───────────────────────────────
+  if (idEmer > 0) {
+    if (service.UpdateEmergencyPatient(
+            idEmer, "Le Van C Updated", QDate(2000, 3, 8), "Male",
+            "048000012345", "0978901234", "levanc@test.com",
+            "789 Tran Phu, Da Nang", "O+", "None", "BHYT", "Contact C",
+            "0934567890", "1", "1", "Recovered", "Treated successfully",
+            QDate::currentDate(), QDate::currentDate().addDays(3),
+            "DISCHARGED")) {
+      qDebug() << "[PASS] UpdateEmergencyPatient via Service (patient_id:"
+               << idEmer << ")";
+    } else {
+      qDebug() << "[FAIL] UpdateEmergencyPatient via Service";
     }
+  } else {
+    qDebug() << "[SKIP] UpdateEmergencyPatient — Insert failed";
   }
 
   qDebug() << "========================================";
   qDebug() << "  Running Patient Search Tests in main()";
   qDebug() << "========================================";
 
-  // Test Search 1: Valid Search (Keyword "TEST-MAIN")
+  // ── Test Search 1: Tìm theo tên ────────────────────────────────────────────
   {
     PatientSearchCriteria criteria;
-    criteria.searchKey = "TEST-MAIN";
+    criteria.searchKey = "Nguyen Van A";
     auto results = service.searchPatients(criteria);
     int count = service.countSearchResults(criteria);
     if (results.size() > 0 && count > 0) {
-      qDebug() << "[PASS] Search by Keyword (found:" << results.size() << ", total:" << count << ")";
+      qDebug() << "[PASS] Search by Name (found:" << results.size()
+               << ", total:" << count << ")";
     } else {
-      qDebug() << "[FAIL] Search by Keyword (expected > 0, got:" << results.size() << ")";
+      qDebug() << "[FAIL] Search by Name (expected > 0, got:" << results.size()
+               << ")";
     }
   }
 
-  // Test Search 2: Invalid Date Range
+  // ── Test Search 2: Invalid Date Range ──────────────────────────────────────
   {
     PatientSearchCriteria criteria;
     criteria.fromDate = QDate::currentDate();
@@ -233,9 +228,11 @@ static void runIntegrationTests() {
     auto results = service.searchPatients(criteria);
     int count = service.countSearchResults(criteria);
     if (results.isEmpty() && count == 0) {
-      qDebug() << "[PASS] Search with Invalid Date Range (caught validation error)";
+      qDebug()
+          << "[PASS] Search with Invalid Date Range (caught validation error)";
     } else {
-      qDebug() << "[FAIL] Search with Invalid Date Range (expected empty result due to validation)";
+      qDebug() << "[FAIL] Search with Invalid Date Range (expected empty "
+                  "result due to validation)";
     }
   }
 
@@ -243,25 +240,20 @@ static void runIntegrationTests() {
   qDebug() << "  Running Patient Delete/Restore Tests in main()";
   qDebug() << "========================================";
 
-  // Test Delete / Restore
-  {
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(
-        "SELECT patient_id FROM patients WHERE patient_code = 'TEST-MAIN-OUT'");
-    if (query.next()) {
-      int patientId = query.value(0).toInt();
-      if (service.softDeletePatient(patientId)) {
-        qDebug() << "[PASS] Soft Delete Patient (patient_id:" << patientId << ")";
-        if (service.restorePatient(patientId)) {
-          qDebug() << "[PASS] Restore Patient (patient_id:" << patientId << ")";
-        } else {
-          qDebug() << "[FAIL] Restore Patient";
-        }
+  // ── Test Soft Delete / Restore ─────────────────────────────────────────────
+  if (idOut > 0) {
+    if (service.softDeletePatient(idOut)) {
+      qDebug() << "[PASS] Soft Delete Patient (patient_id:" << idOut << ")";
+      if (service.restorePatient(idOut)) {
+        qDebug() << "[PASS] Restore Patient (patient_id:" << idOut << ")";
       } else {
-        qDebug() << "[FAIL] Soft Delete Patient";
+        qDebug() << "[FAIL] Restore Patient";
       }
     } else {
-      qDebug() << "[FAIL] Could not find Patient for Delete test";
+      qDebug() << "[FAIL] Soft Delete Patient";
     }
+  } else {
+    qDebug() << "[SKIP] Delete/Restore — OutPatient Insert failed";
   }
 
   qDebug() << "========================================";

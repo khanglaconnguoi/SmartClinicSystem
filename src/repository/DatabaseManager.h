@@ -49,4 +49,8 @@ public:
   }
   bool rollbackTransaction() { return m_db.rollback(); }
   bool isOpen() const { return m_db.isOpen(); }
+
+  /// Trả về tham chiếu đến QSqlDatabase, dùng khi cần tạo QSqlQuery
+  /// trực tiếp để lấy lastInsertId() ngay sau exec() mà không bị reset.
+  QSqlDatabase &database() { return m_db; }
 };

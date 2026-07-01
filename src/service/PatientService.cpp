@@ -24,13 +24,13 @@ QString PatientService::generatePatientCode(PatientType type) {
   int *seqPtr;
 
   if (type == PatientType::OUTPATIENT) {
-    prefix = "OUT";
+    prefix = "OP";
     seqPtr = &outSeq;
   } else if (type == PatientType::INPATIENT) {
-    prefix = "IN";
+    prefix = "IP";
     seqPtr = &inSeq;
   } else if (type == PatientType::EMERGENCY) {
-    prefix = "EMER";
+    prefix = "EP";
     seqPtr = &emerSeq;
   } else {
     prefix = "PT";
@@ -39,10 +39,8 @@ QString PatientService::generatePatientCode(PatientType type) {
   }
 
   QString dateStr = QDateTime::currentDateTime().toString("yyyyMMdd");
-  QString code = QString("%1-%2-%3")
-                     .arg(prefix)
-                     .arg(dateStr)
-                     .arg(*seqPtr, 4, 10, QChar('0'));
+  QString code = QString("%1%2%3").arg(prefix).arg(dateStr).arg(*seqPtr, 4, 10,
+                                                                QChar('0'));
   (*seqPtr)++;
   return code;
 }
@@ -84,7 +82,8 @@ bool PatientService::AddOutPatient(
   inputInformation.type = type;
   inputInformation.emergencyContactName = emergencyContactName;
   inputInformation.emergencyContactPhone = emergencyContactPhone;
-  inputInformation.doctorId = doctorId;
+  // doctorId <= 0 nghĩa là "chưa gán bác sĩ" → NULL trong DB
+  inputInformation.doctorId = (doctorId > 0) ? std::optional<int>(doctorId) : std::nullopt;
 
   OutPatientInsertDTO dto(inputInformation, patientCode);
   return m_patientRepository->insertOutPatient(dto);
@@ -137,16 +136,16 @@ bool PatientService::AddInPatient(
   inputInformation.emergencyContactName = emergencyContactName;
   inputInformation.emergencyContactPhone = emergencyContactPhone;
 
-  if (!roomId.isEmpty()) {
-    inputInformation.roomId = roomId.toInt();
-  } else {
-    inputInformation.roomId = std::nullopt;
+  // roomId/doctorId rỗng hoặc "0" → NULL trong DB (tránh FK violation)
+  {
+    bool ok = false;
+    int rid = roomId.toInt(&ok);
+    inputInformation.roomId = (ok && rid > 0) ? std::optional<int>(rid) : std::nullopt;
   }
-
-  if (!admittingDoctorId.isEmpty()) {
-    inputInformation.doctorId = admittingDoctorId.toInt();
-  } else {
-    inputInformation.doctorId = std::nullopt;
+  {
+    bool ok = false;
+    int did = admittingDoctorId.toInt(&ok);
+    inputInformation.doctorId = (ok && did > 0) ? std::optional<int>(did) : std::nullopt;
   }
 
   inputInformation.admissionDate = admissionDate;
@@ -210,16 +209,16 @@ bool PatientService::AddEmergencyPatient(
   inputInformation.emergencyContactName = emergencyContactName;
   inputInformation.emergencyContactPhone = emergencyContactPhone;
 
-  if (!emergencyRoomId.isEmpty()) {
-    inputInformation.roomId = emergencyRoomId.toInt();
-  } else {
-    inputInformation.roomId = std::nullopt;
+  // roomId/doctorId rỗng hoặc "0" → NULL trong DB (tránh FK violation)
+  {
+    bool ok = false;
+    int rid = emergencyRoomId.toInt(&ok);
+    inputInformation.roomId = (ok && rid > 0) ? std::optional<int>(rid) : std::nullopt;
   }
-
-  if (!emergencyDoctorId.isEmpty()) {
-    inputInformation.doctorId = emergencyDoctorId.toInt();
-  } else {
-    inputInformation.doctorId = std::nullopt;
+  {
+    bool ok = false;
+    int did = emergencyDoctorId.toInt(&ok);
+    inputInformation.doctorId = (ok && did > 0) ? std::optional<int>(did) : std::nullopt;
   }
 
   inputInformation.injuryCause = injuryCause;

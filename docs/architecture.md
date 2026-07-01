@@ -4,8 +4,11 @@ title: "\U0001F3E5 TÀI LIỆU KIẾN TRÚC HỆ THỐNG"
 ---
 
 # 🏥 TÀI LIỆU KIẾN TRÚC HỆ THỐNG
+
 # Smart Hospital / Clinic Management System
+
 ### Dự án Lập trình Hướng Đối Tượng — Phân tích & Thiết kế Kiến trúc
+>
 > **Soạn thảo bởi:** Senior Solution Architect — C++ / Qt / OOP / Design Patterns  
 > **Ngôn ngữ triển khai:** C++17 | Qt 6.x | SQLite (via Qt SQL Module)  
 > **Phương pháp:** Kiến trúc phân tầng (Layered Architecture) + MVC-inspired  
@@ -16,7 +19,7 @@ title: "\U0001F3E5 TÀI LIỆU KIẾN TRÚC HỆ THỐNG"
 
 ## 1.1 Tổng quan kiến trúc module
 
-Hệ thống được chia thành **5 module lõi** hoạt động độc lập nhưng liên thông qua tầng dữ liệu (Data Layer) và tầng dịch vụ (Service Layer).
+Hệ thống được chia thành **5 module lõi** hoạt động độc lập nhưng liên thông qua tầng dữ liệu (Data Layer) và tầng dịch vụ (Sevrvice Layer).
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -180,6 +183,7 @@ Hệ thống được chia thành **5 module lõi** hoạt động độc lập 
 ```
 
 > **Quy tắc vàng về tầng View vs Business Logic:**  
+>
 > - File `*.h / *.cpp` trong thư mục `model/` và `service/` **KHÔNG ĐƯỢC** `#include <QWidget>`, `#include <QDialog>`, hay bất kỳ Qt GUI header.  
 > - Chỉ được phép dùng `#include <QString>`, `#include <QList>`, `#include <QDateTime>` (Qt Core — không phải Qt Widgets).
 
@@ -338,6 +342,7 @@ public:
 ```
 
 **Khi triển khai (nếu có thời gian), chỉ cần:**
+
 1. Thêm cột `username`, `password_hash` vào bảng `patients` (migration nhỏ).
 2. Tạo file mới `model/patient_account.h/.cpp` implement `IAuthenticatable` — **không sửa `Patient`, `PatientService` hiện có**, chỉ wrap thêm.
 3. Thêm 1 nhánh trong `AuthService::login()` kiểm tra `PatientRepository::findByUsername()`.
@@ -411,6 +416,7 @@ public:
 **Bài toán:** Vé hàng đợi (`QueueTicket`) cần chuyển trạng thái theo quy trình, và mỗi trạng thái có hành vi khác nhau (có thể hủy, có thể gọi, có thể hoàn thành...).
 
 **Sơ đồ trạng thái:**
+
 ```
 REGISTERED → WAITING → CALLED → IN_PROGRESS → COMPLETED
                    ↘                        ↗
@@ -418,6 +424,7 @@ REGISTERED → WAITING → CALLED → IN_PROGRESS → COMPLETED
 ```
 
 **Triển khai C++:**
+
 ```cpp
 // --- Lớp giao diện trạng thái (Interface) ---
 class IQueueState {
@@ -469,6 +476,7 @@ public:
 **Bài toán:** Khi bác sĩ gọi số tiếp theo từ màn hình của mình, **bảng số thứ tự ở phòng chờ** phải tự động cập nhật mà không cần refresh thủ công.
 
 **Triển khai C++:**
+
 ```cpp
 // --- Subject (Nguồn sự kiện) ---
 class IQueueObserver {
@@ -524,6 +532,7 @@ public:
 **Bài toán:** Tùy theo loại bệnh nhân (`OutPatient`, `InPatient`), hệ thống phải tạo đúng loại hóa đơn với cách tính phí khác nhau.
 
 **Triển khai C++:**
+
 ```cpp
 // --- Abstract Factory ---
 class IInvoiceFactory {
@@ -598,6 +607,7 @@ public:
 ## 3.1 Quy ước Quản lý Bộ nhớ
 
 > **Chính sách Memory Management của dự án:**
+>
 > - **`std::unique_ptr<T>`**: Sở hữu độc quyền — dùng khi một đối tượng chỉ có một chủ sở hữu.
 > - **`std::shared_ptr<T>`**: Sở hữu chung — dùng khi nhiều component cùng trỏ đến một đối tượng (ví dụ Observer).
 > - **`std::weak_ptr<T>`**: Tham chiếu yếu — dùng trong Observer để tránh circular reference.
@@ -991,6 +1001,7 @@ public:
 ```
 
 **Qt Components:**
+
 - `QDialog` với `Qt::FramelessWindowHint` (hiện đại, không viền)
 - `QLineEdit` với `setEchoMode(QLineEdit::Password)` cho mật khẩu
 - Validation: `QMessageBox::warning()` khi sai tài khoản
@@ -1021,6 +1032,7 @@ Sidebar: QListWidget hoặc custom QPushButton vertical layout
 ```
 
 **Qt Components:**
+
 - `QMainWindow` làm khung chính
 - `QWidget` sidebar bên trái (width: 200px cố định)
 - `QStackedWidget` bên phải làm vùng nội dung chính
@@ -1082,6 +1094,7 @@ void MainWindow::onMenuItemClicked(const QString& moduleCode) {
 ```
 
 > Ví dụ giá trị trả về của `getMenuItems()`:
+>
 > - `Doctor::getMenuItems()` → `{"dashboard", "patients", "queue", "appointments", "pharmacy", "billing", "analytics"}`
 > - `Receptionist::getMenuItems()` → `{"dashboard", "patients", "queue", "appointments"}`
 > - *(Tương lai)* `PatientAccount::getMenuItems()` → `{"my_profile", "my_appointments", "book_appointment", "my_invoices"}`
@@ -1123,6 +1136,7 @@ registry->registerView("queue",       []{ return new QueueView(queueService); })
 
 > **Tại sao thiết kế này quan trọng cho mở rộng?**
 > Khi thêm Patient Portal, bạn **chỉ cần**:
+>
 > 1. Tạo `PatientAccount::getMenuItems()` trả về module code mới (`"my_appointments"`...)
 > 2. Tạo các view mới (`MyAppointmentsView`...) và `registerView()` cho chúng
 >
@@ -1149,6 +1163,7 @@ registry->registerView("queue",       []{ return new QueueView(queueService); })
 ```
 
 **Qt Components:**
+
 - `QTableView` + `QSortFilterProxyModel` (sắp xếp, lọc client-side)
 - `QStyledItemDelegate` — tô màu hàng theo loại bệnh nhân
 - `QDialog` modal cho form Thêm/Sửa bệnh nhân
@@ -1202,6 +1217,7 @@ registry->registerView("queue",       []{ return new QueueView(queueService); })
 ```
 
 **Qt Components cho Analytics:**
+
 ```cpp
 // Cách tích hợp QtCharts
 #include <QtCharts/QChartView>
@@ -1349,6 +1365,7 @@ SmartClinicSystem/
 | S1-T8 | `LoginWindow` + `MainWindow` Khung Mở rộng | M4 | Tạo `login_window.h/cpp` với `QDialog`, validation, kết nối signal/slot với `AuthService`; tạo `main_window.h/cpp` với sidebar **động** từ `getMenuItems()` và `view_registry.h/cpp` | `feat: create login window and extensible MainWindow with dynamic sidebar via ViewRegistry` |
 
 **AI Usage Log Sprint 1 (Ví dụ cho M1):**
+
 | Task | Công cụ AI | Prompt đã dùng | Kiểm tra & Chỉnh sửa |
 |------|-----------|---------------|----------------------|
 | S1-T4 | ChatGPT | "Show me C++ abstract class design for hospital staff with pure virtual methods" | Điều chỉnh tên method cho phù hợp context VN, thêm `getMenuItems()` theo yêu cầu RBAC |
@@ -1443,28 +1460,33 @@ SmartClinicSystem/
 > Mỗi thành viên phải sẵn sàng trả lời các câu hỏi sau về phần mình phụ trách:
 
 **Về OOP (M1, M3):**
+
 - [ ] Giải thích tại sao `SystemUser` phải là abstract class (không thể instantiate trực tiếp)
 - [ ] Demo runtime polymorphism: gọi `getMenuItems()` trên `std::vector<std::shared_ptr<SystemUser>>`
 - [ ] Giải thích sự khác biệt giữa `override` và `virtual` trong C++
 - [ ] Tại sao destructor của `SystemUser` phải là `virtual`?
 
 **Về Design Patterns (M1, M3, M5):**
+
 - [ ] Vẽ sơ đồ State Machine của `QueueTicket` và giải thích từng chuyển đổi
 - [ ] Giải thích tại sao dùng `weak_ptr` trong Observer thay vì `shared_ptr`
 - [ ] Tại sao Factory Pattern giúp hệ thống mở rộng dễ hơn (Open/Closed Principle)?
 - [ ] Singleton của `DatabaseManager` — tại sao thread-safe với `std::call_once`?
 
 **Về Qt & GUI (M4, M2):**
+
 - [ ] Giải thích cơ chế Signal/Slot của Qt khác gì với function pointer thuần?
 - [ ] `QSortFilterProxyModel` hoạt động như thế nào?
 - [ ] Tại sao Business Logic KHÔNG được nằm trong lớp Qt Widget?
 
 **Về Database & Repository (M5):**
+
 - [ ] Giải thích cách Repository Pattern tách biệt SQL khỏi Business Logic
 - [ ] Tại sao dùng parameterized query (`bindValue`) thay vì nối chuỗi SQL?
 - [ ] SQLite transaction hoạt động như thế nào trong trường hợp tạo hóa đơn?
 
 **Về Khả năng Mở rộng (Tất cả — câu hỏi nâng cao):**
+
 - [ ] Nếu muốn cho bệnh nhân tự đăng nhập đặt lịch (Patient Portal), cần sửa những gì trong code hiện tại?
 - [ ] `IAuthenticatable` giải quyết vấn đề gì? Tại sao `MainWindow` không cần biết người dùng là `Doctor` hay `PatientAccount`?
 - [ ] `ViewRegistry` giúp thêm module mới mà không sửa `MainWindow` như thế nào? Đây là ví dụ của nguyên tắc OOP nào (Open/Closed Principle)?

@@ -39,7 +39,8 @@ bool DatabaseManager::initializeDatabase() {
   }
   qDebug() << "Khởi tạo Database SQLite thành công!";
 
-  // Bật tính năng Khóa ngoại (Foreign Keys) cho SQLite (Phải gọi ngoài transaction)
+  // Bật tính năng Khóa ngoại (Foreign Keys) cho SQLite (Phải gọi ngoài
+  // transaction)
   QSqlQuery query(m_db);
   query.exec("PRAGMA foreign_keys = ON;");
 
@@ -108,13 +109,13 @@ bool DatabaseManager::createTables() {
           date_of_birth           TEXT    NOT NULL,
           gender                  TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
           citizen_id              TEXT    UNIQUE,
-          phone                   TEXT,
-          email                   TEXT,
-          address                 TEXT,
+          phone                   TEXT    NOT NULL,
+          email                   TEXT    NOT NULL,
+          address                 TEXT    NOT NULL,
           blood_type              TEXT    NOT NULL DEFAULT 'UNKNOWN' CHECK (blood_type IN ('A+','A-','B+','B-','AB+','AB-','O+','O-','UNKNOWN')),
           default_patient_type    TEXT    NOT NULL DEFAULT 'OUTPATIENT' CHECK (default_patient_type IN ('OUTPATIENT','INPATIENT','EMERGENCY')),
-          emergency_contact_name  TEXT,
-          emergency_contact_phone TEXT,
+          emergency_contact_name  TEXT    NOT NULL,
+          emergency_contact_phone TEXT    NOT NULL,
           is_deleted              INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
           created_at              TEXT    NOT NULL DEFAULT (datetime('now')),
           updated_at              TEXT    NOT NULL DEFAULT (datetime('now'))
