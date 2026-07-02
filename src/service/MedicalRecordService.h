@@ -1,7 +1,9 @@
 #pragma once
 
+#include "dto/MedicalRecordDTOs.h"
 #include "dto/PrescriptionDTOs.h"
-#include
+#include <QList>
+#include <optional>
 
 // service/MedicalRecordService.h — SƯỜN chung, chốt trước khi code
 class MedicalRecordService {
@@ -9,10 +11,10 @@ public:
   // ── Bạn implement ──
   int createMedicalRecord(
       const MedicalRecordInsertDTO &dto); // trả về recordId, -1 nếu lỗi
-  QVector<MedicalRecordResultDTO> getMedicalHistory(int patientId);
+  QList<MedicalRecordResultDTO> getMedicalHistory(int patientId);
 
   // ── Bạn của bạn implement ──
-  bool addPrescription(int recordId, const QVector<PrescriptionItemDTO> &items);
-  std::optional<QVector<PrescriptionItemDTO>>
+  bool addPrescription(int recordId, const QList<PrescriptionItemDTO> &items);
+  std::optional<QList<PrescriptionItemDTO>>
   getPrescriptionByRecordId(int recordId);
 };
