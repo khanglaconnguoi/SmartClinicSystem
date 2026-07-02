@@ -28,8 +28,7 @@ OutPatient::OutPatient()
               QString(),               // m_insurance
               PatientType::OUTPATIENT, // m_type
               QString(),               // m_emergencyContactName
-              QString(),               // m_emergencyContactPhone
-              false)                   // is_deleted
+              QString())               // m_emergencyContactPhone
 {}
 
 // ---------------------------------------------------------------------------

@@ -35,7 +35,7 @@
  * @brief Dùng để INSERT một dị ứng vào bảng `patient_allergies`.
  */
 struct AllergyInsertDTO {
-  int     patientId;
+  int patientId;
   QString allergenName; // tên chất gây dị ứng
   QString severity;     // 'MILD' | 'MODERATE' | 'SEVERE'
   QString notes;        // ghi chú thêm (tùy chọn)
@@ -45,11 +45,11 @@ struct AllergyInsertDTO {
  * @brief Kết quả đọc từ bảng `patient_allergies`.
  */
 struct AllergyResultDTO {
-  int     allergyId;
+  int allergyId;
   QString allergenName;
   QString severity;
   QString notes;
-  bool    isActive;
+  bool isActive;
   QString recordedAt;
   QString updatedAt;
 };
@@ -62,13 +62,13 @@ struct AllergyResultDTO {
  * @brief Dùng để INSERT / UPSERT bản ghi bảo hiểm vào `patient_insurance`.
  */
 struct InsuranceInsertDTO {
-  int     patientId;
-  QString providerName;    // tên công ty bảo hiểm
-  QString policyNumber;    // số thẻ / hợp đồng
-  QString insuranceType;   // 'BHYT' | 'PRIVATE' | 'OTHER'
-  double  coveragePercent = 80.0; // % chi trả
-  QString validFrom;       // ngày hiệu lực  (yyyy-MM-dd)
-  QString validTo;         // ngày hết hạn   (yyyy-MM-dd)
+  int patientId;
+  QString providerName;          // tên công ty bảo hiểm
+  QString policyNumber;          // số thẻ / hợp đồng
+  QString insuranceType;         // 'BHYT' | 'PRIVATE' | 'OTHER'
+  double coveragePercent = 80.0; // % chi trả
+  QString validFrom;             // ngày hiệu lực  (yyyy-MM-dd)
+  QString validTo;               // ngày hết hạn   (yyyy-MM-dd)
   QString notes;
 };
 
@@ -76,15 +76,15 @@ struct InsuranceInsertDTO {
  * @brief Kết quả đọc từ bảng `patient_insurance`.
  */
 struct InsuranceResultDTO {
-  int     insuranceId = 0;
+  int insuranceId = 0;
   QString providerName;
   QString policyNumber;
   QString insuranceType;
-  double  coveragePercent = 0.0;
+  double coveragePercent = 0.0;
   QString validFrom;
   QString validTo;
   QString notes;
-  bool    isActive = false;
+  bool isActive = false;
   QString createdAt;
   QString updatedAt;
 };
@@ -183,8 +183,9 @@ struct PatientInsertDTO {
   QString emergencyContactPhone; // emergency_contact_phone (nullable)
 
   // ── dị ứng & bảo hiểm ──────────────────────────────────
-  QList<AllergyInsertDTO>           allergies; // danh sách dị ứng (có thể rỗng)
-  std::optional<InsuranceInsertDTO> insurance; // bảo hiểm (nullopt nếu không có)
+  QList<AllergyInsertDTO> allergies; // danh sách dị ứng (có thể rỗng)
+  std::optional<InsuranceInsertDTO>
+      insurance; // bảo hiểm (nullopt nếu không có)
 
   PatientInsertDTO() = default;
   virtual ~PatientInsertDTO() = default;
@@ -289,8 +290,8 @@ struct PatientUpdateDTO {
   QString emergencyContactPhone;
   PatientUpdateDTO() = default;
   virtual ~PatientUpdateDTO() = default;
-  PatientUpdateDTO(const PatientInputDTO &inputInformation, int patientId) {
-    this->patientId = patientId;
+  PatientUpdateDTO(const PatientInputDTO &inputInformation, int pId) {
+    this->patientId = pId;
     this->fullName = inputInformation.fullName.trimmed();
     this->dateOfBirth = inputInformation.dateOfBirth.toString("yyyy-MM-dd");
     this->gender = GenderToString(inputInformation.gender);
@@ -310,9 +311,9 @@ struct PatientUpdateDTO {
 struct OutPatientUpdateDTO : public PatientUpdateDTO {
   QString status;
   std::optional<int> doctorId;
-  OutPatientUpdateDTO(const OutPatientInputDTO &inputInformation, int patientId,
-                      const QString &status = "REGISTERED")
-      : PatientUpdateDTO(inputInformation, patientId), status(status),
+  OutPatientUpdateDTO(const OutPatientInputDTO &inputInformation, int pId,
+                      const QString &newStatus = "REGISTERED")
+      : PatientUpdateDTO(inputInformation, pId), status(newStatus),
         doctorId(inputInformation.doctorId) {}
 };
 
@@ -327,13 +328,13 @@ struct InPatientUpdateDTO : public PatientUpdateDTO {
   QString reason;
   QString status;
   InPatientUpdateDTO(const InPatientInputDTO &inputInformation, int pId,
-                     const QString &stat = "ADMITTED")
+                     const QString &newStatus = "ADMITTED")
       : PatientUpdateDTO(inputInformation, pId),
         roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
         admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
         dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
             "yyyy-MM-dd")),
-        reason(inputInformation.reason), status(stat) {}
+        reason(inputInformation.reason), status(newStatus) {}
 };
 
 /**
@@ -348,7 +349,7 @@ struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
   QString dischargeDate;
   QString status;
   EmergencyPatientUpdateDTO(const EmergencyPatientInputDTO &inputInformation,
-                            int pId, const QString &stat = "EMERGENCY")
+                            int pId, const QString &newStatus = "EMERGENCY")
       : PatientUpdateDTO(inputInformation, pId),
         roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
         injuryCause(inputInformation.injuryCause),
@@ -356,7 +357,7 @@ struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
         admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
         dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
             "yyyy-MM-dd")),
-        status(stat) {}
+        status(newStatus) {}
 };
 
 // //
@@ -369,7 +370,8 @@ struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
 
 /**
  * @brief Kết quả lấy chi tiết một bệnh nhân (Dùng cho getById).
- *        Cấu trúc làm phẳng (flatten) tất cả các trường để UI dễ dàng bind dữ liệu.
+ *        Cấu trúc làm phẳng (flatten) tất cả các trường để UI dễ dàng bind dữ
+ * liệu.
  */
 struct PatientDetailDTO {
   // ── patients ──────────────────────────────────────────
@@ -391,8 +393,9 @@ struct PatientDetailDTO {
   QDateTime updatedAt;
 
   // ── dị ứng & bảo hiểm ─────────────────────────────────
-  QList<AllergyResultDTO>          allergies;  // từ patient_allergies
-  std::optional<InsuranceResultDTO> insurance; // từ patient_insurance (nullopt nếu chưa có)
+  QList<AllergyResultDTO> allergies; // từ patient_allergies
+  std::optional<InsuranceResultDTO>
+      insurance; // từ patient_insurance (nullopt nếu chưa có)
 
   // ── thông tin chuyên biệt từ bảng con ──────────────────
   PatientType currentType; // OUTPATIENT / INPATIENT / EMERGENCY

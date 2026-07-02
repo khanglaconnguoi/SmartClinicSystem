@@ -24,8 +24,7 @@ EmergencyPatient::EmergencyPatient()
               QString(),              // m_insurance
               PatientType::EMERGENCY, // m_type
               QString(),              // m_emergencyContactName
-              QString(),              // m_emergencyContactPhone
-              false                   // is_deleted
+              QString()               // m_emergencyContactPhone
               ),
       m_emergencyRoomId(QString()), m_emergencyDoctorId(QString()),
       m_injuryCause(QString()), m_injuryDescription(QString()),

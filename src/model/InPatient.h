@@ -12,15 +12,14 @@ public:
             const QString &bloodType, const QString &allergies,
             const QString &insurance, PatientType type,
             const QString &emergencyContactName,
-            const QString &emergencyContactPhone, bool is_deleted,
+            const QString &emergencyContactPhone,
             const QString &admissionId, const QString &roomId,
             const QString &admittingDoctorId, const QDate &admissionDate,
             const QDate &dischargeDate, const QString &reason,
             const QString &status)
       : Patient(patientId, patientCode, fullName, dateOfBirth, gender,
                 citizenId, phone, email, address, bloodType, allergies,
-                insurance, type, emergencyContactName, emergencyContactPhone,
-                is_deleted) {
+                insurance, type, emergencyContactName, emergencyContactPhone) {
     m_admissionId = admissionId;
     m_roomId = roomId;
     m_admittingDoctorId = admittingDoctorId;

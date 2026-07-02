@@ -21,7 +21,6 @@ protected:
   PatientType m_type;
   QString m_emergencyContactName;
   QString m_emergencyContactPhone;
-  bool is_deleted;
 
 public:
   explicit Patient(int patientId, const QString &patientCode,
@@ -31,7 +30,7 @@ public:
                    const QString &address, const QString &bloodType,
                    const QString &allergies, const QString &insurance,
                    PatientType type, const QString &emergencyContactName,
-                   const QString &emergencyContactPhone, bool isDeleted);
+                   const QString &emergencyContactPhone);
   virtual ~Patient() = default;
 
   // --- Getters phổ biến ---

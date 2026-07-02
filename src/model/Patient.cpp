@@ -18,13 +18,13 @@ Patient::Patient(int patientId, const QString &patientCode,
                  const QString &address, const QString &bloodType,
                  const QString &allergies, const QString &insurance,
                  PatientType type, const QString &emergencyContactName,
-                 const QString &emergencyContactPhone, bool isDeleted)
+                 const QString &emergencyContactPhone)
     : m_patientId(patientId), m_patientCode(patientCode), m_fullName(fullName),
       m_dateOfBirth(dateOfBirth), m_gender(gender), m_citizenId(citizenId),
       m_phone(phone), m_email(email), m_address(address),
       m_bloodType(bloodType), m_allergies(allergies), m_insurance(insurance),
       m_type(type), m_emergencyContactName(emergencyContactName),
-      m_emergencyContactPhone(emergencyContactPhone), is_deleted(isDeleted) {}
+      m_emergencyContactPhone(emergencyContactPhone) {}
 
 // ---------------------------------------------------------------------------
 // Getters (non-inline implementations)
