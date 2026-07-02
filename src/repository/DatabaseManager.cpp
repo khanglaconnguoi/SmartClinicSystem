@@ -100,7 +100,6 @@ bool DatabaseManager::createTables() {
   // -------------------------------------------------
 
   // Bảng Patients
-  // Bảng Patients
   QString createPatients = R"(
       CREATE TABLE IF NOT EXISTS patients (
           patient_id              INTEGER PRIMARY KEY AUTOINCREMENT,

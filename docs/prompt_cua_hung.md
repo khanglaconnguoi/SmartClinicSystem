@@ -153,3 +153,14 @@
 | **AI** | Gemini 3.1 Pro (High) |
 | **Prompt/Instruction** | So have I completed the patient CRUD? & Please write these support functions |
 | **Student / Verification or Modification** | - Analyzed CRUD completion: Identified the system was missing the Read Detail (`getPatientById`) function to fetch detailed data for UI editing forms.<br>- Introduced a new `PatientDetailDTO` (a flattened structure containing all comprehensive info) in `PatientDTOs.h` instead of splitting it into 3 separate structs.<br>- Implemented the `getPatientById` function in `PatientRepository.cpp` using a `UNION ALL` query to aggregate data from all tables, and exposed it through `PatientService.cpp` to achieve 100% CRUD flow completion. |
+
+---
+
+## Prompt #15
+
+| Field | Details |
+|---|---|
+| **Task** | Debugging / Bug Fix |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | tại sao lại tạo thêm hàm QSqlDatabase &database ở DatabaseManager.h / fix lỗi FOREIGN KEY constraint failed khi AddOutPatient |
+| **Student / Verification or Modification** | - Root cause 1: `QSqlQuery lastId = DatabaseManager::getInstance().selectQuery("SELECT last_insert_rowid()")` created a new query object, causing SQLite to lose track of the `last_insert_rowid()` within the transaction and returning `0`.<br>- Root cause 2: `AddOutPatient` passed `doctorId = 0` directly into an `std::optional<int>`, which resulted in inserting `0` instead of `NULL` into the DB, violating the FOREIGN KEY constraint.<br>- Fix applied: Exposed `m_db` via `DatabaseManager::getInstance().database()`, enabling `PatientRepository::insertBasePatient` to use a single `QSqlQuery` to `exec()` the insert and immediately call `query.lastInsertId()` safely. Also added checks in `PatientService` to map `doctorId = 0` or `roomId = 0` to `std::nullopt`. |
