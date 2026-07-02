@@ -168,7 +168,7 @@ void LoginDialog::handleLogin()
     }
 
 
-    if (!m_authService->login(username, password)) {
+    if (!m_authService->login(username, password).isLoginSuccess) {
         QMessageBox::critical(this, "Lỗi đăng nhập", "Tài khoản hoặc mật khẩu không chính xác.");
     } else {
         emit loginSucceeded(UserSession::getInstance().getCurrentAccount());

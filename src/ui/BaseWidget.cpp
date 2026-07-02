@@ -7,7 +7,7 @@ BaseDashboardWidget::BaseDashboardWidget(QWidget *parent)
     m_globalLayout->setContentsMargins(0, 0, 0, 0);
     m_globalLayout->setSpacing(0);
     this->setStyleSheet("background-color: #F8F9FA;");
-}
+}       
 
 void BaseDashboardWidget::initializeDashboard() {
     // 1. Sao chép y chang cấu trúc Sidebar từ code của bạn

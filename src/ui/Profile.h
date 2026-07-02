@@ -6,21 +6,26 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QComboBox>
+#include <memory>
+#include "../service/StaffService.h"
+#include "../dto/StaffDTOs.h"
+#include "../model/CommonEnums.h"
 
 class ProfileWidget : public QDialog {
     Q_OBJECT
 
 public:
-    explicit ProfileWidget(QWidget *parent = nullptr);
-    void loadDoctorProfile(const QString &staffCode);
+    ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget *parent = nullptr);
+    void loadProfile(int staffId);
 
 private slots:
     void onEditClicked();
 
 private:
-    QWidget* createTopBar();
     QWidget* createLeftPanel();
     QWidget* createRightPanel();
+
+    std::shared_ptr<StaffService> m_staffService;
 
     QLabel *lblAvatar;
     QLabel *lblStatus;
@@ -41,8 +46,24 @@ private:
     QLabel *lblDepartment;
     QLabel *lblHireDate;
 
+    QWidget *cardRoleSpecific;
+    QLabel *lblTitleRoleSpecific;
+    
+    QWidget *widgetDoctorFields;
+    QLineEdit *txtSpecialty;
+    QLineEdit *txtLicenseNumber;
+    QLineEdit *txtExperienceYears;
+    QLineEdit *txtConsultationFee;
+    QLineEdit *txtBio;
+
+    QWidget *widgetNurseFields;
+    QLineEdit *txtNurseLevel;
+    QLineEdit *txtCertification;
+
     int currentStaffId;
+    int currentDepartmentId = -1;
     QString currentStaffCode;
+    UserRole currentRole;
 };
 
 #endif

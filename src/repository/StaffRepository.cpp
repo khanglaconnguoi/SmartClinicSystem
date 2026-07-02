@@ -363,13 +363,13 @@ static const QString SELECT_STAFF_PROFILE_SQL = R"(
         s.avatar,
         s.role,
         s.gender,
-        s.date_of_birth
-        s.citizen_id
+        s.date_of_birth,
+        s.citizen_id,
         s.phone_number,
         s.email,
         s.address,
         s.department_id,
-        s.hire_date
+        s.hire_date,
         s.shift,
         s.is_active,
 
@@ -457,7 +457,7 @@ std::shared_ptr<SystemUser> StaffRepository::findById(int staffId) const {
 
 std::unique_ptr<StaffProfileDTO> StaffRepository::findProfileById(int staffId) const {
     QString sql = SELECT_STAFF_PROFILE_SQL + " WHERE s.staff_id = ? AND s.is_active = 1 AND s.is_deleted = 0";
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(SELECT_STAFF_PROFILE_SQL, { staffId });
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffId });
     if (!query.next()) return nullptr;
 
     UserRole role = roleFromString(query.value("role").toString());
@@ -519,7 +519,7 @@ std::unique_ptr<StaffProfileDTO> StaffRepository::findProfileById(int staffId) c
 
 std::unique_ptr<StaffProfileDTO> StaffRepository::findProfileByStaffCode(const QString& staffCode) const {
     QString sql = SELECT_STAFF_PROFILE_SQL + " WHERE s.staff_code = ? AND s.is_active = 1 AND s.is_deleted = 0";
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(SELECT_STAFF_PROFILE_SQL, { staffCode });
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { staffCode });
     if (!query.next()) return nullptr;
 
     UserRole role = roleFromString(query.value("role").toString());
