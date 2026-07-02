@@ -208,4 +208,23 @@ public:
 
   bool softDeletePatient(int patientId);
   bool restorePatient(int patientId);
+
+  /**
+   * @brief Kiểm tra bệnh nhân có dị ứng với loại thuốc chỉ định không.
+   * @param patientId ID bệnh nhân cần kiểm tra.
+   * @param drugName  Tên thuốc cần kiểm tra (so khớp với danh sách dị ứng).
+   * @return true nếu có xung đột dị ứng, false nếu an toàn hoặc không có dữ liệu.
+   */
+  bool checkDrugAllergyConflict(int patientId, const QString &drugName) const;
+
+  /**
+   * @brief Lấy danh sách dị ứng đang active của bệnh nhân.
+   */
+  QList<AllergyResultDTO> getAllergies(int patientId);
+
+  /**
+   * @brief Lấy thông tin bảo hiểm của bệnh nhân.
+   * @return nullopt nếu bệnh nhân chưa có bảo hiểm.
+   */
+  std::optional<InsuranceResultDTO> getInsurance(int patientId);
 };

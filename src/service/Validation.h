@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "model/MedicalRecord.h"
 #include <QDate>
 #include <QString>
 
@@ -48,3 +49,9 @@ QString validateBloodType(const QString &bloodType);
  * @param toDate   Ngày kết thúc khoảng lọc (có thể rỗng — QDate không hợp lệ).
  */
 QString validateDateRange(const QDate &fromDate, const QDate &toDate);
+
+QString validateVitalSigns(const VitalSigns &vitals);
+
+QString validateChiefComplaint(const QString &complaint);
+
+QString validateDiagnosisList(const QList<Diagnosis> &diagnoses);

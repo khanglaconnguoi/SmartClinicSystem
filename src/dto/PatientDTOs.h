@@ -12,7 +12,9 @@
  *    patients                      – thông tin chung
  *    out_patients                  – bệnh nhân ngoại trú
  *    in_patients                   – bệnh nhân nội trú
- *    emergency_patients_admissions – bệnh nhân cấp cứu
+ *    emergency_patients            – bệnh nhân cấp cứu
+ *    patient_allergies             – dị ứng (1-n)
+ *    patient_insurance             – bảo hiểm (1-1)
  */
 
 #pragma once
@@ -20,9 +22,72 @@
 #include "model/CommonEnums.h"
 #include <QDate>
 #include <QDateTime>
+#include <QList>
 #include <QString>
 #include <optional>
 #include <qcoreapplication.h>
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ALLERGY DTOs  (map với bảng `patient_allergies`)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Dùng để INSERT một dị ứng vào bảng `patient_allergies`.
+ */
+struct AllergyInsertDTO {
+  int     patientId;
+  QString allergenName; // tên chất gây dị ứng
+  QString severity;     // 'MILD' | 'MODERATE' | 'SEVERE'
+  QString notes;        // ghi chú thêm (tùy chọn)
+};
+
+/**
+ * @brief Kết quả đọc từ bảng `patient_allergies`.
+ */
+struct AllergyResultDTO {
+  int     allergyId;
+  QString allergenName;
+  QString severity;
+  QString notes;
+  bool    isActive;
+  QString recordedAt;
+  QString updatedAt;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INSURANCE DTOs  (map với bảng `patient_insurance`)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Dùng để INSERT / UPSERT bản ghi bảo hiểm vào `patient_insurance`.
+ */
+struct InsuranceInsertDTO {
+  int     patientId;
+  QString providerName;    // tên công ty bảo hiểm
+  QString policyNumber;    // số thẻ / hợp đồng
+  QString insuranceType;   // 'BHYT' | 'PRIVATE' | 'OTHER'
+  double  coveragePercent = 80.0; // % chi trả
+  QString validFrom;       // ngày hiệu lực  (yyyy-MM-dd)
+  QString validTo;         // ngày hết hạn   (yyyy-MM-dd)
+  QString notes;
+};
+
+/**
+ * @brief Kết quả đọc từ bảng `patient_insurance`.
+ */
+struct InsuranceResultDTO {
+  int     insuranceId = 0;
+  QString providerName;
+  QString policyNumber;
+  QString insuranceType;
+  double  coveragePercent = 0.0;
+  QString validFrom;
+  QString validTo;
+  QString notes;
+  bool    isActive = false;
+  QString createdAt;
+  QString updatedAt;
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 1 – INPUT DTOs  (UI → Service)
@@ -116,6 +181,10 @@ struct PatientInsertDTO {
   QString type;                  // default_patient_type DEFAULT 'OUTPATIENT'
   QString emergencyContactName;  // emergency_contact_name  (nullable)
   QString emergencyContactPhone; // emergency_contact_phone (nullable)
+
+  // ── dị ứng & bảo hiểm ──────────────────────────────────
+  QList<AllergyInsertDTO>           allergies; // danh sách dị ứng (có thể rỗng)
+  std::optional<InsuranceInsertDTO> insurance; // bảo hiểm (nullopt nếu không có)
 
   PatientInsertDTO() = default;
   virtual ~PatientInsertDTO() = default;
@@ -257,14 +326,14 @@ struct InPatientUpdateDTO : public PatientUpdateDTO {
   QString dischargeDate;
   QString reason;
   QString status;
-  InPatientUpdateDTO(const InPatientInputDTO &inputInformation, int patientId,
-                     const QString &status = "ADMITTED")
-      : PatientUpdateDTO(inputInformation, patientId),
+  InPatientUpdateDTO(const InPatientInputDTO &inputInformation, int pId,
+                     const QString &stat = "ADMITTED")
+      : PatientUpdateDTO(inputInformation, pId),
         roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
         admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
         dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
             "yyyy-MM-dd")),
-        reason(inputInformation.reason), status(status) {}
+        reason(inputInformation.reason), status(stat) {}
 };
 
 /**
@@ -279,15 +348,15 @@ struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
   QString dischargeDate;
   QString status;
   EmergencyPatientUpdateDTO(const EmergencyPatientInputDTO &inputInformation,
-                            int patientId, const QString &status = "EMERGENCY")
-      : PatientUpdateDTO(inputInformation, patientId),
+                            int pId, const QString &stat = "EMERGENCY")
+      : PatientUpdateDTO(inputInformation, pId),
         roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
         injuryCause(inputInformation.injuryCause),
         injuryDescription(inputInformation.injuryDescription),
         admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
         dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
             "yyyy-MM-dd")),
-        status(status) {}
+        status(stat) {}
 };
 
 // //
@@ -314,8 +383,6 @@ struct PatientDetailDTO {
   QString email;
   QString address;
   QString bloodType;
-  QString allergies;
-  QString insurance;
   PatientType defaultPatientType;
   QString emergencyContactName;
   QString emergencyContactPhone;
@@ -323,15 +390,19 @@ struct PatientDetailDTO {
   QDateTime createdAt;
   QDateTime updatedAt;
 
+  // ── dị ứng & bảo hiểm ─────────────────────────────────
+  QList<AllergyResultDTO>          allergies;  // từ patient_allergies
+  std::optional<InsuranceResultDTO> insurance; // từ patient_insurance (nullopt nếu chưa có)
+
   // ── thông tin chuyên biệt từ bảng con ──────────────────
   PatientType currentType; // OUTPATIENT / INPATIENT / EMERGENCY
   QString status;          // Trạng thái từ bảng con (REGISTERED, ADMITTED...)
-  
+
   std::optional<int> roomId;          // Dùng cho INPATIENT / EMERGENCY
   std::optional<int> doctorId;        // Bác sĩ phụ trách (Dùng chung)
   std::optional<QDate> admissionDate; // Dùng cho INPATIENT / EMERGENCY
   std::optional<QDate> dischargeDate; // Dùng cho INPATIENT / EMERGENCY
-  
+
   QString reason;            // Lý do nhập viện (INPATIENT)
   QString injuryCause;       // Nguyên nhân tai nạn (EMERGENCY)
   QString injuryDescription; // Mô tả chấn thương (EMERGENCY)
