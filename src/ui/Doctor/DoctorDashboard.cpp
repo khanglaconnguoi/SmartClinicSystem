@@ -96,6 +96,9 @@ void DoctorDashboardWidget::fillDashboardData() {
     buildSettingsPage();
     buildClinicalExamPage();
 
+    // 3.5 Tải dữ liệu lịch hẹn lên các bảng
+    refreshAppointmentsTables();
+
     // 4. Chọn trang mặc định (Dashboard Overview)
     switchPage(0, m_btnDash);
 }
@@ -194,44 +197,30 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
     title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;");
     pageLayout->addWidget(title);
 
-    QTableWidget* apptTable = new QTableWidget(m_appointmentsPage);
-    apptTable->setColumnCount(6);
-    apptTable->setHorizontalHeaderLabels({"Thời Gian", "Mã BN", "Tên Bệnh Nhân", "Dịch Vụ Khám", "Phòng Khám", "Trạng Thái"});
-    apptTable->setStyleSheet(
+    m_appointmentsTable = new QTableWidget(m_appointmentsPage);
+    m_appointmentsTable->setColumnCount(6);
+    m_appointmentsTable->setHorizontalHeaderLabels({"Thời Gian", "Mã BN", "Tên Bệnh Nhân", "Dịch Vụ Khám", "Phòng Khám", "Trạng Thái"});
+    m_appointmentsTable->setStyleSheet(
         "QTableWidget { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 8px; gridline-color: #F1F3F4; }"
         "QHeaderView::section { background-color: #F8F9FA; padding: 10px; font-weight: bold; border: none; border-bottom: 2px solid #EAEAEA; color: #5F6368; }"
         "QTableWidget::item { padding: 12px; color: #3C4043; }"
     );
-    apptTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    apptTable->verticalHeader()->setVisible(false);
+    m_appointmentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_appointmentsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_appointmentsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_appointmentsTable->verticalHeader()->setVisible(false);
 
-    int docId = m_currentUser ? m_currentUser->getAccountId() : 1;
-    auto records = DatabaseManager::getInstance().getDoctorAppointments(docId);
+    connect(m_appointmentsTable, &QTableWidget::cellClicked, this, [this](int row, int /*col*/) {
+        if (row >= 0 && row < m_apptPageMeta.size()) {
+            const auto& meta = m_apptPageMeta[row];
+            openClinicalExam(meta.name, meta.code, meta.time, meta.reason, row, false);
+        }
+    });
 
-    apptTable->setRowCount(0);
-    int r = 0;
-    for (const auto& rec : records) {
-        apptTable->insertRow(r);
-        
-        QString timeStr = QString("%1 %2").arg(rec.appointmentDate, rec.startTime);
-        
-        QString statusText = rec.status;
-        if (rec.status == "SCHEDULED") statusText = "Đang chờ";
-        else if (rec.status == "COMPLETED") statusText = "Đã khám";
-        else if (rec.status == "CANCELLED") statusText = "Đã hủy";
-
-        apptTable->setItem(r, 0, new QTableWidgetItem(timeStr));
-        apptTable->setItem(r, 1, new QTableWidgetItem(rec.patientCode));
-        apptTable->setItem(r, 2, new QTableWidgetItem(rec.patientName));
-        apptTable->setItem(r, 3, new QTableWidgetItem(rec.reason));
-        apptTable->setItem(r, 4, new QTableWidgetItem(rec.roomNumber));
-        apptTable->setItem(r, 5, new QTableWidgetItem(statusText));
-        r++;
-    }
-
-    pageLayout->addWidget(apptTable, 1);
+    pageLayout->addWidget(m_appointmentsTable, 1);
     m_stackedWidget->addWidget(m_appointmentsPage);
 }
+
 
 void DoctorDashboardWidget::buildSettingsPage() {
     m_settingsPage = new QWidget(this);
@@ -431,56 +420,11 @@ void DoctorDashboardWidget::createDoctorTable(QWidget* parentPage, QVBoxLayout* 
     m_patientTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_patientTable->verticalHeader()->setVisible(false);
 
-    int docId = m_currentUser ? m_currentUser->getAccountId() : 1;
-    QString todayStr = QDate::currentDate().toString("yyyy-MM-dd");
-
-    // Sử dụng hàm getter của DatabaseManager
-    auto records = DatabaseManager::getInstance().getDoctorAppointments(docId, todayStr);
-
-    m_rowApptMeta.clear();
-    int rowIdx = 0;
-    m_patientTable->setRowCount(0);
-
-    for (const auto& rec : records) {
-        // Ánh xạ trạng thái
-        QString statusText = rec.status;
-        QString statusColor = "#3C4043"; // Mặc định
-        if (rec.status == "SCHEDULED") {
-            statusText = "Đang chờ";
-            statusColor = "#1A73E8"; // Xanh dương
-        } else if (rec.status == "COMPLETED") {
-            statusText = "Đã khám xong";
-            statusColor = "#059669"; // Xanh lá
-        } else if (rec.status == "CANCELLED") {
-            statusText = "Đã hủy ca";
-            statusColor = "#D93025"; // Đỏ
-        }
-
-        m_patientTable->insertRow(rowIdx);
-        
-        QTableWidgetItem* nameItem = new QTableWidgetItem(rec.patientName);
-        QTableWidgetItem* codeItem = new QTableWidgetItem(rec.patientCode);
-        QTableWidgetItem* timeItem = new QTableWidgetItem(rec.startTime);
-        QTableWidgetItem* deptItem = new QTableWidgetItem(rec.reason);
-        QTableWidgetItem* statusItem = new QTableWidgetItem(statusText);
-
-        statusItem->setForeground(QBrush(QColor(statusColor)));
-
-        m_patientTable->setItem(rowIdx, 0, nameItem);
-        m_patientTable->setItem(rowIdx, 1, codeItem);
-        m_patientTable->setItem(rowIdx, 2, timeItem);
-        m_patientTable->setItem(rowIdx, 3, deptItem);
-        m_patientTable->setItem(rowIdx, 4, statusItem);
-
-        m_rowApptMeta.append({rec.appointmentId, rec.patientId, rec.patientName, rec.patientCode, rec.startTime, rec.reason});
-        rowIdx++;
-    }
-
     // Click đơn vào bệnh nhân bất kỳ trong danh sách sẽ mở ra màn hình khám lâm sàng ngay lập tức
     connect(m_patientTable, &QTableWidget::cellClicked, this, [this](int row, int /*col*/) {
         if (row >= 0 && row < m_rowApptMeta.size()) {
             const auto& meta = m_rowApptMeta[row];
-            openClinicalExam(meta.name, meta.code, meta.time, meta.reason, row);
+            openClinicalExam(meta.name, meta.code, meta.time, meta.reason, row, true);
         }
     });
 
@@ -528,10 +472,11 @@ void DoctorDashboardWidget::buildClinicalExamPage() {
     connect(m_clinicalExamPage, &ClinicalExamWidget::finishExamRequested, this, &DoctorDashboardWidget::handlePatientExamFinished);
 }
 
-void DoctorDashboardWidget::openClinicalExam(const QString& name, const QString& id, const QString& time, const QString& specialty, int rowIndex) {
+void DoctorDashboardWidget::openClinicalExam(const QString& name, const QString& id, const QString& time, const QString& specialty, int rowIndex, bool isFromTodayList) {
     if (!m_clinicalExamPage || !m_stackedWidget) return;
 
     m_currentExaminingRow = rowIndex;
+    m_isExaminingFromTodayList = isFromTodayList;
     m_clinicalExamPage->loadPatientInfo(name, id, time, specialty);
 
     // Tìm chỉ số của m_clinicalExamPage trong stacked widget
@@ -542,38 +487,143 @@ void DoctorDashboardWidget::openClinicalExam(const QString& name, const QString&
 }
 
 void DoctorDashboardWidget::handlePatientExamFinished() {
-    if (m_currentExaminingRow == -1 || !m_patientTable) return;
+    if (m_currentExaminingRow == -1) return;
 
-    // 1. Cập nhật trạng thái của bệnh nhân vừa khám xong thành "Đã khám xong" trong CSDL qua hàm setter
-    if (m_currentExaminingRow >= 0 && m_currentExaminingRow < m_rowApptMeta.size()) {
-        int apptId = m_rowApptMeta[m_currentExaminingRow].appointmentId;
+    if (m_isExaminingFromTodayList) {
+        if (!m_patientTable) return;
 
-        // Sử dụng setter để cập nhật trạng thái lịch hẹn
-        DatabaseManager::getInstance().updateAppointmentStatus(apptId, "COMPLETED");
+        // 1. Cập nhật trạng thái của bệnh nhân vừa khám xong thành "COMPLETED" trong CSDL
+        if (m_currentExaminingRow >= 0 && m_currentExaminingRow < m_rowApptMeta.size()) {
+            int apptId = m_rowApptMeta[m_currentExaminingRow].appointmentId;
+            DatabaseManager::getInstance().updateAppointmentStatus(apptId, "COMPLETED");
+        }
+
+        // Cập nhật trạng thái hiển thị trên bảng UI và đồng bộ dữ liệu
+        refreshAppointmentsTables();
+
+        // 2. Tìm bệnh nhân tiếp theo trong danh sách
+        int nextRow = m_currentExaminingRow + 1; // Số hàng sau khi refresh vẫn giữ nguyên index vì thứ tự xếp hạng không đổi
+        if (m_patientTable && nextRow < m_patientTable->rowCount()) {
+            m_currentExaminingRow = nextRow;
+            
+            QString name = m_patientTable->item(nextRow, 0)->text();
+            QString id = m_patientTable->item(nextRow, 1)->text();
+            QString time = m_patientTable->item(nextRow, 2)->text();
+            QString dept = m_patientTable->item(nextRow, 3)->text();
+            
+            m_clinicalExamPage->loadPatientInfo(name, id, time, dept);
+            
+            QMessageBox::information(this, "Nova Care Clinic",
+                QString("Đã kết thúc ca khám hiện tại.\nChuyển sang bệnh nhân tiếp theo: %1").arg(name));
+        } else {
+            QMessageBox::information(this, "Nova Care Clinic",
+                "Đã hoàn thành khám cho toàn bộ bệnh nhân trong danh sách hôm nay!");
+            m_currentExaminingRow = -1;
+            switchPage(0, m_btnDash); // Quay lại trang chủ dashboard
+        }
+    } else {
+        // Khám từ trang Lịch Hẹn tổng hợp (không tự động chuyển tiếp vì có thể là các ngày khác nhau)
+        if (m_currentExaminingRow >= 0 && m_currentExaminingRow < m_apptPageMeta.size()) {
+            int apptId = m_apptPageMeta[m_currentExaminingRow].appointmentId;
+            DatabaseManager::getInstance().updateAppointmentStatus(apptId, "COMPLETED");
+        }
+
+        // Đồng bộ dữ liệu mới nhất
+        refreshAppointmentsTables();
+
+        QMessageBox::information(this, "Nova Care Clinic", "Đã kết thúc ca khám thành công!");
+        m_currentExaminingRow = -1;
+        switchPage(2, m_btnAppoint); // Quay lại trang Lịch hẹn
+    }
+}
+
+void DoctorDashboardWidget::refreshAppointmentsTables() {
+    int docId = m_currentUser ? m_currentUser->getAccountId() : 1;
+    QString todayStr = QDate::currentDate().toString("yyyy-MM-dd");
+
+    // 1. Đồng bộ dữ liệu m_patientTable (Danh sách khám hôm nay)
+    if (m_patientTable) {
+        auto records = DatabaseManager::getInstance().getDoctorAppointments(docId, todayStr);
+        m_rowApptMeta.clear();
+        m_patientTable->setRowCount(0);
+        int rowIdx = 0;
+        for (const auto& rec : records) {
+            QString statusText = rec.status;
+            QString statusColor = "#3C4043"; // Mặc định
+            if (rec.status == "SCHEDULED") {
+                statusText = "Đang chờ";
+                statusColor = "#1A73E8"; // Xanh dương
+            } else if (rec.status == "COMPLETED") {
+                statusText = "Đã khám xong";
+                statusColor = "#059669"; // Xanh lá
+            } else if (rec.status == "CANCELLED") {
+                statusText = "Đã hủy ca";
+                statusColor = "#D93025"; // Đỏ
+            }
+
+            m_patientTable->insertRow(rowIdx);
+            
+            QTableWidgetItem* nameItem = new QTableWidgetItem(rec.patientName);
+            QTableWidgetItem* codeItem = new QTableWidgetItem(rec.patientCode);
+            QTableWidgetItem* timeItem = new QTableWidgetItem(rec.startTime);
+            QTableWidgetItem* deptItem = new QTableWidgetItem(rec.reason);
+            QTableWidgetItem* statusItem = new QTableWidgetItem(statusText);
+
+            statusItem->setForeground(QBrush(QColor(statusColor)));
+
+            m_patientTable->setItem(rowIdx, 0, nameItem);
+            m_patientTable->setItem(rowIdx, 1, codeItem);
+            m_patientTable->setItem(rowIdx, 2, timeItem);
+            m_patientTable->setItem(rowIdx, 3, deptItem);
+            m_patientTable->setItem(rowIdx, 4, statusItem);
+
+            m_rowApptMeta.append({rec.appointmentId, rec.patientId, rec.patientName, rec.patientCode, rec.startTime, rec.reason});
+            rowIdx++;
+        }
     }
 
-    // Cập nhật trạng thái hiển thị trên bảng UI
-    m_patientTable->setItem(m_currentExaminingRow, 4, new QTableWidgetItem("Đã khám xong"));
-    m_patientTable->item(m_currentExaminingRow, 4)->setForeground(QBrush(QColor("#059669"))); // Màu xanh ngọc
+    // 2. Đồng bộ dữ liệu m_appointmentsTable (Trang Lịch hẹn tổng hợp)
+    if (m_appointmentsTable) {
+        auto records = DatabaseManager::getInstance().getDoctorAppointments(docId);
+        m_apptPageMeta.clear();
+        m_appointmentsTable->setRowCount(0);
+        int rowIdx = 0;
+        for (const auto& rec : records) {
+            QString statusText = rec.status;
+            QString statusColor = "#3C4043";
+            if (rec.status == "SCHEDULED") {
+                statusText = "Đang chờ";
+                statusColor = "#1A73E8";
+            } else if (rec.status == "COMPLETED") {
+                statusText = "Đã khám";
+                statusColor = "#059669";
+            } else if (rec.status == "CANCELLED") {
+                statusText = "Đã hủy";
+                statusColor = "#D93025";
+            }
 
-    // 2. Tìm bệnh nhân tiếp theo trong danh sách
-    int nextRow = m_currentExaminingRow + 1;
-    if (nextRow < m_patientTable->rowCount()) {
-        m_currentExaminingRow = nextRow;
-        
-        QString name = m_patientTable->item(nextRow, 0)->text();
-        QString id = m_patientTable->item(nextRow, 1)->text();
-        QString time = m_patientTable->item(nextRow, 2)->text();
-        QString dept = m_patientTable->item(nextRow, 3)->text();
-        
-        m_clinicalExamPage->loadPatientInfo(name, id, time, dept);
-        
-        QMessageBox::information(this, "Nova Care Clinic",
-            QString("Đã kết thúc ca khám hiện tại.\nChuyển sang bệnh nhân tiếp theo: %1").arg(name));
-    } else {
-        QMessageBox::information(this, "Nova Care Clinic",
-            "Đã hoàn thành khám cho toàn bộ bệnh nhân trong danh sách hôm nay!");
-        m_currentExaminingRow = -1;
-        switchPage(0, m_btnDash); // Quay lại trang chủ dashboard
+            m_appointmentsTable->insertRow(rowIdx);
+            
+            QString timeStr = QString("%1 %2").arg(rec.appointmentDate, rec.startTime);
+
+            QTableWidgetItem* timeItem = new QTableWidgetItem(timeStr);
+            QTableWidgetItem* codeItem = new QTableWidgetItem(rec.patientCode);
+            QTableWidgetItem* nameItem = new QTableWidgetItem(rec.patientName);
+            QTableWidgetItem* reasonItem = new QTableWidgetItem(rec.reason);
+            QTableWidgetItem* roomItem = new QTableWidgetItem(rec.roomNumber);
+            QTableWidgetItem* statusItem = new QTableWidgetItem(statusText);
+
+            statusItem->setForeground(QBrush(QColor(statusColor)));
+
+            m_appointmentsTable->setItem(rowIdx, 0, timeItem);
+            m_appointmentsTable->setItem(rowIdx, 1, codeItem);
+            m_appointmentsTable->setItem(rowIdx, 2, nameItem);
+            m_appointmentsTable->setItem(rowIdx, 3, reasonItem);
+            m_appointmentsTable->setItem(rowIdx, 4, roomItem);
+            m_appointmentsTable->setItem(rowIdx, 5, statusItem);
+
+            m_apptPageMeta.append({rec.appointmentId, rec.patientId, rec.patientName, rec.patientCode, rec.startTime, rec.reason});
+            rowIdx++;
+        }
     }
 }

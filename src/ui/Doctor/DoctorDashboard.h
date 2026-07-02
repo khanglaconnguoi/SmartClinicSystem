@@ -53,8 +53,9 @@ private:
     void createDoctorTable(QWidget* parentPage, QVBoxLayout* pageLayout);
 
     void switchPage(int index, QPushButton* activeBtn);
-    void openClinicalExam(const QString& name, const QString& id, const QString& time, const QString& specialty, int rowIndex);
+    void openClinicalExam(const QString& name, const QString& id, const QString& time, const QString& specialty, int rowIndex, bool isFromTodayList = true);
     void handlePatientExamFinished();
+    void refreshAppointmentsTables();
 
 public:
     struct ApptMeta {
@@ -67,4 +68,7 @@ public:
     };
 private:
     QList<ApptMeta> m_rowApptMeta;
+    QList<ApptMeta> m_apptPageMeta;
+    QTableWidget*   m_appointmentsTable = nullptr;
+    bool            m_isExaminingFromTodayList = true;
 };
