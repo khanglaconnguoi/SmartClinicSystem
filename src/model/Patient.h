@@ -1,4 +1,3 @@
-// File: model/patient.h
 #pragma once
 #include "model/CommonEnums.h"
 #include <QString>

@@ -1,3 +1,4 @@
+/*
 #include <QApplication>
 #include <memory>
 
@@ -22,6 +23,31 @@ int main(int argc, char *argv[]) {
     profileWindow.loadProfile(2); 
     
     profileWindow.show();
+
+    return app.exec();
+}
+
+#include <QApplication>
+#include "ui/MainWindow.h"
+
+int main(int argc, char *argv[])
+{
+    QApplication app(argc, argv);
+
+    MainWindow window;
+    window.show();
+
+    return app.exec();
+}
+*/
+#include <QApplication>
+#include "ui/MainWindow.h"
+
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+
+    MainWindow window;
+    window.show();
 
     return app.exec();
 }

@@ -105,9 +105,9 @@ public:
     bool hireNewNurse(const NurseInputDTO& nurse);
     //bool hireNewReceptionist(/*...*/);
 
-    bool editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId);
-    bool editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId);
-    bool editNurseInformation(const NurseInputDTO& nurseInformation, int staffId);
+    QString editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId);
+    QString editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId);
+    QString editNurseInformation(const NurseInputDTO& nurseInformation, int staffId);
 
 
     bool deactivateStaff(int staffId) {

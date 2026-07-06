@@ -304,21 +304,29 @@ bool StaffService::hireNewNurse(const NurseInputDTO& nurse) {
 }
 
 
-bool StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
-    if (!validateStaffBaseInput(staffInformation, staffId).isEmpty()) return false;
-    return m_staffRepository->updateStaff(StaffUpdateDTO(staffInformation, staffId));
+QString StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
+    QString err = validateStaffBaseInput(staffInformation, staffId);
+    if (!err.isEmpty()) return err;
+    if (!m_staffRepository->updateStaff(StaffUpdateDTO(staffInformation, staffId)))
+        return "Repository update failed (DB error).";
+    return "";
 }
 
-bool StaffService::editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId) {
-    if (!validateDoctorInput(doctorInformation, staffId).isEmpty()) return false;
-    return m_staffRepository->updateDoctor(DoctorUpdateDTO(doctorInformation, staffId));
+QString StaffService::editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId) {
+    QString err = validateDoctorInput(doctorInformation, staffId);
+    if (!err.isEmpty()) return err;
+    if (!m_staffRepository->updateDoctor(DoctorUpdateDTO(doctorInformation, staffId)))
+        return "Repository update failed (DB error).";
+    return "";
 }
 
-bool StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, int staffId) {
-    if (!validateNurseInput(nurseInformation, staffId).isEmpty()) return false;
-    return m_staffRepository->updateNurse(NurseUpdateDTO(nurseInformation, staffId));
+QString StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, int staffId) {
+    QString err = validateNurseInput(nurseInformation, staffId);
+    if (!err.isEmpty()) return err;
+    if (!m_staffRepository->updateNurse(NurseUpdateDTO(nurseInformation, staffId)))
+        return "Repository update failed (DB error).";
+    return "";
 }
-
 
 
 QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(

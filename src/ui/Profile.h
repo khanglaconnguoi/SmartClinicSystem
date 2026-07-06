@@ -10,7 +10,8 @@
 #include "../service/StaffService.h"
 #include "../dto/StaffDTOs.h"
 #include "../model/CommonEnums.h"
-
+#include "../service/Validation.h"
+#include <QTextEdit>
 class ProfileWidget : public QDialog {
     Q_OBJECT
 
@@ -20,6 +21,8 @@ public:
 
 private slots:
     void onEditClicked();
+    void validatePhoneNumber();
+    void validateEmail();
 
 private:
     QWidget* createLeftPanel();
@@ -47,14 +50,14 @@ private:
     QLabel *lblHireDate;
 
     QWidget *cardRoleSpecific;
+    QWidget *cardBio; 
     QLabel *lblTitleRoleSpecific;
     
     QWidget *widgetDoctorFields;
     QLineEdit *txtSpecialty;
     QLineEdit *txtLicenseNumber;
-    QLineEdit *txtExperienceYears;
     QLineEdit *txtConsultationFee;
-    QLineEdit *txtBio;
+    QTextEdit *txtBio;
 
     QWidget *widgetNurseFields;
     QLineEdit *txtNurseLevel;
@@ -62,6 +65,7 @@ private:
 
     int currentStaffId;
     int currentDepartmentId = -1;
+    int currentExperienceYears = 0;  
     QString currentStaffCode;
     UserRole currentRole;
 };

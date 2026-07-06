@@ -22,6 +22,8 @@ ProfileWidget::ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget
         "QMessageBox QLabel { color: #172B4D; font-size: 16px; }"
         "QMessageBox QPushButton { background-color: #0052CC; color: white; font-weight: bold; min-width: 90px; min-height: 32px; border-radius: 4px; border: none; }"
         "QMessageBox QPushButton:hover { background-color: #0043A4; }"
+        "QLineEdit { border: none; background: transparent; padding: 0px; }" 
+        "QLineEdit:!read-only { border: 1px solid #0052CC; border-radius: 4px; background-color: #FFFFFF; padding: 2px 6px; min-height: 26px; }" 
     );
     showMaximized();
 
@@ -101,25 +103,23 @@ QWidget* ProfileWidget::createLeftPanel() {
     leftForm->setHorizontalSpacing(20);
     leftForm->setVerticalSpacing(12);
 
-  auto addLeftFormRow = [](QFormLayout *form, const QString &text, QWidget *edit) {
-    QLabel *l = new QLabel( text);
-    l->setStyleSheet("font-size: 15px; color: #172B4D; border: none; font-weight: 600;");
-    l->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    l->setFixedWidth(125);
-    
-    if (QLabel *lbl = qobject_cast<QLabel*>(edit)) {
-        lbl->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        // QLabel không có padding mặc định, giữ nguyên 0px
-        edit->setStyleSheet("font-size: 15px; color: #172B4D; border: none; background: transparent; padding: 0px;");
-    } else if (QLineEdit *le = qobject_cast<QLineEdit*>(edit)) {
-        le->setAlignment(Qt::AlignLeft);
-        // Do QLineEdit bị thụt lề vào trong 1px, ta dùng âm margin-left để kéo chữ ra ngoài lề trái 1px
-        edit->setStyleSheet("font-size: 15px; color: #172B4D; border: none; background: transparent; padding: 0px; margin-left: -1px;");
-    }
-    
-    edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    form->addRow(l, edit);
-};
+    auto addLeftFormRow = [](QFormLayout *form, const QString &text, QWidget *edit) {
+        QLabel *l = new QLabel( text);
+        l->setStyleSheet("font-size: 15px; color: #172B4D; border: none; font-weight: 600;");
+        l->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        l->setFixedWidth(125);
+        
+        if (QLabel *lbl = qobject_cast<QLabel*>(edit)) {
+            lbl->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+            edit->setStyleSheet("font-size: 15px; color: #172B4D; border: none; background: transparent; padding: 0px;");
+        } else if (QLineEdit *le = qobject_cast<QLineEdit*>(edit)) {
+            le->setAlignment(Qt::AlignLeft);
+            edit->setStyleSheet("font-size: 15px; color: #172B4D; border: none; background: transparent; padding: 0px; margin-left: -1px;");
+        }
+        
+        edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        form->addRow(l, edit);
+    };
 
     txtGender = new QLineEdit(idCard);
     txtPhone = new QLineEdit(idCard);
@@ -136,9 +136,7 @@ QWidget* ProfileWidget::createLeftPanel() {
     addLeftFormRow(leftForm, "Email", txtEmail);
 
     idLayout->addLayout(leftForm);
-
     idLayout->addSpacing(15);
-
 
     QWidget *shiftCard = new QWidget(panel);
     shiftCard->setStyleSheet("background-color: #FFFFFF; border-radius: 10px; border: 1px solid #E1E4E8;");
@@ -161,9 +159,9 @@ QWidget* ProfileWidget::createLeftPanel() {
     cmbShift->setEnabled(false);
     cmbShift->setFixedHeight(40);
     cmbShift->setStyleSheet(
-        "QComboBox { font-size: 16px; color: #172B4D; border: 1px solid #DFE1E6; border-radius: 6px; background: #F4F5F7; padding: 5px 12px; } "
+        "QComboBox { font-size: 16px; color: #172B4D; border: 1px solid #DFE1E6; border-radius: 6px; background: #F4F5F7; padding: 5px 12px;  } "
         "QComboBox::drop-down { border: none; width: 25px; } "
-        "QComboBox:!disabled { border: 1px solid #0052CC; background: #FFFFFF; } "
+        
     );
 
     shiftLayout->addWidget(lblShiftTitle);
@@ -181,8 +179,29 @@ QWidget* ProfileWidget::createLeftPanel() {
     layout->addWidget(btnEdit, 0, Qt::AlignCenter);
     layout->addStretch();
 
-    connect(btnEdit, &QPushButton::clicked, this, &ProfileWidget::onEditClicked);
+    QString leftStyle = 
+        "QLineEdit { "
+        "   font-size: 15px; "
+        "   color: #172B4D; "
+        "   border: none; "
+        "   background: transparent; "
+        "   padding: 0px; "
+        "   margin-left: -1px; "
+        "} "
+        "QLineEdit:!read-only { "
+        "   border: 1px solid #0052CC; "
+        "   border-radius: 4px; "
+        "   background-color: #FFFFFF; "
+        "   padding: 2px 6px; "
+        "   min-height: 26px; "
+        "   margin-left: 0px; "
+        "}";
+    txtPhone->setStyleSheet(leftStyle);
+    txtEmail->setStyleSheet(leftStyle);
 
+    connect(btnEdit, &QPushButton::clicked, this, &ProfileWidget::onEditClicked);
+    connect(txtPhone, &QLineEdit::editingFinished, this, &ProfileWidget::validatePhoneNumber);
+    connect(txtEmail, &QLineEdit::editingFinished, this, &ProfileWidget::validateEmail);
     return panel;
 }
 
@@ -299,23 +318,13 @@ QWidget* ProfileWidget::createRightPanel() {
     txtLicenseNumber->setMinimumWidth(520);
     txtLicenseNumber->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    txtExperienceYears = new QLineEdit(widgetDoctorFields);
-    txtExperienceYears->setMinimumWidth(520);
-    txtExperienceYears->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     txtConsultationFee = new QLineEdit(widgetDoctorFields);
     txtConsultationFee->setMinimumWidth(520);
     txtConsultationFee->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    txtBio = new QLineEdit(widgetDoctorFields);
-    txtBio->setMinimumWidth(520);
-    txtBio->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     addFormRow(formDoc, "Chuyên khoa", txtSpecialty);
     addFormRow(formDoc, "Số CCHN", txtLicenseNumber);
-    addFormRow(formDoc, "Kinh nghiệm (năm)", txtExperienceYears);
-    addFormRow(formDoc, "Phí tư vấn", txtConsultationFee);
-    addFormRow(formDoc, "Tiểu sử", txtBio);
+    addFormRow(formDoc, "Phí khám", txtConsultationFee);
     formDoc->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     vboxDoc->addLayout(formDoc);
     layout3->addWidget(widgetDoctorFields);
@@ -335,22 +344,67 @@ QWidget* ProfileWidget::createRightPanel() {
     addFormRow(formNurse, "Chứng chỉ", txtCertification);
     vboxNurse->addLayout(formNurse);
     layout3->addWidget(widgetNurseFields);
-
     layout->addWidget(cardRoleSpecific);
-    layout->addStretch();
+
+    QVBoxLayout *layoutBio;
+    cardBio = createCard("Tiểu sử", layoutBio);
+    cardBio->setMinimumHeight(150); 
+
+    txtBio = new QTextEdit(cardBio); 
+    txtBio->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    txtBio->setAcceptRichText(false); 
+    txtBio->setStyleSheet(
+        "QTextEdit { "
+        "   font-size: 16px; "
+        "   color: #172B4D; "
+        "   border: none; "
+        "   background: transparent; "
+        "   padding: 5px 0px; "
+        "   line-height: 1.4; "
+        "} "
+        "QTextEdit:!read-only { "
+        "   border: 1px solid #0052CC; "
+        "   border-radius: 6px; "
+        "   background: #FFFFFF; "
+        "   padding: 8px; "
+        "}"
+    );
+    layoutBio->addWidget(txtBio);
+    layout->addWidget(cardBio);
 
     QList<QLineEdit*> allFields = {
         txtFullName, txtDob, txtCitizenId, txtAddress,
-        txtSpecialty, txtLicenseNumber, txtExperienceYears, txtConsultationFee, txtBio,
+        txtSpecialty, txtLicenseNumber, txtConsultationFee,
         txtNurseLevel, txtCertification
     };
+    txtBio->setReadOnly(true);
     for (QLineEdit* field : allFields) {
         field->setReadOnly(true);
     }
 
-    cardRoleSpecific->hide();
-    scrollArea->setWidget(scrollContent);
+    QString rightStyle = 
+        "QLineEdit { "
+        "   font-size: 16px; "
+        "   color: #172B4D; "
+        "   border: none; "
+        "   background: transparent; "
+        "   padding: 0px; "
+        "} "
+        "QLineEdit:!read-only { "
+        "   border: 1px solid #0052CC; "
+        "   border-radius: 4px; "
+        "   background-color: #FFFFFF; "
+        "   padding: 2px 6px; "
+        "   min-height: 28px; "
+        "}";
+    txtAddress->setStyleSheet(rightStyle);
+    txtNurseLevel->setStyleSheet(rightStyle);
+    txtCertification->setStyleSheet(rightStyle);
 
+    cardRoleSpecific->hide();
+    cardBio->hide();
+
+    scrollArea->setWidget(scrollContent);
     return scrollArea;
 }
 
@@ -376,6 +430,7 @@ void ProfileWidget::loadProfile(int staffId) {
     txtDob->setText(profile->dateOfBirth.toString("dd/MM/yyyy"));
     txtCitizenId->setText(profile->citizenId);
     lblDepartment->setText(profile->departmentName);
+    currentDepartmentId = profile->departmentId;
     lblStaffCode->setText(profile->staffCode);
     lblHireDate -> setText(profile->hireDate.toString("dd/MM/yyyy"));
     
@@ -386,18 +441,22 @@ void ProfileWidget::loadProfile(int staffId) {
         widgetDoctorFields->show();
         widgetNurseFields->hide();
         cardRoleSpecific->show();
+        cardBio->show(); 
+        
         lblRole->setText(roleToString(profile->role) == "DOCTOR" ? "Bác sĩ" : roleToString(profile->role));
         txtSpecialty->setText(docProfile->specialty);
         txtLicenseNumber->setText(docProfile->licenseNumber);
-        txtExperienceYears->setText(QString::number(docProfile->experienceYears));
         txtConsultationFee->setText(QString::number(docProfile->consultationFee));
-        txtBio->setText(docProfile->bio);
+        txtBio->setPlainText(docProfile->bio);
+        currentExperienceYears = docProfile->experienceYears;
     } 
     else if (auto nurseProfile = dynamic_cast<NurseProfileDTO*>(profile.get())) {
         lblRole->setText("Y tá");
         widgetNurseFields->show();
         widgetDoctorFields->hide();
         cardRoleSpecific->show();
+        cardBio->hide(); 
+        
         lblRole->setText(roleToString(profile->role) == "NURSE" ? "Y tá" : roleToString(profile->role));
         txtNurseLevel->setText(nurseProfile->nurseLevel);
         txtCertification->setText(nurseProfile->certification);
@@ -405,27 +464,20 @@ void ProfileWidget::loadProfile(int staffId) {
     else {
         lblRole->setText("Nhân viên");
         cardRoleSpecific->hide();
+        cardBio->hide(); 
     }
     this->currentStaffId = staffId;
 }
 
 void ProfileWidget::onEditClicked() {
     if (btnEdit->text() == "Chỉnh Sửa" || btnEdit->text() == "Chỉnh sửa") {
-        txtFullName->setReadOnly(false);
         txtPhone->setReadOnly(false);
         txtEmail->setReadOnly(false);
         txtAddress->setReadOnly(false);
-        txtDob->setReadOnly(false);
-        txtCitizenId->setReadOnly(false);
-        txtGender->setReadOnly(false);
-        cmbShift->setEnabled(true);
+        cmbShift->setEnabled(false);
         
         if (widgetDoctorFields->isVisible()) {
-            txtSpecialty->setReadOnly(false);
-            txtLicenseNumber->setReadOnly(false);
-            txtExperienceYears->setReadOnly(false);
-            txtConsultationFee->setReadOnly(false);
-            txtBio->setReadOnly(false);
+            txtBio->setReadOnly(false); 
         }
         
         if (widgetNurseFields->isVisible()) {
@@ -438,15 +490,14 @@ void ProfileWidget::onEditClicked() {
     }
 
     std::unique_ptr<StaffInputDTO> inputDTO;
-    QWidget* widgetLeftDoctorFields = this->findChild<QWidget*>("widgetLeftDoctorFields");
     
     if (widgetDoctorFields->isVisible()) {
         auto docDTO = std::make_unique<DoctorInputDTO>();
         docDTO->specialty = txtSpecialty->text();
         docDTO->licenseNumber = txtLicenseNumber->text();
-        docDTO->experienceYears = txtExperienceYears->text().toInt();
         docDTO->consultationFee = txtConsultationFee->text().toDouble();
-        docDTO->bio = txtBio->text();
+        docDTO->experienceYears = currentExperienceYears; 
+        docDTO->bio = txtBio->toPlainText(); 
         inputDTO = std::move(docDTO);
     } else if (widgetNurseFields->isVisible()) {
         auto nurseDTO = std::make_unique<NurseInputDTO>();
@@ -464,15 +515,19 @@ void ProfileWidget::onEditClicked() {
     inputDTO->citizenId = txtCitizenId->text();
     inputDTO->dateOfBirth = QDate::fromString(txtDob->text(), "dd/MM/yyyy");
     inputDTO->gender = (txtGender->text() == "Nam") ? Gender::Male : Gender::Female;
+    inputDTO->departmentId = currentDepartmentId; 
+    inputDTO->shift = cmbShift->currentData().toString();
 
-    bool success = false;
+    QString errorMsg;
     if (auto docInput = dynamic_cast<DoctorInputDTO*>(inputDTO.get())) {
-        success = m_staffService->editDoctorInformation(*docInput, currentStaffId);
+       errorMsg = m_staffService->editDoctorInformation(*docInput, currentStaffId);
     } else if (auto nurseInput = dynamic_cast<NurseInputDTO*>(inputDTO.get())) {
-        success = m_staffService->editNurseInformation(*nurseInput, currentStaffId);
+        errorMsg = m_staffService->editNurseInformation(*nurseInput, currentStaffId);
     } else {
-        success = m_staffService->editStaffBaseInformation(*inputDTO, currentStaffId);
+        errorMsg = m_staffService->editStaffBaseInformation(*inputDTO, currentStaffId);
     }
+
+    bool success = errorMsg.isEmpty();
 
     if (success) {
         QMessageBox::information(this, "Thành công", "Đã cập nhật hồ sơ!");
@@ -486,16 +541,137 @@ void ProfileWidget::onEditClicked() {
         txtGender->setReadOnly(true);
         txtSpecialty->setReadOnly(true);
         txtLicenseNumber->setReadOnly(true);
-        txtExperienceYears->setReadOnly(true);
         txtConsultationFee->setReadOnly(true);
         txtBio->setReadOnly(true);
         txtNurseLevel->setReadOnly(true);
         txtCertification->setReadOnly(true);
         cmbShift->setEnabled(false);
         btnEdit->setText("Chỉnh Sửa");
-        
+
+       txtPhone->setStyleSheet(
+            "QLineEdit { "
+            "   font-size: 15px; "
+            "   color: #172B4D; "
+            "   border: none; "
+            "   background: transparent; "
+            "   padding: 0px; "
+            "   margin-left: -1px; "
+            "} "
+            "QLineEdit:!read-only { "
+            "   border: 1px solid #0052CC; "
+            "   border-radius: 4px; "
+            "   background-color: #FFFFFF; "
+            "   padding: 2px 6px; "
+            "   min-height: 26px; "
+            "   margin-left: 0px; "
+            "}"
+        );
+        txtPhone->setStyleSheet(
+            "QLineEdit { "
+            "   font-size: 15px; "
+            "   color: #172B4D; "
+            "   border: none; "
+            "   background: transparent; "
+            "   padding: 0px; "
+            "   margin-left: -1px; "
+            "} "
+            "QLineEdit:!read-only { "
+            "   border: 1px solid #0052CC; "
+            "   border-radius: 4px; "
+            "   background-color: #FFFFFF; "
+            "   padding: 2px 6px; "
+            "   min-height: 26px; "
+            "   margin-left: 0px; "
+            "}"
+        );
+txtEmail->setStyleSheet(
+            "QLineEdit { "
+            "   font-size: 15px; "
+            "   color: #172B4D; "
+            "   border: none; "
+            "   background: transparent; "
+            "   padding: 0px; "
+            "   margin-left: -1px; "
+            "} "
+            "QLineEdit:!read-only { "
+            "   border: 1px solid #0052CC; "
+            "   border-radius: 4px; "
+            "   background-color: #FFFFFF; "
+            "   padding: 2px 6px; "
+            "   min-height: 26px; "
+            "   margin-left: 0px; "
+            "}"
+        );
+
         loadProfile(currentStaffId);
     } else {
-        QMessageBox::critical(this, "Lỗi", "Không thể cập nhật dữ liệu. Vui lòng kiểm tra lại thông tin!");
+        QMessageBox::critical(this, "Lỗi", errorMsg);
     }
 }
+
+void ProfileWidget::validatePhoneNumber() {
+    if (txtPhone->isReadOnly()) return;
+    
+    QString erro = Validation::validatePhoneNumber(txtPhone->text());
+    
+    if (!erro.isEmpty()) { 
+        txtPhone->setStyleSheet(
+            "QLineEdit { border: 1px solid #FF3B30; border-radius: 4px; background-color: #FFE5E5; padding: 2px 6px; min-height: 26px; }"
+        );
+        QMessageBox::warning(this, "Định dạng sai", erro);
+    }
+    else {
+        txtPhone->setStyleSheet(
+            "QLineEdit { "
+            "   font-size: 15px; "
+            "   color: #172B4D; "
+            "   border: none; "
+            "   background: transparent; "
+            "   padding: 0px; "
+            "   margin-left: -1px; "
+            "} "
+            "QLineEdit:!read-only { "
+            "   border: 1px solid #0052CC; "
+            "   border-radius: 4px; "
+            "   background-color: #FFFFFF; "
+            "   padding: 2px 6px; "
+            "   min-height: 26px; "
+            "   margin-left: 0px; "
+            "}"
+        );
+    }
+}
+
+void ProfileWidget::validateEmail() {
+    if (txtEmail->isReadOnly()) return;
+    
+    QString erro = Validation::validateEmail(txtEmail->text());
+    
+    if (!erro.isEmpty()) { 
+        txtEmail->setStyleSheet(
+            "QLineEdit { border: 1px solid #FF3B30; border-radius: 4px; background-color: #FFE5E5; padding: 2px 6px; min-height: 26px; }"
+        );
+        QMessageBox::warning(this, "Định dạng sai", erro);
+    }
+    else {
+        txtEmail->setStyleSheet(
+            "QLineEdit { "
+            "   font-size: 15px; "
+            "   color: #172B4D; "
+            "   border: none; "
+            "   background: transparent; "
+            "   padding: 0px; "
+            "   margin-left: -1px; "
+            "} "
+            "QLineEdit:!read-only { "
+            "   border: 1px solid #0052CC; "
+            "   border-radius: 4px; "
+            "   background-color: #FFFFFF; "
+            "   padding: 2px 6px; "
+            "   min-height: 26px; "
+            "   margin-left: 0px; "
+            "}"
+        );
+    }
+}
+
