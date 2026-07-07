@@ -32,7 +32,7 @@ void LoginWidget::setupUi() {
     leftBanner->setObjectName("leftBanner");
     leftBanner->setStyleSheet(
         "QLabel#leftBanner {"
-        "   background-color: #e2f4f2;" 
+        "   background-color: #EEF2F6;" 
         "   background-image: url('src/resources/doctor_banner.png');"
         "   background-repeat: no-repeat;"
         "   background-position: center;"
@@ -59,7 +59,7 @@ void LoginWidget::setupUi() {
     formLayout->setSpacing(15);
 
     // Tiêu đề LOGO Hospital
-    auto* logoLabel = new QLabel("<font color='#2ec4b6'><b>NovaCare</b></font> <font color='#333333'>Clinic</font>", this);
+    auto* logoLabel = new QLabel("<font color='#4B94F2'><b>NovaCare</b></font> <font color='#333333'>Clinic</font>", this);
     logoLabel->setStyleSheet("font-size: 24px; font-family: 'Arial'; font-weight: bold; background: transparent;");
     logoLabel->setAlignment(Qt::AlignCenter);
 
@@ -86,11 +86,11 @@ void LoginWidget::setupUi() {
         "QPushButton {"
         "   border: none;"             
         "   background: transparent;"  
-        "   color: #2ec4b6;"          
+        "   color: #4B94F2;"          
         "   font-weight: bold;"
         "   padding-right: 10px;"    
         "}"
-        "QPushButton:hover { color: #24a195; }" 
+        "QPushButton:hover { color: #398CBF; }" 
     );
 
     // 3. Đặt nút bấm này nằm nép về phía bên phải bên trong ô Password
@@ -119,15 +119,15 @@ void LoginWidget::setupUi() {
     m_loginButton->setCursor(Qt::PointingHandCursor);
     m_loginButton->setStyleSheet(
         "QPushButton {"
-        "   background-color: #5b86e5; color: white; border: none; border-radius: 15px; padding: 10px; font-weight: bold;"
+        "   background-color: #4B94F2; color: white; border: none; border-radius: 15px; padding: 10px; font-weight: bold;"
         "}"
-        "QPushButton:hover { background-color: #4a75d4; }"
+        "QPushButton:hover { background-color: #398CBF; }"
     );
 
     // Hiệu ứng đổ bóng cho nút login
     auto* shadowEffect = new QGraphicsDropShadowEffect(m_loginButton);
     shadowEffect->setBlurRadius(10);
-    shadowEffect->setColor(QColor(91, 134, 229, 100));
+    shadowEffect->setColor(QColor(75, 148, 242, 100)); // #4B94F2
     shadowEffect->setOffset(0, 4);
     m_loginButton->setGraphicsEffect(shadowEffect);
     
@@ -136,7 +136,7 @@ void LoginWidget::setupUi() {
     connect(m_passwordInput, &QLineEdit::returnPressed, this, &LoginWidget::loginButtonClicked);
 
     //Nút ForgotPassword
-    m_forgotPasswordLabel = new QLabel("<a href='#' style='color: #2ec4b6; text-decoration: none; background: transparent;'>Forget Password?</a>", this);
+    m_forgotPasswordLabel = new QLabel("<a href='#' style='color: #4B94F2; text-decoration: none; background: transparent;'>Forget Password?</a>", this);
     m_forgotPasswordLabel->setAlignment(Qt::AlignCenter);
 
     //Vẽ các layout

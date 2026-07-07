@@ -45,6 +45,8 @@ public:
     virtual ~SystemUser() = default;
 
     // --- Getters ---
+    int        getStaffId()   const           { return m_staffId; }
+    QString    getStaffCode() const           { return m_staffCode; }
     UserRole   getRole()      const           { return m_role; }
     bool       isActive()     const           { return m_isActive; }
     
@@ -64,9 +66,9 @@ public:
     QString     getFullName()     const override { return m_fullName; }
     QPixmap     getAvatar()       const override { return m_avatar; }
 
-    // --- Pure Virtual ---
-    QStringList getMenuItems()                  const override = 0;
-    bool canAccess(const QString& moduleCode)   const override = 0;
-    QString getDisplayRole()                    const override = 0;
+    // --- Virtual methods (default implementation) ---
+    QStringList getMenuItems()                  const override { return {}; }
+    bool canAccess(const QString& moduleCode)   const override { (void)moduleCode; return true; }
+    QString getDisplayRole()                    const override { return roleToString(m_role); }
 
 };

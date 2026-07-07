@@ -34,10 +34,10 @@ void PatientDashboardWidget::buildPatientSidebar() {
 
     // --- Logo / tiêu đề phòng khám ---
     if (m_logoLabel) {
-        m_logoLabel->setText("🏥 Nova Care");
+        m_logoLabel->setText("Nova Care");
         m_logoLabel->setStyleSheet(
             "font-size: 20px; font-weight: bold;"
-            "color: #00966C; margin-bottom: 8px;"
+            "color: #4B94F2; margin-bottom: 8px;"
         );
     }
 
@@ -50,11 +50,11 @@ void PatientDashboardWidget::buildPatientSidebar() {
     m_sidebarLayout->addWidget(menuHeader);
 
     // --- Tạo các nút sidebar bệnh nhân ---
-    m_btnOverview  = new QPushButton("🏠  Tổng Quan",              m_sidebarFrame);
-    m_btnMyAppoint = new QPushButton("📅  Lịch Hẹn Của Tôi",       m_sidebarFrame);
-    m_btnMedRecord = new QPushButton("📋  Hồ Sơ Bệnh Án",          m_sidebarFrame);
-    m_btnLabResult = new QPushButton("🔬  Kết Quả Xét Nghiệm",     m_sidebarFrame);
-    m_btnPrescript = new QPushButton("💊  Đơn Thuốc",               m_sidebarFrame);
+    m_btnOverview  = new QPushButton("Tổng Quan",              m_sidebarFrame);
+    m_btnMyAppoint = new QPushButton("Lịch Hẹn Của Tôi",       m_sidebarFrame);
+    m_btnMedRecord = new QPushButton("Hồ Sơ Bệnh Án",          m_sidebarFrame);
+    m_btnLabResult = new QPushButton("Kết Quả Xét Nghiệm",     m_sidebarFrame);
+    m_btnPrescript = new QPushButton("Đơn Thuốc",               m_sidebarFrame);
 
     // Nhãn phân nhóm thứ 2
     QLabel* accountHeader = new QLabel("TÀI KHOẢN", m_sidebarFrame);
@@ -63,7 +63,7 @@ void PatientDashboardWidget::buildPatientSidebar() {
         "letter-spacing: 2px; margin: 14px 4px 4px 4px;"
     );
 
-    m_btnProfile = new QPushButton("👤  Thông Tin Cá Nhân",    m_sidebarFrame);
+    m_btnProfile = new QPushButton("Thông Tin Cá Nhân",    m_sidebarFrame);
 
     // Thêm vào layout sidebar
     m_sidebarLayout->addWidget(m_btnOverview);
@@ -77,7 +77,7 @@ void PatientDashboardWidget::buildPatientSidebar() {
     // Giữ nút Logout xuống cuối
     m_sidebarLayout->addStretch();
 
-    m_btnLogout = new QPushButton("🚪 Đăng Xuất", m_sidebarFrame);
+    m_btnLogout = new QPushButton("Đăng Xuất", m_sidebarFrame);
     m_btnLogout->setStyleSheet("color: #D93025;");
     m_sidebarLayout->addWidget(m_btnLogout);
     connect(m_btnLogout, &QPushButton::clicked, this, &BaseDashboardWidget::logoutRequested);
@@ -110,7 +110,7 @@ void PatientDashboardWidget::buildTopbar() {
         QPixmap raw = m_currentUser->getAvatar();
         if (raw.isNull()) {
             raw = QPixmap(36, 36);
-            raw.fill(QColor("#00966C"));
+            raw.fill(QColor("#4B94F2"));
         }
 
         const int sz = 36;
@@ -184,19 +184,18 @@ void PatientDashboardWidget::buildScrollableContent() {
 // =============================================================================
 void PatientDashboardWidget::createWelcomeBanner() {
     QFrame* banner = new QFrame(m_scrollContent);
-    banner->setMinimumHeight(120);
+    banner->setMinimumHeight(100);
     banner->setStyleSheet(
         "QFrame {"
-        "   background: qlineargradient("
-        "       x1:0, y1:0, x2:1, y2:0,"
-        "       stop:0 #00966C, stop:0.6 #00B87A, stop:1 #34D8A0"
-        "   );"
-        "   border-radius: 16px;"
+        "   background-color: #FFFFFF;"
+        "   border: 1px solid #E5E7EB;"
+        "   border-left: 5px solid #4B94F2;"
+        "   border-radius: 8px;"
         "}"
     );
 
     QHBoxLayout* hl = new QHBoxLayout(banner);
-    hl->setContentsMargins(32, 24, 32, 24);
+    hl->setContentsMargins(24, 20, 24, 20);
 
     QVBoxLayout* textCol = new QVBoxLayout();
     textCol->setSpacing(6);
@@ -207,14 +206,14 @@ void PatientDashboardWidget::createWelcomeBanner() {
         if (!parts.isEmpty()) firstName = parts.last();
     }
 
-    QLabel* greeting = new QLabel(QString("Xin chào, %1 👋").arg(firstName), banner);
+    QLabel* greeting = new QLabel(QString("Xin chào, %1").arg(firstName), banner);
     greeting->setStyleSheet(
-        "color: #FFFFFF; font-size: 22px; font-weight: bold; background: transparent;"
+        "color: #111827; font-size: 20px; font-weight: bold; background: transparent; border: none;"
     );
 
     QLabel* sub = new QLabel("Chúc bạn sức khỏe dồi dào. Đây là tổng quan hồ sơ sức khỏe của bạn hôm nay.", banner);
     sub->setWordWrap(true);
-    sub->setStyleSheet("color: rgba(255,255,255,0.85); font-size: 13px; background: transparent;");
+    sub->setStyleSheet("color: #5F6368; font-size: 13px; background: transparent; border: none;");
 
     textCol->addWidget(greeting);
     textCol->addWidget(sub);
@@ -223,7 +222,7 @@ void PatientDashboardWidget::createWelcomeBanner() {
     QLabel* dateLabel = new QLabel(QDate::currentDate().toString("dddd, dd/MM/yyyy"), banner);
     dateLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     dateLabel->setStyleSheet(
-        "color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 500; background: transparent;"
+        "color: #5F6368; font-size: 13px; font-weight: 500; background: transparent; border: none;"
     );
 
     hl->addLayout(textCol, 1);
@@ -240,19 +239,16 @@ void PatientDashboardWidget::createQuickStatCards() {
     row->setSpacing(16);
 
     struct CardInfo {
-        QString icon;
         QString title;
         QString value;
         QString sub;
-        QString color;
-        QString bgLight;
     };
 
     QList<CardInfo> cards = {
-        { "📅", "Lịch hẹn sắp tới",      "2",           "Trong 7 ngày tới",    "#2563EB", "#EEF2FF" },
-        { "💊", "Đơn thuốc đang dùng",    "3",           "Đang trong liệu trình","#D97706", "#FFFBEB" },
-        { "🔬", "Kết quả chờ xem",        "1",           "Cập nhật hôm nay",    "#DC2626", "#FEF2F2" },
-        { "📋", "Lần khám gần nhất",      "15/06/2026",  "Nội khoa tổng quát",  "#00966C", "#ECFDF5" },
+        { "Lịch hẹn sắp tới",      "2",           "Trong 7 ngày tới" },
+        { "Đơn thuốc đang dùng",    "3",           "Đang trong liệu trình" },
+        { "Kết quả chờ xem",        "1",           "Cập nhật hôm nay" },
+        { "Lần khám gần nhất",      "15/06/2026",  "Nội khoa tổng quát" },
     };
 
     for (const auto& info : cards) {
@@ -263,25 +259,15 @@ void PatientDashboardWidget::createQuickStatCards() {
         vl->setContentsMargins(20, 18, 20, 18);
         vl->setSpacing(8);
 
-        // Icon tròn
-        QLabel* iconBadge = new QLabel(info.icon, card);
-        iconBadge->setFixedSize(40, 40);
-        iconBadge->setAlignment(Qt::AlignCenter);
-        iconBadge->setStyleSheet(QString(
-            "background-color: %1; border-radius: 10px;"
-            "font-size: 18px;"
-        ).arg(info.bgLight));
-
         QLabel* titleLbl = new QLabel(info.title, card);
-        titleLbl->setStyleSheet("color: #6B7280; font-size: 12px; font-weight: 500;");
+        titleLbl->setStyleSheet("color: #5F6368; font-size: 12px; font-weight: 500; border: none;");
 
         QLabel* valueLbl = new QLabel(info.value, card);
-        valueLbl->setStyleSheet(QString("color: %1; font-size: 22px; font-weight: bold;").arg(info.color));
+        valueLbl->setStyleSheet("color: #4B94F2; font-size: 22px; font-weight: bold; border: none;");
 
         QLabel* subLbl = new QLabel(info.sub, card);
-        subLbl->setStyleSheet("color: #9CA3AF; font-size: 11px;");
+        subLbl->setStyleSheet("color: #9CA3AF; font-size: 11px; border: none;");
 
-        vl->addWidget(iconBadge);
         vl->addWidget(titleLbl);
         vl->addWidget(valueLbl);
         vl->addWidget(subLbl);
@@ -303,15 +289,15 @@ void PatientDashboardWidget::createUpcomingAppointments() {
 
     // Header hàng
     QHBoxLayout* hdr = new QHBoxLayout();
-    QLabel* title = new QLabel("📅  Lịch Hẹn Sắp Tới", section);
+    QLabel* title = new QLabel("Lịch Hẹn Sắp Tới", section);
     title->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
 
     QPushButton* btnAll = new QPushButton("Xem tất cả →", section);
     btnAll->setCursor(Qt::PointingHandCursor);
     btnAll->setStyleSheet(
-        "QPushButton { background: transparent; color: #00966C; font-size: 13px;"
+        "QPushButton { background: transparent; color: #4B94F2; font-size: 13px;"
         "font-weight: 600; border: none; padding: 0; }"
-        "QPushButton:hover { color: #007D5A; }"
+        "QPushButton:hover { color: #398CBF; }"
     );
     hdr->addWidget(title);
     hdr->addStretch();
@@ -330,16 +316,17 @@ void PatientDashboardWidget::createUpcomingAppointments() {
     };
 
     QList<ApptInfo> appts = {
-        { "02/07/2026", "09:00", "BS. Nguyễn Văn An",   "Nội khoa",      "Đã xác nhận", "#15803D", "#DCFCE7" },
-        { "08/07/2026", "14:30", "BS. Trần Thị Bình",   "Tim mạch",      "Chờ duyệt",   "#D97706", "#FEF3C7" },
-        { "15/07/2026", "10:00", "BS. Lê Minh Tuấn",    "Da liễu",       "Đã xác nhận", "#15803D", "#DCFCE7" },
+        { "02/07/2026", "09:00", "BS. Nguyễn Văn An",   "Nội khoa",      "Đã xác nhận", "#4B94F2", "#ACDEF2" },
+        { "08/07/2026", "14:30", "BS. Trần Thị Bình",   "Tim mạch",      "Chờ duyệt",   "#5F6368", "#F1F3F4" },
+        { "15/07/2026", "10:00", "BS. Lê Minh Tuấn",    "Da liễu",       "Đã xác nhận", "#4B94F2", "#ACDEF2" },
     };
 
     for (const auto& a : appts) {
         QFrame* item = new QFrame(section);
+        item->setObjectName("AppointmentItem");
         item->setStyleSheet(
-            "QFrame { background: #F9FAFB; border-radius: 10px; border: 1px solid #F3F4F6; }"
-            "QFrame:hover { background: #EEF2FF; border-color: #C7D2FE; }"
+            "QFrame#AppointmentItem { background: #F9FAFB; border-radius: 10px; border: 1px solid #EAEAEA; }"
+            "QFrame#AppointmentItem:hover { background: #EEF2FF; border-color: #C7D2FE; }"
         );
         item->setCursor(Qt::PointingHandCursor);
 
@@ -350,19 +337,19 @@ void PatientDashboardWidget::createUpcomingAppointments() {
         // Khối ngày tháng
         QFrame* dateBadge = new QFrame(item);
         dateBadge->setFixedSize(52, 52);
-        dateBadge->setStyleSheet("background: #E0F2FE; border-radius: 10px;");
+        dateBadge->setStyleSheet("QFrame { background: #ACDEF2; border-radius: 8px; border: none; }");
         QVBoxLayout* dv = new QVBoxLayout(dateBadge);
         dv->setContentsMargins(4, 4, 4, 4);
         dv->setSpacing(0);
         QStringList dateParts = a.date.split('/');
         QLabel* dayLbl = new QLabel(dateParts.value(0), dateBadge);
         dayLbl->setAlignment(Qt::AlignCenter);
-        dayLbl->setStyleSheet("font-size: 18px; font-weight: bold; color: #0369A1;");
+        dayLbl->setStyleSheet("font-size: 18px; font-weight: bold; color: #4B94F2;");
         QLabel* monLbl = new QLabel(
             QString("Th.%1").arg(dateParts.value(1)), dateBadge
         );
         monLbl->setAlignment(Qt::AlignCenter);
-        monLbl->setStyleSheet("font-size: 10px; color: #0369A1; font-weight: 600;");
+        monLbl->setStyleSheet("font-size: 10px; color: #4B94F2; font-weight: 600;");
         dv->addWidget(dayLbl);
         dv->addWidget(monLbl);
 
@@ -371,7 +358,7 @@ void PatientDashboardWidget::createUpcomingAppointments() {
         info->setSpacing(3);
         QLabel* drLbl = new QLabel(a.doctor, item);
         drLbl->setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;");
-        QLabel* spLbl = new QLabel(QString("🏥 %1   🕐 %2").arg(a.specialty, a.time), item);
+        QLabel* spLbl = new QLabel(QString("%1  ·  %2").arg(a.specialty, a.time), item);
         spLbl->setStyleSheet("font-size: 12px; color: #6B7280;");
         info->addWidget(drLbl);
         info->addWidget(spLbl);
@@ -410,7 +397,7 @@ void PatientDashboardWidget::createRecentMedicalRecords() {
     mv->setContentsMargins(24, 20, 24, 20);
     mv->setSpacing(14);
 
-    QLabel* medTitle = new QLabel("📋  Lần Khám Gần Nhất", medCard);
+    QLabel* medTitle = new QLabel("Lần Khám Gần Nhất", medCard);
     medTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
     mv->addWidget(medTitle);
 
@@ -443,10 +430,10 @@ void PatientDashboardWidget::createRecentMedicalRecords() {
     QPushButton* btnView = new QPushButton("Xem hồ sơ đầy đủ →", medCard);
     btnView->setCursor(Qt::PointingHandCursor);
     btnView->setStyleSheet(
-        "QPushButton { background: #00966C; color: white; border: none; border-radius: 8px;"
+        "QPushButton { background: #4B94F2; color: white; border: none; border-radius: 8px;"
         "font-size: 13px; font-weight: 600; padding: 10px 0; }"
-        "QPushButton:hover { background: #007D5A; }"
-        "QPushButton:pressed { background: #005F44; }"
+        "QPushButton:hover { background: #398CBF; }"
+        "QPushButton:pressed { background: #62B7D9; }"
     );
     mv->addWidget(btnView);
 
@@ -459,7 +446,7 @@ void PatientDashboardWidget::createRecentMedicalRecords() {
     rv->setContentsMargins(24, 20, 24, 20);
     rv->setSpacing(14);
 
-    QLabel* rxTitle = new QLabel("💊  Đơn Thuốc Hiện Tại", rxCard);
+    QLabel* rxTitle = new QLabel("Đơn Thuốc Hiện Tại", rxCard);
     rxTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
     rv->addWidget(rxTitle);
 
@@ -483,8 +470,9 @@ void PatientDashboardWidget::createRecentMedicalRecords() {
         QHBoxLayout* mhl = new QHBoxLayout(mItem);
         mhl->setContentsMargins(14, 10, 14, 10);
 
-        QLabel* pill = new QLabel("💊", mItem);
-        pill->setFixedWidth(24);
+        QLabel* pill = new QLabel("•", mItem);
+        pill->setStyleSheet("color: #4B94F2; font-size: 18px; font-weight: bold;");
+        pill->setFixedWidth(16);
         QVBoxLayout* mi = new QVBoxLayout();
         mi->setSpacing(2);
         QLabel* mName = new QLabel(med.name, mItem);
@@ -504,9 +492,9 @@ void PatientDashboardWidget::createRecentMedicalRecords() {
     QPushButton* btnRx = new QPushButton("Xem tất cả đơn thuốc →", rxCard);
     btnRx->setCursor(Qt::PointingHandCursor);
     btnRx->setStyleSheet(
-        "QPushButton { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;"
+        "QPushButton { background: #ACDEF2; color: #4B94F2; border: 1px solid #C2E7DA;"
         "border-radius: 8px; font-size: 13px; font-weight: 600; padding: 10px 0; }"
-        "QPushButton:hover { background: #DBEAFE; }"
+        "QPushButton:hover { background: #D0EFE4; }"
     );
     rv->addWidget(btnRx);
 
@@ -523,7 +511,7 @@ void PatientDashboardWidget::createHealthTimeline() {
     vl->setContentsMargins(24, 20, 24, 20);
     vl->setSpacing(16);
 
-    QLabel* title = new QLabel("🕐  Lịch Sử Hoạt Động Sức Khỏe", section);
+    QLabel* title = new QLabel("Lịch Sử Hoạt Động Sức Khỏe", section);
     title->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
     vl->addWidget(title);
 
@@ -537,11 +525,11 @@ void PatientDashboardWidget::createHealthTimeline() {
     };
 
     QList<TimelineItem> items = {
-        { "15/06/2026", "Khám bệnh", "Nội khoa — BS. Nguyễn Văn An — Viêm họng cấp",       "#00966C" },
-        { "10/06/2026", "Kết quả xét nghiệm", "Xét nghiệm máu toàn phần — Kết quả bình thường", "#2563EB" },
-        { "02/06/2026", "Lịch hẹn",  "Tim mạch — BS. Trần Thị Bình — Kiểm tra định kỳ",    "#D97706" },
-        { "20/05/2026", "Cấp đơn thuốc", "Vitamin tổng hợp — Liệu trình 30 ngày",          "#7C3AED" },
-        { "05/05/2026", "Khám bệnh", "Da liễu — BS. Lê Minh Tuấn — Điều trị mụn trứng cá","#00966C" },
+        { "15/06/2026", "Khám bệnh", "Nội khoa — BS. Nguyễn Văn An — Viêm họng cấp",       "#4B94F2" },
+        { "10/06/2026", "Kết quả xét nghiệm", "Xét nghiệm máu toàn phần — Kết quả bình thường", "#4B94F2" },
+        { "02/06/2026", "Lịch hẹn",  "Tim mạch — BS. Trần Thị Bình — Kiểm tra định kỳ",    "#4B94F2" },
+        { "20/05/2026", "Cấp đơn thuốc", "Vitamin tổng hợp — Liệu trình 30 ngày",          "#4B94F2" },
+        { "05/05/2026", "Khám bệnh", "Da liễu — BS. Lê Minh Tuấn — Điều trị mụn trứng cá","#4B94F2" },
     };
 
     for (int i = 0; i < items.size(); ++i) {
@@ -604,8 +592,9 @@ void PatientDashboardWidget::createHealthTimeline() {
 // =============================================================================
 QFrame* PatientDashboardWidget::makeCard(QWidget* parent) {
     QFrame* card = new QFrame(parent ? parent : m_scrollContent);
+    card->setObjectName("DashboardCard");
     card->setStyleSheet(
-        "QFrame {"
+        "QFrame#DashboardCard {"
         "   background-color: #FFFFFF;"
         "   border: 1px solid #E5E7EB;"
         "   border-radius: 14px;"

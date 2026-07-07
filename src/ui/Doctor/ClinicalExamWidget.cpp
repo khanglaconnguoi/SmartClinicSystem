@@ -63,7 +63,8 @@ void ClinicalExamWidget::setupUi() {
     // 2. PATIENT INFO & QUICK ACTIONS PANEL
     // =========================================================================
     QFrame* infoCard = new QFrame(this);
-    infoCard->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }");
+    infoCard->setObjectName("InfoCard");
+    infoCard->setStyleSheet("QFrame#InfoCard { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }");
     QVBoxLayout* infoCardLayout = new QVBoxLayout(infoCard);
     infoCardLayout->setContentsMargins(16, 12, 16, 12);
     infoCardLayout->setSpacing(8);
@@ -141,7 +142,7 @@ void ClinicalExamWidget::setupUi() {
     m_btnPrint = new QPushButton("🖨️ IN PHIẾU", infoCard);
 
     QPushButton* actionBtns[] = { m_btnNew, m_btnSave, m_btnFinish, m_btnCancel, m_btnHistory, m_btnCallPatient, m_btnPrint };
-    QString colors[] = { "#00966C", "#2563EB", "#059669", "#DC2626", "#4B5563", "#7C3AED", "#0891B2" };
+    QString colors[] = { "#4B94F2", "#2563EB", "#059669", "#DC2626", "#4B5563", "#7C3AED", "#0891B2" };
 
     for (int i = 0; i < 7; ++i) {
         actionBtns[i]->setCursor(Qt::PointingHandCursor);
@@ -184,9 +185,10 @@ void ClinicalExamWidget::setupUi() {
 
     // 3A. SUB-SIDEBAR TRÁI
     QFrame* subSidebar = new QFrame(this);
+    subSidebar->setObjectName("SubSidebar");
     subSidebar->setFixedWidth(180);
     subSidebar->setStyleSheet(
-        "QFrame { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }"
+        "QFrame#SubSidebar { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }"
         "QPushButton { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; color: #4B5563; background: transparent; }"
         "QPushButton:hover { background-color: #F3F4F6; color: #007A7E; }"
         "QPushButton#activeSub { background-color: #E0F2FE; color: #0369A1; font-weight: bold; }"
@@ -216,8 +218,9 @@ void ClinicalExamWidget::setupUi() {
 
     // 3B. FORM NHẬP LIỆU CHÍNH (GIỮA)
     QFrame* mainForm = new QFrame(this);
+    mainForm->setObjectName("MainForm");
     mainForm->setStyleSheet(
-        "QFrame { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }"
+        "QFrame#MainForm { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }"
         "QLabel { font-size: 12px; font-weight: bold; color: #374151; border: none; background: transparent; }"
         "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; }"
         "QLineEdit:focus { border: 1px solid #007A7E; background-color: #F0FDFA; }"
@@ -243,7 +246,9 @@ void ClinicalExamWidget::setupUi() {
 
     // Khối các chỉ số sinh tồn (Chỉ số)
     QFrame* vitalBox = new QFrame(mainForm);
-    vitalBox->setStyleSheet("QFrame { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; }");
+    vitalBox->setObjectName("VitalBox");
+    vitalBox->setStyleSheet("QFrame#VitalBox { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; }"
+                            "QLabel { border: none; background: transparent; }");
     QGridLayout* vitalGrid = new QGridLayout(vitalBox);
     vitalGrid->setContentsMargins(12, 12, 12, 12);
     vitalGrid->setSpacing(10);
@@ -340,8 +345,9 @@ void ClinicalExamWidget::setupUi() {
 
     // 3C. PANEL HỒ SƠ CHUYÊN MÔN (PHẢI)
     QFrame* rightPanel = new QFrame(this);
+    rightPanel->setObjectName("RightPanel");
     rightPanel->setStyleSheet(
-        "QFrame { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }"
+        "QFrame#RightPanel { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }"
         "QLabel { font-size: 12px; font-weight: bold; color: #111827; border: none; background: transparent; }"
         "QTextEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #374151; }"
         "QTextEdit:focus { border: 1px solid #007A7E; }"

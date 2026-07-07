@@ -212,13 +212,13 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
                 specialty, licenseNumber, experienceYears, consultationFee, bio
             );
         }
-            // case UserRole::Nurse: {
-            //     //return std::make_shared<Nurse>(id, username, passwordHash, full_name, role);
-            // }
-            // case UserRole::Receptionist: {
-            // //     return std::make_shared<Receptionist>(id, username, passwordHash, full_name,
-            // role);
-            // }
+        case UserRole::Admin:
+        case UserRole::Nurse:
+        case UserRole::Receptionist: {
+            return std::make_shared<SystemUser>(
+                staffId, staffCode, passwordHash, fullName, avatar, role, isActive
+            );
+        }
     }
     return nullptr;
 }

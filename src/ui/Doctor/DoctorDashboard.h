@@ -47,6 +47,8 @@ private:
     void buildSettingsPage();
     void buildClinicalExamPage();
 
+    QFrame* makeCard(QWidget* parent = nullptr);
+
     // Hàm helper vẽ các thành phần trong trang Overview
     void createDoctorCards(QWidget* parentPage, QVBoxLayout* pageLayout);
     void createDoctorCharts(QWidget* parentPage, QVBoxLayout* pageLayout);
