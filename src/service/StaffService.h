@@ -101,8 +101,8 @@ public:
     }
 
 
-    bool hireNewDoctor(const DoctorInputDTO& doctor);
-    bool hireNewNurse(const NurseInputDTO& nurse);
+    QString hireNewDoctor(const DoctorInputDTO& doctor);
+    QString hireNewNurse(const NurseInputDTO& nurse);
     //bool hireNewReceptionist(/*...*/);
 
     QString editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId);

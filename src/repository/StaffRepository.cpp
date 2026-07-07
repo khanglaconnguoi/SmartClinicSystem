@@ -1,10 +1,11 @@
 #include "StaffRepository.h"
-#include "DatabaseManager.h"
-#include "model/Doctor.h"
+
 #include <QDir>
 #include <QIODevice>
-#include <QDir>
+#include <QSqlError>
 
+#include "DatabaseManager.h"
+#include "model/Doctor.h"
 
 bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId) {
     QString insert = R"(
@@ -44,11 +45,10 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO& staff, int& staffId)
         staff.shift
     };
 
-    if (!DatabaseManager::getInstance().executeQuery(insert, params)) { return false; }
+    QSqlQuery query = DatabaseManager::getInstance().executeQuery(insert, params);
+    if (query.lastError().isValid()) { return false; }
 
-    QSqlQuery lastId = DatabaseManager::getInstance().selectQuery("SELECT last_insert_rowid()");
-    if (!lastId.next()) return false;
-    staffId = lastId.value(0).toInt();
+    staffId = query.lastInsertId().toInt();
     return true;
 }
 
@@ -97,7 +97,7 @@ bool StaffRepository::insertDoctor(const DoctorInsertDTO& doctor) {
         doctor.bio
     };
 
-    if (!db.executeQuery(insert, params)) {
+    if (db.executeQuery(insert, params).lastError().isValid()) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::insertDoctor - Lỗi ghi bảng doctor_profiles";
         return false;
@@ -134,7 +134,7 @@ bool StaffRepository::insertNurse(const NurseInsertDTO& nurse) {
         nurse.certification
     };
 
-    if (!db.executeQuery(insert, params)) {
+    if (db.executeQuery(insert, params).lastError().isValid()) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::insertNurse - Lỗi ghi bảng nurse_profiles";
         return false;
@@ -175,7 +175,8 @@ bool StaffRepository::updateStaff(const StaffUpdateDTO& staff) {
         staff.staffId
     };
 
-    if (!DatabaseManager::getInstance().executeQuery(sql, params)) return false;
+    if (DatabaseManager::getInstance().executeQuery(sql, params).lastError().isValid())
+        return false;
     return true;
 }
 
@@ -207,7 +208,7 @@ bool StaffRepository::updateDoctor(const DoctorUpdateDTO& doctor) {
         doctor.staffId
     };
 
-    if (!db.executeQuery(sql, params)) {
+    if (db.executeQuery(sql, params).lastError().isValid()) {
         db.rollbackTransaction();
         return false;
     }
@@ -234,7 +235,7 @@ DatabaseManager& db = DatabaseManager::getInstance();
 
     QVariantList params = {nurse.nurseLevel, nurse.certification, nurse.staffId};
 
-    if (!db.executeQuery(sql, params)) {
+    if (db.executeQuery(sql, params).lastError().isValid()) {
         db.rollbackTransaction();
         return false;
     }
@@ -250,7 +251,7 @@ bool StaffRepository::deactivate(int staffId) {
  
     DatabaseManager& db = DatabaseManager::getInstance();
     if (!db.beginTransaction()) return false;
-    if (!db.executeQuery(sql, { staffId })) {
+    if (db.executeQuery(sql, { staffId }).lastError().isValid()) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::deactivate - Lỗi update staff_id:" << staffId;
         return false;
@@ -263,7 +264,7 @@ bool StaffRepository::reactivate(int staffId) {
  
     DatabaseManager& db = DatabaseManager::getInstance();
     if (!db.beginTransaction()) return false;
-    if (!db.executeQuery(sql, { staffId })) {
+    if (db.executeQuery(sql, { staffId }).lastError().isValid()) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::reactivate - Lỗi update staff_id:" << staffId;
         return false;
@@ -710,11 +711,11 @@ bool StaffRepository::updatePasswordInformation(
     params << (mustChangePassword ? 1 : 0);
     params << userId;
 
-    if (!DatabaseManager::getInstance().executeQuery(sql, params)) {
+    if (db.executeQuery(sql, params).lastError().isValid()) {
         db.rollbackTransaction();
         qWarning() << "StaffRepository::updatePasswordInformation - Lỗi ghi bảng staff";
         return false;
-    };
+    }
 
     if (!db.commitTransaction()) return false;
     return true;

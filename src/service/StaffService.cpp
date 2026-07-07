@@ -279,30 +279,32 @@ QString StaffService::generateRandomPassword() const {
     return password;
 }
 
-bool StaffService::hireNewDoctor(const DoctorInputDTO& doctor) {
-    if (!validateDoctorInput(doctor).isEmpty()) {
-        return false;
-    }
+QString StaffService::hireNewDoctor(const DoctorInputDTO& doctor) {
+    QString validationError = validateDoctorInput(doctor);
+    if (!validationError.isEmpty()) { return validationError; }
 
-    return this->m_staffRepository->insertDoctor({
-        doctor, 
-        generateStaffCode(UserRole::Doctor), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR))
-    });
+    bool success =
+            this->m_staffRepository->insertDoctor({doctor, generateStaffCode(UserRole::Doctor),
+                    QString::fromStdString(bcrypt::generateHash(
+                            generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR))});
+
+    if (!success) { return "Failed to insert doctor into the database."; }
+
+    return "";
 }
 
-bool StaffService::hireNewNurse(const NurseInputDTO& nurse) {
-    if (!validateNurseInput(nurse).isEmpty()) {
-        return false;
-    }
+QString StaffService::hireNewNurse(const NurseInputDTO& nurse) {
+    QString validationError = validateNurseInput(nurse);
+    if (!validationError.isEmpty()) { return validationError; }
 
-    return this->m_staffRepository->insertNurse({
-        nurse,
-        generateStaffCode(UserRole::Nurse), 
-        QString::fromStdString(bcrypt::generateHash(generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR))
-    });
+    bool success = this->m_staffRepository->insertNurse({nurse, generateStaffCode(UserRole::Nurse),
+            QString::fromStdString(bcrypt::generateHash(
+                    generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR))});
+
+    if (!success) { return "Failed to insert nurse into the database."; }
+
+    return "";
 }
-
 
 QString StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
     QString err = validateStaffBaseInput(staffInformation, staffId);
