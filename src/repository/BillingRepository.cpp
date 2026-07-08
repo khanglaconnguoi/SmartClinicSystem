@@ -85,7 +85,7 @@ bool BillingRepository::insertInvoice(const InvoiceInsertDTO &dto) {
                    << item.unitPrice
                    << item.subtotal;
 
-        if (!db.executeQuery(itemSql, itemParams)) {
+        if (!db.executeQuery(itemSql, itemParams).isActive()) {
             db.rollbackTransaction();
             return false;
         }
@@ -116,14 +116,14 @@ bool BillingRepository::updateInvoice(const InvoiceUpdateDTO &dto) {
            << dto.totalAmount
            << dto.invoiceId;
 
-    if (!db.executeQuery(sql, params)) {
+    if (!db.executeQuery(sql, params).isActive()) {
         db.rollbackTransaction();
         return false;
     }
 
     // Replace items
     QString delItemSql = "DELETE FROM invoice_items WHERE invoice_id = ?";
-    if (!db.executeQuery(delItemSql, {dto.invoiceId})) {
+    if (!db.executeQuery(delItemSql, {dto.invoiceId}).isActive()) {
         db.rollbackTransaction();
         return false;
     }
@@ -144,7 +144,7 @@ bool BillingRepository::updateInvoice(const InvoiceUpdateDTO &dto) {
                    << item.unitPrice
                    << item.subtotal;
 
-        if (!db.executeQuery(itemSql, itemParams)) {
+        if (!db.executeQuery(itemSql, itemParams).isActive()) {
             db.rollbackTransaction();
             return false;
         }
@@ -156,7 +156,7 @@ bool BillingRepository::updateInvoice(const InvoiceUpdateDTO &dto) {
 bool BillingRepository::cancelInvoice(int invoiceId) {
     DatabaseManager &db = DatabaseManager::getInstance();
     QString sql = "UPDATE invoices SET status = 'CANCELLED' WHERE invoice_id = ?";
-    return db.executeQuery(sql, {invoiceId});
+    return db.executeQuery(sql, {invoiceId}).isActive();
 }
 
 std::optional<InvoiceResultDTO> BillingRepository::getInvoiceByRecordId(int recordId) {

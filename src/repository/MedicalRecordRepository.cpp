@@ -96,14 +96,14 @@ bool MedicalRecordRepository::updateMedicalRecord(const MedicalRecordUpdateDTO &
     dto.recordId
   };
 
-  if (!db.executeQuery(sql, params)) {
+  if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     return false;
   }
 
   // Delete old diagnoses and insert new ones
   const QString delDiagSql = "DELETE FROM diagnoses WHERE record_id = ?";
-  if (!db.executeQuery(delDiagSql, {dto.recordId})) {
+  if (!db.executeQuery(delDiagSql, {dto.recordId}).isActive()) {
     db.rollbackTransaction();
     return false;
   }
@@ -119,7 +119,7 @@ bool MedicalRecordRepository::updateMedicalRecord(const MedicalRecordUpdateDTO &
 bool MedicalRecordRepository::softDeleteMedicalRecord(int recordId) {
   DatabaseManager &db = DatabaseManager::getInstance();
   const QString sql = "UPDATE medical_records SET is_deleted = 1 WHERE record_id = ?";
-  return db.executeQuery(sql, {recordId});
+  return db.executeQuery(sql, {recordId}).isActive();
 }
 
 bool MedicalRecordRepository::insertDiagnoses(int recordId, const QList<Diagnosis> &diagnoses) {
@@ -136,7 +136,7 @@ bool MedicalRecordRepository::insertDiagnoses(int recordId, const QList<Diagnosi
       d.description,
       d.severity.toUpper()
     };
-    if (!db.executeQuery(sql, params)) {
+    if (!db.executeQuery(sql, params).isActive()) {
       return false;
     }
   }

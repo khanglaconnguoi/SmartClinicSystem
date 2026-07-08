@@ -122,7 +122,7 @@ bool PatientRepository::insertOutPatient(const OutPatientInsertDTO &dto) {
       dto.status,
   };
 
-  if (!db.executeQuery(sql, params)) {
+  if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     qWarning()
         << "PatientRepository::insertOutPatient - INSERT out_patients thất bại";
@@ -198,7 +198,7 @@ bool PatientRepository::insertInPatient(const InPatientInsertDTO &dto) {
       dto.status,
   };
 
-  if (!db.executeQuery(sql, params)) {
+  if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     qWarning()
         << "PatientRepository::insertInPatient - INSERT in_patients thất bại";
@@ -277,7 +277,7 @@ bool PatientRepository::insertEmergencyPatient(
       dto.status,
   };
 
-  if (!db.executeQuery(sql, params)) {
+  if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     qWarning() << "PatientRepository::insertEmergencyPatient - INSERT "
                   "emergency_patients_admissions thất bại";
@@ -343,7 +343,7 @@ bool PatientRepository::updatePatient(const PatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
   QString sql = R"(
@@ -360,7 +360,7 @@ bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
   QString sql = R"(
@@ -385,7 +385,7 @@ bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::updateEmergencyPatient(
     const EmergencyPatientUpdateDTO &dto) {
@@ -413,7 +413,7 @@ bool PatientRepository::updateEmergencyPatient(
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Search
@@ -739,7 +739,7 @@ bool PatientRepository::softDeletePatient(int patientId) {
 
   QVariantList params = {patientId};
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::restorePatient(int patientId) {
   QString sql = R"(
@@ -751,7 +751,7 @@ bool PatientRepository::restorePatient(int patientId) {
 
   QVariantList params = {patientId};
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::isPatientSoftDeleted(int patientId) {
   QString sql = R"(
@@ -788,7 +788,7 @@ bool PatientRepository::insertAllergies(const QList<AllergyInsertDTO> &items) {
         item.severity.isEmpty() ? "MODERATE" : item.severity,
         item.notes.isEmpty() ? QVariant() : item.notes,
     };
-    if (!db.executeQuery(sql, params)) {
+    if (!db.executeQuery(sql, params).isActive()) {
       qWarning() << "PatientRepository::insertAllergies - INSERT thất bại cho:"
                  << item.allergenName;
       return false;
@@ -801,7 +801,7 @@ bool PatientRepository::deactivateAllergies(int patientId) {
   const QString sql = R"(
     UPDATE patient_allergies SET is_active = 0 WHERE patient_id = ?
   )";
-  return DatabaseManager::getInstance().executeQuery(sql, {patientId});
+  return DatabaseManager::getInstance().executeQuery(sql, {patientId}).isActive();
 }
 
 QList<AllergyResultDTO> PatientRepository::getAllergiesByPatientId(int patientId) {
@@ -864,7 +864,7 @@ bool PatientRepository::upsertInsurance(const InsuranceInsertDTO &dto) {
       dto.notes.isEmpty()      ? QVariant() : dto.notes,
   };
 
-  if (!DatabaseManager::getInstance().executeQuery(sql, params)) {
+  if (!DatabaseManager::getInstance().executeQuery(sql, params).isActive()) {
     qWarning() << "PatientRepository::upsertInsurance - UPSERT thất bại cho patient_id:"
                << dto.patientId;
     return false;

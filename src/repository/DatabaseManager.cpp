@@ -602,14 +602,14 @@ bool DatabaseManager::createTables() {
   return true;
 }
 
-bool DatabaseManager::executeQuery(const QString &sql,
-                                   const QVariantList &params) {
+QSqlQuery DatabaseManager::executeQuery(const QString &sql,
+                                        const QVariantList &params) {
   QSqlQuery query(m_db);
 
   if (!query.prepare(sql)) {
     qDebug() << "Lỗi prepare query:" << query.lastError().text()
              << "| SQL:" << sql;
-    return false;
+    return query; // Trả về đối tượng query lỗi
   }
 
   for (const QVariant &param : params) {
@@ -619,10 +619,9 @@ bool DatabaseManager::executeQuery(const QString &sql,
   if (!query.exec()) {
     qDebug() << "Lỗi exec query:" << query.lastError().text()
              << "| SQL:" << sql;
-    return false;
   }
 
-  return true;
+  return query;
 }
 
 QSqlQuery DatabaseManager::selectQuery(const QString &sql,
