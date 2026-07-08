@@ -87,6 +87,8 @@ class StaffRepository {
     std::optional<std::shared_ptr<SystemUser>> findById(int staffId) const;
     std::optional<std::shared_ptr<SystemUser>> findByStaffCode(const QString& staffCode) const;
 
+    QList<QPair<QString, QString>> getDoctorsBySpecialty(const QString& specialty) const;
+
     static std::optional<QString> getLatestIdByYear(int year);
 
     // // --- Danh sách & Tìm kiếm ---

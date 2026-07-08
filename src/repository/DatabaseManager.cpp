@@ -386,7 +386,7 @@ QSqlQuery DatabaseManager::selectQuery(const QString &sql,
 }
 
 QList<DatabaseManager::AppointmentRecord>
-DatabaseManager::getDoctorAppointments(int doctorId, const QString &date) {
+DatabaseManager::getDoctorAppointments(const QString &doctorId, const QString &date) {
   QList<AppointmentRecord> list;
 
   QString sql = R"(
@@ -414,7 +414,7 @@ DatabaseManager::getDoctorAppointments(int doctorId, const QString &date) {
     AppointmentRecord rec;
     rec.appointmentId = query.value(0).toInt();
     rec.patientId = query.value(1).toInt();
-    rec.doctorId = query.value(2).toInt();
+    rec.doctorId = query.value(2).toString();
     rec.appointmentDate = query.value(3).toString();
     rec.startTime = query.value(4).toString();
     rec.endTime = query.value(5).toString();
@@ -440,4 +440,40 @@ bool DatabaseManager::updateAppointmentStatus(int appointmentId,
   return executeQuery(
       "UPDATE appointments SET status = ? WHERE appointment_id = ?",
       {status, appointmentId});
+}
+
+std::optional<DatabaseManager::PatientRecord> DatabaseManager::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) {
+    QString sql = "SELECT patient_id, patient_code, full_name, phone FROM patients WHERE is_deleted = 0 AND (";
+    QVariantList params;
+    QStringList conditions;
+    if (!phone.isEmpty()) {
+        conditions << "phone = ?";
+        params << phone;
+    }
+    if (!citizenId.isEmpty()) {
+        conditions << "citizen_id = ?";
+        params << citizenId;
+    }
+    if (conditions.isEmpty()) return std::nullopt;
+    sql += conditions.join(" OR ") + ")";
+    
+    QSqlQuery query = selectQuery(sql, params);
+    if (query.next()) {
+        PatientRecord rec;
+        rec.patientId = query.value(0).toInt();
+        rec.patientCode = query.value(1).toString();
+        rec.fullName = query.value(2).toString();
+        rec.phone = query.value(3).toString();
+        return rec;
+    }
+    return std::nullopt;
+}
+
+
+bool DatabaseManager::createAppointment(int patientId, const QString &doctorCode, int createdBy, const QString &date, const QString &startTime, const QString &reason) {
+    QString sql = R"(
+        INSERT INTO appointments (patient_id, doctor_id, created_by, appointment_date, start_time, status, reason)
+        VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?)
+    )";
+    return executeQuery(sql, {patientId, doctorCode, createdBy, date, startTime, reason});
 }

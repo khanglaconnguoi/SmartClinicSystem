@@ -489,3 +489,28 @@ bool StaffRepository::updateNurse(const NurseInsertDTO& nurse) {
     if (!db.commitTransaction()) return false;
     return true;
 }
+
+QList<QPair<QString, QString>> StaffRepository::getDoctorsBySpecialty(const QString& specialty) const {
+    QList<QPair<QString, QString>> doctors;
+    QString sql = R"(
+        SELECT s.staff_code, s.full_name 
+        FROM staff s
+        JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
+        WHERE s.role = 'DOCTOR' AND s.is_active = 1 AND s.is_deleted = 0
+    )";
+    
+    QVariantList params;
+    if (!specialty.isEmpty() && specialty != "Tất cả") {
+        sql += " AND dp.specialty = ?";
+        params << specialty;
+    }
+    
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+    while (query.next()) {
+        QString staffCode = query.value(0).toString();
+        QString fullName = query.value(1).toString();
+        doctors.append(qMakePair(staffCode, fullName));
+    }
+    
+    return doctors;
+}
