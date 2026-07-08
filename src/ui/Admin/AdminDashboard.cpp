@@ -52,25 +52,19 @@ void AdminDashboardWidget::buildSidebar() {
       new QPushButton("Quản lý Bệnh nhân", m_sidebarFrame);
   btnManagePatients->setCursor(Qt::PointingHandCursor);
 
-  QString defaultStyle =
-      "QPushButton { background-color: transparent; color: #4B5563; "
-      "font-weight: 500; text-align: left; padding: 10px 15px; border: none; "
-      "border-radius: 8px; } QPushButton:hover { background-color: #E5E7EB; "
-      "color: #111827; }";
-  QString activeStyle =
-      "QPushButton#activeMenu { background-color: #ACDEF2; color: #4B94F2; "
-      "font-weight: bold; border-left: 4px solid #4B94F2; }";
-
-  btnManageDoctors->setStyleSheet(defaultStyle + activeStyle);
-  btnManageNurses->setStyleSheet(defaultStyle + activeStyle);
-  btnManagePatients->setStyleSheet(defaultStyle + activeStyle);
-
   btnManageDoctors->setObjectName("activeMenu");
 
   m_sidebarLayout->addWidget(btnManageDoctors);
   m_sidebarLayout->addWidget(btnManageNurses);
   m_sidebarLayout->addWidget(btnManagePatients);
   m_sidebarLayout->addStretch();
+  
+  m_btnLogout = new QPushButton("Đăng xuất", m_sidebarFrame);
+  m_btnLogout->setStyleSheet("QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; color: #D32F2F; border: none; border-radius: 0px; background-color: transparent; font-weight: bold; }"
+                             "QPushButton:hover { background-color: #FFEBEE; }");
+  m_btnLogout->setCursor(Qt::PointingHandCursor);
+  m_sidebarLayout->addWidget(m_btnLogout);
+  connect(m_btnLogout, &QPushButton::clicked, this, &BaseDashboardWidget::logoutRequested);
 
   connect(btnManageDoctors, &QPushButton::clicked, this,
           &AdminDashboardWidget::showManageDoctorsList);

@@ -1,16 +1,30 @@
 #include "MainWindow.h"
 #include "../model/IAuthenticatable.h"
 #include "../model/SystemUser.h"
+#include "Admin/AdminDashboard.h"
 #include "Doctor/DoctorDashboard.h"
 #include "Patient/PatientDashboard.h"
-#include "Admin/AdminDashboard.h"
+#include "Reception/ReceptionDashboard.h"
+#include <QDialog>
+#include <QFrame>
+#include <QGuiApplication>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QScreen>
+#include <QVBoxLayout>
+
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setWindowTitle("Smart Clinic System");
-  resize(1000, 600);
+  this->setFixedSize(1000, 600);
+  
+  QScreen *screen = QGuiApplication::primaryScreen();
+  if (screen) {
+      this->move(screen->geometry().center() - this->rect().center());
+  }
+  
   m_authService = std::make_shared<AuthService>();
   auto staffRepo = std::make_shared<StaffRepository>();
   m_staffService = std::make_shared<StaffService>(staffRepo);
@@ -34,9 +48,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
                 } else if (staffUser->getRole() == UserRole::Admin) {
                   switchToAdminDashboard(user);
                 } else if (staffUser->getRole() == UserRole::Nurse) {
-                  QMessageBox::information(this, "Thông báo", "Giao diện Điều dưỡng đang được phát triển.");
+                  QMessageBox::information(
+                      this, "Thông báo",
+                      "Giao diện Điều dưỡng đang được phát triển.");
                 } else if (staffUser->getRole() == UserRole::Receptionist) {
-                  QMessageBox::information(this, "Thông báo", "Giao diện Lễ tân đang được phát triển.");
+                  switchToReceptionDashboard(user);
                 }
               }
             } else if (user->getAccountType() == AccountType::Patient) {
@@ -61,6 +77,24 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget *page) {
           &MainWindow::handleGlobalLogout);
 
   m_stackedWidget->setCurrentIndex(newIndex);
+
+  this->setMinimumSize(1000, 600);
+  this->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+
+  QScreen *screen = QGuiApplication::primaryScreen();
+  if (screen) {
+    QRect screenGeometry = screen->geometry();
+    int width = screenGeometry.width() * 0.85;
+    int height = screenGeometry.height() * 0.85;
+
+    // preventing further resize.
+    this->setFixedSize(width, height);
+
+    // Center the window on the screen
+    this->move(screenGeometry.center() - this->rect().center());
+  }
+
+  this->showNormal();
 }
 
 void MainWindow::switchToDoctorDashboard(
@@ -69,74 +103,102 @@ void MainWindow::switchToDoctorDashboard(
   registerDashboardPage(doctorDash);
 }
 
-void MainWindow::switchToAdminDashboard(std::shared_ptr<IAuthenticatable> user) {
+void MainWindow::switchToAdminDashboard(
+    std::shared_ptr<IAuthenticatable> user) {
   try {
-    AdminDashboardWidget *adminDashboard = new AdminDashboardWidget(user, m_staffService, this);
-    connect(adminDashboard, &BaseDashboardWidget::logoutRequested, this, &MainWindow::handleGlobalLogout);
+    AdminDashboardWidget *adminDashboard =
+        new AdminDashboardWidget(user, m_staffService, this);
     registerDashboardPage(adminDashboard);
-    this->showMaximized();
-  } catch (const std::exception& e) {
-    QMessageBox::critical(this, "Error", QString("Exception: %1").arg(e.what()));
+  } catch (const std::exception &e) {
+    QMessageBox::critical(this, "Error",
+                          QString("Exception: %1").arg(e.what()));
   } catch (...) {
-    QMessageBox::critical(this, "Error", "Unknown exception during AdminDashboard creation.");
+    QMessageBox::critical(this, "Error",
+                          "Unknown exception during AdminDashboard creation.");
   }
 }
 
-void MainWindow::switchToPatientDashboard(std::shared_ptr<IAuthenticatable> user) {
+void MainWindow::switchToReceptionDashboard(
+    std::shared_ptr<IAuthenticatable> user) {
+  auto *receptionDash = new ReceptionDashboardWidget(user, this);
+  registerDashboardPage(receptionDash);
+}
+
+void MainWindow::switchToPatientDashboard(
+    std::shared_ptr<IAuthenticatable> user) {
   auto *patientDash = new PatientDashboardWidget(user, this);
   registerDashboardPage(patientDash);
-  this->showMaximized();
 }
 
 void MainWindow::handleGlobalLogout() {
-  QMessageBox msgBox(this);
-  msgBox.setWindowTitle("Xác nhận đăng xuất");
+  QDialog dialog(this);
+  dialog.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+  dialog.setAttribute(Qt::WA_TranslucentBackground);
+  dialog.setFixedSize(350, 150);
 
-  msgBox.setText("<p style='color: #202124; font-family: \"Arial\"; font-size: "
-                 "15px; font-weight: 500; margin-left: 10px;'>"
-                 "Bạn có chắc chắn muốn đăng xuất?</p>");
-  msgBox.setIcon(QMessageBox::Question);
+  QVBoxLayout *mainLayout = new QVBoxLayout(&dialog);
+  mainLayout->setContentsMargins(0, 0, 0, 0);
 
-  QPushButton *yesButton = msgBox.addButton("Đồng Ý", QMessageBox::YesRole);
-  QPushButton *noButton = msgBox.addButton("Hủy", QMessageBox::NoRole);
+  QFrame *frame = new QFrame(&dialog);
+  frame->setStyleSheet("QFrame { "
+                       "   background-color: #FFFFFF; "
+                       "   border-radius: 12px; "
+                       "   border: 1px solid #EAEAEA; "
+                       "}");
+  QVBoxLayout *frameLayout = new QVBoxLayout(frame);
+  frameLayout->setContentsMargins(20, 20, 20, 20);
+  frameLayout->setSpacing(15);
 
-  yesButton->setCursor(Qt::PointingHandCursor);
-  noButton->setCursor(Qt::PointingHandCursor);
+  QLabel *lblTitle = new QLabel("Xác nhận đăng xuất", frame);
+  lblTitle->setStyleSheet(
+      "font-size: 16px; font-weight: bold; color: #111827; border: none;");
+  frameLayout->addWidget(lblTitle);
 
-  msgBox.setStyleSheet(
-      "QMessageBox { "
-      "   background-color: #FFFFFF; "
-      "   border: 1px solid #EAEAEA; "
-      "   border-radius: 12px; "
-      "}"
-      "QPushButton { "
-      "   background-color: #4B94F2; "
-      "   color: #FFFFFF; "
-      "   font-family: 'Arial'; "
-      "   font-size: 13px; "
-      "   font-weight: bold; "
-      "   border: none; "
-      "   border-radius: 6px; "
-      "   padding: 8px 20px; "
-      "   min-width: 75px; "
-      "}"
-      "QPushButton:hover { background-color: #398CBF; }"
-      "QPushButton:pressed { background-color: #62B7D9; }"
-      "QPushButton[text=\"Hủy\"] { "
-      "   background-color: #F1F3F4; "
-      "   color: #5F6368; "
-      "   border: 1px solid #DADCE0; "
-      "}"
-      "QPushButton[text=\"Hủy\"]:hover { background-color: #E8EAED; color: #3C4043; }"
-      "QPushButton[text=\"Hủy\"]:pressed { background-color: #D2D6DE; }");
+  QLabel *lblMessage = new QLabel("Bạn có chắc chắn muốn đăng xuất?", frame);
+  lblMessage->setStyleSheet("font-size: 14px; color: #4B5563; border: none;");
+  frameLayout->addWidget(lblMessage);
 
-  msgBox.exec();
+  QHBoxLayout *btnLayout = new QHBoxLayout();
+  btnLayout->addStretch();
 
-  if (msgBox.clickedButton() == yesButton) {
+  QPushButton *btnCancel = new QPushButton("Hủy", frame);
+  btnCancel->setCursor(Qt::PointingHandCursor);
+  btnCancel->setStyleSheet("QPushButton { "
+                           "   background-color: #F1F3F4; color: #5F6368; "
+                           "   border: none; border-radius: 6px; padding: 8px "
+                           "20px; font-weight: bold; font-size: 13px; "
+                           "}"
+                           "QPushButton:hover { background-color: #E8EAED; }");
+
+  QPushButton *btnConfirm = new QPushButton("Đồng ý", frame);
+  btnConfirm->setCursor(Qt::PointingHandCursor);
+  btnConfirm->setStyleSheet("QPushButton { "
+                            "   background-color: #D32F2F; color: #FFFFFF; "
+                            "   border: none; border-radius: 6px; padding: 8px "
+                            "20px; font-weight: bold; font-size: 13px; "
+                            "}"
+                            "QPushButton:hover { background-color: #B71C1C; }");
+
+  btnLayout->addWidget(btnCancel);
+  btnLayout->addWidget(btnConfirm);
+  frameLayout->addLayout(btnLayout);
+
+  mainLayout->addWidget(frame);
+
+  connect(btnCancel, &QPushButton::clicked, &dialog, &QDialog::reject);
+  connect(btnConfirm, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+  if (dialog.exec() == QDialog::Accepted) {
     m_stackedWidget->setCurrentIndex(0);
 
     this->showNormal();
-    this->resize(1000, 600);
+    this->setFixedSize(1000, 600);
+    
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (screen) {
+        this->move(screen->geometry().center() - this->rect().center());
+    }
+    
     m_loginWidget->clearFields();
 
     QWidget *currentDash = m_stackedWidget->widget(1);

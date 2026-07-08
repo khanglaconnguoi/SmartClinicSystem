@@ -78,7 +78,9 @@ void PatientDashboardWidget::buildPatientSidebar() {
     m_sidebarLayout->addStretch();
 
     m_btnLogout = new QPushButton("Đăng Xuất", m_sidebarFrame);
-    m_btnLogout->setStyleSheet("color: #D93025;");
+    m_btnLogout->setStyleSheet("QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; color: #D32F2F; border: none; border-radius: 0px; background-color: transparent; font-weight: bold; }"
+                               "QPushButton:hover { background-color: #FFEBEE; }");
+    m_btnLogout->setCursor(Qt::PointingHandCursor);
     m_sidebarLayout->addWidget(m_btnLogout);
     connect(m_btnLogout, &QPushButton::clicked, this, &BaseDashboardWidget::logoutRequested);
 

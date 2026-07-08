@@ -1,5 +1,6 @@
 #include "DoctorDashboard.h"
 #include "../../model/IAuthenticatable.h"
+#include "../../model/SystemUser.h"
 #include "../../repository/DatabaseManager.h"
 #include "ClinicalExamWidget.h"
 #include <QCalendarWidget>
@@ -125,7 +126,9 @@ void DoctorDashboardWidget::buildSidebar() {
   m_sidebarLayout->addStretch();
 
   m_btnLogout = new QPushButton("Đăng Xuất", m_sidebarFrame);
-  m_btnLogout->setStyleSheet("color: #D93025;");
+  m_btnLogout->setStyleSheet("QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; color: #D32F2F; border: none; border-radius: 0px; background-color: transparent; font-weight: bold; }"
+                             "QPushButton:hover { background-color: #FFEBEE; }");
+  m_btnLogout->setCursor(Qt::PointingHandCursor);
   m_sidebarLayout->addWidget(m_btnLogout);
 
   connect(m_btnLogout, &QPushButton::clicked, this,
@@ -643,7 +646,10 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
 }
 
 void DoctorDashboardWidget::refreshAppointmentsTables() {
-  int docId = m_currentUser ? m_currentUser->getAccountId() : 1;
+  QString docId = "BS01"; // Fallback default
+  if (auto sysUser = std::dynamic_pointer_cast<SystemUser>(m_currentUser)) {
+      docId = sysUser->getStaffCode();
+  }
   QString todayStr = QDate::currentDate().toString("yyyy-MM-dd");
 
   // 1. Đồng bộ dữ liệu m_patientTable (Danh sách khám hôm nay)

@@ -23,6 +23,7 @@ private:
     void switchToDoctorDashboard(std::shared_ptr<IAuthenticatable> user);
     void switchToPatientDashboard(std::shared_ptr<IAuthenticatable> user);
     void switchToAdminDashboard(std::shared_ptr<IAuthenticatable> user);
+    void switchToReceptionDashboard(std::shared_ptr<IAuthenticatable> user);
 
     QStackedWidget* m_stackedWidget;
     LoginDialog* m_loginWidget;

@@ -24,9 +24,9 @@ void BaseDashboardWidget::setupSidebarFrame() {
     
     m_sidebarFrame->setStyleSheet(
         "QFrame#Sidebar { background-color: #FFFFFF; border-right: 1px solid #EAEAEA; }"
-        "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; color: #5F6368; background: transparent; font-weight: 500; }"
-        "QPushButton:hover { background-color: #F1F3F4; color: #4B94F2; }"
-        "QPushButton#activeBtn { background-color: #ACDEF2; color: #4B94F2; font-weight: bold; }"
+        "QFrame#Sidebar QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; border: none; border-radius: 0px; color: #5F6368; background: transparent; font-weight: 500; }"
+        "QFrame#Sidebar QPushButton:hover { background-color: #F1F3F4; color: #202124; }"
+        "QFrame#Sidebar QPushButton#activeBtn, QFrame#Sidebar QPushButton#activeMenu, QFrame#Sidebar QPushButton:checked { background-color: #E8F0FE; color: #4B94F2; font-weight: bold; border-left: 4px solid #4B94F2; }"
     );
 
     m_sidebarLayout = new QVBoxLayout(m_sidebarFrame);
