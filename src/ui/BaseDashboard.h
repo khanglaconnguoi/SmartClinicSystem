@@ -8,7 +8,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QTableWidget>
-
+#include <QStackedWidget> 
+#include "ui/Patient.h"
 class BaseDashboardWidget : public QWidget {
     Q_OBJECT
 
@@ -21,7 +22,8 @@ public:
 
 signals:
     void logoutRequested();
-
+private slots:
+    void handleMenuChanged();
 protected:
     // Hàm thuần ảo để lớp con (Bác sĩ) nhảy vào cấu hình dữ liệu/vẽ hình riêng
     virtual void fillDashboardData() = 0;
@@ -44,6 +46,9 @@ protected:
     QPushButton* m_docAvatarBtn;
     // Bảng và các danh sách dùng chung
     QTableWidget* m_patientTable;   
+    QStackedWidget* m_dynamicStackedWidget;
+    QWidget* m_defaultDashboardView;
+    Patient* m_patientPage;
 
 private:
     QHBoxLayout* m_globalLayout;

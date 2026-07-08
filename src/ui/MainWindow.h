@@ -5,7 +5,7 @@
 #include <memory>
 #include "LoginDialog.h"
 #include "BaseDashboard.h"
-#include "../service/AuthService.h" 
+#include "service/AuthService.h" 
 
 class MainWindow : public QMainWindow {
     Q_OBJECT

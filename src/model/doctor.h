@@ -16,9 +16,10 @@ public:
         const QString&  staffCode,
         const QString&  passwordHash, 
         const QString&  fullName, 
-        QPixmap         avatar,
+        const QPixmap&  avatar,
         UserRole        role, 
-        bool            isActive,
+        bool            isActive, 
+        bool            mustChangePassword,
         const QString&  specialty,
         const QString&  licenseNumber,
         int             experienceYears,
@@ -32,7 +33,8 @@ public:
             fullName, 
             avatar,
             role, 
-            isActive
+            isActive,
+            mustChangePassword
         ), 
         m_specialty(specialty), 
         m_licenseNumber(licenseNumber), 
@@ -58,7 +60,7 @@ public:
 
 
     // --- Override từ SystemUser ---
-    QStringList getMenuItems() const override {
+    QStringList getMenuItems()                const override {
         return { "Dashboard", "Appointments", "Schedule", "Messages" };
     }
 
@@ -66,10 +68,38 @@ public:
         return getMenuItems().contains(moduleCode);
     }
 
-    QString getDisplayRole() const override {
+    QString getDisplayRole()                  const override {
         if (!m_specialty.isEmpty()) {
             return "Doctor " + m_specialty;
         }
         return "Doctor";
     }
+
+    std::unique_ptr<StaffPublicProfileDTO> toPublicProfile() const override;
+
+    // ── Domain Validation (thuần business logic, không cần DB) ───
+
+    /**
+     * @brief Bác sĩ có đủ điều kiện kê đơn không?
+     *        PharmacyService gọi hàm này trước khi tạo prescription.
+     *        Điều kiện: tài khoản đang hoạt động + có số chứng chỉ hành nghề.
+     */
+    bool isEligibleToPrescribe() const;
+
+    /**
+     * @brief Chuyên khoa của bác sĩ có phù hợp với yêu cầu không?
+     *        QueueService dùng để lọc bác sĩ phù hợp khi xếp hàng.
+     * @param requiredSpecialty Chuyên khoa cần tìm, rỗng = chấp nhận tất cả
+     */
+    bool matchesSpecialty(const QString& requiredSpecialty) const;
+
+    /**
+     * @brief Phí khám có hợp lệ để lập hóa đơn không?
+     *        BillingService dùng trước khi tạo invoice item "CONSULTATION".
+     */
+    bool hasValidConsultationFee() const;
+
+    // --- Hành vi đặc thù của Doctor ---
+    // bool prescribeMedication(int patientId, const std::vector<PrescriptionItem>& items);
+    // bool createMedicalRecord(int patientId, const MedicalRecord& record);
 };

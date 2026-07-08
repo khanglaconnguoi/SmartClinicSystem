@@ -1,105 +1,63 @@
 #pragma once
-#include <QDateTime>
+#include <QList>
 #include <QSqlQuery>
 #include <QString>
-#include <QPixmap>
 #include <memory>
 #include <optional>
-
 #include "model/SystemUser.h"
-
-/*
-DTO: Data Transfer Object dùng để lưu trữ thông tin cần đẩy xuống database
-*/
-
-/*
-Sử dụng struct vì nó chỉ là một cấu trúc
-để lưu thông tin đẩy vào database
-chứ không phải 1 lớp đối tượng
-*/
-
-struct StaffInsertDTO {
-    QString staffCode;
-    QString passwordHash;
-    QString fullName;
-    QPixmap avatar;
-    UserRole role;
-    Gender gender;
-    QString dateOfBirth;
-    QString citizenId;
-    QString phoneNumber;
-    QString email;
-    QString address;
-    int departmentId;
-    QString hireDate;
-    QString shift;
-};
-
-struct DoctorInsertDTO : public StaffInsertDTO {
-    QString specialty;
-    QString licenseNumber;
-    int experienceYears;
-    int consultationFee;
-    QString bio;
-};
-
-struct NurseInsertDTO : public StaffInsertDTO {
-    QString nurseLevel;
-    QString certification;
-};
-
-struct StaffSearchCriteria {
-
-    // ── Nhóm 1: Text search ─────────────────────────────────────
-    QString searchKey;
-
-    // ── Nhóm 2: Dropdown filter ──────────────────────────────────
-    std::optional<UserRole> role;       
-    QString specialty;                  
-    int     departmentId = -1;          
-    QString shift;                      
-
-    // ── Nhóm 3: Status filter ────────────────────────────────────
-    bool onlyActive     = true;
-    bool includeDeleted = false;
-};
+#include "dto/StaffDTOs.h"
 
 class StaffRepository {
-   private:
+private:
     std::shared_ptr<SystemUser> mapRowToUser(const QSqlQuery& query) const;
 
     bool insertStaffBase(const StaffInsertDTO& staff, int& staffId);
-
-   public:
+public:
+    StaffRepository() = default;
+    ~StaffRepository() = default;
     // CRUD
     bool insertStaff(const StaffInsertDTO& staff);
     bool insertDoctor(const DoctorInsertDTO& doctor);
     bool insertNurse(const NurseInsertDTO& nurse);
 
-    bool updateStaff(const StaffInsertDTO& staff);
-    bool updateDoctor(const DoctorInsertDTO& doctor);
-    bool updateNurse(const NurseInsertDTO& nurse);
+    bool updateStaff(const StaffUpdateDTO& staff);
+    bool updateDoctor(const DoctorUpdateDTO& doctor);
+    bool updateNurse(const NurseUpdateDTO& nurse);
 
     bool deactivate(int staffId);
     bool reactivate(int staffId);
 
-    // Tìm kiếm theo ID / staff code phục vụ Auth Service
-    std::optional<std::shared_ptr<SystemUser>> findById(int staffId) const;
-    std::optional<std::shared_ptr<SystemUser>> findByStaffCode(const QString& staffCode) const;
 
-    static std::optional<QString> getLatestIdByYear(int year);
+    static std::optional<QString> getLatestStaffCodeByYear(int year);
 
     // // --- Danh sách & Tìm kiếm ---
+    // Tìm kiếm cá nhân theo ID / staff code phục vụ Auth Service
+    std::shared_ptr<SystemUser> findById(int staffId) const;
+    std::shared_ptr<SystemUser> findByStaffCode(const QString& staffCode) const;
     // std::vector<std::shared_ptr<SystemUser>> findAll(bool includeInactive = false) const;
     QList<std::shared_ptr<SystemUser>> search(const StaffSearchCriteria& criteria) const;
     // std::vector<std::shared_ptr<SystemUser>> findByRole(UserRole role) const;
+
+
+    // Tìm kiếm profile theo ID / staff code
+    std::unique_ptr<StaffProfileDTO> findProfileById(int staffId) const;
+    std::unique_ptr<StaffProfileDTO> findProfileByStaffCode(const QString& staffCode) const;
+
+
+    // // --- Kiểm tra uniqueness ---
+    bool existsByCitizenId(const QString& citizenId, int excludeStaffId = -1) const;
+    bool existsByEmail(const QString& email, int excludeStaffId = -1) const;
+    bool existsByPhoneNumber(const QString& licenseNumber, int excludeStaffId = -1) const;
+    bool existsByLicenseNumber(const QString& licenseNumber, int excludeStaffId = -1) const; 
+    bool existsByStaffId(int staffId) const;
 
     // // --- Phân trang (cho QTableView) ---
     // std::vector<std::shared_ptr<SystemUser>> findPaged(int offset, int limit) const;
     // int countTotal(bool includeInactive = false) const;
 
-    // // --- Mật khẩu ---
-    // bool updatePasswordHash(int userId, const QString& newHash);
+    // --- Mật khẩu ---
+    bool updatePasswordInformation(
+            int userId, const QString& newHash, bool mustChangePassword = false);
 
     // // --- Audit Log (tính năng nâng cao Module 1) ---
     // bool logLoginAttempt(int userId, const QString& ipAddress, bool success, const QString& moduleAccessed = "");

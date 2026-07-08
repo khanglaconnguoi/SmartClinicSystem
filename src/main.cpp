@@ -1,30 +1,40 @@
-#include "ui/profile.h"
-#include "repository/DatabaseManager.h"
-#include <QApplication>
+// #include <QApplication>
+// #include <memory>
 
-int main(int argc, char *argv[]) {
-    QApplication app(argc, argv);
-    DatabaseManager::getInstance();
-    ProfileWidget profileWindow;
-    profileWindow.loadDoctorProfile("D2603");
+// #include "ui/Profile.h"
+// #include "repository/DatabaseManager.h"
+// #include "repository/StaffRepository.h"
+// #include "service/StaffService.h"
+
+// int main(int argc, char *argv[]) {
+//     QApplication app(argc, argv);
     
-    profileWindow.show();
+//     // 1. Khởi tạo kết nối DB (DatabaseManager của bạn)
+//     DatabaseManager::getInstance();
 
-    return app.exec();
-}
-/*#include "ui/Doctor/DoctorDashboard.h"
-#include "repository/DatabaseManager.h"
+//     // 2. Khởi tạo các thành phần Dependency Injection
+//     auto staffRepo = std::make_shared<StaffRepository>();
+//     auto staffService = std::make_shared<StaffService>(staffRepo);
+
+//     // 3. Khởi tạo cửa sổ Profile và tiêm (inject) StaffService vào
+//     ProfileWidget profileWindow(staffService);
+    
+//     profileWindow.loadProfile(2); 
+    
+//     profileWindow.show();
+
+//     return app.exec();
+// }
+
 #include <QApplication>
 #include "ui/MainWindow.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     QApplication app(argc, argv);
-    DatabaseManager::getInstance();
-    
-    DoctorDashboardWidget dashboardWindow(nullptr);
-    dashboardWindow.resize(1280, 800);
-    dashboardWindow.show();
+
+    MainWindow window;
+    window.show();
 
     return app.exec();
 }
-*/

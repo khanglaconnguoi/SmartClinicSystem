@@ -7,16 +7,13 @@ BaseDashboardWidget::BaseDashboardWidget(QWidget *parent)
     m_globalLayout->setContentsMargins(0, 0, 0, 0);
     m_globalLayout->setSpacing(0);
     this->setStyleSheet("background-color: #F8F9FA;");
-}
+}       
 
 void BaseDashboardWidget::initializeDashboard() {
-    // 1. Sao chép y chang cấu trúc Sidebar từ code của bạn
     setupSidebarFrame();
-    
-    // 2. Sao chép y chang cấu trúc Main Content từ code của bạn
     setupMainContentFrame();
 
-    // 🌟 SAU KHI DỰNG KHUÔN XONG -> GỌI LỚP CON ĐỂ VẼ HÌNH / ĐỔ DỮ LIỆU THỰC TẾ
+    // 🌟 Di chuyển fillDashboardData() vào widget mặc định của Dashboard
     fillDashboardData();
 }
 
@@ -45,6 +42,7 @@ void BaseDashboardWidget::setupSidebarFrame() {
     m_btnPatients = new QPushButton("👥 Patients", m_sidebarFrame);
     m_btnAppoint = new QPushButton("📅 Appointments", m_sidebarFrame);
     m_btnSetting = new QPushButton("⚙️ Settings", m_sidebarFrame);
+    
     m_sidebarLayout->addWidget(m_btnDash);
     m_sidebarLayout->addWidget(m_btnPatients);
     m_sidebarLayout->addWidget(m_btnAppoint);
@@ -56,6 +54,9 @@ void BaseDashboardWidget::setupSidebarFrame() {
     m_btnLogout->setStyleSheet("color: #D93025;"); 
     m_sidebarLayout->addWidget(m_btnLogout);
 
+    // 🌟 KẾT NỐI SỰ KIỆN CHUYỂN TRANG
+    connect(m_btnDash, &QPushButton::clicked, this, &BaseDashboardWidget::handleMenuChanged);
+    connect(m_btnPatients, &QPushButton::clicked, this, &BaseDashboardWidget::handleMenuChanged);
     connect(m_btnLogout, &QPushButton::clicked, this, &BaseDashboardWidget::logoutRequested);
 
     m_globalLayout->addWidget(m_sidebarFrame);
@@ -67,7 +68,7 @@ void BaseDashboardWidget::setupMainContentFrame() {
     m_mainContentLayout->setContentsMargins(30, 25, 30, 25);
     m_mainContentLayout->setSpacing(25);
 
-    // Thanh Topbar tĩnh
+    // 1. Thanh Topbar tĩnh chứa ô tìm kiếm và avatar (Giữ nguyên ở trên cùng)
     QHBoxLayout* topbarLayout = new QHBoxLayout();
 
     m_searchInput = new QLineEdit(m_mainContentWidget);
@@ -75,31 +76,71 @@ void BaseDashboardWidget::setupMainContentFrame() {
     m_searchInput->setFixedWidth(350);
     m_searchInput->setStyleSheet("padding: 10px 15px; border: 1px solid #DADCE0; border-radius: 8px; background-color: #FFFFFF; font-size: 13px; color: #333333;");
     
-    // 🌟 CHỖ NÀY ĐÂY: Phải có chữ "QHBoxLayout*" để khởi tạo biến nhé bạn!
     QHBoxLayout* userInfoLayout = new QHBoxLayout();
     userInfoLayout->setSpacing(10); 
 
-    // Khởi tạo Text hiển thị tên bác sĩ
     m_docNameLabel = new QLabel("Loading...", m_mainContentWidget);
     m_docNameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #3C4043; font-family: 'Arial';");
 
-    // Khởi tạo Button tròn chứa Avatar cá nhân
     m_docAvatarBtn = new QPushButton(m_mainContentWidget);
     m_docAvatarBtn->setFixedSize(36, 36);
     m_docAvatarBtn->setCursor(Qt::PointingHandCursor);
     m_docAvatarBtn->setStyleSheet("QPushButton { background-color: transparent; border: none; padding: 0px; margin: 0px; }");
 
-    // Thả chữ và nút bấm vào cụm Layout con
     userInfoLayout->addWidget(m_docNameLabel);
     userInfoLayout->addWidget(m_docAvatarBtn);
 
-    // Xếp các thành phần lên thanh Topbar lớn
     topbarLayout->addWidget(m_searchInput);
     topbarLayout->addStretch();
-    topbarLayout->addLayout(userInfoLayout); // Hút cụm user sang tận cùng bên phải
+    topbarLayout->addLayout(userInfoLayout); 
 
-    // Đẩy thanh Topbar vào Layout tổng bên phải
     m_mainContentLayout->addLayout(topbarLayout);
 
+    // 2. 🌟 GIẢI PHÁP ĐỘT PHÁ: Tạo StackedWidget bọc toàn bộ nội dung động bên dưới
+    m_dynamicStackedWidget = new QStackedWidget(m_mainContentWidget);
+    
+    // Trang 1: View Dashboard mặc định (Sử dụng chính Layout cũ của bạn để lớp con add vào không bị lỗi)
+    m_defaultDashboardView = new QWidget(this);
+    m_mainContentLayout = new QVBoxLayout(m_defaultDashboardView); // Trỏ m_mainContentLayout vào đây!
+    m_mainContentLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainContentLayout->setSpacing(25);
+    m_defaultDashboardView->setLayout(m_mainContentLayout);
+    
+    // Trang 2: View danh sách bệnh nhân trống mới tạo
+    m_patientPage = new Patient(this);
+
+    // Thêm 2 trang vào Stack
+    m_dynamicStackedWidget->addWidget(m_defaultDashboardView);
+    m_dynamicStackedWidget->addWidget(m_patientPage);
+
+    // Đẩy vùng StackedWidget này vào Layout tổng của Main Content Widget ban đầu
+    QVBoxLayout* finalMainLayout = qobject_cast<QVBoxLayout*>(m_mainContentWidget->layout());
+    if (finalMainLayout) {
+        finalMainLayout->addWidget(m_dynamicStackedWidget, 1);
+    }
+
     m_globalLayout->addWidget(m_mainContentWidget, 1);
+}
+// 🌟 XỬ LÝ HIGHLIGHT MENU VÀ ĐỔI TRANG
+void BaseDashboardWidget::handleMenuChanged() {
+    QPushButton* clickedButton = qobject_cast<QPushButton*>(sender());
+    if (!clickedButton) return;
+
+    // Reset style toàn bộ nút về mặc định
+    m_btnDash->setObjectName("");
+    m_btnPatients->setObjectName("");
+    m_btnDash->setStyle(m_btnDash->style());
+    m_btnPatients->setStyle(m_btnPatients->style());
+
+    // Highlight nút vừa bấm
+    clickedButton->setObjectName("activeBtn");
+    clickedButton->setStyle(clickedButton->style());
+
+    // Chuyển trang tương ứng
+    if (clickedButton == m_btnDash) {
+        m_dynamicStackedWidget->setCurrentWidget(m_defaultDashboardView);
+    } 
+    else if (clickedButton == m_btnPatients) {
+        m_dynamicStackedWidget->setCurrentWidget(m_patientPage);
+    }
 }

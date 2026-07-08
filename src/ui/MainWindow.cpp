@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 #include "Doctor/DoctorDashboard.h" 
-#include "../model/IAuthenticatable.h"   
+#include "model/IAuthenticatable.h"   
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
@@ -8,7 +8,7 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {    
     setWindowTitle("Smart Clinic System");
     resize(1000, 600);
-    m_authService = std::make_shared<AuthService>();
+    m_authService = std::make_shared<AuthService>(std::make_shared<StaffRepository>());
 
     m_stackedWidget = new QStackedWidget(this);
     setCentralWidget(m_stackedWidget);

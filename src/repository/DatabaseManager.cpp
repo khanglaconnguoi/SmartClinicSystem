@@ -329,27 +329,23 @@ bool DatabaseManager::createTables() {
     return true;
 }
 
-
-bool DatabaseManager::executeQuery(const QString& sql, const QVariantList& params) {
+QSqlQuery DatabaseManager::executeQuery(const QString& sql, const QVariantList& params) {
     QSqlQuery query(m_db);
- 
+
     if (!query.prepare(sql)) {
         qDebug() << "Lỗi prepare query:" << query.lastError().text() << "| SQL:" << sql;
-        return false;
+        return query;
     }
- 
-    for (const QVariant& param : params) {
-        query.addBindValue(param);
-    }
- 
+
+    for (const QVariant& param : params) { query.addBindValue(param); }
+
     if (!query.exec()) {
         qDebug() << "Lỗi exec query:" << query.lastError().text() << "| SQL:" << sql;
-        return false;
     }
- 
-    return true;
+
+    return query;
 }
- 
+
 QSqlQuery DatabaseManager::selectQuery(const QString& sql, const QVariantList& params) {
     QSqlQuery query(m_db);
  
