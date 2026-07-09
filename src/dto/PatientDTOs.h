@@ -38,8 +38,8 @@
 struct PatientInputDTO {
   // ── patients ──────────────────────────────────────────
   QString fullName;              // full_name           NOT NULL
-  QDate dateOfBirth;             // date_of_birth        NOT NULL
-  Gender gender;                 // gender               NOT NULL
+  QDate   dateOfBirth;           // date_of_birth        NOT NULL
+  Gender  gender;                // gender               NOT NULL
   QString citizenId;             // citizen_id           UNIQUE (nullable)
   QString phone;                 // phone                (nullable)
   QString email;                 // email                (nullable)

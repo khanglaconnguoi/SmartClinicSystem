@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QString>
-
+#include <QStringList>
 enum class Gender { Male, Female, Other };
 
 enum class PatientType { OUTPATIENT, INPATIENT, EMERGENCY };
@@ -19,6 +19,22 @@ enum class OutPatientState {
 enum class InPatientState { ADMITTED, DISCHARGED, TRANSFERED };
 
 enum class EmergencyPatientState { EMERGENCY, DISCHARGED, TRANSFERRED };
+
+enum class MedicationCategory {
+    Antibiotics,        
+    Analgesics,         
+    Antipyretics,       
+    Cardiovascular,     
+    Antidiabetics,      
+    Vitamins,           
+    Respiratory,        
+    Gastrointestinal,   
+    Dermatological      
+};
+
+
+
+
 
 inline QString GenderToString(Gender gender) {
   switch (gender) {
@@ -142,3 +158,46 @@ inline EmergencyPatientState stringToEmergencyPatientState(const QString &str) {
     return EmergencyPatientState::TRANSFERRED;
   return EmergencyPatientState::EMERGENCY;
 }
+
+inline QString categoryToString(MedicationCategory category) {
+    switch (category) {
+        case MedicationCategory::Antibiotics:      return "Kháng sinh";
+        case MedicationCategory::Analgesics:       return "Giảm đau";
+        case MedicationCategory::Antipyretics:     return "Hạ sốt";
+        case MedicationCategory::Cardiovascular:   return "Tim mạch";
+        case MedicationCategory::Antidiabetics:    return "Trị tiểu đường";
+        case MedicationCategory::Vitamins:         return "Vitamin & Thực phẩm chức năng";
+        case MedicationCategory::Respiratory:      return "Hô hấp";
+        case MedicationCategory::Gastrointestinal: return "Tiêu hóa";
+        case MedicationCategory::Dermatological:   return "Thuốc bôi da liễu";
+        default:                                   return "Khác";
+    }
+}
+
+inline MedicationCategory categoryFromString(const QString& str) {
+    if (str == "Kháng sinh")                     return MedicationCategory::Antibiotics;
+    if (str == "Giảm đau")                      return MedicationCategory::Analgesics;
+    if (str == "Hạ sốt")                        return MedicationCategory::Antipyretics;
+    if (str == "Tim mạch")                     return MedicationCategory::Cardiovascular;
+    if (str == "Trị tiểu đường")                return MedicationCategory::Antidiabetics;
+    if (str == "Vitamin & Thực phẩm chức năng") return MedicationCategory::Vitamins;
+    if (str == "Hô hấp")                        return MedicationCategory::Respiratory;
+    if (str == "Tiêu hóa")                      return MedicationCategory::Gastrointestinal;
+    if (str == "Thuốc bôi da liễu")              return MedicationCategory::Dermatological;
+    return MedicationCategory::Vitamins; 
+}
+
+inline QStringList getAllCategories() {
+    return {
+        "Kháng sinh",
+        "Giảm đau",
+        "Hạ sốt",
+        "Tim mạch",
+        "Trị tiểu đường",
+        "Vitamin & Thực phẩm chức năng",
+        "Hô hấp",
+        "Tiêu hóa",
+        "Thuốc bôi da liễu"
+    };
+}
+

@@ -1,3 +1,3 @@
 #include "MedicalRecord.h"
 
-MedicalRecord::MedicalRecord() {}
+// MedicalRecord::MedicalRecord() {}

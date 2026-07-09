@@ -212,28 +212,25 @@ bool DatabaseManager::createTables() {
   // -- 5.1 ------------------------------------------------------------------
   QString createMedicalRecords = R"(
 CREATE TABLE IF NOT EXISTS medical_records (
-    record_id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    patient_id               INTEGER NOT NULL,
-    doctor_id                INTEGER NOT NULL,
-    appointment_id           INTEGER,
-    encounter_type           TEXT    NOT NULL DEFAULT 'OUTPATIENT'
-                                      CHECK (encounter_type IN ('OUTPATIENT','INPATIENT','EMERGENCY')),
-    visit_datetime           TEXT    NOT NULL DEFAULT (datetime('now')),
-    chief_complaint          TEXT,
-    clinical_notes           TEXT,
-    temperature_celsius      REAL    CHECK (temperature_celsius IS NULL OR temperature_celsius BETWEEN 30 AND 45),
-    blood_pressure_systolic  INTEGER CHECK (blood_pressure_systolic  IS NULL OR blood_pressure_systolic  > 0),
-    blood_pressure_diastolic INTEGER CHECK (blood_pressure_diastolic IS NULL OR blood_pressure_diastolic > 0),
-    heart_rate_bpm           INTEGER CHECK (heart_rate_bpm IS NULL OR heart_rate_bpm > 0),
-    weight_kg                REAL    CHECK (weight_kg IS NULL OR weight_kg > 0),
-    height_cm                REAL    CHECK (height_cm IS NULL OR height_cm > 0),
-    treatment_plan           TEXT,
-    next_visit_date          TEXT,
-    created_at               TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at               TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (patient_id)     REFERENCES patients(patient_id) ON DELETE CASCADE,
-    FOREIGN KEY (doctor_id)      REFERENCES staff(staff_id) ON DELETE RESTRICT,
-    FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL
+    record_id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id          INTEGER NOT NULL,
+    doctor_id            INTEGER,
+    appointment_id        INTEGER,
+    visit_datetime         TEXT NOT NULL,
+    temperature             REAL,
+    blood_pressure           TEXT,
+    heart_rate               INTEGER,
+    weight                     REAL,
+    height                     REAL,
+    chief_complaint             TEXT,
+    clinical_notes               TEXT,
+    treatment                     TEXT,
+    next_visit_date                 TEXT,
+    is_deleted                       INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0,1)),
+    created_at                        TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
+    FOREIGN KEY (doctor_id) REFERENCES staff(staff_id),
+    FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id)
 );
 )";
 
@@ -251,7 +248,6 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     icd_code     TEXT,
     description  TEXT    NOT NULL,
     severity     TEXT    NOT NULL DEFAULT 'MILD' CHECK (severity IN ('MILD','MODERATE','SEVERE')),
-    is_primary   INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0,1)),
     FOREIGN KEY (record_id) REFERENCES medical_records(record_id) ON DELETE CASCADE
 );
 )";
@@ -261,6 +257,162 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     m_db.rollback();
     return false;
   }
+
+  // -- 5.3 -- Invoices (header) ---------------------------------------------
+  const QString sqlInvoices = R"(
+    CREATE TABLE IF NOT EXISTS invoices (
+        invoice_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_code       TEXT    NOT NULL UNIQUE,
+        patient_id           INTEGER NOT NULL,
+        record_id             INTEGER,
+        patient_type            TEXT    NOT NULL CHECK (patient_type IN ('OUTPATIENT','INPATIENT','EMERGENCY')),
+        consultation_fee          REAL    NOT NULL DEFAULT 0,
+        medication_fee              REAL    NOT NULL DEFAULT 0,
+        total_amount                  REAL    NOT NULL DEFAULT 0,
+        status                          TEXT    NOT NULL DEFAULT 'UNPAID' CHECK (status IN ('UNPAID','PAID','CANCELLED')),
+        issued_date                      TEXT    NOT NULL,
+        paid_date                          TEXT,
+        created_at                           TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (patient_id) REFERENCES patients(patient_id),
+        FOREIGN KEY (record_id)  REFERENCES medical_records(record_id)
+    )
+  )";
+  if (!query.exec(sqlInvoices)) {
+    qDebug() << "Lỗi bảng Invoices:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // -- 5.4 -- Invoice Items (detail) ----------------------------------------
+  const QString sqlInvoiceItems = R"(
+    CREATE TABLE IF NOT EXISTS invoice_items (
+        item_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_id     INTEGER NOT NULL,
+        item_type         TEXT NOT NULL,
+        description         TEXT NOT NULL,
+        quantity               INTEGER NOT NULL DEFAULT 1,
+        unit_price               REAL NOT NULL,
+        subtotal                   REAL NOT NULL,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id)
+    )
+  )";
+  if (!query.exec(sqlInvoiceItems)) {
+    qDebug() << "Lỗi bảng Invoice Items:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // ── Phần bạn của bạn: Prescription + Medication ──
+
+  const QString sqlActiveIngredients = R"(
+    CREATE TABLE IF NOT EXISTS active_ingredients (
+        ingredient_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+        ingredient_name TEXT NOT NULL,
+        description     TEXT
+    );
+  )";
+  if (!query.exec(sqlActiveIngredients)) {
+    qDebug() << "Lỗi bảng Active Ingredients:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  const QString sqlMedications = R"(
+    CREATE TABLE IF NOT EXISTS medications (
+        medication_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        brand_name          TEXT NOT NULL,
+        category            TEXT,
+        unit                TEXT NOT NULL,
+        unit_price          REAL NOT NULL DEFAULT 0,
+        stock_quantity      INTEGER NOT NULL DEFAULT 0,
+        minimum_stock       INTEGER NOT NULL DEFAULT 10,
+        reorder_threshold   INTEGER NOT NULL DEFAULT 20,
+        expiry_date         TEXT,
+        manufacturer        TEXT,
+        description         TEXT,
+        is_active           INTEGER NOT NULL DEFAULT 1,
+        created_at          TEXT DEFAULT (datetime('now'))
+    )
+  )";
+  if (!query.exec(sqlMedications)) {
+    qDebug() << "Lỗi bảng Medications:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+
+  const QString sqlMedicationIngredients = R"(
+    CREATE TABLE IF NOT EXISTS medication_ingredients (
+      medication_id   INTEGER NOT NULL,
+      ingredient_id   INTEGER NOT NULL,
+      strength        TEXT NOT NULL,            -- Hàm lượng (VD: "500mg", "65mg")
+      
+      PRIMARY KEY (medication_id, ingredient_id),
+      FOREIGN KEY (medication_id) REFERENCES medications(medication_id) ON DELETE CASCADE,
+      FOREIGN KEY (ingredient_id) REFERENCES active_ingredients(ingredient_id) ON DELETE RESTRICT
+    );
+  )";
+  if (!query.exec(sqlMedicationIngredients)) {
+    qDebug() << "Lỗi bảng Medication Ingredients:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+
+
+  const QString sqlPrescriptions = R"(
+    CREATE TABLE IF NOT EXISTS prescriptions (
+      prescription_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      doctor_id         INTEGER NOT NULL,
+      record_id         INTEGER NOT NULL UNIQUE,
+      notes             TEXT,
+      prescribed_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+      status            TEXT    NOT NULL DEFAULT 'PENDING'
+                                CHECK (status IN ('PENDING','DISPENSED','CANCELLED')),
+      dispensed_by      INTEGER,
+      dispensed_at      TEXT,
+
+      cancelled_by      INTEGER,
+      cancelled_at      TEXT,
+      cancel_reason     TEXT,
+
+      FOREIGN KEY (record_id)    REFERENCES medical_records(record_id) ON DELETE CASCADE,
+      FOREIGN KEY (doctor_id)    REFERENCES staff(staff_id),
+      FOREIGN KEY (dispensed_by) REFERENCES staff(staff_id) ON DELETE SET NULL,
+      FOREIGN KEY (cancelled_by) REFERENCES staff(staff_id) ON DELETE SET NULL,
+      
+      CHECK (NOT (dispensed_by IS NOT NULL AND cancelled_by IS NOT NULL))
+    );
+  )";
+  if (!query.exec(sqlPrescriptions)) {
+    qDebug() << "Lỗi bảng Prescriptions:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  const QString sqlPrescriptionItems = R"(
+    CREATE TABLE IF NOT EXISTS prescription_items (
+      prescription_id   INTEGER NOT NULL,
+      medication_id     INTEGER NOT NULL,
+      brand_name        TEXT NOT NULL,
+      unit_price        REAL NOT NULL CHECK (unit_price >= 0),
+      quantity          INTEGER NOT NULL CHECK (quantity > 0),
+      dosage            TEXT,
+      frequency         TEXT,
+      duration_days     INTEGER NOT NULL CHECK (duration_days > 0),
+      note              TEXT,
+      PRIMARY KEY (prescription_id, medication_id),
+      FOREIGN KEY (prescription_id) REFERENCES prescriptions(prescription_id) ON DELETE CASCADE,
+      FOREIGN KEY (medication_id) REFERENCES medications(medication_id) ON DELETE RESTRICT
+    );
+  )";
+  if (!query.exec(sqlPrescriptionItems)) {
+    qDebug() << "Lỗi bảng Prescription Items:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  
 
   // -------------------------------------------------
 
@@ -357,19 +509,19 @@ CREATE TABLE IF NOT EXISTS diagnoses (
 
   // 4. Bảng Appointments
   QString createAppointments = R"(
-      CREATE TABLE IF NOT EXISTS appointments (
-          appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-          patient_id       INTEGER NOT NULL,
-          doctor_id        INTEGER NOT NULL,
-          appointment_date TEXT    NOT NULL,
-          status           TEXT    NOT NULL DEFAULT 'PENDING'
-                                   CHECK (status IN ('PENDING','CONFIRMED','COMPLETED','CANCELLED')),
-          symptoms         TEXT,
-          created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
-          updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
-          FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
-          FOREIGN KEY (doctor_id)  REFERENCES staff(staff_id)    ON DELETE CASCADE
-      )
+    CREATE TABLE IF NOT EXISTS appointments (
+        appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id       INTEGER NOT NULL,
+        doctor_id        INTEGER NOT NULL,
+        appointment_date TEXT    NOT NULL,
+        status           TEXT    NOT NULL DEFAULT 'PENDING'
+                                CHECK (status IN ('PENDING','CONFIRMED','COMPLETED','CANCELLED')),
+        symptoms         TEXT,
+        created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+        updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+        FOREIGN KEY (doctor_id)  REFERENCES staff(staff_id)    ON DELETE CASCADE
+    )
   )";
   if (!query.exec(createAppointments)) {
     qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
@@ -469,27 +621,26 @@ CREATE TABLE IF NOT EXISTS diagnoses (
   return true;
 }
 
-bool DatabaseManager::executeQuery(const QString &sql,
-                                   const QVariantList &params) {
-  QSqlQuery query(m_db);
+QSqlQuery DatabaseManager::executeQuery(const QString &sql,
+                                        const QVariantList &params) {
+    QSqlQuery query(m_db);
 
-  if (!query.prepare(sql)) {
-    qDebug() << "Lỗi prepare query:" << query.lastError().text()
-             << "| SQL:" << sql;
-    return false;
-  }
+    if (!query.prepare(sql)) {
+        qDebug() << "Lỗi prepare query:" << query.lastError().text()
+                 << "| SQL:" << sql;
+        return query; // Trả về đối tượng query lỗi
+    }
 
-  for (const QVariant &param : params) {
-    query.addBindValue(param);
-  }
+    for (const QVariant &param : params) {
+        query.addBindValue(param);
+    }
 
-  if (!query.exec()) {
-    qDebug() << "Lỗi exec query:" << query.lastError().text()
-             << "| SQL:" << sql;
-    return false;
-  }
+    if (!query.exec()) {
+        qDebug() << "Lỗi exec query:" << query.lastError().text()
+                 << "| SQL:" << sql;
+    }
 
-  return true;
+    return query;
 }
 
 QSqlQuery DatabaseManager::selectQuery(const QString &sql,

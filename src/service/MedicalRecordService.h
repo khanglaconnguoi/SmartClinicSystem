@@ -12,7 +12,7 @@ public:
   QVector<MedicalRecordResultDTO> getMedicalHistory(int patientId);
 
   // ── Bạn của bạn implement ──
-  bool addPrescription(int recordId, const QVector<PrescriptionItemDTO> &items);
-  std::optional<QVector<PrescriptionItemDTO>>
-  getPrescriptionByRecordId(int recordId);
+  // bool addPrescription(int recordId, const QVector<PrescriptionItemDTO> &items);
+  // std::optional<QVector<PrescriptionItemDTO>>
+  // getPrescriptionByRecordId(int recordId);
 };

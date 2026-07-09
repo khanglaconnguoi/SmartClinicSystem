@@ -30,7 +30,7 @@ public:
   DatabaseManager(const DatabaseManager &) = delete;
   DatabaseManager &operator=(const DatabaseManager &) = delete;
 
-  bool executeQuery(const QString &sql, const QVariantList &params = {});
+  QSqlQuery executeQuery(const QString &sql, const QVariantList &params = {});
   QSqlQuery selectQuery(const QString &sql, const QVariantList &params = {});
   bool beginTransaction() {
     if (!m_db.transaction()) {
