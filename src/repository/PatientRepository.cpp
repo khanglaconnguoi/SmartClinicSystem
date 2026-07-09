@@ -122,11 +122,31 @@ bool PatientRepository::insertOutPatient(const OutPatientInsertDTO &dto) {
       dto.status,
   };
 
-  if (!db.executeQuery(sql, params)) {
+  if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     qWarning()
         << "PatientRepository::insertOutPatient - INSERT out_patients thất bại";
     return false;
+  }
+
+  // Ghi dị ứng (nếu có) – cập nhật patientId thực tế vừa được tạo
+  if (!dto.allergies.isEmpty()) {
+    QList<AllergyInsertDTO> items = dto.allergies;
+    for (auto &item : items) item.patientId = patientId;
+    if (!insertAllergies(items)) {
+      db.rollbackTransaction();
+      return false;
+    }
+  }
+
+  // Ghi bảo hiểm (nếu có)
+  if (dto.insurance.has_value()) {
+    InsuranceInsertDTO ins = dto.insurance.value();
+    ins.patientId = patientId;
+    if (!upsertInsurance(ins)) {
+      db.rollbackTransaction();
+      return false;
+    }
   }
 
   if (!db.commitTransaction()) {
@@ -178,11 +198,31 @@ bool PatientRepository::insertInPatient(const InPatientInsertDTO &dto) {
       dto.status,
   };
 
-  if (!db.executeQuery(sql, params)) {
+  if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     qWarning()
         << "PatientRepository::insertInPatient - INSERT in_patients thất bại";
     return false;
+  }
+
+  // Ghi dị ứng (nếu có) – cập nhật patientId thực tế
+  if (!dto.allergies.isEmpty()) {
+    QList<AllergyInsertDTO> items = dto.allergies;
+    for (auto &item : items) item.patientId = patientId;
+    if (!insertAllergies(items)) {
+      db.rollbackTransaction();
+      return false;
+    }
+  }
+
+  // Ghi bảo hiểm (nếu có)
+  if (dto.insurance.has_value()) {
+    InsuranceInsertDTO ins = dto.insurance.value();
+    ins.patientId = patientId;
+    if (!upsertInsurance(ins)) {
+      db.rollbackTransaction();
+      return false;
+    }
   }
 
   if (!db.commitTransaction()) {
@@ -237,11 +277,31 @@ bool PatientRepository::insertEmergencyPatient(
       dto.status,
   };
 
-  if (!db.executeQuery(sql, params)) {
+  if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     qWarning() << "PatientRepository::insertEmergencyPatient - INSERT "
                   "emergency_patients_admissions thất bại";
     return false;
+  }
+
+  // Ghi dị ứng (nếu có) – cập nhật patientId thực tế
+  if (!dto.allergies.isEmpty()) {
+    QList<AllergyInsertDTO> items = dto.allergies;
+    for (auto &item : items) item.patientId = patientId;
+    if (!insertAllergies(items)) {
+      db.rollbackTransaction();
+      return false;
+    }
+  }
+
+  // Ghi bảo hiểm (nếu có)
+  if (dto.insurance.has_value()) {
+    InsuranceInsertDTO ins = dto.insurance.value();
+    ins.patientId = patientId;
+    if (!upsertInsurance(ins)) {
+      db.rollbackTransaction();
+      return false;
+    }
   }
 
   if (!db.commitTransaction()) {
@@ -283,7 +343,7 @@ bool PatientRepository::updatePatient(const PatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
   QString sql = R"(
@@ -300,7 +360,7 @@ bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
   QString sql = R"(
@@ -325,7 +385,7 @@ bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::updateEmergencyPatient(
     const EmergencyPatientUpdateDTO &dto) {
@@ -353,7 +413,7 @@ bool PatientRepository::updateEmergencyPatient(
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Search
@@ -491,14 +551,18 @@ std::optional<PatientDetailDTO> PatientRepository::getPatientById(int patientId)
     if (!query.isNull("doctor_id")) dto.doctorId = query.value("doctor_id").toInt();
     if (!query.isNull("admission_date")) dto.admissionDate = QDate::fromString(query.value("admission_date").toString(), "yyyy-MM-dd");
     if (!query.isNull("discharge_date")) dto.dischargeDate = QDate::fromString(query.value("discharge_date").toString(), "yyyy-MM-dd");
-    
+
     dto.reason = query.value("reason").toString();
     dto.injuryCause = query.value("injury_cause").toString();
     dto.injuryDescription = query.value("injury_description").toString();
 
+    // Load dị ứng & bảo hiểm
+    dto.allergies = getAllergiesByPatientId(dto.patientId);
+    dto.insurance = getInsuranceByPatientId(dto.patientId);
+
     return dto;
   }
-  
+
   return std::nullopt;
 }
 
@@ -675,7 +739,7 @@ bool PatientRepository::softDeletePatient(int patientId) {
 
   QVariantList params = {patientId};
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::restorePatient(int patientId) {
   QString sql = R"(
@@ -687,7 +751,7 @@ bool PatientRepository::restorePatient(int patientId) {
 
   QVariantList params = {patientId};
 
-  return DatabaseManager::getInstance().executeQuery(sql, params);
+  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
 bool PatientRepository::isPatientSoftDeleted(int patientId) {
   QString sql = R"(
@@ -702,4 +766,146 @@ bool PatientRepository::isPatientSoftDeleted(int patientId) {
     return false;
   }
   return query.value(0).toInt() == 1;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Allergies
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool PatientRepository::insertAllergies(const QList<AllergyInsertDTO> &items) {
+  if (items.isEmpty()) return true; // không có dị ứng → bỏ qua, không lỗi
+
+  const QString sql = R"(
+    INSERT OR IGNORE INTO patient_allergies (patient_id, allergen_name, severity, notes)
+    VALUES (?, ?, ?, ?)
+  )";
+
+  DatabaseManager &db = DatabaseManager::getInstance();
+  for (const AllergyInsertDTO &item : items) {
+    const QVariantList params = {
+        item.patientId,
+        item.allergenName.trimmed(),
+        item.severity.isEmpty() ? "MODERATE" : item.severity,
+        item.notes.isEmpty() ? QVariant() : item.notes,
+    };
+    if (!db.executeQuery(sql, params).isActive()) {
+      qWarning() << "PatientRepository::insertAllergies - INSERT thất bại cho:"
+                 << item.allergenName;
+      return false;
+    }
+  }
+  return true;
+}
+
+bool PatientRepository::deactivateAllergies(int patientId) {
+  const QString sql = R"(
+    UPDATE patient_allergies SET is_active = 0 WHERE patient_id = ?
+  )";
+  return DatabaseManager::getInstance().executeQuery(sql, {patientId}).isActive();
+}
+
+QList<AllergyResultDTO> PatientRepository::getAllergiesByPatientId(int patientId) {
+  QList<AllergyResultDTO> results;
+
+  const QString sql = R"(
+    SELECT allergy_id, allergen_name, severity, notes, is_active, recorded_at, updated_at
+    FROM patient_allergies
+    WHERE patient_id = ? AND is_active = 1
+    ORDER BY recorded_at ASC
+  )";
+
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
+  while (query.next()) {
+    AllergyResultDTO dto;
+    dto.allergyId    = query.value("allergy_id").toInt();
+    dto.allergenName = query.value("allergen_name").toString();
+    dto.severity     = query.value("severity").toString();
+    dto.notes        = query.value("notes").toString();
+    dto.isActive     = query.value("is_active").toInt() == 1;
+    dto.recordedAt   = query.value("recorded_at").toString();
+    dto.updatedAt    = query.value("updated_at").toString();
+    results.append(dto);
+  }
+  return results;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Insurance
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool PatientRepository::upsertInsurance(const InsuranceInsertDTO &dto) {
+  // INSERT OR REPLACE dựa trên UNIQUE(patient_id)
+  const QString sql = R"(
+    INSERT INTO patient_insurance (
+        patient_id, provider_name, policy_number, insurance_type,
+        coverage_percent, valid_from, valid_to, notes, is_active
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    ON CONFLICT(patient_id) DO UPDATE SET
+        provider_name    = excluded.provider_name,
+        policy_number    = excluded.policy_number,
+        insurance_type   = excluded.insurance_type,
+        coverage_percent = excluded.coverage_percent,
+        valid_from       = excluded.valid_from,
+        valid_to         = excluded.valid_to,
+        notes            = excluded.notes,
+        is_active        = 1,
+        updated_at       = datetime('now')
+  )";
+
+  const QVariantList params = {
+      dto.patientId,
+      dto.providerName.trimmed(),
+      dto.policyNumber.trimmed(),
+      dto.insuranceType.isEmpty() ? "BHYT" : dto.insuranceType,
+      dto.coveragePercent,
+      dto.validFrom.isEmpty()  ? QVariant() : dto.validFrom,
+      dto.validTo.isEmpty()    ? QVariant() : dto.validTo,
+      dto.notes.isEmpty()      ? QVariant() : dto.notes,
+  };
+
+  if (!DatabaseManager::getInstance().executeQuery(sql, params).isActive()) {
+    qWarning() << "PatientRepository::upsertInsurance - UPSERT thất bại cho patient_id:"
+               << dto.patientId;
+    return false;
+  }
+  return true;
+}
+
+std::optional<InsuranceResultDTO>
+PatientRepository::getInsuranceByPatientId(int patientId) {
+  const QString sql = R"(
+    SELECT insurance_id, provider_name, policy_number, insurance_type,
+           coverage_percent, valid_from, valid_to, notes, is_active,
+           created_at, updated_at
+    FROM patient_insurance
+    WHERE patient_id = ? AND is_active = 1
+    LIMIT 1
+  )";
+
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
+  if (!query.next()) return std::nullopt;
+
+  InsuranceResultDTO dto;
+  dto.insuranceId      = query.value("insurance_id").toInt();
+  dto.providerName     = query.value("provider_name").toString();
+  dto.policyNumber     = query.value("policy_number").toString();
+  dto.insuranceType    = query.value("insurance_type").toString();
+  dto.coveragePercent  = query.value("coverage_percent").toDouble();
+  dto.validFrom        = query.value("valid_from").toString();
+  dto.validTo          = query.value("valid_to").toString();
+  dto.notes            = query.value("notes").toString();
+  dto.isActive         = query.value("is_active").toInt() == 1;
+  dto.createdAt        = query.value("created_at").toString();
+  dto.updatedAt        = query.value("updated_at").toString();
+  return dto;
+}
+
+QString PatientRepository::getAllergiesStringByPatientId(int patientId) {
+  QString sql = "SELECT allergies FROM patients WHERE patient_id = ? AND is_deleted = 0";
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
+  if (query.next()) {
+    return query.value(0).toString();
+  }
+  return "";
 }

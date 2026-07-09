@@ -11,6 +11,50 @@
 #include <QDateTime>
 #include <QMessageBox>
 
+// ───────────────────────────────────────────────────────────────────────────────
+// Helpers: parse allergies string & insurance string
+// ───────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @brief Tách chuỗi allergies (phân cách bằng dấu phẩy) thành QList<AllergyInsertDTO>.
+ *        Mỗi tỪn sau khi trim thành một AllergyInsertDTO với severity = 'MODERATE'.
+ *        Tên rỗng sau khi trim bị bỏ qua.
+ */
+static QList<AllergyInsertDTO> parseAllergiesString(int patientId,
+                                                    const QString &raw) {
+  QList<AllergyInsertDTO> result;
+  if (raw.trimmed().isEmpty()) return result;
+
+  const QStringList parts = raw.split(',', Qt::SkipEmptyParts);
+  for (const QString &part : parts) {
+    const QString name = part.trimmed();
+    if (name.isEmpty()) continue;
+    AllergyInsertDTO item;
+    item.patientId   = patientId;
+    item.allergenName = name;
+    item.severity    = "MODERATE";
+    result.append(item);
+  }
+  return result;
+}
+
+/**
+ * @brief Xây InsuranceInsertDTO từ chuỗi insurance (số thẻ BHYT đơn giản).
+ *        Nếu chuỗi rỗng thì trả về std::nullopt.
+ */
+static std::optional<InsuranceInsertDTO>
+parseInsuranceString(int patientId, const QString &raw) {
+  if (raw.trimmed().isEmpty()) return std::nullopt;
+
+  InsuranceInsertDTO dto;
+  dto.patientId     = patientId;
+  dto.policyNumber  = raw.trimmed();
+  dto.providerName  = "BHYT"; // mặc định
+  dto.insuranceType = "BHYT";
+  dto.coveragePercent = 80.0;
+  return dto;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sinh mã bệnh nhân
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,6 +130,12 @@ bool PatientService::AddOutPatient(
   inputInformation.doctorId = (doctorId > 0) ? std::optional<int>(doctorId) : std::nullopt;
 
   OutPatientInsertDTO dto(inputInformation, patientCode);
+
+  // Giả định patientId tạm thời = 0, repository sẽ set lại sau insertBasePatient.
+  // Parse allergies và insurance → gán vào dto để repository xử lý trong 1 transaction.
+  dto.allergies = parseAllergiesString(0, allergies); // patientId sẽ được gán trong repo
+  dto.insurance = parseInsuranceString(0, insurance);
+
   return m_patientRepository->insertOutPatient(dto);
 }
 
@@ -158,6 +208,8 @@ bool PatientService::AddInPatient(
   inputInformation.reason = reason;
 
   InPatientInsertDTO dto(inputInformation, patientCode);
+  dto.allergies = parseAllergiesString(0, allergies);
+  dto.insurance = parseInsuranceString(0, insurance);
   return m_patientRepository->insertInPatient(dto);
 }
 
@@ -231,7 +283,8 @@ bool PatientService::AddEmergencyPatient(
   }
 
   EmergencyPatientInsertDTO dto(inputInformation, patientCode);
-
+  dto.allergies = parseAllergiesString(0, allergies);
+  dto.insurance = parseInsuranceString(0, insurance);
   return m_patientRepository->insertEmergencyPatient(dto);
 }
 
@@ -278,10 +331,7 @@ QString PatientService::validateBaseInput(
   if (!err.isEmpty())
     return err;
 
-  if (allergies.isEmpty())
-    return "Allergies is required.";
-  if (insurance.isEmpty())
-    return "Insurance is required.";
+  // allergies và insurance là tùy chọn, không bắt buộc
   if (type.isEmpty())
     return "Patient type is required.";
   if (emergencyContactName.isEmpty())
@@ -348,10 +398,7 @@ QString PatientService::validateUpdateBaseInput(
     return "Date of birth is invalid.";
   if (gender.isEmpty())
     return "Gender is required.";
-  if (allergies.isEmpty())
-    return "Allergies is required.";
-  if (insurance.isEmpty())
-    return "Insurance is required.";
+  // allergies và insurance là tùy chọn, không bắt buộc
 
   QString err;
   err = validateCitizenId(citizenId);
@@ -616,4 +663,27 @@ bool PatientService::softDeletePatient(int patientId) {
 
 bool PatientService::restorePatient(int patientId) {
   return m_patientRepository->restorePatient(patientId);
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Allergies & Insurance
+// ───────────────────────────────────────────────────────────────────────────────
+
+QList<AllergyResultDTO> PatientService::getAllergies(int patientId) {
+  return m_patientRepository->getAllergiesByPatientId(patientId);
+}
+
+std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) {
+  return m_patientRepository->getInsuranceByPatientId(patientId);
+}
+
+bool PatientService::checkDrugAllergyConflict(int patientId, const QString &drugName) const {
+  QString allergies = m_patientRepository->getAllergiesStringByPatientId(patientId);
+  if (allergies.trimmed().isEmpty()) return false;
+  const QStringList allergyList = allergies.split(',', Qt::SkipEmptyParts);
+  const QString target = drugName.trimmed().toLower();
+  for (const QString &entry : allergyList) {
+    if (entry.trimmed().toLower() == target) return true;
+  }
+  return false;
 }

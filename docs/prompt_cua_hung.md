@@ -164,3 +164,146 @@
 | **AI** | Gemini 3.1 Pro (High) |
 | **Prompt/Instruction** | tại sao lại tạo thêm hàm QSqlDatabase &database ở DatabaseManager.h / fix lỗi FOREIGN KEY constraint failed khi AddOutPatient |
 | **Student / Verification or Modification** | - Root cause 1: `QSqlQuery lastId = DatabaseManager::getInstance().selectQuery("SELECT last_insert_rowid()")` created a new query object, causing SQLite to lose track of the `last_insert_rowid()` within the transaction and returning `0`.<br>- Root cause 2: `AddOutPatient` passed `doctorId = 0` directly into an `std::optional<int>`, which resulted in inserting `0` instead of `NULL` into the DB, violating the FOREIGN KEY constraint.<br>- Fix applied: Exposed `m_db` via `DatabaseManager::getInstance().database()`, enabling `PatientRepository::insertBasePatient` to use a single `QSqlQuery` to `exec()` the insert and immediately call `query.lastInsertId()` safely. Also added checks in `PatientService` to map `doctorId = 0` or `roomId = 0` to `std::nullopt`. |
+
+---
+
+## Prompt #16
+
+| Field | Details |
+|---|---|
+| **Task** | Class Design / Model |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Write model/MedicalRecord.h and model/MedicalRecord.cpp with VitalSigns, Diagnosis structures and MedicalRecord class according to project standards. |
+| **Student / Verification or Modification** | - Created `MedicalRecord.h` and `MedicalRecord.cpp`.<br>- Defined `VitalSigns`, `Diagnosis` (checking severity `MILD`/`MODERATE`/`SEVERE`).<br>- Declared `m_` properties using `std::optional`.<br>- Implemented `isComplete()` to validate required fields and `calculateBMI()`. |
+
+---
+
+## Prompt #17
+
+| Field | Details |
+|---|---|
+| **Task** | Class Design / Model |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Write model/Invoice.h and model/Invoice.cpp — abstract base class. |
+| **Student / Verification or Modification** | - Created `Invoice` abstract base class.<br>- Added protected attributes.<br>- Declared 2 pure virtual methods: `calculate()` and `toSummaryString()`. |
+
+---
+
+## Prompt #18
+
+| Field | Details |
+|---|---|
+| **Task** | Class Design / Model |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Write 3 pairs of classes inheriting from Invoice: model/OutPatientInvoice.h/.cpp, model/InPatientInvoice.h/.cpp, and model/EmergencyInvoice.h/.cpp. |
+| **Student / Verification or Modification** | - Created `OutPatientInvoice` inheriting from `Invoice`, calculating total consultation + medication fee without additional charges.<br>- Created `InPatientInvoice` inheriting from `Invoice`, calculating total consultation + medication fee excluding bed charges.<br>- Created `EmergencyInvoice` inheriting from `Invoice`, calculating total consultation + medication fee.<br>- Implemented constructors calling base class, overridden `calculate` and `toSummaryString`. |
+
+---
+
+## Prompt #19
+
+| Field | Details |
+|---|---|
+| **Task** | Class Design / DTO Design |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Write `dto/BillingDTOs.h` with `InvoiceItemDTO`, `InvoiceInsertDTO`, and `InvoiceResultDTO` structures. Include `model/CommonEnums.h` for `PatientType`. After writing the code, log the prompt into `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Created `src/dto/BillingDTOs.h`.<br>- Defined `InvoiceItemDTO`, `InvoiceInsertDTO`, and `InvoiceResultDTO` exactly as requested with all specified fields and types (including `QVector`, `QDate`, `QString`, and `std::optional`).<br>- Logged Prompt #19 in English as requested. |
+
+---
+
+## Prompt #20
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Enums |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Open `model/CommonEnums.h` and append the `InvoiceStatus` enum and its string conversion helper functions to the end without modifying existing enums. Log this prompt to `prompt_cua_hung.md`. |
+| **Student / Verification or Modification** | - Appended `InvoiceStatus` enum, `InvoiceStatusToString()`, and `stringToInvoiceStatus()` to `CommonEnums.h`.<br>- Existing contents of the file were kept intact.<br>- Logged Prompt #20 in English. |
+
+---
+
+## Prompt #21
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Validation |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Open `Validation.h` and `Validation.cpp`, include `model/MedicalRecord.h`, and append three new validation functions (`validateVitalSigns`, `validateChiefComplaint`, `validateDiagnosisList`) without modifying existing functions. After writing the code, log the prompt into `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Modified `src/service/Validation.h` and `src/service/Validation.cpp`.<br>- Included `model/MedicalRecord.h` and defined `validateVitalSigns` (checking temperature, heartRate, weight, height), `validateChiefComplaint` (checking for empty string), and `validateDiagnosisList` (checking if list is empty and validating description and severity `MILD`/`MODERATE`/`SEVERE`).<br>- Used `QList<Diagnosis>` to match the project's updated DTO structures.<br>- Logged Prompt #21 in English. |
+
+---
+
+## Prompt #22
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Repository |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Create `MedicalRecordRepository.h` and `MedicalRecordRepository.cpp` with CRUD operations for medical records and diagnoses, and include forward declarations/stubs for future Prescription features. Ensure proper transactions and nullable bindings. After writing, log this prompt into `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Created `src/repository/MedicalRecordRepository.h` with `insertMedicalRecord`, `findById`, and `getHistoryByPatientId` as well as stubs for `insertPrescription`, `getPrescriptionByRecordId`, and `confirmPrescription`.<br>- Created `src/repository/MedicalRecordRepository.cpp` implementing the 4 required functions including the private `insertDiagnoses`.<br>- Used `QList` consistently with the project structure and strictly adhered to transaction procedures, `lastInsertId` retrieval via direct `QSqlQuery`, and nullable `QVariant` bindings as requested.<br>- Logged Prompt #22. |
+
+---
+
+## Prompt #23
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Repository |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Create `BillingRepository.h` and `BillingRepository.cpp` to handle `insertInvoice`, `getInvoiceByRecordId`, and `getInvoicesByPatientId` using SQLite. Generate `INV-yyyyMMdd-NNNN` formatted invoice codes dynamically. Adhere to global transaction patterns and change `QVector` to `QList`. After writing, log this prompt into `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Created `src/repository/BillingRepository.h` and `BillingRepository.cpp`.<br>- Used `QList` for items collections instead of `QVector` as instructed.<br>- Implemented `generateInvoiceCode()` counting existing records using `LIKE` pattern.<br>- Wrapped `insertInvoice` in a transaction: inserted the base invoice, grabbed `lastInsertId`, then iterated to insert all `invoice_items`.<br>- Implemented `getInvoiceByRecordId` and `getInvoicesByPatientId` fetching nested items collections safely.<br>- Logged Prompt #23. |
+
+---
+
+## Prompt #24
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Repository and DTO |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Add Update and Soft Delete functionality to both MedicalRecord and Billing models. Modify the DTO headers to include Update structures. Implement `update` and `softDelete` (or `cancel` for Invoice) in the Repositories safely using transactions. |
+| **Student / Verification or Modification** | - Modified `src/dto/MedicalRecordDTOs.h` to add `MedicalRecordUpdateDTO` and `src/dto/BillingDTOs.h` to add `InvoiceUpdateDTO`.<br>- Updated `MedicalRecordRepository` to include `updateMedicalRecord` (replaces old diagnoses) and `softDeleteMedicalRecord` (`is_deleted` flag).<br>- Updated `BillingRepository` to include `updateInvoice` (replaces items) and `cancelInvoice` (sets status to 'CANCELLED').<br>- Replaced remaining `QVector` with `QList` in Billing DTOs. |
+
+---
+
+## Prompt #25
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Factory |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Create `factory/IInvoiceFactory.h`, `OutPatientInvoiceFactory.h/.cpp`, `InPatientInvoiceFactory.h/.cpp`, and `EmergencyInvoiceFactory.h/.cpp` overriding `createInvoice` to return specific derived `Invoice` smart pointers using `std::make_unique`. Log prompt to `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Created `IInvoiceFactory.h` interface with virtual destructor and pure virtual `createInvoice` method.<br>- Created concrete factory classes (`OutPatientInvoiceFactory`, `InPatientInvoiceFactory`, `EmergencyInvoiceFactory`) implementing `createInvoice` by including their respective model headers and using `std::make_unique`.<br>- Wrote implementations strictly following the provided signatures without any additional generic template logic, abiding by the simplicity constraints. Logged Prompt #25. |
+
+---
+
+## Prompt #26
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Service |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Create `MedicalRecordService.h` and `.cpp` with `createMedicalRecord` and `getMedicalHistory`. Replace `QVector` with `QList`. Validate vitals, chief complaint, and diagnoses sequentially before inserting, returning -1 on failure. Follow the shared-file safety rules by only defining signatures for Prescription methods and providing no implementation. Include previously implemented update and delete bindings. Log to `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Created `src/service/MedicalRecordService.h` and `MedicalRecordService.cpp`.<br>- Used `QList` for collections instead of `QVector` as instructed.<br>- Safely added forward declarations and constructor dependencies for `PatientService`, `PharmacyService`, and `PrescriptionItemDTO`.<br>- Implemented `createMedicalRecord` chaining `validateVitalSigns`, `validateChiefComplaint`, and `validateDiagnosisList`, halting and returning `-1` on the first failure. Integrated the previously built `updateMedicalRecord` and `softDeleteMedicalRecord` methods seamlessly. Logged Prompt #26. |
+
+---
+
+## Prompt #27
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Patient Module Enhancement |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Open `PatientRepository.h/.cpp` and `PatientService.h/.cpp` and add a new method to get allergies as a raw string `getAllergiesByPatientId` (renamed to `getAllergiesStringByPatientId` to fix C++ overload constraints). Then add `checkDrugAllergyConflict` in `PatientService` using that string to safely verify allergy conflicts. Do not alter existing methods. Log to `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Added `getAllergiesStringByPatientId` to `PatientRepository.h/.cpp` executing the direct SQL requested.<br>- Note: Renamed from `getAllergiesByPatientId` because an existing method already held that signature returning `QList`, violating C++ overload constraints.<br>- Added `checkDrugAllergyConflict` in `PatientService.h/.cpp` executing the comma separation and case-insensitive check. Logged Prompt #27. |
+
+---
+
+## Prompt #28
+
+| Field | Details |
+|---|---|
+| **Task** | Feature Implementation / Billing Service |
+| **AI** | Gemini 3.1 Pro (High) |
+| **Prompt/Instruction** | Create `BillingService.h` and `.cpp` (full ownership). Use a mock `PrescriptionItemDTO` to allow compiling independently. Implement `selectFactory` returning the appropriate factory based on `PatientType`, `calculateMedicationTotal`, `generateInvoice` using the factory and inserting consultation + medication items, and `getInvoiceByRecordId`. Add `QList` conversions and existing update/cancel bindings. Log to `prompt_cua_hung.md` in English. |
+| **Student / Verification or Modification** | - Created `src/service/BillingService.h` and `BillingService.cpp`.<br>- Included a temporary struct definition for `PrescriptionItemDTO` to enable standalone compilation before the Pharmacy module is finished.<br>- Replaced all `QVector` references with `QList`.<br>- Implemented `selectFactory` to safely instantiate `OutPatientInvoiceFactory`, `InPatientInvoiceFactory`, or `EmergencyInvoiceFactory`.<br>- Implemented `generateInvoice` calculating medication sums, generating the invoice via the factory to determine total amount, and building the `CONSULTATION` and `MEDICATION` line items respectively.<br>- Bound `updateInvoice` and `cancelInvoice` to the repository. Logged Prompt #28. |

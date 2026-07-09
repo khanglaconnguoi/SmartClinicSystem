@@ -201,3 +201,19 @@ inline QStringList getAllCategories() {
     };
 }
 
+enum class InvoiceStatus { UNPAID, PAID, CANCELLED };
+
+inline QString InvoiceStatusToString(InvoiceStatus status) {
+  switch (status) {
+  case InvoiceStatus::UNPAID:    return QString("UNPAID");
+  case InvoiceStatus::PAID:      return QString("PAID");
+  case InvoiceStatus::CANCELLED: return QString("CANCELLED");
+  }
+}
+
+inline InvoiceStatus stringToInvoiceStatus(const QString &str) {
+  if (str == "UNPAID")    return InvoiceStatus::UNPAID;
+  if (str == "PAID")      return InvoiceStatus::PAID;
+  if (str == "CANCELLED") return InvoiceStatus::CANCELLED;
+  return InvoiceStatus::UNPAID;
+}

@@ -127,4 +127,44 @@ public:
    * @return true nếu bệnh nhân đã bị xoá mềm.
    */
   bool isPatientSoftDeleted(int patientId);
+
+  // ─── Allergies ────────────────────────────────────────────────────────────
+
+  /**
+   * @brief Lấy chuỗi dị ứng dạng text thô (chữa lỗi overload tên hàm).
+   */
+  QString getAllergiesStringByPatientId(int patientId);
+
+  /**
+   * @brief Ghi nhiều dị ứng vào `patient_allergies`.
+   *        Được gọi bên trong transaction của insertXxxPatient / updatePatient.
+   * @return true nếu tất cả INSERT thành công.
+   */
+  bool insertAllergies(const QList<AllergyInsertDTO> &items);
+
+  /**
+   * @brief Xóa toàn bộ dị ứng (is_active = 0) của một bệnh nhân.
+   *        Dùng trước khi re-insert khi update.
+   */
+  bool deactivateAllergies(int patientId);
+
+  /**
+   * @brief Lấy danh sách dị ứng đang active của bệnh nhân.
+   */
+  QList<AllergyResultDTO> getAllergiesByPatientId(int patientId);
+
+  // ─── Insurance ────────────────────────────────────────────────────────────
+
+  /**
+   * @brief Ghi / cập nhật bản ghi bảo hiểm (UPSERT).
+   *        Nếu patient_id đã tồn tại → UPDATE; nếu chưa → INSERT.
+   * @return true nếu thành công.
+   */
+  bool upsertInsurance(const InsuranceInsertDTO &dto);
+
+  /**
+   * @brief Lấy thông tin bảo hiểm của bệnh nhân.
+   * @return nullopt nếu bệnh nhân chưa có bảo hiểm.
+   */
+  std::optional<InsuranceResultDTO> getInsuranceByPatientId(int patientId);
 };
