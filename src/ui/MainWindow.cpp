@@ -6,7 +6,7 @@
 #include <QPushButton>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {    
-    setWindowTitle("Smart Clinic System");
+    setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
     resize(1000, 600);
     m_authService = std::make_shared<AuthService>(std::make_shared<StaffRepository>());
 
@@ -24,12 +24,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
             registerDashboardPage(doctorDash);
             this->showMaximized();
         }
-        else if (user->getAccountType() == AccountType::Patient) {
-            // Sau này làm Dashboard bệnh nhân thì bạn thêm ở đây:
-            // auto* patientDash = new PatientDashboardWidget(user, this);
-            // registerDashboardPage(patientDash);
-            // this->showMaximized();
-        }
     });
 }
 
@@ -37,9 +31,7 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget* page) {
     if (!page) return;
 
     int newIndex = m_stackedWidget->addWidget(page);
-    
     connect(page, &BaseDashboardWidget::logoutRequested, this, &MainWindow::handleGlobalLogout);
-    
     m_stackedWidget->setCurrentIndex(newIndex);
 }
 
@@ -58,43 +50,20 @@ void MainWindow::handleGlobalLogout() {
     noButton->setCursor(Qt::PointingHandCursor);
 
     msgBox.setStyleSheet(
-        "QMessageBox { "
-        "   background-color: #FFFFFF; "
-        "   border: 1px solid #EAEAEA; "
-        "   border-radius: 12px; "
-        "}"
-        // Cấu hình nút "Đồng Ý" (Màu xanh ngọc chủ đạo #00966C giống logo của bạn)
-        "QPushButton { "
-        "   background-color: #00966C; "
-        "   color: #FFFFFF; "
-        "   font-family: 'Arial'; "
-        "   font-size: 13px; "
-        "   font-weight: bold; "
-        "   border: none; "
-        "   border-radius: 6px; "
-        "   padding: 8px 20px; "
-        "   min-width: 75px; "
-        "}"
-        "QPushButton:hover { background-color: #007D5A; }"
-        "QPushButton:pressed { background-color: #005F44; }"
+        "QMessageBox { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 12px; }"
+        "QPushButton { background-color: #4B94F2; color: #FFFFFF; font-family: 'Arial'; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; padding: 8px 20px; min-width: 75px; }"
+        "QPushButton:hover { background-color: #357AE8; }"
+        "QPushButton:pressed { background-color: #245DC1; }"
         
-        // Cấu hình riêng cho nút "Hủy" (Màu xám nhạt nền nã để làm nền cho nút chính)
-        "QPushButton[text=\"Hủy\"] { "
-        "   background-color: #F1F3F4; "
-        "   color: #5F6368; "
-        "   border: 1px solid #DADCE0; "
-        "}"
+        "QPushButton[text=\"Hủy\"] { background-color: #F1F3F4; color: #5F6368; border: 1px solid #DADCE0; }"
         "QPushButton[text=\"Hủy\"]:hover { background-color: #E8EAED; color: #3C4043; }"
         "QPushButton[text=\"Hủy\"]:pressed { background-color: #D2D6DE; }"
     );
 
-    // Thực thi Dialog
     msgBox.exec();
 
-    // Xử lý logic chuyển trang khi bấm "Đồng Ý"
     if (msgBox.clickedButton() == yesButton) {
         m_stackedWidget->setCurrentIndex(0);
-        
         this->showNormal();
         this->resize(1000, 600); 
         m_loginWidget->clearFields();
