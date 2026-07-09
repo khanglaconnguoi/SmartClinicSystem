@@ -8,13 +8,35 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QTableWidget>
-#include <QStackedWidget> 
+#include <QStackedWidget>
+#include <QMouseEvent>
+#include <memory>
 #include "ui/Patient.h"
+#include "repository/StaffRepository.h"
+#include "service/StaffService.h"
+
+class IAuthenticatable;
+
+class ClickableLabel : public QLabel {
+    Q_OBJECT
+public:
+    explicit ClickableLabel(QWidget *parent = nullptr) : QLabel(parent) {}
+
+signals:
+    void clicked();
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override {
+        emit clicked();
+        QLabel::mousePressEvent(event);
+    }
+};
+
 class BaseDashboardWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit BaseDashboardWidget(QWidget *parent = nullptr);
+    explicit BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, QWidget *parent = nullptr);
     virtual ~BaseDashboardWidget() override = default;
 
     // Hàm Template Method khởi tạo toàn bộ giao diện chuẩn theo theme bạn gửi
@@ -24,6 +46,7 @@ signals:
     void logoutRequested();
 private slots:
     void handleMenuChanged();
+    void handleAvatarClicked();
 protected:
     // Hàm thuần ảo để lớp con (Bác sĩ) nhảy vào cấu hình dữ liệu/vẽ hình riêng
     virtual void fillDashboardData() = 0;
@@ -42,8 +65,9 @@ protected:
     QWidget* m_mainContentWidget;
     QVBoxLayout* m_mainContentLayout;
     QLineEdit* m_searchInput;
-    QLabel* m_docNameLabel;
+    ClickableLabel* m_docNameLabel;
     QPushButton* m_docAvatarBtn;
+    std::shared_ptr<IAuthenticatable> m_currentUser;
     // Bảng và các danh sách dùng chung
     QTableWidget* m_patientTable;   
     QStackedWidget* m_dynamicStackedWidget;
