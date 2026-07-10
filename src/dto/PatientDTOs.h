@@ -194,13 +194,14 @@ struct PatientInsertDTO {
       : patientCode(generatePatientCode.trimmed()),
         fullName(inputInformation.fullName.trimmed()),
         dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
-        gender(GenderToString(inputInformation.gender)),
+        gender(genderToString(inputInformation.gender)),
         citizenId(inputInformation.citizenId.trimmed()),
         phone(inputInformation.phone.trimmed()),
         email(inputInformation.email.trimmed()),
         address(inputInformation.address.trimmed()),
         bloodType(inputInformation.bloodType.trimmed()),
-        type(PatientTypeToString(inputInformation.type)),
+        type(inputInformation.type == PatientType::Inpatient ? "INPATIENT" : 
+             (inputInformation.type == PatientType::Emergency ? "EMERGENCY" : "OUTPATIENT")),
         emergencyContactName(inputInformation.emergencyContactName.trimmed()),
         emergencyContactPhone(
             inputInformation.emergencyContactPhone.trimmed()) {}
@@ -294,7 +295,7 @@ struct PatientUpdateDTO {
     this->patientId = pId;
     this->fullName = inputInformation.fullName.trimmed();
     this->dateOfBirth = inputInformation.dateOfBirth.toString("yyyy-MM-dd");
-    this->gender = GenderToString(inputInformation.gender);
+    this->gender = genderToString(inputInformation.gender);
     this->citizenId = inputInformation.citizenId.trimmed();
     this->phone = inputInformation.phone.trimmed();
     this->email = inputInformation.email.trimmed();

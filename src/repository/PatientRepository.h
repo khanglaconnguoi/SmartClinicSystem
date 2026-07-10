@@ -95,7 +95,7 @@ public:
    * @return Danh sách kết quả đã được làm phẳng thành PatientSearchResultDTO,
    *         sắp xếp theo full_name, áp dụng limit/offset để phân trang.
    */
-  QVector<PatientSearchResultDTO>
+  QList<PatientSearchResultDTO>
   searchPatients(const PatientSearchCriteria &criteria);
 
   /**
