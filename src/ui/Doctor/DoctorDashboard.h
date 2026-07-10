@@ -2,6 +2,7 @@
 
 #include "../BaseDashboard.h" // Đường dẫn trỏ tới lớp cha Base của bạn
 #include <memory>
+#include <QTableWidget>
 
 // Forward declaration các lớp cần thiết để tối ưu hóa thời gian biên dịch
 class IAuthenticatable;
@@ -72,5 +73,6 @@ private:
     QList<ApptMeta> m_rowApptMeta;
     QList<ApptMeta> m_apptPageMeta;
     QTableWidget*   m_appointmentsTable = nullptr;
+    QTableWidget*   m_patientTable = nullptr;
     bool            m_isExaminingFromTodayList = true;
 };

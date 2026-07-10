@@ -36,21 +36,8 @@ DoctorDashboardWidget::DoctorDashboardWidget(
 // fillDashboardData() - Hàm Template Method của lớp cha gọi vào
 // =============================================================================
 void DoctorDashboardWidget::fillDashboardData() {
-  // 1. Kết nối các tín hiệu chuyển trang từ nút bấm đã được lớp cha (BaseDashboardWidget) khởi tạo sẵn
-  if (m_btnDash) {
-    disconnect(m_btnDash, &QPushButton::clicked, nullptr, nullptr);
-    connect(m_btnDash, &QPushButton::clicked, this, [this]() { switchPage(0, m_btnDash); });
-  }
-  if (m_btnPatients) {
-    disconnect(m_btnPatients, &QPushButton::clicked, nullptr, nullptr);
-    connect(m_btnPatients, &QPushButton::clicked, this, [this]() { switchPage(1, m_btnPatients); });
-  }
-  if (m_btnAppoint) {
-    connect(m_btnAppoint, &QPushButton::clicked, this, [this]() { switchPage(2, m_btnAppoint); });
-  }
-  if (m_btnSetting) {
-    connect(m_btnSetting, &QPushButton::clicked, this, [this]() { switchPage(3, m_btnSetting); });
-  }
+  // 0. 🪪 Dựng sidebar của bác sĩ
+  buildSidebar();
 
   // Nạp thông tin bác sĩ trên Topbar
   if (m_currentUser && m_docNameLabel) {
@@ -96,7 +83,7 @@ void DoctorDashboardWidget::fillDashboardData() {
 
     disconnect(m_docAvatarBtn, &QPushButton::clicked, nullptr, nullptr);
     connect(m_docAvatarBtn, &QPushButton::clicked, this,
-            [this]() { qDebug() << "Đang mở trang Profile của bác sĩ..."; });
+            []() { qDebug() << "Đang mở trang Profile của bác sĩ..."; });
   }
 
   // 2. Khởi tạo QStackedWidget cho vùng nội dung chính
@@ -120,10 +107,40 @@ void DoctorDashboardWidget::fillDashboardData() {
 }
 
 // =============================================================================
-// SIDEBAR BUILDER (Không sử dụng để tránh trùng lặp với lớp cha)
+// SIDEBAR BUILDER
 // =============================================================================
 void DoctorDashboardWidget::buildSidebar() {
-  // Hàm trống - Giao diện Sidebar đã được xử lý toàn bộ ở BaseDashboardWidget::setupSidebarFrame
+  if (!m_sidebarLayout)
+    return;
+
+  m_btnDash = new QPushButton("Tổng Quan", m_sidebarFrame);
+  m_btnPatients = new QPushButton("Bệnh Nhân", m_sidebarFrame);
+  m_btnAppoint = new QPushButton("Lịch Hẹn", m_sidebarFrame);
+  m_btnSetting = new QPushButton("Cài Đặt", m_sidebarFrame);
+
+  m_sidebarLayout->addWidget(m_btnDash);
+  m_sidebarLayout->addWidget(m_btnPatients);
+  m_sidebarLayout->addWidget(m_btnAppoint);
+  m_sidebarLayout->addWidget(m_btnSetting);
+  m_sidebarLayout->addStretch();
+
+  m_btnLogout = new QPushButton("Đăng Xuất", m_sidebarFrame);
+  m_btnLogout->setStyleSheet("QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; color: #D32F2F; border: none; border-radius: 0px; background-color: transparent; font-weight: bold; }"
+                             "QPushButton:hover { background-color: #FFEBEE; }");
+  m_btnLogout->setCursor(Qt::PointingHandCursor);
+  m_sidebarLayout->addWidget(m_btnLogout);
+
+  connect(m_btnLogout, &QPushButton::clicked, this,
+          &BaseDashboardWidget::logoutRequested);
+
+  connect(m_btnDash, &QPushButton::clicked, this,
+          [this]() { switchPage(0, m_btnDash); });
+  connect(m_btnPatients, &QPushButton::clicked, this,
+          [this]() { switchPage(1, m_btnPatients); });
+  connect(m_btnAppoint, &QPushButton::clicked, this,
+          [this]() { switchPage(2, m_btnAppoint); });
+  connect(m_btnSetting, &QPushButton::clicked, this,
+          [this]() { switchPage(3, m_btnSetting); });
 }
 
 // =============================================================================
@@ -289,7 +306,8 @@ void DoctorDashboardWidget::createDoctorCards(QWidget *parentPage,
 
   for (int i = 0; i < 3; ++i) {
     QFrame *card = new QFrame(parentPage);
-    QString accentColor = "#4B94F2"; 
+    // Sử dụng chung 1 màu viền trái nổi bật cho cả 3 thẻ để tạo sự đồng nhất
+    QString accentColor = "#4B94F2"; // Xanh dương (Primary)
 
     card->setStyleSheet(
         QString("QFrame { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-left: 5px solid %1; border-radius: 12px; }").arg(accentColor)
@@ -305,17 +323,21 @@ void DoctorDashboardWidget::createDoctorCards(QWidget *parentPage,
     QLabel *lblValue = new QLabel(values[i], card);
     lblValue->setStyleSheet("color: #111827; font-size: 32px; font-weight: 900; border: none; letter-spacing: -1px;");
 
+    // Tạo một badge nhỏ cho chỉ số tăng/giảm
     QLabel *lblRate = new QLabel(rates[i] + " so với tuần trước", card);
     
     if (i == 2) {
+        // Màu đỏ cho giảm
         lblRate->setStyleSheet("background-color: #FEE2E2; color: #DC2626; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px; border: none;");
     } else {
+        // Màu xanh lục cho tăng
         lblRate->setStyleSheet("background-color: #DCFCE7; color: #16A34A; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px; border: none;");
     }
     
+    // Bọc rate label trong 1 layout phụ để nó tự thu nhỏ lại bằng nội dung chữ
     QHBoxLayout *rateLayout = new QHBoxLayout();
     rateLayout->addWidget(lblRate);
-    rateLayout->addStretch(); 
+    rateLayout->addStretch(); // Đẩy sang trái
 
     cardLayout->addWidget(lblTitle);
     cardLayout->addWidget(lblValue);

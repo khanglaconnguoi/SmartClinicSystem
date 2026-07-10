@@ -1,5 +1,7 @@
 #include "BaseDashboard.h"
 #include "Profile.h"
+#include "repository/StaffRepository.h"
+#include "service/StaffService.h"
 #include <QDebug>
 
 BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user, QWidget *parent)
@@ -9,7 +11,7 @@ BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user,
     m_globalLayout->setContentsMargins(0, 0, 0, 0);
     m_globalLayout->setSpacing(0);
     this->setStyleSheet("background-color: #F8F9FA;");
-}       
+}
 
 void BaseDashboardWidget::initializeDashboard() {
     setupSidebarFrame();
@@ -18,7 +20,6 @@ void BaseDashboardWidget::initializeDashboard() {
 }
 
 void BaseDashboardWidget::setupSidebarFrame() {
-    // Nếu khung sidebar đã tồn tại từ trước (do lớp con hoặc luồng khác tạo), dọn dẹp nó để tránh nhân đôi
     if (m_sidebarFrame) {
         m_globalLayout->removeWidget(m_sidebarFrame);
         m_sidebarFrame->deleteLater();
@@ -31,42 +32,18 @@ void BaseDashboardWidget::setupSidebarFrame() {
     
     m_sidebarFrame->setStyleSheet(
         "QFrame#Sidebar { background-color: #FFFFFF; border-right: 1px solid #EAEAEA; }"
-        "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; border: none; border-radius: 6px; color: #5F6368; background: transparent; font-weight: 500; }"
-        "QPushButton:hover { background-color: #F0F4FA; color: #4B94F2; }"
-        "QPushButton#activeBtn { background-color: #E8F0FE; color: #4B94F2; font-weight: bold; }"
+        "QFrame#Sidebar QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; border: none; border-radius: 0px; color: #5F6368; background: transparent; font-weight: 500; }"
+        "QFrame#Sidebar QPushButton:hover { background-color: #F1F3F4; color: #202124; }"
+        "QFrame#Sidebar QPushButton#activeBtn, QFrame#Sidebar QPushButton#activeMenu, QFrame#Sidebar QPushButton:checked { background-color: #E8F0FE; color: #4B94F2; font-weight: bold; border-left: 4px solid #4B94F2; }"
     );
 
     m_sidebarLayout = new QVBoxLayout(m_sidebarFrame);
     m_sidebarLayout->setContentsMargins(15, 30, 15, 30);
     m_sidebarLayout->setSpacing(10);
 
-    m_logoLabel = new QLabel("Phòng Khám Nova Care", m_sidebarFrame);
+    m_logoLabel = new QLabel("Nova Care Clinic", m_sidebarFrame);
     m_logoLabel->setStyleSheet("font-size: 20px; font-weight: bold; color: #4B94F2; margin-bottom: 20px;");
     m_sidebarLayout->addWidget(m_logoLabel);
-
-    m_btnDash = new QPushButton("📊 Tổng quan", m_sidebarFrame);
-    m_btnDash->setObjectName("activeBtn"); 
-    m_btnPatients = new QPushButton("👥 Bệnh nhân", m_sidebarFrame);
-    m_btnAppoint = new QPushButton("📅 Lịch hẹn", m_sidebarFrame);
-    m_btnSetting = new QPushButton("⚙️ Cài đặt", m_sidebarFrame);
-    
-    m_sidebarLayout->addWidget(m_btnDash);
-    m_sidebarLayout->addWidget(m_btnPatients);
-    m_sidebarLayout->addWidget(m_btnAppoint);
-    m_sidebarLayout->addWidget(m_btnSetting);
-
-    m_sidebarLayout->addStretch();
-
-    m_btnLogout = new QPushButton("🚪 Đăng xuất", m_sidebarFrame);
-    m_btnLogout->setStyleSheet(
-        "QPushButton { color: #D93025; font-weight: bold; border-radius: 6px; }"
-        "QPushButton:hover { background-color: #FCE8E6; }"
-    ); 
-    m_sidebarLayout->addWidget(m_btnLogout);
-
-    connect(m_btnDash, &QPushButton::clicked, this, &BaseDashboardWidget::handleMenuChanged);
-    connect(m_btnPatients, &QPushButton::clicked, this, &BaseDashboardWidget::handleMenuChanged);
-    connect(m_btnLogout, &QPushButton::clicked, this, &BaseDashboardWidget::logoutRequested);
 
     m_globalLayout->addWidget(m_sidebarFrame);
 }
@@ -82,7 +59,7 @@ void BaseDashboardWidget::setupMainContentFrame() {
     QHBoxLayout* topbarLayout = new QHBoxLayout();
 
     m_searchInput = new QLineEdit(m_mainContentWidget);
-    m_searchInput->setPlaceholderText("🔍 Tìm kiếm bệnh nhân, bác sĩ, lịch hẹn...");
+    m_searchInput->setPlaceholderText("🔍 Search for patients, doctors and etc...");
     m_searchInput->setFixedWidth(350);
     m_searchInput->setStyleSheet("padding: 10px 15px; border: 1px solid #DADCE0; border-radius: 8px; background-color: #FFFFFF; font-size: 13px; color: #333333;");
     
@@ -90,13 +67,17 @@ void BaseDashboardWidget::setupMainContentFrame() {
     userInfoLayout->setSpacing(10); 
 
     m_docNameLabel = new ClickableLabel(m_mainContentWidget);
-    m_docNameLabel->setText("Đang tải...");
+    m_docNameLabel->setText(m_currentUser ? m_currentUser->getFullName() : "Loading...");
     m_docNameLabel->setCursor(Qt::PointingHandCursor);
     m_docNameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #3C4043; font-family: 'Arial';");
 
     m_docAvatarBtn = new QPushButton(m_mainContentWidget);
     m_docAvatarBtn->setFixedSize(36, 36);
     m_docAvatarBtn->setCursor(Qt::PointingHandCursor);
+    if (m_currentUser && !m_currentUser->getAvatar().isNull()) {
+        m_docAvatarBtn->setIcon(QIcon(m_currentUser->getAvatar()));
+        m_docAvatarBtn->setIconSize(QSize(36, 36));
+    }
     m_docAvatarBtn->setStyleSheet(
         "QPushButton { "
         "   background-color: #E8F0FE; "
@@ -122,24 +103,6 @@ void BaseDashboardWidget::setupMainContentFrame() {
 
     m_mainContentLayout->addLayout(topbarLayout);
 
-    m_dynamicStackedWidget = new QStackedWidget(m_mainContentWidget);
-    
-    m_defaultDashboardView = new QWidget(this);
-    m_mainContentLayout = new QVBoxLayout(m_defaultDashboardView); 
-    m_mainContentLayout->setContentsMargins(0, 0, 0, 0);
-    m_mainContentLayout->setSpacing(25);
-    m_defaultDashboardView->setLayout(m_mainContentLayout);
-    
-    m_patientPage = new PatientView(this);
-
-    m_dynamicStackedWidget->addWidget(m_defaultDashboardView);
-    m_dynamicStackedWidget->addWidget(m_patientPage);
-
-    QVBoxLayout* finalMainLayout = qobject_cast<QVBoxLayout*>(m_mainContentWidget->layout());
-    if (finalMainLayout) {
-        finalMainLayout->addWidget(m_dynamicStackedWidget, 1);
-    }
-
     m_globalLayout->addWidget(m_mainContentWidget, 1);
 }
 
@@ -156,24 +119,4 @@ void BaseDashboardWidget::handleAvatarClicked() {
     profileDialog->show();
     profileDialog->raise();
     profileDialog->activateWindow();
-}
-
-void BaseDashboardWidget::handleMenuChanged() {
-    QPushButton* clickedButton = qobject_cast<QPushButton*>(sender());
-    if (!clickedButton) return;
-
-    m_btnDash->setObjectName("");
-    m_btnPatients->setObjectName("");
-    m_btnDash->setStyle(m_btnDash->style());
-    m_btnPatients->setStyle(m_btnPatients->style());
-
-    clickedButton->setObjectName("activeBtn");
-    clickedButton->setStyle(clickedButton->style());
-
-    if (clickedButton == m_btnDash) {
-        m_dynamicStackedWidget->setCurrentWidget(m_defaultDashboardView);
-    } 
-    else if (clickedButton == m_btnPatients) {
-        m_dynamicStackedWidget->setCurrentWidget(m_patientPage);
-    }
 }
