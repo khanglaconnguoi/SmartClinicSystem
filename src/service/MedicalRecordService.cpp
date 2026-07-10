@@ -12,19 +12,19 @@ MedicalRecordService::MedicalRecordService(
       m_pharmacyService(pharmacyService) {}
 
 int MedicalRecordService::createMedicalRecord(const MedicalRecordInsertDTO &dto) {
-    QString errVitals = validateVitalSigns(dto.vitals);
+    QString errVitals = Validation::validateVitalSigns(dto.vitals);
     if (!errVitals.isEmpty()) {
         qDebug() << "Validation failed (vitals):" << errVitals;
         return -1;
     }
 
-    QString errChief = validateChiefComplaint(dto.chiefComplaint);
+    QString errChief = Validation::validateChiefComplaint(dto.chiefComplaint);
     if (!errChief.isEmpty()) {
         qDebug() << "Validation failed (chief complaint):" << errChief;
         return -1;
     }
 
-    QString errDiag = validateDiagnosisList(dto.diagnoses);
+    QString errDiag = Validation::validateDiagnosisList(dto.diagnoses);
     if (!errDiag.isEmpty()) {
         qDebug() << "Validation failed (diagnoses):" << errDiag;
         return -1;
@@ -34,19 +34,19 @@ int MedicalRecordService::createMedicalRecord(const MedicalRecordInsertDTO &dto)
 }
 
 bool MedicalRecordService::updateMedicalRecord(const MedicalRecordUpdateDTO &dto) {
-    QString errVitals = validateVitalSigns(dto.vitals);
+    QString errVitals = Validation::validateVitalSigns(dto.vitals);
     if (!errVitals.isEmpty()) {
         qDebug() << "Validation failed (vitals):" << errVitals;
         return false;
     }
 
-    QString errChief = validateChiefComplaint(dto.chiefComplaint);
+    QString errChief = Validation::validateChiefComplaint(dto.chiefComplaint);
     if (!errChief.isEmpty()) {
         qDebug() << "Validation failed (chief complaint):" << errChief;
         return false;
     }
 
-    QString errDiag = validateDiagnosisList(dto.diagnoses);
+    QString errDiag = Validation::validateDiagnosisList(dto.diagnoses);
     if (!errDiag.isEmpty()) {
         qDebug() << "Validation failed (diagnoses):" << errDiag;
         return false;

@@ -3,6 +3,7 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QVariantList>
+#include <optional>
 
 class DatabaseManager {
 private:
@@ -29,6 +30,34 @@ public:
   // 2. Xóa tính năng copy để đảm bảo chỉ có 1 Object duy nhất tồn tại
   DatabaseManager(const DatabaseManager &) = delete;
   DatabaseManager &operator=(const DatabaseManager &) = delete;
+
+    struct AppointmentRecord {
+        int appointmentId;
+        int patientId;
+        QString doctorId;
+        QString appointmentDate;
+        QString startTime;
+        QString endTime;
+        QString status;
+        QString reason;
+        QString notes;
+        QString patientName;
+        QString patientCode;
+        QString roomNumber;
+    };
+
+    struct PatientRecord {
+        int patientId;
+        QString patientCode;
+        QString fullName;
+        QString phone;
+    };
+
+    QList<AppointmentRecord> getDoctorAppointments(const QString &doctorId, const QString &date = "");
+    bool updateAppointmentStatus(int appointmentId, const QString &status);
+    std::optional<PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId);
+    bool createAppointment(int patientId, const QString &doctorCode, int createdBy, const QString &date, const QString &startTime, const QString &reason);
+
 
   QSqlQuery executeQuery(const QString &sql, const QVariantList &params = {});
   QSqlQuery selectQuery(const QString &sql, const QVariantList &params = {});

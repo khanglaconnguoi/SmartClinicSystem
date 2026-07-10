@@ -296,8 +296,8 @@ QString PatientService::validateBaseInput(
     int patientId, const QString &patientCode, const QString &fullName,
     const QDate &dateOfBirth, const QString &gender, const QString &citizenId,
     const QString &phone, const QString &email, const QString &address,
-    const QString &bloodType, const QString &allergies,
-    const QString &insurance, const QString &type,
+    const QString &bloodType, const QString &/*allergies*/,
+    const QString &/*insurance*/, const QString &type,
     const QString &emergencyContactName, const QString &emergencyContactPhone) {
 
   if (patientId < 0)
@@ -312,22 +312,22 @@ QString PatientService::validateBaseInput(
     return "Gender is required.";
 
   QString err;
-  err = validateCitizenId(citizenId);
+  err = Validation::validateCitizenId(citizenId);
   if (!err.isEmpty())
     return err;
 
-  err = validatePhoneNumber(phone);
+  err = Validation::validatePhoneNumber(phone);
   if (!err.isEmpty())
     return err;
 
-  err = validateEmail(email);
+  err = Validation::validateEmail(email);
   if (!err.isEmpty())
     return err;
 
   if (address.isEmpty())
     return "Address is required.";
 
-  err = validateBloodType(bloodType);
+  err = Validation::validateBloodType(bloodType);
   if (!err.isEmpty())
     return err;
 
@@ -337,7 +337,7 @@ QString PatientService::validateBaseInput(
   if (emergencyContactName.isEmpty())
     return "Emergency contact name is required.";
 
-  err = validatePhoneNumber(emergencyContactPhone);
+  err = Validation::validatePhoneNumber(emergencyContactPhone);
   if (!err.isEmpty())
     return err;
 
@@ -388,8 +388,8 @@ QString PatientService::validateEmergencyPatientInput(
 QString PatientService::validateUpdateBaseInput(
     int patientId, const QString &fullName, const QDate &dateOfBirth,
     const QString &gender, const QString &citizenId, const QString &phone,
-    const QString &email, const QString &bloodType, const QString &allergies,
-    const QString &insurance) {
+    const QString &email, const QString &bloodType, const QString &/*allergies*/,
+    const QString &/*insurance*/) {
   if (patientId <= 0)
     return "Invalid patient ID.";
   if (fullName.isEmpty())
@@ -401,19 +401,19 @@ QString PatientService::validateUpdateBaseInput(
   // allergies và insurance là tùy chọn, không bắt buộc
 
   QString err;
-  err = validateCitizenId(citizenId);
+  err = Validation::validateCitizenId(citizenId);
   if (!err.isEmpty())
     return err;
 
-  err = validatePhoneNumber(phone);
+  err = Validation::validatePhoneNumber(phone);
   if (!err.isEmpty())
     return err;
 
-  err = validateEmail(email);
+  err = Validation::validateEmail(email);
   if (!err.isEmpty())
     return err;
 
-  err = validateBloodType(bloodType);
+  err = Validation::validateBloodType(bloodType);
   if (!err.isEmpty())
     return err;
 
@@ -625,7 +625,7 @@ bool PatientService::UpdateEmergencyPatient(
 
 QVector<PatientSearchResultDTO>
 PatientService::searchPatients(const PatientSearchCriteria &criteria) {
-  QString err = validateDateRange(criteria.fromDate.value_or(QDate()),
+  QString err = Validation::validateDateRange(criteria.fromDate.value_or(QDate()),
                                   criteria.toDate.value_or(QDate()));
   if (!err.isEmpty()) {
     QMessageBox::warning(nullptr, "Validation Error", err);
@@ -644,7 +644,7 @@ std::optional<PatientDetailDTO> PatientService::getPatientById(int patientId) {
 }
 
 int PatientService::countSearchResults(const PatientSearchCriteria &criteria) {
-  QString err = validateDateRange(criteria.fromDate.value_or(QDate()),
+  QString err = Validation::validateDateRange(criteria.fromDate.value_or(QDate()),
                                   criteria.toDate.value_or(QDate()));
   if (!err.isEmpty()) {
     return 0; // Trả về 0 nếu có lỗi validate ngày tháng
