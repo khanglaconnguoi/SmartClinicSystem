@@ -130,7 +130,7 @@ void BaseDashboardWidget::setupMainContentFrame() {
     m_mainContentLayout->setSpacing(25);
     m_defaultDashboardView->setLayout(m_mainContentLayout);
     
-    m_patientPage = new Patient(this);
+    m_patientPage = new PatientView(this);
 
     m_dynamicStackedWidget->addWidget(m_defaultDashboardView);
     m_dynamicStackedWidget->addWidget(m_patientPage);

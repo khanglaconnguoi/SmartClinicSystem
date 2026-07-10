@@ -1,11 +1,23 @@
+/**
+ * @file    Validation.cpp
+ * @brief   Implementación của Validation.
+ *          Tập hợp các hàm kiểm tra đầu vào.
+ */
+
 #include "Validation.h"
 
 #include <QRegularExpression>
 #include <algorithm>
 #include <array>
+#include <QStringList>
 
 namespace Validation {
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Hằng số nội bộ
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Mã tỉnh/thành đầu CCCD hợp lệ (63 tỉnh thành Việt Nam).
 static constexpr std::array<QStringView, 63> CITIZEN_ID_VALID_PREFIXES = {u"001", u"002", u"004",
         u"006", u"008", u"010", u"011", u"012", u"014", u"015", u"017", u"019", u"020", u"022",
         u"023", u"025", u"026", u"027", u"030", u"031", u"033", u"034", u"035", u"036", u"037",
@@ -13,6 +25,10 @@ static constexpr std::array<QStringView, 63> CITIZEN_ID_VALID_PREFIXES = {u"001"
         u"056", u"058", u"060", u"062", u"064", u"066", u"067", u"068", u"070", u"072", u"074",
         u"075", u"077", u"079", u"080", u"082", u"083", u"084", u"086", u"087", u"089", u"091",
         u"092", u"093", u"094", u"095", u"096"};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trường đơn lẻ
+// ─────────────────────────────────────────────────────────────────────────────
 
 QString validatePlainPassword(const QString& plainPassword) {
     if (plainPassword.length() < PASSWORD_MINIMUM_LENGTH)
@@ -70,11 +86,13 @@ QString validatePhoneNumber(const QString& phoneNumber) {
 
     switch (phoneNumber.length()) {
         case MOBILE_PHONE_NUMBER_LENGTH:
+            // Số di động: chữ số thứ 2 không được là 0, 1, 2, 6
             if (phoneNumber[1] == '0' || phoneNumber[1] == '1' || phoneNumber[1] == '2' ||
                     phoneNumber[1] == '6')
                 return msgInvalidPhoneNumber;
             break;
         case LANDLINE_PHONE_NUMBER_LENGTH:
+            // Số bàn: chữ số thứ 2 phải là 2
             if (phoneNumber[1] != '2') return msgInvalidPhoneNumber;
             break;
         default:
@@ -107,6 +125,58 @@ QString validateDateOfBirth(const QDate& dateOfBirth) {
     if (dateOfBirth > today) { return "Date of birth cannot be in the future."; }
 
     return "";
+}
+
+QString validateBloodType(const QString &bloodType) {
+  const QStringList valid = {"A+",  "A-", "B+", "B-",     "AB+",
+                             "AB-", "O+", "O-", "UNKNOWN"};
+  if (bloodType.isEmpty())
+    return "Blood type is required. If unknown, please enter UNKNOWN.";
+  if (!valid.contains(bloodType))
+    return "Invalid blood type. If unknown, please enter UNKNOWN.";
+  return "";
+}
+
+QString validateDateRange(const QDate &fromDate, const QDate &toDate) {
+  // Không lọc theo ngày, hoặc chỉ lọc một đầu mốc → luôn hợp lệ.
+  if (!fromDate.isValid() || !toDate.isValid())
+    return "";
+
+  if (fromDate > toDate)
+    return "Ngày bắt đầu (fromDate) không được sau ngày kết thúc (toDate).";
+
+  return "";
+}
+
+QString validateVitalSigns(const VitalSigns &vitals) {
+  if (vitals.temperature < 30.0 || vitals.temperature > 45.0)
+    return "Nhiệt độ cơ thể phải nằm trong khoảng 30.0 đến 45.0 °C.";
+  if (vitals.heartRate < 30 || vitals.heartRate > 250)
+    return "Nhịp tim phải nằm trong khoảng 30 đến 250 bpm.";
+  if (vitals.weight <= 0 || vitals.weight > 500)
+    return "Cân nặng phải lớn hơn 0 và nhỏ hơn hoặc bằng 500 kg.";
+  if (vitals.height <= 0 || vitals.height > 250)
+    return "Chiều cao phải lớn hơn 0 và nhỏ hơn hoặc bằng 250 cm.";
+  return "";
+}
+
+QString validateChiefComplaint(const QString &complaint) {
+  if (complaint.trimmed().isEmpty())
+    return "Lý do khám không được để trống.";
+  return "";
+}
+
+QString validateDiagnosisList(const QList<Diagnosis> &diagnoses) {
+  if (diagnoses.isEmpty())
+    return "Phải có ít nhất một chẩn đoán.";
+  for (const Diagnosis &d : diagnoses) {
+    if (d.description.trimmed().isEmpty())
+      return "Mô tả chẩn đoán không được để trống.";
+    QString severity = d.severity.toUpper();
+    if (severity != "MILD" && severity != "MODERATE" && severity != "SEVERE")
+      return "Mức độ chẩn đoán không hợp lệ.";
+  }
+  return "";
 }
 
 }  // namespace Validation

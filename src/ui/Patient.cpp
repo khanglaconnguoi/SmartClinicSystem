@@ -1,11 +1,11 @@
 // Patient.cpp
 #include "Patient.h"
 
-Patient::Patient(QWidget *parent) : QWidget(parent) {
+PatientView::PatientView(QWidget *parent) : QWidget(parent) {
     setupUi();
 }
 
-void Patient::setupUi() {
+void PatientView::setupUi() {
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(0);
@@ -22,7 +22,7 @@ void Patient::setupUi() {
     m_mainStackedWidget->setCurrentWidget(m_listViewWidget);
 }
 
-void Patient::createListView() {
+void PatientView::createListView() {
     m_listViewWidget = new QWidget(this);
     QVBoxLayout* listLayout = new QVBoxLayout(m_listViewWidget);
     listLayout->setContentsMargins(16, 12, 16, 16);
@@ -165,10 +165,10 @@ void Patient::createListView() {
     scrollLayout->addWidget(container);
     listLayout->addWidget(scrollArea, 1);
 
-    connect(m_patientTable, &QTableWidget::cellClicked, this, &Patient::handlePatientSelected);
+    connect(m_patientTable, &QTableWidget::cellClicked, this, &PatientView::handlePatientSelected);
 }
 
-void Patient::createDetailView() {
+void PatientView::createDetailView() {
     m_detailViewWidget = new QWidget(this);
     QVBoxLayout* detailLayout = new QVBoxLayout(m_detailViewWidget);
     detailLayout->setContentsMargins(15, 15, 15, 15);
@@ -685,7 +685,7 @@ void Patient::createDetailView() {
         m_detailStackedWidget->setCurrentWidget(m_recordSubPage);
     });
 
-    connect(m_btnBack, &QPushButton::clicked, this, &Patient::showPatientList);
+    connect(m_btnBack, &QPushButton::clicked, this, &PatientView::showPatientList);
     
     connect(m_btnEditInfo, &QPushButton::clicked, this, [this, radioContainer]() {
         if (m_btnEditInfo->text() == "Chỉnh sửa thông tin") {
@@ -760,7 +760,7 @@ void Patient::createDetailView() {
     });
 }
 
-void Patient::handlePatientSelected(int row, int column) {
+void PatientView::handlePatientSelected(int row, int column) {
     Q_UNUSED(row);
     Q_UNUSED(column);
     
@@ -773,8 +773,8 @@ void Patient::handlePatientSelected(int row, int column) {
     m_mainStackedWidget->setCurrentWidget(m_detailViewWidget);
 }
 
-void Patient::showPatientList() {
+void PatientView::showPatientList() {
     m_mainStackedWidget->setCurrentWidget(m_listViewWidget);
 }
 
-Patient::~Patient() {}
+PatientView::~PatientView() {}

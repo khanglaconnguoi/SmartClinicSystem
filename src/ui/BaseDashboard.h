@@ -72,7 +72,7 @@ protected:
     QTableWidget* m_patientTable;   
     QStackedWidget* m_dynamicStackedWidget;
     QWidget* m_defaultDashboardView;
-    Patient* m_patientPage;
+    PatientView* m_patientPage;
 
 private:
     QHBoxLayout* m_globalLayout;

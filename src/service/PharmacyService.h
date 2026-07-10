@@ -1,0 +1,169 @@
+/**
+ * @file    service/PharmacyService.h
+ * @brief   Business Logic cho Dược phẩm & Kê đơn
+ *
+ * PHẠM VI:
+ *   - Quản lý kho thuốc (tìm kiếm, kiểm tra tồn kho, cảnh báo)
+ *   - Tạo / hủy đơn thuốc (validate + snapshot giá)
+ *   - Cấp phát thuốc (Dược sĩ/Y tá thao tác)
+ *   - Cung cấp dữ liệu đơn thuốc cho BillingService
+ *
+ * KHÔNG THUỘC PHẠM VI:
+ *   - Tạo hồ sơ khám (MedicalRecordService)
+ *   - Tính hóa đơn (BillingService)
+ *   - PharmacyService KHÔNG gọi MedicalRecordService và ngược lại
+ *     — UI là nơi kết nối hai service này qua recordId
+ *
+ * LƯU Ý VỀ THIẾT KẾ:
+ *   - addPrescription() và getPrescriptionByRecordId() trong
+ *     MedicalRecordService PHẢI được chuyển sang PharmacyService.
+ *   - Return type: QString — rỗng = thành công, có nội dung = thông báo lỗi
+ *     (nhất quán với pattern của StaffService hiện tại trong project).
+ */
+#pragma once
+#include "dto/PrescriptionDTOs.h"
+#include "dto/MedicationDTOs.h"
+#include "repository/MedicationRepository.h"
+#include "repository/PrescriptionRepository.h"
+#include <QDate>
+#include <QList>
+#include <memory>
+#include <optional>
+
+class PharmacyService {
+private:
+    std::shared_ptr<MedicationRepository>   m_medicationRepo;
+    std::shared_ptr<PrescriptionRepository> m_prescriptionRepo;
+
+    // ── Private Aggregate Validator ──────────────────────────────────
+
+    /**
+     * @brief Chuẩn hóa dữ liệu: trim khoảng trắng, viết hoa mã thuốc,
+     *        loại bỏ hoạt chất trùng lặp trong cùng 1 lần submit.
+     *        LUÔN gọi trước validate — đảm bảo validate trên dữ liệu đã sạch.
+     */
+    void normalizeMedicationInput(MedicationInputDTO& input) const;
+
+    /**
+     * @brief Validate toàn bộ field — dùng chung cho cả add và update.
+     */
+    QString validateMedicationInput(const MedicationInputDTO& input) const;
+
+    void normalizePrescriptionInput(PrescriptionInputDTO& input) const;
+
+    /**
+     * @brief Validate toàn bộ đơn thuốc trước khi INSERT.
+     *        Gọi tuần tự: kiểm tra record hợp lệ → kiểm tra từng item.
+     *        Dừng lại và trả về lỗi ngay khi gặp item đầu tiên không hợp lệ.
+     * @return "" nếu hợp lệ, chuỗi mô tả lỗi nếu không
+     */
+    QString validatePrescriptionInput(const PrescriptionInputDTO& input) const;
+
+public:
+    explicit PharmacyService(
+        std::shared_ptr<MedicationRepository>   medicationRepo,
+        std::shared_ptr<PrescriptionRepository> prescriptionRepo
+    ) : 
+        m_medicationRepo(medicationRepo),
+        m_prescriptionRepo(prescriptionRepo)
+    {}
+
+    // ════════════════════════════════════════════════════════════════
+    // KHO THUỐC — Medication Inventory
+    // ════════════════════════════════════════════════════════════════
+
+    QString addMedication(MedicationInputDTO& dto);
+    QString updateMedication(int medicationId, MedicationInputDTO& dto);
+
+
+    /**
+     * @brief Tìm kiếm thuốc — bác sĩ gọi khi đang lập đơn.
+     *        Mặc định chỉ trả về thuốc còn hàng và chưa hết hạn.
+     */
+    QList<MedicationSummaryDTO> searchMedications(MedicationSearchCriteria& criteria) const;
+
+    /**
+     * @brief Lấy chi tiết 1 thuốc theo ID — dùng khi bác sĩ xem thông tin
+     *        trước khi kê đơn (thành phần, chỉ định, hướng dẫn dùng).
+     */
+    std::optional<MedicationSummaryDTO> getMedicationById(int medicationId) const;
+
+    /**
+     * @brief Danh sách thuốc sắp hết hàng (stockQuantity <= reorderThreshold).
+     *        Dashboard Admin/Dược sĩ hiển thị cảnh báo.
+     */
+    QList<MedicationSummaryDTO> getLowStockMedications() const;
+
+    /**
+     * @brief Danh sách thuốc sắp hết hạn trong vòng N ngày.
+     *        Dashboard Admin/Dược sĩ hiển thị cảnh báo.
+     * @param withinDays Ngưỡng cảnh báo (mặc định 30 ngày)
+     */
+    QList<MedicationSummaryDTO> getExpiringMedications(int withinDays = 30) const;
+
+    // ════════════════════════════════════════════════════════════════
+    // KÊ ĐƠN — Prescription Creation
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * @brief Tạo đơn thuốc mới sau khi bác sĩ hoàn thành khám.
+     *
+     * Các bước xử lý bên trong:
+     *   1. Validate input (recordId hợp lệ, items không rỗng)
+     *   2. Với mỗi item: load Medication → kiểm tra isEligibleForPrescription()
+     *   3. Snapshot medicationName và unitPrice từ Medication object
+     *   4. Gọi PrescriptionRepository::insert() trong 1 transaction:
+     *        INSERT prescriptions → INSERT prescription_items → deduct stock
+     *
+     * @param input  Thông tin đơn thuốc từ UI (items chưa có snapshot)
+     * @return "" nếu thành công, chuỗi lỗi nếu thất bại
+     *
+     * @note recordId phải là kết quả trả về từ
+     *       MedicalRecordService::createMedicalRecord() trong cùng ca khám.
+     *       UI chịu trách nhiệm truyền đúng recordId này.
+     */
+    QString createPrescription(PrescriptionInputDTO& input);
+
+    /**
+     * @brief Hủy đơn thuốc — chỉ hủy được khi status = "PENDING".
+     *        Hoàn trả tồn kho cho tất cả items trong đơn bị hủy.
+     * @param prescriptionId  Đơn thuốc cần hủy
+     * @param cancelledBy     staff_id của người hủy (bác sĩ hoặc dược sĩ)
+     * @return "" nếu thành công, chuỗi lỗi nếu thất bại
+     */
+    QString cancelPrescription(int prescriptionId, int cancelledBy, const QString& reason);
+
+    // ════════════════════════════════════════════════════════════════
+    // CẤP PHÁT THUỐC — Dispensing (Dược sĩ / Y tá thực hiện)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * @brief Dược sĩ xác nhận đã cấp phát thuốc cho bệnh nhân.
+     *        Chuyển trạng thái: PENDING → DISPENSED.
+     *        Tồn kho đã bị trừ lúc createPrescription() — không trừ thêm.
+     * @param prescriptionId  Đơn cần cấp phát
+     * @param dispensedBy     staff_id của dược sĩ/y tá thực hiện
+     * @return "" nếu thành công, chuỗi lỗi nếu thất bại
+     */
+    QString dispensePrescription(int prescriptionId, int dispensedBy);
+
+    // ════════════════════════════════════════════════════════════════
+    // TRUY VẤN — Queries
+    // ════════════════════════════════════════════════════════════════
+
+    QList<PrescriptionResultDTO> searchPrescriptions(PrescriptionSearchCriteria& criteria) const;
+
+    /**
+     * @brief Lấy đơn thuốc theo hồ sơ khám.
+     *        BillingService gọi hàm này để lấy danh sách thuốc + giá snapshot
+     *        khi tổng hợp hóa đơn.
+     *        UI gọi để hiển thị đơn thuốc trong màn hình xem hồ sơ.
+     */
+    std::optional<PrescriptionResultDTO> getPrescriptionByRecordId(int recordId) const;
+
+    /**
+     * @brief Lấy lịch sử đơn thuốc của 1 bệnh nhân qua tất cả lần khám.
+     *        Dùng để kiểm tra tiền sử dùng thuốc — hỗ trợ cảnh báo dị ứng.
+     */
+    QList<PrescriptionResultDTO> getPrescriptionsByPatient(int patientId) const;
+};

@@ -20,12 +20,12 @@
 #include <QGraphicsDropShadowEffect>
 #include <QDateEdit>
 
-class Patient : public QWidget {
+class PatientView : public QWidget {
     Q_OBJECT
 
 public:
-    explicit Patient(QWidget *parent = nullptr);
-    ~Patient() override;
+    explicit PatientView(QWidget *parent = nullptr);
+    ~PatientView() override;
 
 private slots:
     void handlePatientSelected(int row, int column);
