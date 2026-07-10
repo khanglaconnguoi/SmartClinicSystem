@@ -1,4 +1,5 @@
 #include "MedicalRecordService.h"
+#include "model/MedicalRecord.h"
 #include "repository/MedicalRecordRepository.h"
 #include "utils/StringSanitize.h"
 #include <QDebug>
@@ -6,8 +7,7 @@
 MedicalRecordService::MedicalRecordService(
     std::shared_ptr<MedicalRecordRepository> recordRepo,
     std::shared_ptr<PatientService> patientService)
-    : m_recordRepository(recordRepo),
-      m_patientService(patientService) {}
+    : m_recordRepository(recordRepo), m_patientService(patientService) {}
 
 QString MedicalRecordService::validateVitalSigns(const VitalSigns &vitals) {
   if (vitals.temperature < 30.0 || vitals.temperature > 45.0)
@@ -27,7 +27,8 @@ QString MedicalRecordService::validateChiefComplaint(const QString &complaint) {
   return "";
 }
 
-QString MedicalRecordService::validateDiagnosisList(const QList<Diagnosis> &diagnoses) {
+QString
+MedicalRecordService::validateDiagnosisList(const QList<Diagnosis> &diagnoses) {
   if (diagnoses.isEmpty())
     return "Phải có ít nhất một chẩn đoán.";
   for (const Diagnosis &d : diagnoses) {
@@ -44,84 +45,87 @@ QString MedicalRecordService::validateDiagnosisList(const QList<Diagnosis> &diag
 // Normalize
 // ─────────────────────────────────────────────────────────────────────────────
 
-void MedicalRecordService::normalizeMedicalRecordInput(MedicalRecordInsertDTO &dto) {
+void MedicalRecordService::normalizeMedicalRecordInput(
+    MedicalRecordInsertDTO &dto) {
   dto.chiefComplaint = dto.chiefComplaint.trimmed();
-  dto.clinicalNotes  = dto.clinicalNotes.trimmed();
-  dto.treatment      = dto.treatment.trimmed();
+  dto.clinicalNotes = dto.clinicalNotes.trimmed();
+  dto.treatment = dto.treatment.trimmed();
 
   for (Diagnosis &d : dto.diagnoses) {
     d.description = StringSanitize::collapseSpaces(d.description);
-    d.severity    = d.severity.trimmed().toUpper();
-    d.icdCode     = d.icdCode.trimmed().toUpper();
+    d.severity = d.severity.trimmed().toUpper();
+    d.icdCode = d.icdCode.trimmed().toUpper();
   }
 }
 
-void MedicalRecordService::normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto) {
+void MedicalRecordService::normalizeMedicalRecordUpdate(
+    MedicalRecordUpdateDTO &dto) {
   dto.chiefComplaint = dto.chiefComplaint.trimmed();
-  dto.clinicalNotes  = dto.clinicalNotes.trimmed();
-  dto.treatment      = dto.treatment.trimmed();
+  dto.clinicalNotes = dto.clinicalNotes.trimmed();
+  dto.treatment = dto.treatment.trimmed();
 
   for (Diagnosis &d : dto.diagnoses) {
     d.description = StringSanitize::collapseSpaces(d.description);
-    d.severity    = d.severity.trimmed().toUpper();
-    d.icdCode     = d.icdCode.trimmed().toUpper();
+    d.severity = d.severity.trimmed().toUpper();
+    d.icdCode = d.icdCode.trimmed().toUpper();
   }
 }
 
 int MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
-    normalizeMedicalRecordInput(dto);
+  normalizeMedicalRecordInput(dto);
 
-    QString errVitals = validateVitalSigns(dto.vitals);
-    if (!errVitals.isEmpty()) {
-        qDebug() << "Validation failed (vitals):" << errVitals;
-        return -1;
-    }
+  QString errVitals = validateVitalSigns(dto.vitals);
+  if (!errVitals.isEmpty()) {
+    qDebug() << "Validation failed (vitals):" << errVitals;
+    return -1;
+  }
 
-    QString errChief = validateChiefComplaint(dto.chiefComplaint);
-    if (!errChief.isEmpty()) {
-        qDebug() << "Validation failed (chief complaint):" << errChief;
-        return -1;
-    }
+  QString errChief = validateChiefComplaint(dto.chiefComplaint);
+  if (!errChief.isEmpty()) {
+    qDebug() << "Validation failed (chief complaint):" << errChief;
+    return -1;
+  }
 
-    QString errDiag = validateDiagnosisList(dto.diagnoses);
-    if (!errDiag.isEmpty()) {
-        qDebug() << "Validation failed (diagnoses):" << errDiag;
-        return -1;
-    }
+  QString errDiag = validateDiagnosisList(dto.diagnoses);
+  if (!errDiag.isEmpty()) {
+    qDebug() << "Validation failed (diagnoses):" << errDiag;
+    return -1;
+  }
 
-    return m_recordRepository->insertMedicalRecord(dto);
+  return m_recordRepository->insertMedicalRecord(dto);
 }
 
 bool MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
-    normalizeMedicalRecordUpdate(dto);
+  normalizeMedicalRecordUpdate(dto);
 
-    QString errVitals = validateVitalSigns(dto.vitals);
-    if (!errVitals.isEmpty()) {
-        qDebug() << "Validation failed (vitals):" << errVitals;
-        return false;
-    }
+  QString errVitals = validateVitalSigns(dto.vitals);
+  if (!errVitals.isEmpty()) {
+    qDebug() << "Validation failed (vitals):" << errVitals;
+    return false;
+  }
 
-    QString errChief = validateChiefComplaint(dto.chiefComplaint);
-    if (!errChief.isEmpty()) {
-        qDebug() << "Validation failed (chief complaint):" << errChief;
-        return false;
-    }
+  QString errChief = validateChiefComplaint(dto.chiefComplaint);
+  if (!errChief.isEmpty()) {
+    qDebug() << "Validation failed (chief complaint):" << errChief;
+    return false;
+  }
 
-    QString errDiag = validateDiagnosisList(dto.diagnoses);
-    if (!errDiag.isEmpty()) {
-        qDebug() << "Validation failed (diagnoses):" << errDiag;
-        return false;
-    }
+  QString errDiag = validateDiagnosisList(dto.diagnoses);
+  if (!errDiag.isEmpty()) {
+    qDebug() << "Validation failed (diagnoses):" << errDiag;
+    return false;
+  }
 
-    return m_recordRepository->updateMedicalRecord(dto);
+  return m_recordRepository->updateMedicalRecord(dto);
 }
 
 bool MedicalRecordService::softDeleteMedicalRecord(int recordId) {
-    return m_recordRepository->softDeleteMedicalRecord(recordId);
+  return m_recordRepository->softDeleteMedicalRecord(recordId);
 }
 
-QList<MedicalRecordResultDTO> MedicalRecordService::getMedicalHistory(int patientId) {
-    return m_recordRepository->getHistoryByPatientId(patientId);
+QList<MedicalRecordResultDTO>
+MedicalRecordService::getMedicalHistory(int patientId) {
+  return m_recordRepository->getHistoryByPatientId(patientId);
 }
 
 QList<MedicalRecordSummaryDTO> MedicalRecordService::searchMedicalRecords(
@@ -133,4 +137,3 @@ int MedicalRecordService::countSearchResults(
     const MedicalRecordSearchCriteria &criteria) {
   return m_recordRepository->countSearchResults(criteria);
 }
-

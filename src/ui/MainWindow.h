@@ -1,35 +1,32 @@
-/**
- * @file    MainWindow.h
-/**
- * @file    MainWindow.h
- * @brief   Cửa sổ chính của ứng dụng Smart Clinic System.
- */
 #pragma once
 
 #include <QMainWindow>
+#include <QStackedWidget>
+#include <memory>
+#include "LoginDialog.h"
+#include "BaseDashboard.h"
+#include "service/AuthService.h" 
+#include "service/StaffService.h"
 
-class PatientRepository;
-class PatientService;
-class QStackedWidget;
-class QLabel;
-class QPushButton;
-
-/**
- * @brief MainWindow — khởi tạo dependency chain.
- */
 class MainWindow : public QMainWindow {
-  Q_OBJECT
+    Q_OBJECT
 
 public:
-  explicit MainWindow(QWidget *parent = nullptr);
-  ~MainWindow() override;
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override;
+
+private slots:
+    void handleGlobalLogout();
 
 private:
-  void setupUi();
+    void registerDashboardPage(BaseDashboardWidget* page);
+    void switchToDoctorDashboard(std::shared_ptr<IAuthenticatable> user);
+    void switchToPatientDashboard(std::shared_ptr<IAuthenticatable> user);
+    void switchToAdminDashboard(std::shared_ptr<IAuthenticatable> user);
+    void switchToReceptionDashboard(std::shared_ptr<IAuthenticatable> user);
 
-  PatientService *m_patientService;
-
-  QStackedWidget *m_stackedWidget;
-  QLabel *m_lblTitle;
-  QLabel *m_lblUserInfo;
+    QStackedWidget* m_stackedWidget;
+    LoginDialog* m_loginWidget;
+    std::shared_ptr<AuthService> m_authService;
+    std::shared_ptr<StaffService> m_staffService;
 };

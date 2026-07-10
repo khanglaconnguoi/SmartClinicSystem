@@ -48,6 +48,10 @@ compile_commands.json
 
 # VS Code history / backup files
 .history/
+.vscode/
+
+# Antigravity IDE local files
+/.agents/
 
 # --- Clangd Language Server ---
 # Ignore clangd index/cache folder (do not ignore the .clangd config file)
@@ -63,3 +67,7 @@ Desktop.ini
 *.db
 *.sqlite
 *.sqlite3
+
+# --- User-specific local files
+/_local/
+/.clangd

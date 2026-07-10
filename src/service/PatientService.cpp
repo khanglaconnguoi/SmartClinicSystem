@@ -10,6 +10,7 @@
 #include "repository/PatientRepository.h"
 #include "utils/StringSanitize.h"
 #include <QDateTime>
+#include <QDebug>
 #include <QMessageBox>
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -120,15 +121,16 @@ bool PatientService::addOutPatient(OutPatientInputDTO &dto) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 void PatientService::normalizePatientInput(PatientInputDTO &dto) {
-  dto.fullName              = StringSanitize::collapseSpaces(dto.fullName);
-  dto.citizenId             = dto.citizenId.trimmed();
-  dto.phone                 = dto.phone.trimmed();
-  dto.email                 = dto.email.trimmed().toLower();
-  dto.address               = StringSanitize::collapseSpaces(dto.address);
-  dto.bloodType             = dto.bloodType.trimmed().toUpper();
-  dto.allergies             = dto.allergies.trimmed();
-  dto.insurance             = dto.insurance.trimmed();
-  dto.emergencyContactName  = StringSanitize::collapseSpaces(dto.emergencyContactName);
+  dto.fullName = StringSanitize::collapseSpaces(dto.fullName);
+  dto.citizenId = dto.citizenId.trimmed();
+  dto.phone = dto.phone.trimmed();
+  dto.email = dto.email.trimmed().toLower();
+  dto.address = StringSanitize::collapseSpaces(dto.address);
+  dto.bloodType = dto.bloodType.trimmed().toUpper();
+  dto.allergies = dto.allergies.trimmed();
+  dto.insurance = dto.insurance.trimmed();
+  dto.emergencyContactName =
+      StringSanitize::collapseSpaces(dto.emergencyContactName);
   dto.emergencyContactPhone = dto.emergencyContactPhone.trimmed();
 }
 
@@ -142,7 +144,8 @@ QString PatientService::validateBloodType(const QString &bloodType) {
   if (bloodType.isEmpty())
     return "Nhóm máu không được để trống. Nếu không rõ, vui lòng nhập UNKNOWN.";
   if (!valid.contains(bloodType))
-    return "Nhóm máu không hợp lệ. Vui lòng nhập A+, A-, B+, B-, AB+, AB-, O+, O- hoặc UNKNOWN.";
+    return "Nhóm máu không hợp lệ. Vui lòng nhập A+, A-, B+, B-, AB+, AB-, O+, "
+           "O- hoặc UNKNOWN.";
   return "";
 }
 
@@ -152,7 +155,8 @@ QString PatientService::validateDateRange(const QDate &fromDate,
     return "";
 
   if (fromDate > toDate)
-    return "Ngày bắt đầu (Từ ngày) không được lớn hơn ngày kết thúc (Đến ngày).";
+    return "Ngày bắt đầu (Từ ngày) không được lớn hơn ngày kết thúc (Đến "
+           "ngày).";
 
   return "";
 }
@@ -223,15 +227,15 @@ QString PatientService::validateBaseInput(const PatientInputDTO &dto,
     return "Ngày sinh không hợp lệ.";
 
   QString err;
-  err = validateCitizenId(dto.citizenId);
+  err = Validation::validateCitizenId(dto.citizenId);
   if (!err.isEmpty())
     return err;
 
-  err = validatePhoneNumber(dto.phone);
+  err = Validation::validatePhoneNumber(dto.phone);
   if (!err.isEmpty())
     return err;
 
-  err = validateEmail(dto.email);
+  err = Validation::validateEmail(dto.email);
   if (!err.isEmpty())
     return err;
 
@@ -245,7 +249,7 @@ QString PatientService::validateBaseInput(const PatientInputDTO &dto,
   if (dto.emergencyContactName.isEmpty())
     return "Người liên hệ khẩn cấp không được để trống.";
 
-  err = validatePhoneNumber(dto.emergencyContactPhone);
+  err = Validation::validatePhoneNumber(dto.emergencyContactPhone);
   if (!err.isEmpty())
     return err;
 
@@ -297,15 +301,15 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
     return "Ngày sinh không hợp lệ (không được lớn hơn ngày hiện tại).";
 
   QString err;
-  err = validateCitizenId(dto.citizenId);
+  err = Validation::validateCitizenId(dto.citizenId);
   if (!err.isEmpty())
     return err;
 
-  err = validatePhoneNumber(dto.phone);
+  err = Validation::validatePhoneNumber(dto.phone);
   if (!err.isEmpty())
     return err;
 
-  err = validateEmail(dto.email);
+  err = Validation::validateEmail(dto.email);
   if (!err.isEmpty())
     return err;
 
@@ -316,169 +320,170 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
   return "";
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UpdatePatient
-// ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // UpdatePatient
+  // ─────────────────────────────────────────────────────────────────────────────
 
-bool PatientService::updatePatient(int patientId, PatientInputDTO &dto) {
-  normalizePatientInput(dto);
-  QString err = validateUpdateBaseInput(dto, patientId);
-  if (!err.isEmpty()) {
-    QMessageBox::warning(nullptr, "Validation Error", err);
-    return false;
+  bool PatientService::updatePatient(int patientId, PatientInputDTO &dto) {
+    normalizePatientInput(dto);
+    QString err = validateUpdateBaseInput(dto, patientId);
+    if (!err.isEmpty()) {
+      QMessageBox::warning(nullptr, "Validation Error", err);
+      return false;
+    }
+
+    PatientUpdateDTO updateDto(dto, patientId);
+    return m_patientRepository->updatePatient(updateDto);
   }
 
-  PatientUpdateDTO updateDto(dto, patientId);
-  return m_patientRepository->updatePatient(updateDto);
-}
+  // ─────────────────────────────────────────────────────────────────────────────
+  // updateOutPatient
+  // ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-// updateOutPatient
-// ─────────────────────────────────────────────────────────────────────────────
+  bool PatientService::updateOutPatient(int patientId, OutPatientInputDTO &dto,
+                                        const QString &status) {
+    normalizePatientInput(dto);
+    QString err = validateUpdateBaseInput(dto, patientId);
+    if (!err.isEmpty()) {
+      QMessageBox::warning(nullptr, "Validation Error", err);
+      return false;
+    }
 
-bool PatientService::updateOutPatient(int patientId,
-                                      OutPatientInputDTO &dto,
-                                      const QString &status) {
-  normalizePatientInput(dto);
-  QString err = validateUpdateBaseInput(dto, patientId);
-  if (!err.isEmpty()) {
-    QMessageBox::warning(nullptr, "Validation Error", err);
-    return false;
+    OutPatientUpdateDTO updateDto(dto, patientId, status);
+
+    if (!m_patientRepository->updatePatient(updateDto))
+      return false;
+
+    return m_patientRepository->updateOutPatient(updateDto);
   }
 
-  OutPatientUpdateDTO updateDto(dto, patientId, status);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // updateInPatient
+  // ─────────────────────────────────────────────────────────────────────────────
 
-  if (!m_patientRepository->updatePatient(updateDto))
-    return false;
+  bool PatientService::updateInPatient(int patientId, InPatientInputDTO &dto,
+                                       const QString &status) {
+    normalizePatientInput(dto);
+    QString err = validateUpdateBaseInput(dto, patientId);
+    if (!err.isEmpty()) {
+      QMessageBox::warning(nullptr, "Validation Error", err);
+      return false;
+    }
 
-  return m_patientRepository->updateOutPatient(updateDto);
-}
+    err = validateInPatientInput(dto);
+    if (!err.isEmpty()) {
+      QMessageBox::warning(nullptr, "Validation Error", err);
+      return false;
+    }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// updateInPatient
-// ─────────────────────────────────────────────────────────────────────────────
+    InPatientUpdateDTO updateDto(dto, patientId, status);
 
-bool PatientService::updateInPatient(int patientId,
-                                     InPatientInputDTO &dto,
-                                     const QString &status) {
-  normalizePatientInput(dto);
-  QString err = validateUpdateBaseInput(dto, patientId);
-  if (!err.isEmpty()) {
-    QMessageBox::warning(nullptr, "Validation Error", err);
-    return false;
+    if (!m_patientRepository->updatePatient(updateDto))
+      return false;
+
+    return m_patientRepository->updateInPatient(updateDto);
   }
 
-  err = validateInPatientInput(dto);
-  if (!err.isEmpty()) {
-    QMessageBox::warning(nullptr, "Validation Error", err);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // updateEmergencyPatient
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  bool PatientService::updateEmergencyPatient(
+      int patientId, EmergencyPatientInputDTO &dto, const QString &status) {
+    normalizePatientInput(dto);
+    QString err = validateUpdateBaseInput(dto, patientId);
+    if (!err.isEmpty()) {
+      QMessageBox::warning(nullptr, "Validation Error", err);
+      return false;
+    }
+
+    err = validateEmergencyPatientInput(dto);
+    if (!err.isEmpty()) {
+      QMessageBox::warning(nullptr, "Validation Error", err);
+      return false;
+    }
+
+    EmergencyPatientUpdateDTO updateDto(dto, patientId, status);
+
+    if (!m_patientRepository->updatePatient(updateDto))
+      return false;
+
+    return m_patientRepository->updateEmergencyPatient(updateDto);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Search / Lọc bệnh nhân
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  QList<PatientSearchResultDTO> PatientService::searchPatients(
+      const PatientSearchCriteria &criteria) {
+    QString err = validateDateRange(
+        criteria.fromDate.value_or(QDate()), criteria.toDate.value_or(QDate()));
+    if (!err.isEmpty()) {
+      // In service layer, returning empty list or throw exception, but let's
+      // keep previous logic
+      return QList<PatientSearchResultDTO>();
+    }
+
+    return m_patientRepository->searchPatients(criteria);
+  }
+
+  std::optional<PatientDetailDTO> PatientService::getPatientById(
+      int patientId) {
+    if (patientId <= 0) {
+      QMessageBox::warning(nullptr, "Lỗi", "ID bệnh nhân không hợp lệ.");
+      return std::nullopt;
+    }
+    return m_patientRepository->getPatientById(patientId);
+  }
+
+  int PatientService::countSearchResults(
+      const PatientSearchCriteria &criteria) {
+    QString err = validateDateRange(
+        criteria.fromDate.value_or(QDate()), criteria.toDate.value_or(QDate()));
+    if (!err.isEmpty()) {
+      return 0; // Trả về 0 nếu có lỗi validate ngày tháng
+    }
+
+    return m_patientRepository->countSearchResults(criteria);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Xóa / Khôi phục bệnh nhân
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  bool PatientService::softDeletePatient(int patientId) {
+    return m_patientRepository->softDeletePatient(patientId);
+  }
+
+  bool PatientService::restorePatient(int patientId) {
+    return m_patientRepository->restorePatient(patientId);
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────────
+  // Allergies & Insurance
+  // ───────────────────────────────────────────────────────────────────────────────
+
+  QList<AllergyResultDTO> PatientService::getAllergies(int patientId) {
+    return m_patientRepository->getAllergiesByPatientId(patientId);
+  }
+
+  std::optional<InsuranceResultDTO> PatientService::getInsurance(
+      int patientId) {
+    return m_patientRepository->getInsuranceByPatientId(patientId);
+  }
+
+  bool PatientService::checkDrugAllergyConflict(int patientId,
+                                                const QString &drugName) const {
+    QString allergies =
+        m_patientRepository->getAllergiesStringByPatientId(patientId);
+    if (allergies.trimmed().isEmpty())
+      return false;
+    const QStringList allergyList = allergies.split(',', Qt::SkipEmptyParts);
+    const QString target = drugName.trimmed().toLower();
+    for (const QString &entry : allergyList) {
+      if (entry.trimmed().toLower() == target)
+        return true;
+    }
     return false;
   }
-
-  InPatientUpdateDTO updateDto(dto, patientId, status);
-
-  if (!m_patientRepository->updatePatient(updateDto))
-    return false;
-
-  return m_patientRepository->updateInPatient(updateDto);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// updateEmergencyPatient
-// ─────────────────────────────────────────────────────────────────────────────
-
-bool PatientService::updateEmergencyPatient(int patientId,
-                                            EmergencyPatientInputDTO &dto,
-                                            const QString &status) {
-  normalizePatientInput(dto);
-  QString err = validateUpdateBaseInput(dto, patientId);
-  if (!err.isEmpty()) {
-    QMessageBox::warning(nullptr, "Validation Error", err);
-    return false;
-  }
-
-  err = validateEmergencyPatientInput(dto);
-  if (!err.isEmpty()) {
-    QMessageBox::warning(nullptr, "Validation Error", err);
-    return false;
-  }
-
-  EmergencyPatientUpdateDTO updateDto(dto, patientId, status);
-
-  if (!m_patientRepository->updatePatient(updateDto))
-    return false;
-
-  return m_patientRepository->updateEmergencyPatient(updateDto);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Search / Lọc bệnh nhân
-// ─────────────────────────────────────────────────────────────────────────────
-
-QList<PatientSearchResultDTO>
-PatientService::searchPatients(const PatientSearchCriteria &criteria) {
-  QString err = validateDateRange(criteria.fromDate.value_or(QDate()),
-                                  criteria.toDate.value_or(QDate()));
-  if (!err.isEmpty()) {
-    // In service layer, returning empty list or throw exception, but let's keep previous logic
-    return QList<PatientSearchResultDTO>();
-  }
-
-  return m_patientRepository->searchPatients(criteria);
-}
-
-std::optional<PatientDetailDTO> PatientService::getPatientById(int patientId) {
-  if (patientId <= 0) {
-    QMessageBox::warning(nullptr, "Lỗi", "ID bệnh nhân không hợp lệ.");
-    return std::nullopt;
-  }
-  return m_patientRepository->getPatientById(patientId);
-}
-
-int PatientService::countSearchResults(const PatientSearchCriteria &criteria) {
-  QString err = validateDateRange(criteria.fromDate.value_or(QDate()),
-                                  criteria.toDate.value_or(QDate()));
-  if (!err.isEmpty()) {
-    return 0; // Trả về 0 nếu có lỗi validate ngày tháng
-  }
-
-  return m_patientRepository->countSearchResults(criteria);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Xóa / Khôi phục bệnh nhân
-// ─────────────────────────────────────────────────────────────────────────────
-
-bool PatientService::softDeletePatient(int patientId) {
-  return m_patientRepository->softDeletePatient(patientId);
-}
-
-bool PatientService::restorePatient(int patientId) {
-  return m_patientRepository->restorePatient(patientId);
-}
-
-// ───────────────────────────────────────────────────────────────────────────────
-// Allergies & Insurance
-// ───────────────────────────────────────────────────────────────────────────────
-
-QList<AllergyResultDTO> PatientService::getAllergies(int patientId) {
-  return m_patientRepository->getAllergiesByPatientId(patientId);
-}
-
-std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) {
-  return m_patientRepository->getInsuranceByPatientId(patientId);
-}
-
-bool PatientService::checkDrugAllergyConflict(int patientId,
-                                              const QString &drugName) const {
-  QString allergies =
-      m_patientRepository->getAllergiesStringByPatientId(patientId);
-  if (allergies.trimmed().isEmpty())
-    return false;
-  const QStringList allergyList = allergies.split(',', Qt::SkipEmptyParts);
-  const QString target = drugName.trimmed().toLower();
-  for (const QString &entry : allergyList) {
-    if (entry.trimmed().toLower() == target)
-      return true;
-  }
-  return false;
-}

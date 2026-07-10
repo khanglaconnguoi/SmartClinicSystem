@@ -10,41 +10,35 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql Charts)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
+    "src/*.h"
+    "src/*.hpp"
+    "src/*.ui"
+    "src/*.qrc"
 )
 
-enable_testing()
-add_subdirectory(tests)
-
-add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wshadow)
 endif()
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}")
-
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /w14456 /w14457 /w14458 /w14459)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql)
+add_subdirectory(external/Bcrypt.cpp)
 
-target_include_directories(${PROJECT_NAME} PRIVATE external src)
+target_link_libraries(${PROJECT_NAME} PRIVATE bcrypt Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Sql Qt6::Charts)
 
-# Automatically deploy all required Qt DLLs after every build
-find_program(WINDEPLOYQT windeployqt6 HINTS "C:/Qt/6.11.1/mingw_64/bin")
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/external" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
 
-if(WINDEPLOYQT)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${WINDEPLOYQT}
-            --no-translations
-            "$<TARGET_FILE:${PROJECT_NAME}>"
-        COMMENT "Deploying Qt DLLs with windeployqt6..."
-    )
-else()
-    message(WARNING "windeployqt6 not found — Qt DLLs will not be auto-deployed.")
-endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}"
+)
