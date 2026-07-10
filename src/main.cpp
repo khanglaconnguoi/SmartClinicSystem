@@ -282,32 +282,20 @@ static void runComprehensiveTests() {
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
-  logFile.setFileName(app.applicationDirPath() + "/debug.log");
-  if (!logFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    qWarning() << "Cannot open log file:" << logFile.fileName();
-  }
-  qInstallMessageHandler(messageHandler);
-
   qDebug() << "=== SmartClinicSystem started ===";
 
   DatabaseManager &db = DatabaseManager::getInstance();
   if (!db.isOpen()) {
     qCritical() << "FATAL: Cannot open hospital.db — aborting startup.";
     QMessageBox::critical(nullptr, "Database Error", "Không thể mở CSDL.");
-    logFile.close();
     return 1;
   }
 
+  // Tự động seed dữ liệu mẫu
   seedDatabase();
   
-  // Run all comprehensive tests
-  runComprehensiveTests();
-
   MainWindow window;
   window.show();
 
-  int result = app.exec();
-
-  logFile.close();
-  return result;
+  return app.exec();
 }
