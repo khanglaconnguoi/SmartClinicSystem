@@ -70,3 +70,4 @@ Desktop.ini
 
 # --- User-specific local files
 /_local/
+/.clangd
