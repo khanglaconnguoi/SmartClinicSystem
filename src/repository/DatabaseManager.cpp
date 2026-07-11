@@ -374,7 +374,6 @@ bool DatabaseManager::createTables() {
     return false;
   }
 
-
   const QString sqlMedicationIngredients = R"(
     CREATE TABLE IF NOT EXISTS medication_ingredients (
       medication_id   INTEGER NOT NULL,
@@ -391,8 +390,6 @@ bool DatabaseManager::createTables() {
     m_db.rollback();
     return false;
   }
-
-
 
   const QString sqlPrescriptions = R"(
     CREATE TABLE IF NOT EXISTS prescriptions (
@@ -445,8 +442,6 @@ bool DatabaseManager::createTables() {
     m_db.rollback();
     return false;
   }
-
-  
 
   // Bảng Staff
   QString createStaff = R"(
@@ -661,24 +656,24 @@ bool DatabaseManager::createTables() {
 
 QSqlQuery DatabaseManager::executeQuery(const QString &sql,
                                         const QVariantList &params) {
-    QSqlQuery query(m_db);
+  QSqlQuery query(m_db);
 
-    if (!query.prepare(sql)) {
-        qDebug() << "Lỗi prepare query:" << query.lastError().text()
-                 << "| SQL:" << sql;
-        return query; // Trả về đối tượng query lỗi
-    }
+  if (!query.prepare(sql)) {
+    qDebug() << "Lỗi prepare query:" << query.lastError().text()
+             << "| SQL:" << sql;
+    return query; // Trả về đối tượng query lỗi
+  }
 
-    for (const QVariant &param : params) {
-        query.addBindValue(param);
-    }
+  for (const QVariant &param : params) {
+    query.addBindValue(param);
+  }
 
-    if (!query.exec()) {
-        qDebug() << "Lỗi exec query:" << query.lastError().text()
-                 << "| SQL:" << sql;
-    }
+  if (!query.exec()) {
+    qDebug() << "Lỗi exec query:" << query.lastError().text()
+             << "| SQL:" << sql;
+  }
 
-    return query;
+  return query;
 }
 
 QSqlQuery DatabaseManager::selectQuery(const QString &sql,
@@ -703,10 +698,12 @@ QSqlQuery DatabaseManager::selectQuery(const QString &sql,
   return query;
 }
 
-QList<DatabaseManager::AppointmentRecord> DatabaseManager::getDoctorAppointments(const QString &doctorId, const QString &date) {
-    QList<AppointmentRecord> list;
+QList<DatabaseManager::AppointmentRecord>
+DatabaseManager::getDoctorAppointments(const QString &doctorId,
+                                       const QString &date) {
+  QList<AppointmentRecord> list;
 
-    QString sql = R"(
+  QString sql = R"(
         SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, p.full_name, p.patient_code, r.room_number
         FROM appointments a
         JOIN patients p ON a.patient_id = p.patient_id
@@ -714,80 +711,93 @@ QList<DatabaseManager::AppointmentRecord> DatabaseManager::getDoctorAppointments
         JOIN staff s ON (a.doctor_id = s.staff_id OR a.doctor_id = s.staff_code)
         WHERE s.staff_id = ?
     )";
-    QVariantList params = {doctorId};
-    if (!date.isEmpty()) {
-        sql += " AND a.appointment_date = ?";
-        params << date;
-    }
-    sql += " ORDER BY a.appointment_date DESC, a.start_time ASC";
+  QVariantList params = {doctorId};
+  if (!date.isEmpty()) {
+    sql += " AND a.appointment_date = ?";
+    params << date;
+  }
+  sql += " ORDER BY a.appointment_date DESC, a.start_time ASC";
 
-    qDebug() << "getDoctorAppointments - Executing query for doctorId:" << doctorId << "| Date:" << (date.isEmpty() ? "All" : date);
-    QSqlQuery query = selectQuery(sql, params);
+  qDebug() << "getDoctorAppointments - Executing query for doctorId:"
+           << doctorId << "| Date:" << (date.isEmpty() ? "All" : date);
+  QSqlQuery query = selectQuery(sql, params);
 
-    int rowCount = 0;
-    while (query.next()) {
-        rowCount++;
-        AppointmentRecord rec;
-        rec.appointmentId = query.value(0).toInt();
-        rec.patientId = query.value(1).toInt();
-        rec.doctorId = query.value(2).toString();
-        rec.appointmentDate = query.value(3).toString();
-        rec.startTime = query.value(4).toString();
-        rec.endTime = query.value(5).toString();
-        rec.status = query.value(6).toString();
-        rec.reason = query.value(7).toString();
-        rec.notes = query.value(8).toString();
-        rec.patientName = query.value(9).toString();
-        rec.patientCode = query.value(10).toString();
-        rec.roomNumber = query.value(11).toString();
-        if (rec.roomNumber.isEmpty()) rec.roomNumber = "N/A";
+  int rowCount = 0;
+  while (query.next()) {
+    rowCount++;
+    AppointmentRecord rec;
+    rec.appointmentId = query.value(0).toInt();
+    rec.patientId = query.value(1).toInt();
+    rec.doctorId = query.value(2).toString();
+    rec.appointmentDate = query.value(3).toString();
+    rec.startTime = query.value(4).toString();
+    rec.endTime = query.value(5).toString();
+    rec.status = query.value(6).toString();
+    rec.reason = query.value(7).toString();
+    rec.notes = query.value(8).toString();
+    rec.patientName = query.value(9).toString();
+    rec.patientCode = query.value(10).toString();
+    rec.roomNumber = query.value(11).toString();
+    if (rec.roomNumber.isEmpty())
+      rec.roomNumber = "N/A";
 
-        qDebug() << "  -> Row" << rowCount << ":" << rec.startTime << "|" << rec.patientName << "|" << rec.status;
-        list.append(rec);
-    }
-    qDebug() << "getDoctorAppointments - Loaded" << rowCount << "records.";
-    return list;
+    qDebug() << "  -> Row" << rowCount << ":" << rec.startTime << "|"
+             << rec.patientName << "|" << rec.status;
+    list.append(rec);
+  }
+  qDebug() << "getDoctorAppointments - Loaded" << rowCount << "records.";
+  return list;
 }
 
-bool DatabaseManager::updateAppointmentStatus(int appointmentId, const QString &status) {
-    QSqlQuery query = executeQuery(
-        "UPDATE appointments SET status = ? WHERE appointment_id = ?",
-        {status, appointmentId});
-    return !query.lastError().isValid();
+bool DatabaseManager::updateAppointmentStatus(int appointmentId,
+                                              const QString &status) {
+  QSqlQuery query = executeQuery(
+      "UPDATE appointments SET status = ? WHERE appointment_id = ?",
+      {status, appointmentId});
+  return !query.lastError().isValid();
 }
 
-std::optional<DatabaseManager::PatientRecord> DatabaseManager::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) {
-    QString sql = "SELECT patient_id, patient_code, full_name, phone FROM patients WHERE is_deleted = 0 AND (";
-    QVariantList params;
-    QStringList conditions;
-    if (!phone.isEmpty()) {
-        conditions << "phone = ?";
-        params << phone;
-    }
-    if (!citizenId.isEmpty()) {
-        conditions << "citizen_id = ?";
-        params << citizenId;
-    }
-    if (conditions.isEmpty()) return std::nullopt;
-    sql += conditions.join(" OR ") + ")";
-    
-    QSqlQuery query = selectQuery(sql, params);
-    if (query.next()) {
-        PatientRecord rec;
-        rec.patientId = query.value(0).toInt();
-        rec.patientCode = query.value(1).toString();
-        rec.fullName = query.value(2).toString();
-        rec.phone = query.value(3).toString();
-        return rec;
-    }
+std::optional<DatabaseManager::PatientRecord>
+DatabaseManager::getPatientByPhoneOrCitizenId(const QString &phone,
+                                              const QString &citizenId) {
+  QString sql = "SELECT patient_id, patient_code, full_name, phone FROM "
+                "patients WHERE is_deleted = 0 AND (";
+  QVariantList params;
+  QStringList conditions;
+  if (!phone.isEmpty()) {
+    conditions << "phone = ?";
+    params << phone;
+  }
+  if (!citizenId.isEmpty()) {
+    conditions << "citizen_id = ?";
+    params << citizenId;
+  }
+  if (conditions.isEmpty())
     return std::nullopt;
+  sql += conditions.join(" OR ") + ")";
+
+  QSqlQuery query = selectQuery(sql, params);
+  if (query.next()) {
+    PatientRecord rec;
+    rec.patientId = query.value(0).toInt();
+    rec.patientCode = query.value(1).toString();
+    rec.fullName = query.value(2).toString();
+    rec.phone = query.value(3).toString();
+    return rec;
+  }
+  return std::nullopt;
 }
 
-bool DatabaseManager::createAppointment(int patientId, const QString &doctorCode, int createdBy, const QString &date, const QString &startTime, const QString &reason) {
-    QString sql = R"(
+bool DatabaseManager::createAppointment(int patientId,
+                                        const QString &doctorCode,
+                                        int createdBy, const QString &date,
+                                        const QString &startTime,
+                                        const QString &reason) {
+  QString sql = R"(
         INSERT INTO appointments (patient_id, doctor_id, created_by, appointment_date, start_time, status, reason)
         VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?)
     )";
-    QSqlQuery query = executeQuery(sql, {patientId, doctorCode, createdBy, date, startTime, reason});
-    return !query.lastError().isValid();
+  QSqlQuery query = executeQuery(
+      sql, {patientId, doctorCode, createdBy, date, startTime, reason});
+  return !query.lastError().isValid();
 }

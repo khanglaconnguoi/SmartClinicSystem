@@ -520,11 +520,11 @@ void ProfileWidget::onEditClicked() {
 
     QString errorMsg;
     if (auto docInput = dynamic_cast<DoctorInputDTO*>(inputDTO.get())) {
-       errorMsg = m_staffService->editDoctorInformation(*docInput, currentStaffId);
+       errorMsg = m_staffService->editDoctorInformation(DoctorUpdateDTO(*docInput, currentStaffId));
     } else if (auto nurseInput = dynamic_cast<NurseInputDTO*>(inputDTO.get())) {
-        errorMsg = m_staffService->editNurseInformation(*nurseInput, currentStaffId);
+        errorMsg = m_staffService->editNurseInformation(NurseUpdateDTO(*nurseInput, currentStaffId));
     } else {
-        errorMsg = m_staffService->editStaffBaseInformation(*inputDTO, currentStaffId);
+        errorMsg = m_staffService->editStaffBaseInformation(StaffUpdateDTO(*inputDTO, currentStaffId));
     }
 
     bool success = errorMsg.isEmpty();
