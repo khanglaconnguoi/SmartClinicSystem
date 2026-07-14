@@ -8,7 +8,6 @@
 #include "Validation.h"
 #include "dto/PatientDTOs.h"
 #include "repository/PatientRepository.h"
-#include "utils/StringSanitize.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QMessageBox>
@@ -121,16 +120,15 @@ bool PatientService::addOutPatient(OutPatientInputDTO &dto) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 void PatientService::normalizePatientInput(PatientInputDTO &dto) {
-  dto.fullName = StringSanitize::collapseSpaces(dto.fullName);
+  dto.fullName = dto.fullName.simplified();
   dto.citizenId = dto.citizenId.trimmed();
   dto.phone = dto.phone.trimmed();
   dto.email = dto.email.trimmed().toLower();
-  dto.address = StringSanitize::collapseSpaces(dto.address);
+  dto.address = dto.address.simplified();
   dto.bloodType = dto.bloodType.trimmed().toUpper();
   dto.allergies = dto.allergies.trimmed();
   dto.insurance = dto.insurance.trimmed();
-  dto.emergencyContactName =
-      StringSanitize::collapseSpaces(dto.emergencyContactName);
+  dto.emergencyContactName = dto.emergencyContactName.simplified();
   dto.emergencyContactPhone = dto.emergencyContactPhone.trimmed();
 }
 

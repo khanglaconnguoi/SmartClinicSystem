@@ -12,12 +12,15 @@ class MedicationRepository {
 private:
     // mapRowToMedication: dùng nội bộ cho các hàm trả về domain object
     std::shared_ptr<Medication> mapRowToMedication(const QSqlQuery& query) const;
+    ActiveIngredientDTO         mapRowToIngredient(const QSqlQuery& query) const;
     // mapRowToSummary: dùng cho các hàm trả về DTO hiển thị
     // MedicationSummaryDTO mapRowToSummary(const QSqlQuery& q) const;
     QList<MedicationIngredientDTO> getIngredientsForMedication(int medicationId) const;
+    QList<QString>                 getCategoriesForMedication(int medicationId) const;
 
     bool insertMedicationBase(const MedicationInputDTO& medication, int& outMedicationId);
     bool insertMedicationIngredients(int medicationId, const QList<MedicationInputDTO::IngredientInput>& ingredients);
+    bool insertMedicationCategories(int medicationId, const QList<QString>& categories);
 
 public:
     // ── DÙNG TRONG PharmacyService::createPrescription() ─────────────
@@ -25,14 +28,15 @@ public:
     std::shared_ptr<Medication> findById(int medicationId) const;
 
     // ── DÙNG CHO UI (bác sĩ chọn thuốc khi lập đơn) ──────────────────
-    QList<std::shared_ptr<Medication>> search(const MedicationSearchCriteria& criteria) const;
+    QList<std::shared_ptr<Medication>> searchMedications(const MedicationSearchCriteria& criteria) const;
     QList<std::shared_ptr<Medication>> findLowStock() const;
     QList<std::shared_ptr<Medication>> findExpiringBefore(const QDate& date) const;
 
+    QList<ActiveIngredientDTO>         searchIngredients(const QString& keyword) const;
 
     // ── QUẢN LÝ KHO (Admin) ───────────────────────────────────────────
-    bool insert(const MedicationInputDTO& medication);
-    bool update(int medicationId, const MedicationInputDTO& dto);
+    bool insertMedication(const MedicationInputDTO& medication);
+    bool updateMedication(int medicationId, const MedicationInputDTO& dto);
     bool deactivate(int medicationId);
     bool reactivate(int medicationId);
 

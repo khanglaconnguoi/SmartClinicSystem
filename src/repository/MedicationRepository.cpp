@@ -2,11 +2,11 @@
 #include "DatabaseManager.h"
 #include <QSqlError>
 
-bool MedicationRepository::insertMedicationBase(const MedicationInputDTO& medication, int& outMedicationId) {
+bool MedicationRepository::insertMedicationBase(const MedicationInputDTO& medication,
+                                                int& outMedicationId) {
     QString sql = R"(
         INSERT INTO medications (
             brand_name,
-            category,
             unit,
             unit_price,
             stock_quantity,
@@ -17,12 +17,11 @@ bool MedicationRepository::insertMedicationBase(const MedicationInputDTO& medica
             expiry_date,
             is_active
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     )";
 
     QVariantList params = {
         medication.brandName,
-        medication.category,
         medication.unit,
         medication.unitPrice,
         medication.stockQuantity,
@@ -35,7 +34,8 @@ bool MedicationRepository::insertMedicationBase(const MedicationInputDTO& medica
 
     QSqlQuery query = DatabaseManager::getInstance().executeQuery(sql, params);
     if (!query.isActive()) {
-        qWarning() << "MedicationRepository::insertParentMedication - Lỗi:" << query.lastError().text();
+        qWarning() << "MedicationRepository::insertMedicationBase - Lỗi:"
+                   << query.lastError().text();
         return false;
     }
 
@@ -73,7 +73,29 @@ bool MedicationRepository::insertMedicationIngredients(int medicationId, const Q
     return true;
 }
 
-bool MedicationRepository::insert(const MedicationInputDTO& medication) {
+bool MedicationRepository::insertMedicationCategories(int medicationId,
+                                                     const QList<QString>& categories) {
+    if (categories.isEmpty()) return true; // không có danh mục nào — không phải lỗi
+
+    QString sql = R"(
+        INSERT INTO medication_categories (medication_id, category_name)
+        VALUES (?, ?)
+    )";
+
+    DatabaseManager& db = DatabaseManager::getInstance();
+    for (const QString& cat : categories) {
+        QVariantList params = { medicationId, cat };
+        QSqlQuery query = db.executeQuery(sql, params);
+        if (!query.isActive()) {
+            qWarning() << "MedicationRepository::insertMedicationCategories - Lỗi danh mục"
+                       << cat << ":" << query.lastError().text();
+            return false;
+        }
+    }
+    return true;
+}
+
+bool MedicationRepository::insertMedication(const MedicationInputDTO& medication) {
     DatabaseManager& dbManager = DatabaseManager::getInstance();
 
     if (!dbManager.beginTransaction()) {
@@ -91,6 +113,11 @@ bool MedicationRepository::insert(const MedicationInputDTO& medication) {
         return false;
     }
 
+    if (!insertMedicationCategories(medicationId, medication.categories)) {
+        dbManager.rollbackTransaction();
+        return false;
+    }
+
     if (!dbManager.commitTransaction()) {
         return false;
     }
@@ -98,14 +125,13 @@ bool MedicationRepository::insert(const MedicationInputDTO& medication) {
     return true;
 }
 
-bool MedicationRepository::update(int medicationId, const MedicationInputDTO& dto) {
+bool MedicationRepository::updateMedication(int medicationId, const MedicationInputDTO& dto) {
     DatabaseManager& db = DatabaseManager::getInstance();
     if (!db.beginTransaction()) return false;
 
     QString sql = R"(
         UPDATE medications SET
             brand_name        = ?,
-            category          = ?,
             unit              = ?,
             unit_price        = ?,
             stock_quantity    = ?,
@@ -117,14 +143,12 @@ bool MedicationRepository::update(int medicationId, const MedicationInputDTO& dt
         WHERE medication_id = ?
     )";
 
-    // ✅ Ghi NULL thật sự khi expiryDate không hợp lệ — tránh lưu "" (empty string)
-    // gây sai lệch khi query "WHERE expiry_date IS NOT NULL" ở findExpiringBefore()
     QVariant expiryValue = dto.expiryDate.isValid()
         ? QVariant(dto.expiryDate.toString("yyyy-MM-dd"))
         : QVariant(QMetaType::fromType<QString>()); // NULL
 
     QVariantList params = {
-        dto.brandName, dto.category, dto.unit,
+        dto.brandName, dto.unit,
         dto.unitPrice, dto.stockQuantity, dto.minimumStock, dto.reorderThreshold,
         expiryValue, dto.manufacturer, dto.description,
         medicationId
@@ -138,18 +162,34 @@ bool MedicationRepository::update(int medicationId, const MedicationInputDTO& dt
         return false;
     }
 
-    QSqlQuery delQuery = db.executeQuery(
+    // Xóa hoạt chất cũ và INSERT lại
+    QSqlQuery delIngQuery = db.executeQuery(
         "DELETE FROM medication_ingredients WHERE medication_id = ?",
         { medicationId }
     );
-    if (!delQuery.isActive()) {
+    if (!delIngQuery.isActive()) {
         db.rollbackTransaction();
         qWarning() << "MedicationRepository::update - Lỗi xóa hoạt chất cũ:"
-                   << delQuery.lastError().text();
+                   << delIngQuery.lastError().text();
+        return false;
+    }
+    if (!insertMedicationIngredients(medicationId, dto.ingredients)) {
+        db.rollbackTransaction();
         return false;
     }
 
-    if (!insertMedicationIngredients(medicationId, dto.ingredients)) {
+    // Xóa danh mục cũ và INSERT lại (cùng pattern với hoạt chất)
+    QSqlQuery delCatQuery = db.executeQuery(
+        "DELETE FROM medication_categories WHERE medication_id = ?",
+        { medicationId }
+    );
+    if (!delCatQuery.isActive()) {
+        db.rollbackTransaction();
+        qWarning() << "MedicationRepository::update - Lỗi xóa danh mục cũ:"
+                   << delCatQuery.lastError().text();
+        return false;
+    }
+    if (!insertMedicationCategories(medicationId, dto.categories)) {
         db.rollbackTransaction();
         return false;
     }
@@ -190,6 +230,22 @@ bool MedicationRepository::reactivate(int medicationId) {
 }
 
 
+QList<QString> MedicationRepository::getCategoriesForMedication(int medicationId) const {
+    QList<QString> list;
+    QString sql = R"(
+        SELECT category_name
+        FROM medication_categories
+        WHERE medication_id = ?
+        ORDER BY category_name ASC
+    )";
+
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { medicationId });
+    while (query.next()) {
+        list.append(query.value("category_name").toString());
+    }
+    return list;
+}
+
 QList<MedicationIngredientDTO> MedicationRepository::getIngredientsForMedication(int medicationId) const {
     QList<MedicationIngredientDTO> list;
     QString sql = R"(
@@ -216,7 +272,7 @@ std::shared_ptr<Medication> MedicationRepository::mapRowToMedication(const QSqlQ
         medicationId,
         query.value("brand_name").toString(),
         getIngredientsForMedication(medicationId),
-        query.value("category").toString(),
+        getCategoriesForMedication(medicationId),  // thay thế query.value("category")
         query.value("unit").toString(),
         query.value("unit_price").toDouble(),
         query.value("stock_quantity").toInt(),
@@ -229,12 +285,20 @@ std::shared_ptr<Medication> MedicationRepository::mapRowToMedication(const QSqlQ
     );
 }
 
+ActiveIngredientDTO MedicationRepository::mapRowToIngredient(const QSqlQuery& query) const {
+    ActiveIngredientDTO dto;
+    dto.ingredientId = query.value("ingredient_id").toInt();
+    dto.ingredientName = query.value("ingredient_name").toString();
+    dto.description = query.value("description").toString();
+    return dto;
+}
+
+
 std::shared_ptr<Medication> MedicationRepository::findById(int medicationId) const {
     QString sql = R"(
         SELECT 
             medication_id,
             brand_name,
-            category,
             unit,
             unit_price,
             stock_quantity,
@@ -256,12 +320,12 @@ std::shared_ptr<Medication> MedicationRepository::findById(int medicationId) con
 }
 
 
-QList<std::shared_ptr<Medication>> MedicationRepository::search(const MedicationSearchCriteria& criteria) const {
+QList<std::shared_ptr<Medication>> MedicationRepository::searchMedications(const MedicationSearchCriteria& criteria) const {
     QList<std::shared_ptr<Medication>> result;
     
     QString sql = R"(
-        SELECT DISTINCT m.medication_id, m.brand_name, m.category, m.unit, m.unit_price, 
-                        m.stock_quantity, m.minimum_stock, m.reorder_threshold, m.expiry_date, 
+        SELECT DISTINCT m.medication_id, m.brand_name, m.unit, m.unit_price,
+                        m.stock_quantity, m.minimum_stock, m.reorder_threshold, m.expiry_date,
                         m.manufacturer, m.description, m.is_active
         FROM medications m
         LEFT JOIN medication_ingredients mi ON m.medication_id = mi.medication_id
@@ -287,9 +351,20 @@ QList<std::shared_ptr<Medication>> MedicationRepository::search(const Medication
         sql += QString(" AND mi.ingredient_id IN (%1)").arg(placeholders.join(","));
     } 
 
-    if (!criteria.category.isEmpty()) {
-        sql += " AND m.category = ?";
-        params.append(criteria.category.trimmed());
+    if (!criteria.selectedCategories.isEmpty()) {
+        QStringList placeholders;
+        for (const QString& cat : criteria.selectedCategories) {
+            placeholders.append("?");
+            params.append(cat);
+        }
+        // EXISTS đảm bảo thuốc khớp ít nhất 1 danh mục trong selectedCategories
+        sql += QString(
+            " AND EXISTS ("
+            "   SELECT 1 FROM medication_categories mc"
+            "   WHERE mc.medication_id = m.medication_id"
+            "   AND mc.category_name IN (%1)"
+            ")"
+        ).arg(placeholders.join(","));
     }
 
     if (criteria.inStockOnly) {
@@ -314,10 +389,12 @@ QList<std::shared_ptr<Medication>> MedicationRepository::search(const Medication
     }
 
     if (!criteria.manufacturer.isEmpty()) {
-        sql += " AND m.manufacturer LIKE ?";
-        QString pattern = "%" + criteria.manufacturer.trimmed() + "%";
+        sql += " AND LOWER(m.manufacturer) LIKE ?";
+        QString pattern = "%" + criteria.manufacturer.toLower() + "%";
         params.append(pattern);
     }
+
+    sql += " ORDER BY m.brand_name ASC";
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
     while (query.next()) {
@@ -332,7 +409,7 @@ QList<std::shared_ptr<Medication>> MedicationRepository::search(const Medication
 QList<std::shared_ptr<Medication>> MedicationRepository::findLowStock() const {
     QList<std::shared_ptr<Medication>> result;
     QString sql = R"(
-        SELECT medication_id, brand_name, category, unit, unit_price, stock_quantity,
+        SELECT medication_id, brand_name, unit, unit_price, stock_quantity,
                minimum_stock, reorder_threshold, expiry_date, manufacturer, description, is_active
         FROM medications 
         WHERE is_active = 1 AND stock_quantity <= reorder_threshold
@@ -348,7 +425,7 @@ QList<std::shared_ptr<Medication>> MedicationRepository::findLowStock() const {
 QList<std::shared_ptr<Medication>> MedicationRepository::findExpiringBefore(const QDate& date) const {
     QList<std::shared_ptr<Medication>> result;
     QString sql = R"(
-        SELECT medication_id, brand_name, category, unit, unit_price, stock_quantity,
+        SELECT medication_id, brand_name, unit, unit_price, stock_quantity,
                minimum_stock, reorder_threshold, expiry_date, manufacturer, description, is_active
         FROM medications 
         WHERE is_active = 1 
@@ -362,6 +439,27 @@ QList<std::shared_ptr<Medication>> MedicationRepository::findExpiringBefore(cons
     }
     return result;
 }
+
+
+QList<ActiveIngredientDTO> MedicationRepository::searchIngredients(const QString& keyword) const {
+    QString sql = R"(
+        SELECT ingredient_id, ingredient_name, description
+        FROM active_ingredients
+        WHERE LOWER(ingredient_name) LIKE ?
+        ORDER BY ingredient_name ASC
+    )";
+
+    QString pattern = "%" + keyword.toLower() + "%";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { pattern });
+    QList<ActiveIngredientDTO> result;
+
+    while (query.next()) {
+        result.append(mapRowToIngredient(query));
+    }
+    
+    return result;
+}
+
 
 
 

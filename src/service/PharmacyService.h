@@ -14,9 +14,13 @@
  *   - PharmacyService KHÔNG gọi MedicalRecordService và ngược lại
  *     — UI là nơi kết nối hai service này qua recordId
  *
+ * VALIDATE STRATEGY:
+ *   - Mỗi field có 1 hàm validate riêng (public static) -> UI gọi real-time khi editingFinished()
+ *   - Validate format trước, validate business-rule phức hợp (liên quan nhiều field) sau
+ *   - Aggregate validators (private) gom toàn bộ trước khi gọi Repo
+ *   - Tất cả hàm validate trả về QString: "" = hợp lệ, có giá trị = thông báo lỗi
+ *
  * LƯU Ý VỀ THIẾT KẾ:
- *   - addPrescription() và getPrescriptionByRecordId() trong
- *     MedicalRecordService PHẢI được chuyển sang PharmacyService.
  *   - Return type: QString — rỗng = thành công, có nội dung = thông báo lỗi
  *     (nhất quán với pattern của StaffService hiện tại trong project).
  */
@@ -69,6 +73,44 @@ public:
     {}
 
     // ════════════════════════════════════════════════════════════════
+    // FORMAT VALIDATORS — public static (Medication)
+    // UI gọi real-time trên từng QLineEdit::editingFinished()
+    // Không cần DB, không có side effect.
+    // Trả về: "" = hợp lệ | chuỗi lỗi = không hợp lệ
+    // ════════════════════════════════════════════════════════════════
+
+    // -- Field thông tin cơ bản thuốc ─────────────────────────────────
+    static QString validateBrandName(const QString& brandName);
+    static QString validateUnit(const QString& unit);
+    static QString validateUnitPrice(double unitPrice);
+    static QString validateStockQuantity(int stockQuantity);
+    static QString validateMinimumStock(int minimumStock);
+    static QString validateReorderThreshold(int reorderThreshold, int minimumStock);
+    static QString validateExpiryDate(const QDate& expiryDate);
+
+    // -- Field danh mục thuốc ────────────────────────────────────────
+    /** @brief Kiểm tra danh sách danh mục: không rỗng, mỗi danh mục không được là chuỗi trống */
+    static QString validateCategories(const QList<QString>& categories);
+    /** @brief Kiểm tra 1 danh mục đơn lẻ — UI gọi real-time khi người dùng nhập tên danh mục */
+    static QString validateCategoryEntry(const QString& category);
+
+    // -- Field thành phần hoạt chất ───────────────────────────────────
+    /** @brief Kiểm tra danh sách hoạt chất: ít nhất 1, ingredientId > 0, strength không rỗng */
+    static QString validateIngredients(const QList<MedicationInputDTO::IngredientInput>& ingredients);
+    /** @brief Kiểm tra một hoạt chất đơn lẻ — UI gọi real-time khi người dùng thêm từng dòng */
+    static QString validateIngredientEntry(int ingredientId, const QString& strength);
+
+    // ════════════════════════════════════════════════════════════════
+    // FORMAT VALIDATORS — public static (Prescription Item)
+    // UI gọi khi bác sĩ nhập từng thuốc trong danh sách đơn
+    // ════════════════════════════════════════════════════════════════
+
+    static QString validatePrescriptionItemQuantity(int quantity);
+    static QString validatePrescriptionItemDosage(const QString& dosage);
+    static QString validatePrescriptionItemFrequency(const QString& frequency);
+    static QString validatePrescriptionItemDuration(int durationDays);
+
+    // ════════════════════════════════════════════════════════════════
     // KHO THUỐC — Medication Inventory
     // ════════════════════════════════════════════════════════════════
 
@@ -100,6 +142,9 @@ public:
      * @param withinDays Ngưỡng cảnh báo (mặc định 30 ngày)
      */
     QList<MedicationSummaryDTO> getExpiringMedications(int withinDays = 30) const;
+
+
+    QList<ActiveIngredientDTO> searchIngredients(const QString& keyword) const;
 
     // ════════════════════════════════════════════════════════════════
     // KÊ ĐƠN — Prescription Creation

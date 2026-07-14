@@ -199,6 +199,7 @@ bool DatabaseManager::createTables() {
       CREATE TABLE IF NOT EXISTS patient_allergies (
           allergy_id    INTEGER PRIMARY KEY AUTOINCREMENT,
           patient_id    INTEGER NOT NULL,
+          ingredient_id INTEGER,
           allergen_name TEXT    NOT NULL COLLATE NOCASE,
           severity      TEXT    NOT NULL DEFAULT 'MODERATE' CHECK (severity IN ('MILD', 'MODERATE', 'SEVERE')),
           notes         TEXT,
@@ -206,6 +207,7 @@ bool DatabaseManager::createTables() {
           recorded_at   TEXT    NOT NULL DEFAULT (datetime('now')),
           updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
           FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+          FOREIGN KEY (ingredient_id) REFERENCES active_ingredients(ingredient_id) ON DELETE SET NULL,
           UNIQUE (patient_id, allergen_name)
       );
   )";
@@ -351,11 +353,12 @@ bool DatabaseManager::createTables() {
     return false;
   }
 
+
+
   const QString sqlMedications = R"(
     CREATE TABLE IF NOT EXISTS medications (
         medication_id       INTEGER PRIMARY KEY AUTOINCREMENT,
         brand_name          TEXT NOT NULL,
-        category            TEXT,
         unit                TEXT NOT NULL,
         unit_price          REAL NOT NULL DEFAULT 0,
         stock_quantity      INTEGER NOT NULL DEFAULT 0,
@@ -370,6 +373,20 @@ bool DatabaseManager::createTables() {
   )";
   if (!query.exec(sqlMedications)) {
     qDebug() << "Lỗi bảng Medications:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  const QString sqlMedicationCategories = R"(
+    CREATE TABLE IF NOT EXISTS medication_categories (
+      medication_id   INTEGER NOT NULL,
+      category_name   TEXT NOT NULL,
+      PRIMARY KEY (medication_id, category_name),
+      FOREIGN KEY (medication_id) REFERENCES medications(medication_id) ON DELETE CASCADE
+    );
+  )";
+  if (!query.exec(sqlMedicationCategories)) {
+    qDebug() << "Lỗi bảng Medication Categories:" << query.lastError().text();
     m_db.rollback();
     return false;
   }
@@ -648,6 +665,8 @@ bool DatabaseManager::createTables() {
       return false;
     }
   }
+
+
 
   if (!m_db.commit()) {
     qDebug() << "Ghi dữ liệu thất bại" << m_db.lastError().text();

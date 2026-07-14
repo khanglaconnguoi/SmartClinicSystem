@@ -1,7 +1,6 @@
 #include "MedicalRecordService.h"
 #include "model/MedicalRecord.h"
 #include "repository/MedicalRecordRepository.h"
-#include "utils/StringSanitize.h"
 #include <QDebug>
 
 MedicalRecordService::MedicalRecordService(
@@ -52,7 +51,7 @@ void MedicalRecordService::normalizeMedicalRecordInput(
   dto.treatment = dto.treatment.trimmed();
 
   for (Diagnosis &d : dto.diagnoses) {
-    d.description = StringSanitize::collapseSpaces(d.description);
+    d.description = d.description.simplified();
     d.severity = d.severity.trimmed().toUpper();
     d.icdCode = d.icdCode.trimmed().toUpper();
   }
@@ -65,7 +64,7 @@ void MedicalRecordService::normalizeMedicalRecordUpdate(
   dto.treatment = dto.treatment.trimmed();
 
   for (Diagnosis &d : dto.diagnoses) {
-    d.description = StringSanitize::collapseSpaces(d.description);
+    d.description = d.description.simplified();
     d.severity = d.severity.trimmed().toUpper();
     d.icdCode = d.icdCode.trimmed().toUpper();
   }

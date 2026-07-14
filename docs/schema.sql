@@ -272,33 +272,48 @@ CREATE TABLE IF NOT EXISTS diagnoses (
 -- SECTION 6: PHARMACY & PRESCRIPTIONS
 -- =====================================================================
 
--- 6.1 -- Medication categories (lookup) --------------------------------
-CREATE TABLE IF NOT EXISTS medication_categories (
-    category_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    category_name TEXT NOT NULL UNIQUE,
-    description   TEXT
+-- 6.1 -- Active Ingredients (lookup) -----------------------------------
+CREATE TABLE IF NOT EXISTS active_ingredients (
+    ingredient_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    ingredient_name TEXT NOT NULL,
+    description     TEXT
 );
 
 -- 6.2 -- Medications / Pharmacy Inventory ------------------------------
 CREATE TABLE IF NOT EXISTS medications (
-    medication_id    INTEGER PRIMARY KEY AUTOINCREMENT,
-    medication_code  TEXT    NOT NULL UNIQUE,
-    medication_name  TEXT    NOT NULL,
-    category_id      INTEGER,
-    unit             TEXT    NOT NULL,
-    unit_price       REAL    NOT NULL CHECK (unit_price >= 0),
-    stock_quantity   INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
-    reorder_threshold INTEGER NOT NULL DEFAULT 10 CHECK (reorder_threshold >= 0),
-    expiry_date      TEXT,
-    manufacturer     TEXT,
-    description      TEXT,
-    is_active        INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
-    created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (category_id) REFERENCES medication_categories(category_id) ON DELETE SET NULL
+    medication_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    brand_name          TEXT NOT NULL,
+    unit                TEXT NOT NULL,
+    unit_price          REAL NOT NULL DEFAULT 0 CHECK (unit_price >= 0),
+    stock_quantity      INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
+    minimum_stock       INTEGER NOT NULL DEFAULT 10,
+    reorder_threshold   INTEGER NOT NULL DEFAULT 20 CHECK (reorder_threshold >= 0),
+    expiry_date         TEXT,
+    manufacturer        TEXT,
+    description         TEXT,
+    is_active           INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+    created_at          TEXT DEFAULT (datetime('now'))
 );
 
--- 6.3 -- Prescription header (1 medical record -> many prescriptions) -
+-- 6.3 -- Medication Categories (many-to-many: medication <-> category_name)
+CREATE TABLE IF NOT EXISTS medication_categories (
+    medication_id   INTEGER NOT NULL,
+    category_name   TEXT NOT NULL,
+    PRIMARY KEY (medication_id, category_name),
+    FOREIGN KEY (medication_id) REFERENCES medications(medication_id) ON DELETE CASCADE
+);
+
+-- 6.4 -- Medication Ingredients (many-to-many: medication <-> active_ingredients)
+CREATE TABLE IF NOT EXISTS medication_ingredients (
+    medication_id   INTEGER NOT NULL,
+    ingredient_id   INTEGER NOT NULL,
+    strength        TEXT,
+    PRIMARY KEY (medication_id, ingredient_id),
+    FOREIGN KEY (medication_id) REFERENCES medications(medication_id) ON DELETE CASCADE,
+    FOREIGN KEY (ingredient_id) REFERENCES active_ingredients(ingredient_id) ON DELETE CASCADE
+);
+
+-- 6.5 -- Prescription header (1 medical record -> many prescriptions) -
 CREATE TABLE IF NOT EXISTS prescriptions (
     prescription_id INTEGER PRIMARY KEY AUTOINCREMENT,
     record_id       INTEGER NOT NULL,
@@ -310,7 +325,7 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     FOREIGN KEY (doctor_id) REFERENCES staff(staff_id) ON DELETE RESTRICT
 );
 
--- 6.4 -- Prescription line items (many-to-many: prescription <-> medication)
+-- 6.6 -- Prescription line items (many-to-many: prescription <-> medication)
 CREATE TABLE IF NOT EXISTS prescription_items (
     item_id             INTEGER PRIMARY KEY AUTOINCREMENT,
     prescription_id     INTEGER NOT NULL,
