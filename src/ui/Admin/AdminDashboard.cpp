@@ -6,7 +6,6 @@
 #include "ManagePatientsWidget.h"
 #include "ManageReceptionWidget.h"
 #include "../../service/PatientService.h"
-#include "../../repository/PatientRepository.h"
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -16,9 +15,12 @@
 
 AdminDashboardWidget::AdminDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
-    std::shared_ptr<StaffService> staffService, QWidget *parent)
-    : BaseDashboardWidget(user, parent), m_staffService(staffService),
-      m_currentUser(user), m_manageDoctorsPage(nullptr),
+    std::shared_ptr<StaffService> staffService,
+    std::shared_ptr<PatientService> patientService,
+    std::shared_ptr<AppointmentService> appointmentService,
+    QWidget *parent)
+    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent), m_staffService(staffService),
+      m_patientService(patientService), m_currentUser(user), m_manageDoctorsPage(nullptr),
       m_manageNursesPage(nullptr), m_managePatientsPage(nullptr),
       m_manageReceptionPage(nullptr) {
   initializeDashboard();
@@ -88,9 +90,7 @@ void AdminDashboardWidget::fillDashboardData() {
   // Khởi tạo các trang quản lý bằng widget độc lập
   m_manageDoctorsPage = new ManageDoctorsWidget(m_staffService, this);
   m_manageNursesPage = new ManageNursesWidget(m_staffService, this);
-  auto patientRepo = std::make_shared<PatientRepository>();
-  auto patientService = std::make_shared<PatientService>(patientRepo);
-  m_managePatientsPage = new ManagePatientsWidget(patientService, m_stackedWidget);
+  m_managePatientsPage = new ManagePatientsWidget(m_patientService, m_stackedWidget);
   m_manageReceptionPage = new ManageReceptionWidget(m_staffService, this);
 
   m_stackedWidget->addWidget(m_manageDoctorsPage);

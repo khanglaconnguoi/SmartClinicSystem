@@ -909,3 +909,9 @@ QString PatientRepository::getAllergiesStringByPatientId(int patientId) {
   }
   return "";
 }
+
+std::optional<DatabaseManager::PatientRecord> PatientRepository::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
+    return DatabaseManager::getInstance().getPatientByPhoneOrCitizenId(phone, citizenId);
+}
+
+

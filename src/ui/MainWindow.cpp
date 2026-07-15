@@ -1,11 +1,11 @@
 #include "MainWindow.h"
-#include "model/IAuthenticatable.h"
-#include "model/SystemUser.h"
-#include "repository/StaffRepository.h"
 #include "Admin/AdminDashboard.h"
 #include "Doctor/DoctorDashboard.h"
 #include "Patient/PatientDashboard.h"
 #include "Reception/ReceptionDashboard.h"
+#include "model/IAuthenticatable.h"
+#include "model/SystemUser.h"
+#include "model/CommonEnums.h"
 #include <QDialog>
 #include <QFrame>
 #include <QGuiApplication>
@@ -16,18 +16,16 @@
 #include <QScreen>
 #include <QVBoxLayout>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+
+MainWindow::MainWindow(std::shared_ptr<AuthService> authService, std::shared_ptr<StaffService> staffService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
+    : QMainWindow(parent), m_authService(std::move(authService)), m_staffService(std::move(staffService)), m_patientService(std::move(patientService)), m_appointmentService(std::move(appointmentService)) {
   setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
   this->setFixedSize(1000, 600);
-  
+
   QScreen *screen = QGuiApplication::primaryScreen();
   if (screen) {
-      this->move(screen->geometry().center() - this->rect().center());
+    this->move(screen->geometry().center() - this->rect().center());
   }
-  
-  auto staffRepo = std::make_shared<StaffRepository>();
-  m_authService = std::make_shared<AuthService>(staffRepo);
-  m_staffService = std::make_shared<StaffService>(staffRepo);
 
   m_stackedWidget = new QStackedWidget(this);
   setCentralWidget(m_stackedWidget);
@@ -99,19 +97,17 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget *page) {
 
 void MainWindow::switchToDoctorDashboard(
     std::shared_ptr<IAuthenticatable> user) {
-  auto *doctorDash = new DoctorDashboardWidget(user, this);
-  registerDashboardPage(doctorDash);
+  auto dashboard = new DoctorDashboardWidget(user, m_staffService, m_patientService, m_appointmentService, this);
+  registerDashboardPage(dashboard);
 }
 
 void MainWindow::switchToAdminDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   try {
-    AdminDashboardWidget *adminDashboard =
-        new AdminDashboardWidget(user, m_staffService, this);
-    registerDashboardPage(adminDashboard);
+    auto dashboard = new AdminDashboardWidget(user, m_staffService, m_patientService, m_appointmentService, this);
+    registerDashboardPage(dashboard);
   } catch (const std::exception &e) {
-    QMessageBox::critical(this, "Lỗi",
-                          QString("Exception: %1").arg(e.what()));
+    QMessageBox::critical(this, "Lỗi", QString("Exception: %1").arg(e.what()));
   } catch (...) {
     QMessageBox::critical(this, "Lỗi",
                           "Unknown exception during AdminDashboard creation.");
@@ -120,14 +116,14 @@ void MainWindow::switchToAdminDashboard(
 
 void MainWindow::switchToReceptionDashboard(
     std::shared_ptr<IAuthenticatable> user) {
-  auto *receptionDash = new ReceptionDashboardWidget(user, m_staffService, this);
-  registerDashboardPage(receptionDash);
+  auto dashboard = new ReceptionDashboardWidget(user, m_staffService, m_patientService, m_appointmentService, this);
+  registerDashboardPage(dashboard);
 }
 
 void MainWindow::switchToPatientDashboard(
     std::shared_ptr<IAuthenticatable> user) {
-  auto *patientDash = new PatientDashboardWidget(user, this);
-  registerDashboardPage(patientDash);
+  auto dashboard = new PatientDashboardWidget(user, m_staffService, m_patientService, m_appointmentService, this);
+  registerDashboardPage(dashboard);
 }
 
 void MainWindow::handleGlobalLogout() {
@@ -193,12 +189,12 @@ void MainWindow::handleGlobalLogout() {
 
     this->showNormal();
     this->setFixedSize(1000, 600);
-    
+
     QScreen *screen = QGuiApplication::primaryScreen();
     if (screen) {
-        this->move(screen->geometry().center() - this->rect().center());
+      this->move(screen->geometry().center() - this->rect().center());
     }
-    
+
     m_loginWidget->clearFields();
 
     QWidget *currentDash = m_stackedWidget->widget(1);

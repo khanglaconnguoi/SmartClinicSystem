@@ -267,8 +267,7 @@ bool StaffRepository::reactivate(int staffId) {
   return db.commitTransaction();
 }
 
-std::shared_ptr<SystemUser>
-StaffRepository::mapRowToUser(const QSqlQuery &query) const {
+std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery &query) const {
   int staffId = query.value("staff_id").toInt();
   QString staffCode = query.value("staff_code").toString();
   QString passwordHash = query.value("password_hash").toString();

@@ -1,14 +1,13 @@
 #pragma once
 
 #include "../../service/StaffService.h"
+#include "../../service/PatientService.h"
 #include "../../model/Doctor.h"
 #include "../BaseDashboard.h"
 #include <QComboBox>
 #include <QDateEdit>
 #include <QFrame>
 #include <QLineEdit>
-#include <QStackedWidget>
-
 #include <QStackedWidget>
 
 class ManageDoctorsWidget;
@@ -20,9 +19,7 @@ class AdminDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT
 
 public:
-  explicit AdminDashboardWidget(std::shared_ptr<IAuthenticatable> user,
-                                std::shared_ptr<StaffService> staffService,
-                                QWidget *parent = nullptr);
+    explicit AdminDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, std::shared_ptr<StaffService> staffService = nullptr, std::shared_ptr<PatientService> patientService = nullptr, std::shared_ptr<AppointmentService> appointmentService = nullptr, QWidget *parent = nullptr);
   ~AdminDashboardWidget() override = default;
 
 protected:
@@ -32,6 +29,7 @@ private:
   void buildSidebar();
 
   std::shared_ptr<StaffService> m_staffService;
+  std::shared_ptr<PatientService> m_patientService;
   std::shared_ptr<IAuthenticatable> m_currentUser;
 
   // Các thành phần UI

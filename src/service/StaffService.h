@@ -23,6 +23,7 @@
 #include <memory>
 
 #include "repository/StaffRepository.h"
+#include "repository/DatabaseManager.h"
 
 struct ResetPasswordResult {
     bool result;

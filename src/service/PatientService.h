@@ -17,6 +17,8 @@
 
 class PatientRepository;
 
+#include "repository/DatabaseManager.h"
+
 class PatientService {
 private:
   std::shared_ptr<PatientRepository> m_patientRepository;
@@ -224,7 +226,10 @@ public:
 
   /**
    * @brief Lấy thông tin bảo hiểm của bệnh nhân.
-   * @return nullopt nếu bệnh nhân chưa có bảo hiểm.
+   * @return nullopt  // Tìm kiếm thông tin bảo hiểm theo ID bệnh nhân
    */
-  std::optional<InsuranceResultDTO> getInsurance(int patientId);
+  std::optional<InsuranceResultDTO> getInsurance(int patientId) const;
+
+  std::optional<DatabaseManager::PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
+
 };

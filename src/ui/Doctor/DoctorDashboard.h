@@ -16,7 +16,7 @@ class DoctorDashboardWidget : public BaseDashboardWidget {
     Q_OBJECT
 
 public:
-    explicit DoctorDashboardWidget(std::shared_ptr<IAuthenticatable> user, QWidget *parent = nullptr);
+    explicit DoctorDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, std::shared_ptr<StaffService> staffService = nullptr, std::shared_ptr<PatientService> patientService = nullptr, std::shared_ptr<AppointmentService> appointmentService = nullptr, QWidget *parent = nullptr);
     virtual ~DoctorDashboardWidget() override = default;
 
 protected:

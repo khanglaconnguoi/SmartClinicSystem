@@ -1,7 +1,10 @@
 #include "ReceptionDashboard.h"
 #include "../../model/Doctor.h"
+#include "../../model/IAuthenticatable.h"
 #include "../../repository/DatabaseManager.h"
 #include "../../service/StaffService.h"
+#include "../../service/PatientService.h"
+#include "../../service/AppointmentService.h"
 #include "PatientRegistrationDialog.h"
 #include <QMessageBox>
 #include <QStringList>
@@ -18,8 +21,14 @@
 #include <QFormLayout>
 #include <QLineEdit>
 
-ReceptionDashboardWidget::ReceptionDashboardWidget(std::shared_ptr<IAuthenticatable> user, std::shared_ptr<StaffService> staffService, QWidget *parent)
-    : BaseDashboardWidget(user, parent), m_currentUser(user), m_staffService(staffService) {
+ReceptionDashboardWidget::ReceptionDashboardWidget(
+    std::shared_ptr<IAuthenticatable> user,
+    std::shared_ptr<StaffService> staffService,
+    std::shared_ptr<PatientService> patientService,
+    std::shared_ptr<AppointmentService> appointmentService,
+    QWidget *parent)
+    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent),
+      m_currentUser(user), m_staffService(staffService) {
     
     initializeDashboard();
 
@@ -197,7 +206,7 @@ void ReceptionDashboardWidget::onContinueClicked() {
         return;
     }
     
-    auto patientOpt = DatabaseManager::getInstance().getPatientByPhoneOrCitizenId(phone, citizenId);
+    auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId(phone, citizenId);
     if (patientOpt) {
         m_currentPatientId = patientOpt->patientId;
         m_txtPatientPhone->setText(patientOpt->phone); // Fill phone if found by CitizenId
@@ -239,7 +248,7 @@ void ReceptionDashboardWidget::onConfirmClicked() {
     QString startTime = timeSlot.split(" - ").first();
     int createdBy = m_currentUser->getAccountId();
     
-    bool success = DatabaseManager::getInstance().createAppointment(m_currentPatientId, doctorCode, createdBy, date, startTime, "Khám bệnh");
+    bool success = m_baseAppointmentService->createAppointment(m_currentPatientId, doctorCode, createdBy, date, startTime, "Khám bệnh");
     if (success) {
         QMessageBox::information(this, "Thành công", "Đăng ký lịch khám thành công!");
         
