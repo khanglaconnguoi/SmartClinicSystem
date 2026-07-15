@@ -14,15 +14,22 @@ BillingService::BillingService(std::shared_ptr<BillingRepository> repo)
 // Validate
 // ─────────────────────────────────────────────────────────────────────────────
 
-QString BillingService::validateInvoiceInput(int patientId, int recordId,
-                                             double consultationFee,
-                                             const QList<PrescriptionItemDTO> &items) {
-  if (patientId <= 0)
-    return "Định danh bệnh nhân không hợp lệ.";
-  if (recordId <= 0)
-    return "Định danh hồ sơ khám không hợp lệ.";
-  if (consultationFee < 0)
-    return "Phí khám không được âm.";
+QString BillingService::validatePatientId(int patientId) {
+  if (patientId <= 0) return "Định danh bệnh nhân không hợp lệ.";
+  return "";
+}
+
+QString BillingService::validateRecordId(int recordId) {
+  if (recordId <= 0) return "Định danh hồ sơ khám không hợp lệ.";
+  return "";
+}
+
+QString BillingService::validateConsultationFee(double consultationFee) {
+  if (consultationFee < 0) return "Phí khám không được âm.";
+  return "";
+}
+
+QString BillingService::validatePrescriptionItems(const QList<PrescriptionItemDTO> &items) {
   for (const auto &item : items) {
     if (item.quantity <= 0)
       return QString("Thuốc '%1' có số lượng không hợp lệ (%2).")
@@ -30,6 +37,22 @@ QString BillingService::validateInvoiceInput(int patientId, int recordId,
     if (item.unitPrice < 0)
       return QString("Thuốc '%1' có đơn giá không hợp lệ.").arg(item.brandName);
   }
+  return "";
+}
+
+void BillingService::normalizeSearchCriteria(InvoiceSearchCriteria &criteria) {
+  criteria.searchKey = criteria.searchKey.simplified();
+  criteria.status = criteria.status.trimmed().toUpper();
+}
+
+QString BillingService::validateInvoiceInput(int patientId, int recordId,
+                                             double consultationFee,
+                                             const QList<PrescriptionItemDTO> &items) {
+  QString err;
+  if (!(err = validatePatientId(patientId)).isEmpty()) return err;
+  if (!(err = validateRecordId(recordId)).isEmpty()) return err;
+  if (!(err = validateConsultationFee(consultationFee)).isEmpty()) return err;
+  if (!(err = validatePrescriptionItems(items)).isEmpty()) return err;
   return "";
 }
 
@@ -120,7 +143,8 @@ QString BillingService::validateSearchCriteria(const InvoiceSearchCriteria &crit
 }
 
 QList<InvoiceSummaryDTO> BillingService::searchInvoices(
-    const InvoiceSearchCriteria &criteria) {
+    InvoiceSearchCriteria criteria) {
+  normalizeSearchCriteria(criteria);
   QString err = validateSearchCriteria(criteria);
   if (!err.isEmpty()) {
     qDebug() << "BillingService::searchInvoices validation failed:" << err;
@@ -129,7 +153,8 @@ QList<InvoiceSummaryDTO> BillingService::searchInvoices(
   return m_billingRepository->searchInvoices(criteria);
 }
 
-int BillingService::countSearchResults(const InvoiceSearchCriteria &criteria) {
+int BillingService::countSearchResults(InvoiceSearchCriteria criteria) {
+  normalizeSearchCriteria(criteria);
   QString err = validateSearchCriteria(criteria);
   if (!err.isEmpty()) {
     qDebug() << "BillingService::countSearchResults validation failed:" << err;

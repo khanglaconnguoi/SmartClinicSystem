@@ -119,17 +119,45 @@ bool PatientService::addOutPatient(OutPatientInputDTO &dto) {
 // Normalize
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * @brief Chuyển đổi chuỗi thành dạng Title Case (vd: "NGUYen VAN a" -> "Nguyen Van A")
+ */
+static QString toTitleCase(const QString &str) {
+  QStringList words = str.simplified().split(' ', Qt::SkipEmptyParts);
+  for (int i = 0; i < words.size(); ++i) {
+    QString word = words[i].toLower();
+    if (!word.isEmpty()) {
+      word[0] = word[0].toUpper();
+      words[i] = word;
+    }
+  }
+  return words.join(' ');
+}
+
+static QString normalizePhoneNumber(QString phone) {
+  phone = phone.replace(" ", "").replace(".", "").replace("-", "").trimmed();
+  if (phone.startsWith("+84")) {
+    phone.replace(0, 3, "0");
+  }
+  return phone;
+}
+
 void PatientService::normalizePatientInput(PatientInputDTO &dto) {
-  dto.fullName = dto.fullName.simplified();
+  dto.fullName = toTitleCase(dto.fullName);
   dto.citizenId = dto.citizenId.trimmed();
-  dto.phone = dto.phone.trimmed();
+  dto.phone = normalizePhoneNumber(dto.phone);
   dto.email = dto.email.trimmed().toLower();
   dto.address = dto.address.simplified();
   dto.bloodType = dto.bloodType.trimmed().toUpper();
   dto.allergies = dto.allergies.trimmed();
   dto.insurance = dto.insurance.trimmed();
-  dto.emergencyContactName = dto.emergencyContactName.simplified();
-  dto.emergencyContactPhone = dto.emergencyContactPhone.trimmed();
+  dto.emergencyContactName = toTitleCase(dto.emergencyContactName);
+  dto.emergencyContactPhone = normalizePhoneNumber(dto.emergencyContactPhone);
+}
+
+void PatientService::normalizeSearchCriteria(PatientSearchCriteria &criteria) {
+  criteria.searchKey = criteria.searchKey.simplified();
+  criteria.status = criteria.status.trimmed();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,6 +198,7 @@ bool PatientService::addInPatient(InPatientInputDTO &dto) {
     return false;
   }
 
+
   err = validateInPatientInput(dto);
   if (!err.isEmpty()) {
     qDebug() << "Validation Error (InPatient):" << err;
@@ -197,6 +226,7 @@ bool PatientService::addEmergencyPatient(EmergencyPatientInputDTO &dto) {
     QMessageBox::warning(nullptr, "Validation Error", err);
     return false;
   }
+
 
   err = validateEmergencyPatientInput(dto);
   if (!err.isEmpty()) {
@@ -231,14 +261,16 @@ QString PatientService::validateBaseInput(const PatientInputDTO &dto,
                                           const QString &patientCode) {
   QString err;
   if (!(err = validatePatientCode(patientCode)).isEmpty()) return err;
-  if (dto.fullName.isEmpty()) return "Họ tên không được để trống.";
-  if (dto.dateOfBirth > QDate::currentDate()) return "Ngày sinh không hợp lệ.";
+  if (!(err = Validation::validateFullName(dto.fullName)).isEmpty()) return err;
+  if (dto.dateOfBirth > QDate::currentDate() || dto.dateOfBirth.year() < QDate::currentDate().year() - 150)
+    return "Ngày sinh không hợp lệ (tuổi phải nhỏ hơn 150)";
 
   if (!(err = Validation::validateCitizenId(dto.citizenId)).isEmpty()) return err;
   if (!(err = Validation::validatePhoneNumber(dto.phone)).isEmpty()) return err;
   if (!(err = Validation::validateEmail(dto.email)).isEmpty()) return err;
 
   if (dto.address.isEmpty()) return "Địa chỉ không được để trống.";
+  if (dto.address.length() > 255) return "Địa chỉ không được vượt quá 255 ký tự.";
 
   if (!(err = validateBloodType(dto.bloodType)).isEmpty()) return err;
   if (!(err = validateEmergencyContactName(dto.emergencyContactName)).isEmpty()) return err;
@@ -268,6 +300,8 @@ QString PatientService::validateInPatientDischargeDate(const QDate &admissionDat
 QString PatientService::validateInPatientReason(const QString &reason) {
   if (reason.trimmed().isEmpty())
     return "Lý do nhập viện không được để trống.";
+  if (reason.trimmed().length() > 1000)
+    return "Lý do nhập viện không được vượt quá 1000 ký tự.";
   return "";
 }
 
@@ -302,12 +336,16 @@ QString PatientService::validateEmergencyDischargeDate(const QDate &admissionDat
 QString PatientService::validateEmergencyInjuryCause(const QString &cause) {
   if (cause.trimmed().isEmpty())
     return "Nguyên nhân chấn thương không được để trống.";
+  if (cause.trimmed().length() > 255)
+    return "Nguyên nhân chấn thương không được vượt quá 255 ký tự.";
   return "";
 }
 
 QString PatientService::validateEmergencyInjuryDescription(const QString &desc) {
   if (desc.trimmed().isEmpty())
     return "Mô tả chấn thương không được để trống.";
+  if (desc.trimmed().length() > 1000)
+    return "Mô tả chấn thương không được vượt quá 1000 ký tự.";
   return "";
 }
 
@@ -331,27 +369,19 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
                                                 int patientId) {
   if (patientId <= 0)
     return "Mã số bệnh nhân không hợp lệ.";
-  if (dto.fullName.isEmpty())
-    return "Họ và tên bệnh nhân không được để trống.";
-  if (!dto.dateOfBirth.isValid() || dto.dateOfBirth > QDate::currentDate())
-    return "Ngày sinh không hợp lệ (không được lớn hơn ngày hiện tại).";
 
   QString err;
-  err = Validation::validateCitizenId(dto.citizenId);
-  if (!err.isEmpty())
-    return err;
+  if (!(err = Validation::validateFullName(dto.fullName)).isEmpty()) return err;
+  if (!dto.dateOfBirth.isValid() || dto.dateOfBirth > QDate::currentDate() || dto.dateOfBirth.year() < QDate::currentDate().year() - 150)
+    return "Ngày sinh không hợp lệ (tuổi phải nhỏ hơn 150).";
 
-  err = Validation::validatePhoneNumber(dto.phone);
-  if (!err.isEmpty())
-    return err;
+  if (!(err = Validation::validateCitizenId(dto.citizenId)).isEmpty()) return err;
+  if (!(err = Validation::validatePhoneNumber(dto.phone)).isEmpty()) return err;
+  if (!(err = Validation::validateEmail(dto.email)).isEmpty()) return err;
+  if (!(err = validateBloodType(dto.bloodType)).isEmpty()) return err;
 
-  err = Validation::validateEmail(dto.email);
-  if (!err.isEmpty())
-    return err;
-
-  err = validateBloodType(dto.bloodType);
-  if (!err.isEmpty())
-    return err;
+  if (dto.address.isEmpty()) return "Địa chỉ không được để trống.";
+  if (dto.address.length() > 255) return "Địa chỉ không được vượt quá 255 ký tự.";
 
   return "";
 }
@@ -367,6 +397,7 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
       QMessageBox::warning(nullptr, "Validation Error", err);
       return false;
     }
+
 
     PatientUpdateDTO updateDto(dto, patientId);
     return m_patientRepository->updatePatient(updateDto);
@@ -384,6 +415,7 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
       QMessageBox::warning(nullptr, "Validation Error", err);
       return false;
     }
+
 
     OutPatientUpdateDTO updateDto(dto, patientId, status);
 
@@ -405,6 +437,7 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
       QMessageBox::warning(nullptr, "Validation Error", err);
       return false;
     }
+
 
     err = validateInPatientInput(dto);
     if (!err.isEmpty()) {
@@ -433,6 +466,7 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
       return false;
     }
 
+
     err = validateEmergencyPatientInput(dto);
     if (!err.isEmpty()) {
       QMessageBox::warning(nullptr, "Validation Error", err);
@@ -452,7 +486,8 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
   // ─────────────────────────────────────────────────────────────────────────────
 
   QList<PatientSearchResultDTO> PatientService::searchPatients(
-      const PatientSearchCriteria &criteria) {
+      PatientSearchCriteria criteria) {
+    normalizeSearchCriteria(criteria);
     QString err = validateDateRange(
         criteria.fromDate.value_or(QDate()), criteria.toDate.value_or(QDate()));
     if (!err.isEmpty()) {
@@ -474,7 +509,8 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
   }
 
   int PatientService::countSearchResults(
-      const PatientSearchCriteria &criteria) {
+      PatientSearchCriteria criteria) {
+    normalizeSearchCriteria(criteria);
     QString err = validateDateRange(
         criteria.fromDate.value_or(QDate()), criteria.toDate.value_or(QDate()));
     if (!err.isEmpty()) {

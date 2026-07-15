@@ -1,15 +1,16 @@
-#include "dto/PatientDTOs.h"
-#include "dto/MedicalRecordDTOs.h"
 #include "dto/BillingDTOs.h"
+#include "dto/MedicalRecordDTOs.h"
+#include "dto/PatientDTOs.h"
 #include "dto/PrescriptionDTOs.h"
 #include "model/CommonEnums.h"
-#include "repository/DatabaseManager.h"
-#include "repository/PatientRepository.h"
-#include "repository/MedicalRecordRepository.h"
 #include "repository/BillingRepository.h"
-#include "service/PatientService.h"
-#include "service/MedicalRecordService.h"
+#include "repository/DatabaseManager.h"
+#include "repository/MedicalRecordRepository.h"
+#include "repository/PatientRepository.h"
 #include "service/BillingService.h"
+#include "service/MedicalRecordService.h"
+#include "service/PatientService.h"
+#include "service/Validation.h"
 #include "ui/MainWindow.h"
 #include <QApplication>
 #include <QDate>
@@ -23,17 +24,29 @@
 
 static QFile logFile;
 
-void messageHandler(QtMsgType type, const QMessageLogContext &ctx, const QString &msg) {
+void messageHandler(QtMsgType type, const QMessageLogContext &ctx,
+                    const QString &msg) {
   Q_UNUSED(ctx);
-  if (!logFile.isOpen()) return;
+  if (!logFile.isOpen())
+    return;
 
   QString prefix;
   switch (type) {
-  case QtDebugMsg: prefix = "DEBUG"; break;
-  case QtWarningMsg: prefix = "WARN "; break;
-  case QtCriticalMsg: prefix = "ERROR"; break;
-  case QtFatalMsg: prefix = "FATAL"; break;
-  default: prefix = "INFO "; break;
+  case QtDebugMsg:
+    prefix = "DEBUG";
+    break;
+  case QtWarningMsg:
+    prefix = "WARN ";
+    break;
+  case QtCriticalMsg:
+    prefix = "ERROR";
+    break;
+  case QtFatalMsg:
+    prefix = "FATAL";
+    break;
+  default:
+    prefix = "INFO ";
+    break;
   }
 
   QTextStream out(&logFile);
@@ -43,15 +56,94 @@ void messageHandler(QtMsgType type, const QMessageLogContext &ctx, const QString
 
 static void seedDatabase() {
   DatabaseManager &db = DatabaseManager::getInstance();
-  db.executeQuery("INSERT OR IGNORE INTO departments (department_id, department_code, department_name) VALUES (1, 'D01', 'Test Dept')");
-  db.executeQuery("INSERT OR IGNORE INTO rooms (room_id, room_number, room_type, status) VALUES (1, '101', 'WARD', 'AVAILABLE')");
-  db.executeQuery("INSERT OR IGNORE INTO staff (staff_id, staff_code, password_hash, full_name, role, gender, date_of_birth, citizen_id, phone_number, email, address, department_id) VALUES (1, 'S01', 'hash', 'Dr. Test', 'DOCTOR', 'MALE', '1980-01-01', '001234567890', '0901234567', 'test@test.com', 'Address', 1)");
+  db.executeQuery(
+      "INSERT OR IGNORE INTO departments (department_id, department_code, "
+      "department_name) VALUES (1, 'D01', 'Test Dept')");
+  db.executeQuery("INSERT OR IGNORE INTO rooms (room_id, room_number, "
+                  "room_type, status) VALUES (1, '101', 'WARD', 'AVAILABLE')");
+  db.executeQuery(
+      "INSERT OR IGNORE INTO staff (staff_id, staff_code, password_hash, "
+      "full_name, role, gender, date_of_birth, citizen_id, phone_number, "
+      "email, address, department_id) VALUES (1, 'S01', 'hash', 'Dr. Test', "
+      "'DOCTOR', 'MALE', '1980-01-01', '001234567890', '0901234567', "
+      "'test@test.com', 'Address', 1)");
 }
 
 static int getLastInsertedPatientId() {
-  QSqlQuery q = DatabaseManager::getInstance().selectQuery("SELECT MAX(patient_id) FROM patients");
-  if (q.next()) return q.value(0).toInt();
+  QSqlQuery q = DatabaseManager::getInstance().selectQuery(
+      "SELECT MAX(patient_id) FROM patients");
+  if (q.next())
+    return q.value(0).toInt();
   return -1;
+}
+
+static void testValidations() {
+  qDebug() << "\n==================================================";
+  qDebug() << "                TESTING VALIDATIONS               ";
+  qDebug() << "==================================================";
+
+  PatientInputDTO dto;
+
+  // 1. Test Phone Normalization
+  dto.phone = "+84 988.123-456";
+  dto.emergencyContactPhone = " 090 123 4567 ";
+  PatientService::normalizePatientInput(dto);
+  qDebug() << "[1] Phone Normalization:";
+  qDebug() << "    Expected: 0988123456 | Got:" << dto.phone;
+  qDebug() << "    Expected: 0901234567 | Got:" << dto.emergencyContactPhone;
+
+  // 2. Test Name Validation
+  QString badName1 = "Nguyễn Văn A 123";
+  QString badName2 = "Trần @ Anh";
+  QString goodName = "Nguyễn Văn A";
+  qDebug() << "\n[2] Name Validation:";
+  qDebug() << "    Input:" << badName1
+           << "-> Error:" << Validation::validateFullName(badName1);
+  qDebug() << "    Input:" << badName2
+           << "-> Error:" << Validation::validateFullName(badName2);
+  qDebug() << "    Input:" << goodName
+           << "-> Error:" << Validation::validateFullName(goodName);
+
+  // 3. Test Age Validation
+  QDate futureDate = QDate::currentDate().addDays(1);
+  QDate veryOldDate = QDate::currentDate().addYears(-151);
+  QDate normalDate = QDate(1990, 1, 1);
+  qDebug() << "\n[3] Age Validation:";
+  qDebug() << "    Future Date (" << futureDate.toString()
+           << ") -> Error:" << Validation::validateDateOfBirth(futureDate);
+  qDebug() << "    Age > 150 (" << veryOldDate.toString()
+           << ") -> Error:" << Validation::validateDateOfBirth(veryOldDate);
+  qDebug() << "    Normal Date (" << normalDate.toString()
+           << ") -> Error:" << Validation::validateDateOfBirth(normalDate);
+
+  // 4. Test Address and Reason length
+  PatientInputDTO lengthDto;
+  lengthDto.address = QString(300, 'A'); // > 255 chars
+  qDebug() << "\n[4] Address Length Validation (> 255):";
+  qDebug() << "    Error:"
+           << PatientService::validateBaseInput(lengthDto, "PT001");
+
+  InPatientInputDTO inDto;
+  inDto.roomId = 1;
+  inDto.doctorId = 1;
+  inDto.reason = QString(1500, 'B'); // > 1000 chars
+  qDebug() << "\n[5] InPatient Reason Length (> 1000):";
+  qDebug() << "    Error:"
+           << PatientService::validateInPatientReason(inDto.reason);
+
+  // 6. Test Billing/Invoice Validation
+  QList<PrescriptionItemDTO> badItems;
+  PrescriptionItemDTO pBad;
+  pBad.brandName = "Thuốc âm tiền";
+  pBad.quantity = 0; // Invalid
+  pBad.unitPrice = -5000; // Invalid
+  badItems.append(pBad);
+  
+  BillingService billingService(nullptr); // Repo can be null for validation
+  qDebug() << "\n[6] Invoice Validation (Bad Patient/Record ID & Bad Items):";
+  qDebug() << "    Error:" << billingService.validateInvoiceInput(-1, -1, -50000, badItems);
+
+  qDebug() << "==================================================\n";
 }
 
 static void runComprehensiveTests() {
@@ -62,10 +154,10 @@ static void runComprehensiveTests() {
 
   auto patientRepo = std::make_shared<PatientRepository>();
   auto patientService = std::make_shared<PatientService>(patientRepo);
-  
+
   auto mrRepo = std::make_shared<MedicalRecordRepository>();
   MedicalRecordService mrService(mrRepo, patientService);
-  
+
   auto billingRepo = std::make_shared<BillingRepository>();
   BillingService billingService(billingRepo);
 
@@ -73,7 +165,7 @@ static void runComprehensiveTests() {
   // 1. PATIENT SERVICE TESTS
   // ---------------------------------------------------------
   qDebug() << "\n[1] TEST: PATIENT SERVICE";
-  
+
   // 1.1 Add OutPatient
   OutPatientInputDTO pOut;
   pOut.fullName = "  Le Thi Xuan  ";
@@ -91,7 +183,8 @@ static void runComprehensiveTests() {
   pOut.insurance = "BHYT-123456";
   bool okOut = patientService->addOutPatient(pOut);
   int pidOut = getLastInsertedPatientId();
-  qDebug() << "  -> Add OutPatient:" << (okOut ? "PASS" : "FAIL") << "ID:" << pidOut;
+  qDebug() << "  -> Add OutPatient:" << (okOut ? "PASS" : "FAIL")
+           << "ID:" << pidOut;
 
   // 1.2 Add InPatient
   InPatientInputDTO pIn;
@@ -112,7 +205,8 @@ static void runComprehensiveTests() {
   pIn.reason = "Dengue fever";
   bool okIn = patientService->addInPatient(pIn);
   int pidIn = getLastInsertedPatientId();
-  qDebug() << "  -> Add InPatient:" << (okIn ? "PASS" : "FAIL") << "ID:" << pidIn;
+  qDebug() << "  -> Add InPatient:" << (okIn ? "PASS" : "FAIL")
+           << "ID:" << pidIn;
 
   // 1.3 Add Emergency
   EmergencyPatientInputDTO pEm;
@@ -134,13 +228,16 @@ static void runComprehensiveTests() {
   pEm.injuryDescription = "Head trauma";
   bool okEm = patientService->addEmergencyPatient(pEm);
   int pidEm = getLastInsertedPatientId();
-  qDebug() << "  -> Add EmergencyPatient:" << (okEm ? "PASS" : "FAIL") << "ID:" << pidEm;
+  qDebug() << "  -> Add EmergencyPatient:" << (okEm ? "PASS" : "FAIL")
+           << "ID:" << pidEm;
 
   // 1.4 Search Patient
   PatientSearchCriteria pSearch;
   pSearch.searchKey = "XUAN";
   auto searchRes = patientService->searchPatients(pSearch);
-  qDebug() << "  -> Search Patient 'XUAN':" << (searchRes.size() > 0 ? "PASS" : "FAIL") << "Found:" << searchRes.size();
+  qDebug() << "  -> Search Patient 'XUAN':"
+           << (searchRes.size() > 0 ? "PASS" : "FAIL")
+           << "Found:" << searchRes.size();
 
   // 1.5 Update Patient
   if (pidOut > 0) {
@@ -187,7 +284,7 @@ static void runComprehensiveTests() {
     mrDto.clinicalNotes = "Họng đỏ";
     mrDto.treatment = "Paracetamol, uống nhiều nước";
     mrDto.nextVisitDate = QDate::currentDate().addDays(3);
-    
+
     Diagnosis diag1;
     diag1.icdCode = "j02.9"; // -> J02.9
     diag1.description = "Viêm họng cấp";
@@ -195,7 +292,8 @@ static void runComprehensiveTests() {
     mrDto.diagnoses.append(diag1);
 
     recordId = mrService.createMedicalRecord(mrDto);
-    qDebug() << "  -> Create MedicalRecord:" << (recordId > 0 ? "PASS" : "FAIL") << "RecordID:" << recordId;
+    qDebug() << "  -> Create MedicalRecord:" << (recordId > 0 ? "PASS" : "FAIL")
+             << "RecordID:" << recordId;
 
     // 2.2 Update Medical Record
     if (recordId > 0) {
@@ -211,15 +309,16 @@ static void runComprehensiveTests() {
       uMrDto.chiefComplaint = "Sốt, ho nhiều";
       uMrDto.clinicalNotes = "Viêm họng nặng hơn";
       uMrDto.treatment = "Kháng sinh + Paracetamol";
-      
+
       Diagnosis diag2;
       diag2.icdCode = "J02.9";
       diag2.description = "Viêm họng cấp tính";
       diag2.severity = "SEVERE";
       uMrDto.diagnoses.append(diag2);
-      
+
       bool okMrUpdate = mrService.updateMedicalRecord(uMrDto);
-      qDebug() << "  -> Update MedicalRecord:" << (okMrUpdate ? "PASS" : "FAIL");
+      qDebug() << "  -> Update MedicalRecord:"
+               << (okMrUpdate ? "PASS" : "FAIL");
     }
 
     // 2.3 Search Medical Record
@@ -227,7 +326,9 @@ static void runComprehensiveTests() {
     mrSearch.searchKey = "Sốt";
     mrSearch.patientId = pidOut;
     auto mrSearchRes = mrService.searchMedicalRecords(mrSearch);
-    qDebug() << "  -> Search MedicalRecord 'Sốt':" << (mrSearchRes.size() > 0 ? "PASS" : "FAIL") << "Found:" << mrSearchRes.size();
+    qDebug() << "  -> Search MedicalRecord 'Sốt':"
+             << (mrSearchRes.size() > 0 ? "PASS" : "FAIL")
+             << "Found:" << mrSearchRes.size();
   }
 
   // ---------------------------------------------------------
@@ -249,15 +350,17 @@ static void runComprehensiveTests() {
     pItems.append(p1);
     pItems.append(p2);
 
-    bool billOk = billingService.generateInvoice(pidOut, recordId, PatientType::Outpatient, 200000.0, pItems);
+    bool billOk = billingService.generateInvoice(
+        pidOut, recordId, PatientType::Outpatient, 200000.0, pItems);
     qDebug() << "  -> Generate Invoice:" << (billOk ? "PASS" : "FAIL");
-    
+
     // 3.2 Get Invoice
     if (billOk) {
       auto invoices = billingService.getInvoiceByRecordId(recordId);
       if (invoices.has_value()) {
-          invoiceId = invoices->invoiceId;
-          qDebug() << "  -> Invoice Code:" << invoices->invoiceCode << "| Total:" << invoices->totalAmount;
+        invoiceId = invoices->invoiceId;
+        qDebug() << "  -> Invoice Code:" << invoices->invoiceCode
+                 << "| Total:" << invoices->totalAmount;
       }
     }
 
@@ -265,7 +368,9 @@ static void runComprehensiveTests() {
     InvoiceSearchCriteria invSearch;
     invSearch.patientId = pidOut;
     auto invSearchRes = billingService.searchInvoices(invSearch);
-    qDebug() << "  -> Search Invoices by Patient:" << (invSearchRes.size() > 0 ? "PASS" : "FAIL") << "Found:" << invSearchRes.size();
+    qDebug() << "  -> Search Invoices by Patient:"
+             << (invSearchRes.size() > 0 ? "PASS" : "FAIL")
+             << "Found:" << invSearchRes.size();
 
     // 3.4 Cancel Invoice (Soft delete/status update)
     if (invoiceId > 0) {
@@ -293,7 +398,12 @@ int main(int argc, char *argv[]) {
 
   // Tự động seed dữ liệu mẫu
   seedDatabase();
+
+  testValidations();
   
+  // Chạy thêm luồng tạo dữ liệu mẫu (bệnh nhân, hồ sơ khám, hóa đơn)
+  runComprehensiveTests();
+
   MainWindow window;
   window.show();
 

@@ -68,6 +68,10 @@ QString validateFullName(const QString &fullName) {
     return QString("Full name must not exceed %1 characters.")
         .arg(FULL_NAME_MAX_LENGTH);
   }
+  static const QRegularExpression nameRegex(QStringLiteral("^[\\p{L}\\s]+$"));
+  if (!nameRegex.match(fullName.trimmed()).hasMatch()) {
+    return "Full name must not contain digits or special characters.";
+  }
   return "";
 }
 
@@ -146,6 +150,9 @@ QString validateDateOfBirth(const QDate &dateOfBirth) {
   QDate today = QDate::currentDate();
   if (dateOfBirth > today) {
     return "Date of birth cannot be in the future.";
+  }
+  if (dateOfBirth.year() < today.year() - 150) {
+    return "Date of birth is unrealistic (age > 150).";
   }
 
   return "";

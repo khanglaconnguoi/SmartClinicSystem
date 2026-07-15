@@ -16,6 +16,19 @@ private:
   std::unique_ptr<IInvoiceFactory> selectFactory(PatientType type) const;
 
   /**
+   * @brief Kiểm tra tiêu chí tìm kiếm trước khi xuống Repository.
+   * @return Chuỗi rỗng nếu hợp lệ, chuỗi lỗi nếu không hợp lệ.
+   */
+  static QString validateSearchCriteria(const InvoiceSearchCriteria &criteria);
+
+public:
+  static QString validatePatientId(int patientId);
+  static QString validateRecordId(int recordId);
+  static QString validateConsultationFee(double consultationFee);
+  static QString validatePrescriptionItems(const QList<PrescriptionItemDTO> &items);
+  static void normalizeSearchCriteria(InvoiceSearchCriteria &criteria);
+
+  /**
    * @brief Kiểm tra đầu vào trước khi phát sinh hóa đơn.
    * @return Chuỗi rỗng nếu hợp lệ, chuỗi lỗi nếu không hợp lệ.
    */
@@ -23,13 +36,6 @@ private:
                                       double consultationFee,
                                       const QList<PrescriptionItemDTO> &items);
 
-  /**
-   * @brief Kiểm tra tiêu chí tìm kiếm trước khi xuống Repository.
-   * @return Chuỗi rỗng nếu hợp lệ, chuỗi lỗi nếu không hợp lệ.
-   */
-  static QString validateSearchCriteria(const InvoiceSearchCriteria &criteria);
-
-public:
   explicit BillingService(std::shared_ptr<BillingRepository> repo);
 
   bool generateInvoice(int patientId, int recordId, PatientType type,
@@ -46,10 +52,10 @@ public:
    * @brief Tìm kiếm hóa đơn theo tiêu chí linh hoạt.
    *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
    */
-  QList<InvoiceSummaryDTO> searchInvoices(const InvoiceSearchCriteria &criteria);
+  QList<InvoiceSummaryDTO> searchInvoices(InvoiceSearchCriteria criteria);
 
   /**
    * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
    */
-  int countSearchResults(const InvoiceSearchCriteria &criteria);
+  int countSearchResults(InvoiceSearchCriteria criteria);
 };

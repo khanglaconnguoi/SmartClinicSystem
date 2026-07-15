@@ -102,6 +102,11 @@ void MedicalRecordService::normalizeMedicalRecordUpdate(
   }
 }
 
+void MedicalRecordService::normalizeSearchCriteria(
+    MedicalRecordSearchCriteria &criteria) {
+  criteria.searchKey = criteria.searchKey.simplified();
+}
+
 int MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
   normalizeMedicalRecordInput(dto);
 
@@ -160,11 +165,13 @@ MedicalRecordService::getMedicalHistory(int patientId) {
 }
 
 QList<MedicalRecordSummaryDTO> MedicalRecordService::searchMedicalRecords(
-    const MedicalRecordSearchCriteria &criteria) {
+    MedicalRecordSearchCriteria criteria) {
+  normalizeSearchCriteria(criteria);
   return m_recordRepository->searchMedicalRecords(criteria);
 }
 
 int MedicalRecordService::countSearchResults(
-    const MedicalRecordSearchCriteria &criteria) {
+    MedicalRecordSearchCriteria criteria) {
+  normalizeSearchCriteria(criteria);
   return m_recordRepository->countSearchResults(criteria);
 }

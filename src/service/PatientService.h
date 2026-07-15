@@ -2,7 +2,7 @@
  * @file    PatientService.h
  * @brief   Service layer cho module Patient.
  *
- *  Các hàm validate là private — chỉ dùng nội bộ trong class này.
+ *  Các hàm validate là public static — UI có thể gọi trực tiếp để kiểm tra từng ô.
  *  Mỗi hàm validate trả về chuỗi rỗng "" nếu hợp lệ,
  *  hoặc chuỗi mô tả lỗi nếu không hợp lệ.
  */
@@ -58,6 +58,11 @@ public:
    *        LUÔN gọi trước validate — đảm bảo validate trên dữ liệu đã sạch.
    */
   static void normalizePatientInput(PatientInputDTO &dto);
+
+  /**
+   * @brief Chuẩn hóa tiêu chí tìm kiếm trước khi lọc (vd: cắt khoảng trắng từ khoá).
+   */
+  static void normalizeSearchCriteria(PatientSearchCriteria &criteria);
 
   static QString validateDateRange(const QDate &fromDate, const QDate &toDate);
 
@@ -129,7 +134,7 @@ public:
    * @return Danh sách kết quả (đã limit/offset). Rỗng nếu lỗi validation.
    */
   QList<PatientSearchResultDTO>
-  searchPatients(const PatientSearchCriteria &criteria);
+  searchPatients(PatientSearchCriteria criteria);
 
   /**
    * @brief Lấy thông tin chi tiết một bệnh nhân.
@@ -143,7 +148,7 @@ public:
    * @param criteria Tiêu chí tìm kiếm (từ UI).
    * @return Tổng số lượng. 0 nếu có lỗi validation.
    */
-  int countSearchResults(const PatientSearchCriteria &criteria);
+  int countSearchResults(PatientSearchCriteria criteria);
 
   bool softDeletePatient(int patientId);
   bool restorePatient(int patientId);

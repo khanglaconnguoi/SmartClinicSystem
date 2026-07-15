@@ -24,6 +24,11 @@ public:
    */
   static void normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto);
 
+  /**
+   * @brief Chuẩn hóa tiêu chí tìm kiếm.
+   */
+  static void normalizeSearchCriteria(MedicalRecordSearchCriteria &criteria);
+
   static QString validateVitalSigns(const VitalSigns &vitals);
   static QString validateTemperature(double temperature);
   static QString validateHeartRate(int heartRate);
@@ -35,8 +40,6 @@ public:
   static QString validateDiagnosisDescription(const QString &desc);
   static QString validateDiagnosisSeverity(const QString &severity);
 
-
-public:
   explicit MedicalRecordService(
       std::shared_ptr<MedicalRecordRepository> recordRepo,
       std::shared_ptr<PatientService> patientService);
@@ -50,10 +53,10 @@ public:
    * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.
    *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
    */
-  QList<MedicalRecordSummaryDTO> searchMedicalRecords(const MedicalRecordSearchCriteria &criteria);
+  QList<MedicalRecordSummaryDTO> searchMedicalRecords(MedicalRecordSearchCriteria criteria);
 
   /**
    * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
    */
-  int countSearchResults(const MedicalRecordSearchCriteria &criteria);
+  int countSearchResults(MedicalRecordSearchCriteria criteria);
 };
