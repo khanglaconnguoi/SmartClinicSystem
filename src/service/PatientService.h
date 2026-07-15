@@ -21,7 +21,14 @@ class PatientService {
 private:
   std::shared_ptr<PatientRepository> m_patientRepository;
 
+  // ── (Các private member cũ đã chuyển xuống dưới public hoặc xoá)
+public:
+  explicit PatientService(std::shared_ptr<PatientRepository> patientRepository)
+      : m_patientRepository(patientRepository) {}
+  ~PatientService() {}
+
   // ── Validate nhóm trường theo loại bệnh nhân ────────────────────────────
+  // ── Đã được đưa ra public để UI có thể gọi kiểm tra ──────────────────────
 
   /**
    * @brief Kiểm tra toàn bộ trường cơ bản của bảng `patients`.
@@ -52,13 +59,25 @@ private:
    */
   static void normalizePatientInput(PatientInputDTO &dto);
 
-  static QString validateBloodType(const QString &bloodType);
   static QString validateDateRange(const QDate &fromDate, const QDate &toDate);
 
-public:
-  explicit PatientService(std::shared_ptr<PatientRepository> patientRepository)
-      : m_patientRepository(patientRepository) {}
-  ~PatientService() {}
+  // ── Validate các trường đơn lẻ dành cho UI gọi trực tiếp ───────────────
+  static QString validatePatientCode(const QString &patientCode);
+  static QString validateEmergencyContactName(const QString &name);
+  static QString validateBloodType(const QString &bloodType);
+
+  static QString validateInPatientRoomId(std::optional<int> roomId);
+  static QString validateInPatientDoctorId(std::optional<int> doctorId);
+  static QString validateInPatientDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate);
+  static QString validateInPatientReason(const QString &reason);
+
+  static QString validateEmergencyRoomId(std::optional<int> roomId);
+  static QString validateEmergencyDoctorId(std::optional<int> doctorId);
+  static QString validateEmergencyDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate);
+  static QString validateEmergencyInjuryCause(const QString &cause);
+  static QString validateEmergencyInjuryDescription(const QString &desc);
+
+
 
   /**
    * @brief Tạo mã bệnh nhân theo loại (OUT-yyyyMMdd-NNNN / IN-… / EMER-…).

@@ -215,72 +215,110 @@ bool PatientService::addEmergencyPatient(EmergencyPatientInputDTO &dto) {
 // Nhóm trường theo loại bệnh nhân
 // ─────────────────────────────────────────────────────────────────────────────
 
-QString PatientService::validateBaseInput(const PatientInputDTO &dto,
-                                          const QString &patientCode) {
+QString PatientService::validatePatientCode(const QString &patientCode) {
   if (patientCode.isEmpty())
     return "Mã bệnh nhân không được để trống.";
-  if (dto.fullName.isEmpty())
-    return "Họ tên không được để trống.";
-  if (dto.dateOfBirth > QDate::currentDate())
-    return "Ngày sinh không hợp lệ.";
+  return "";
+}
 
-  QString err;
-  err = Validation::validateCitizenId(dto.citizenId);
-  if (!err.isEmpty())
-    return err;
-
-  err = Validation::validatePhoneNumber(dto.phone);
-  if (!err.isEmpty())
-    return err;
-
-  err = Validation::validateEmail(dto.email);
-  if (!err.isEmpty())
-    return err;
-
-  if (dto.address.isEmpty())
-    return "Địa chỉ không được để trống.";
-
-  err = validateBloodType(dto.bloodType);
-  if (!err.isEmpty())
-    return err;
-
-  if (dto.emergencyContactName.isEmpty())
+QString PatientService::validateEmergencyContactName(const QString &name) {
+  if (name.trimmed().isEmpty())
     return "Người liên hệ khẩn cấp không được để trống.";
+  return "";
+}
 
-  err = Validation::validatePhoneNumber(dto.emergencyContactPhone);
-  if (!err.isEmpty())
-    return err;
+QString PatientService::validateBaseInput(const PatientInputDTO &dto,
+                                          const QString &patientCode) {
+  QString err;
+  if (!(err = validatePatientCode(patientCode)).isEmpty()) return err;
+  if (dto.fullName.isEmpty()) return "Họ tên không được để trống.";
+  if (dto.dateOfBirth > QDate::currentDate()) return "Ngày sinh không hợp lệ.";
+
+  if (!(err = Validation::validateCitizenId(dto.citizenId)).isEmpty()) return err;
+  if (!(err = Validation::validatePhoneNumber(dto.phone)).isEmpty()) return err;
+  if (!(err = Validation::validateEmail(dto.email)).isEmpty()) return err;
+
+  if (dto.address.isEmpty()) return "Địa chỉ không được để trống.";
+
+  if (!(err = validateBloodType(dto.bloodType)).isEmpty()) return err;
+  if (!(err = validateEmergencyContactName(dto.emergencyContactName)).isEmpty()) return err;
+  if (!(err = Validation::validatePhoneNumber(dto.emergencyContactPhone)).isEmpty()) return err;
 
   return "";
 }
 
-QString PatientService::validateInPatientInput(const InPatientInputDTO &dto) {
-  if (!dto.roomId.has_value())
+QString PatientService::validateInPatientRoomId(std::optional<int> roomId) {
+  if (!roomId.has_value())
     return "Mã phòng không được để trống.";
-  if (!dto.doctorId.has_value())
-    return "Bác sĩ phụ trách không được để trống.";
-  if (dto.dischargeDate.has_value() &&
-      dto.admissionDate > dto.dischargeDate.value())
-    return "Ngày nhập viện phải nhỏ hơn hoặc bằng ngày xuất viện.";
-  if (dto.reason.isEmpty())
-    return "Lý do nhập viện không được để trống.";
+  return "";
+}
 
+QString PatientService::validateInPatientDoctorId(std::optional<int> doctorId) {
+  if (!doctorId.has_value())
+    return "Bác sĩ phụ trách không được để trống.";
+  return "";
+}
+
+QString PatientService::validateInPatientDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate) {
+  if (dischargeDate.has_value() && admissionDate > dischargeDate.value())
+    return "Ngày nhập viện phải nhỏ hơn hoặc bằng ngày xuất viện.";
+  return "";
+}
+
+QString PatientService::validateInPatientReason(const QString &reason) {
+  if (reason.trimmed().isEmpty())
+    return "Lý do nhập viện không được để trống.";
+  return "";
+}
+
+QString PatientService::validateInPatientInput(const InPatientInputDTO &dto) {
+  QString err;
+  if (!(err = validateInPatientRoomId(dto.roomId)).isEmpty()) return err;
+  if (!(err = validateInPatientDoctorId(dto.doctorId)).isEmpty()) return err;
+  if (!(err = validateInPatientDischargeDate(dto.admissionDate, dto.dischargeDate)).isEmpty()) return err;
+  if (!(err = validateInPatientReason(dto.reason)).isEmpty()) return err;
+
+  return "";
+}
+
+QString PatientService::validateEmergencyRoomId(std::optional<int> roomId) {
+  if (!roomId.has_value())
+    return "Phòng cấp cứu không được để trống.";
+  return "";
+}
+
+QString PatientService::validateEmergencyDoctorId(std::optional<int> doctorId) {
+  if (!doctorId.has_value())
+    return "Bác sĩ trực cấp cứu không được để trống.";
+  return "";
+}
+
+QString PatientService::validateEmergencyDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate) {
+  if (dischargeDate.has_value() && admissionDate > dischargeDate.value())
+    return "Ngày nhập viện phải nhỏ hơn hoặc bằng ngày xuất viện.";
+  return "";
+}
+
+QString PatientService::validateEmergencyInjuryCause(const QString &cause) {
+  if (cause.trimmed().isEmpty())
+    return "Nguyên nhân chấn thương không được để trống.";
+  return "";
+}
+
+QString PatientService::validateEmergencyInjuryDescription(const QString &desc) {
+  if (desc.trimmed().isEmpty())
+    return "Mô tả chấn thương không được để trống.";
   return "";
 }
 
 QString PatientService::validateEmergencyPatientInput(
     const EmergencyPatientInputDTO &dto) {
-  if (!dto.roomId.has_value())
-    return "Phòng cấp cứu không được để trống.";
-  if (!dto.doctorId.has_value())
-    return "Bác sĩ trực cấp cứu không được để trống.";
-  if (dto.injuryCause.isEmpty())
-    return "Nguyên nhân chấn thương không được để trống.";
-  if (dto.injuryDescription.isEmpty())
-    return "Mô tả chấn thương không được để trống.";
-  if (dto.dischargeDate.has_value() &&
-      dto.admissionDate > dto.dischargeDate.value())
-    return "Ngày nhập viện phải nhỏ hơn hoặc bằng ngày xuất viện.";
+  QString err;
+  if (!(err = validateEmergencyRoomId(dto.roomId)).isEmpty()) return err;
+  if (!(err = validateEmergencyDoctorId(dto.doctorId)).isEmpty()) return err;
+  if (!(err = validateEmergencyInjuryCause(dto.injuryCause)).isEmpty()) return err;
+  if (!(err = validateEmergencyInjuryDescription(dto.injuryDescription)).isEmpty()) return err;
+  if (!(err = validateEmergencyDischargeDate(dto.admissionDate, dto.dischargeDate)).isEmpty()) return err;
 
   return "";
 }

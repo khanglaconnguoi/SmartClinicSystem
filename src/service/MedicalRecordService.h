@@ -11,10 +11,7 @@ private:
   std::shared_ptr<MedicalRecordRepository> m_recordRepository;
   std::shared_ptr<PatientService> m_patientService;
 
-  static QString validateVitalSigns(const VitalSigns &vitals);
-  static QString validateChiefComplaint(const QString &complaint);
-  static QString validateDiagnosisList(const QList<Diagnosis> &diagnoses);
-
+public:
   /**
    * @brief Chuẩn hóa dữ liệu hồ sơ khám trước khi INSERT.
    *        Trim khoảng trắng, chuẩn hóa severity chẩn đoán về IN HOA.
@@ -26,6 +23,18 @@ private:
    * @brief Chuẩn hóa dữ liệu hồ sơ khám trước khi UPDATE.
    */
   static void normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto);
+
+  static QString validateVitalSigns(const VitalSigns &vitals);
+  static QString validateTemperature(double temperature);
+  static QString validateHeartRate(int heartRate);
+  static QString validateWeight(double weight);
+  static QString validateHeight(double height);
+
+  static QString validateChiefComplaint(const QString &complaint);
+  static QString validateDiagnosisList(const QList<Diagnosis> &diagnoses);
+  static QString validateDiagnosisDescription(const QString &desc);
+  static QString validateDiagnosisSeverity(const QString &severity);
+
 
 public:
   explicit MedicalRecordService(
