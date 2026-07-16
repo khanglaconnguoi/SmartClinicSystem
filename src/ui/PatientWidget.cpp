@@ -1,11 +1,12 @@
-// Patient.cpp
-#include "Patient.h"
+// PatientWidget.cpp
+#include "PatientWidget.h"
+#include "AddMedicationDialog.h"
 
-PatientView::PatientView(QWidget *parent) : QWidget(parent) {
+PatientWidget::PatientWidget(QWidget *parent) : QWidget(parent) {
     setupUi();
 }
 
-void PatientView::setupUi() {
+void PatientWidget::setupUi() {
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(0);
@@ -22,7 +23,7 @@ void PatientView::setupUi() {
     m_mainStackedWidget->setCurrentWidget(m_listViewWidget);
 }
 
-void PatientView::createListView() {
+void PatientWidget::createListView() {
     m_listViewWidget = new QWidget(this);
     QVBoxLayout* listLayout = new QVBoxLayout(m_listViewWidget);
     listLayout->setContentsMargins(16, 12, 16, 16);
@@ -165,10 +166,10 @@ void PatientView::createListView() {
     scrollLayout->addWidget(container);
     listLayout->addWidget(scrollArea, 1);
 
-    connect(m_patientTable, &QTableWidget::cellClicked, this, &PatientView::handlePatientSelected);
+    connect(m_patientTable, &QTableWidget::cellClicked, this, &PatientWidget::handlePatientSelected);
 }
 
-void PatientView::createDetailView() {
+void PatientWidget::createDetailView() {
     m_detailViewWidget = new QWidget(this);
     QVBoxLayout* detailLayout = new QVBoxLayout(m_detailViewWidget);
     detailLayout->setContentsMargins(15, 15, 15, 15);
@@ -205,31 +206,30 @@ void PatientView::createDetailView() {
     headerTitleLayout->addStretch();
     cardAdminLayout->addLayout(headerTitleLayout);
 
+    // ==================== FIX GRID LAYOUT TẠI ĐÂY ====================
     QGridLayout* inputGridLayout = new QGridLayout();
-    inputGridLayout->setHorizontalSpacing(30);   
-    inputGridLayout->setVerticalSpacing(25);
+    inputGridLayout->setHorizontalSpacing(25);   
+    inputGridLayout->setVerticalSpacing(18); // Tăng khoảng cách chiều dọc giữa các dòng để tránh đè chữ
     
-    for (int i = 0; i < 5; ++i) {
-        inputGridLayout->setRowMinimumHeight(i, 42);
-    }
+    // Loại bỏ hoàn toàn vòng lặp setRowMinimumHeight(i, 42) để layout tự co giãn tự nhiên.
     
     QString labelStyle = "QLabel { font-size: 13px; font-weight: bold; color: #334155; border: none; font-family: 'Arial'; }";
     QString inputStyle = 
-        "QLineEdit, QComboBox { font-size: 15px; color: #000000; border: 1px solid transparent; background-color: transparent; padding: 0px 4px; min-height: 34px; }"
-        "QLineEdit:!read-only, QComboBox:enabled { border: 1px solid #0284C7; border-radius: 6px; background-color: #FFFFFF; padding: 10px 12px; }"
+        "QLineEdit, QComboBox { font-size: 14px; color: #000000; border: 1px solid transparent; background-color: transparent; padding: 0px 4px; min-height: 34px; }"
+        "QLineEdit:!read-only, QComboBox:enabled { border: 1px solid #0284C7; border-radius: 6px; background-color: #FFFFFF; padding: 8px 12px; }"
         "QComboBox::drop-down:disabled { border: none; width: 0px; }"
         "QComboBox::drop-down:enabled { border: none; width: 20px; }";
 
     QString checkboxStyle = 
-        "QCheckBox { font-size: 15px; color: #000000; font-family: 'Arial'; spacing: 8px; padding: 0px; } "
+        "QCheckBox { font-size: 14px; color: #000000; font-family: 'Arial'; spacing: 8px; padding: 0px; } "
         "QCheckBox::indicator { width: 18px; height: 18px; border: 2px solid #0284C7; border-radius: 4px; background: transparent; }"
         "QCheckBox::indicator:checked { background-color: #0284C7; border-color: #0284C7; image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><path fill=\"white\" d=\"M10.3 2.3 4.5 8.1 1.7 5.3 0.3 6.7 4.5 10.9 11.7 3.7z\"/></svg>'); }"
         "QCheckBox::indicator:unchecked { background: transparent; } "
         "QCheckBox:disabled { color: #64748B; } "
         "QCheckBox::indicator:disabled { border-color: #CBD5E1; }";
-    
+    // 1. Mã bệnh nhân
     QVBoxLayout* boxID = new QVBoxLayout();
-    boxID->setSpacing(8);
+    boxID->setSpacing(7);
     QLabel* lblID = new QLabel("Mã bệnh nhân <font color='red'>*</font>", cardAdminInfo); 
     lblID->setStyleSheet(labelStyle);
     txtPatientID = new QLineEdit("", cardAdminInfo);
@@ -239,8 +239,9 @@ void PatientView::createDetailView() {
     boxID->addWidget(lblID); boxID->addWidget(txtPatientID);
     inputGridLayout->addLayout(boxID, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
 
+    // 2. Họ và tên
     QVBoxLayout* boxName = new QVBoxLayout();
-    boxName->setSpacing(8);
+    boxName->setSpacing(7);
     QLabel* lblName = new QLabel("Họ và tên <font color='red'>*</font>", cardAdminInfo); lblName->setStyleSheet(labelStyle);
     txtFullName = new QLineEdit("", cardAdminInfo); 
     txtFullName->setStyleSheet(inputStyle);
@@ -248,8 +249,9 @@ void PatientView::createDetailView() {
     boxName->addWidget(lblName); boxName->addWidget(txtFullName);
     inputGridLayout->addLayout(boxName, 0, 1, Qt::AlignVCenter);
 
+    // 3. Giới tính
     QVBoxLayout* boxGender = new QVBoxLayout();
-    boxGender->setSpacing(8);
+    boxGender->setSpacing(7);
     QLabel* lblGender = new QLabel("Giới tính <font color='red'>*</font>", cardAdminInfo); lblGender->setStyleSheet(labelStyle);
     QWidget* radioContainer = new QWidget(cardAdminInfo);
     radioContainer->setObjectName("genderContainer");
@@ -276,8 +278,9 @@ void PatientView::createDetailView() {
     boxGender->addWidget(lblGender); boxGender->addWidget(radioContainer);
     inputGridLayout->addLayout(boxGender, 0, 2, Qt::AlignVCenter);
 
+    // 4. Ngày sinh
     QVBoxLayout* boxDob = new QVBoxLayout();
-    boxDob->setSpacing(8);
+    boxDob->setSpacing(6);
     QLabel* lblDob = new QLabel("Ngày sinh <font color='red'>*</font>", cardAdminInfo); lblDob->setStyleSheet(labelStyle);
     txtDob = new QLineEdit("", cardAdminInfo); 
     txtDob->setStyleSheet(inputStyle);
@@ -285,8 +288,9 @@ void PatientView::createDetailView() {
     boxDob->addWidget(lblDob); boxDob->addWidget(txtDob);
     inputGridLayout->addLayout(boxDob, 1, 0, Qt::AlignVCenter);
 
+    // 5. Số điện thoại
     QVBoxLayout* boxPhone = new QVBoxLayout();
-    boxPhone->setSpacing(8);
+    boxPhone->setSpacing(6);
     QLabel* lblPhone = new QLabel("Số điện thoại <font color='red'>*</font>", cardAdminInfo); lblPhone->setStyleSheet(labelStyle);
     txtPhone = new QLineEdit("", cardAdminInfo); 
     txtPhone->setStyleSheet(inputStyle);
@@ -294,8 +298,9 @@ void PatientView::createDetailView() {
     boxPhone->addWidget(lblPhone); boxPhone->addWidget(txtPhone);
     inputGridLayout->addLayout(boxPhone, 1, 1, Qt::AlignVCenter);
 
+    // 6. Địa chỉ
     QVBoxLayout* boxAddress = new QVBoxLayout();
-    boxAddress->setSpacing(8);
+    boxAddress->setSpacing(6);
     QLabel* lblAddress = new QLabel("Địa chỉ <font color='red'>*</font>", cardAdminInfo); lblAddress->setStyleSheet(labelStyle);
     txtAddress = new QLineEdit("", cardAdminInfo); 
     txtAddress->setStyleSheet(inputStyle);
@@ -303,8 +308,9 @@ void PatientView::createDetailView() {
     boxAddress->addWidget(lblAddress); boxAddress->addWidget(txtAddress);
     inputGridLayout->addLayout(boxAddress, 1, 2, Qt::AlignVCenter);
 
+    // 7. Dị ứng
     QVBoxLayout* boxAllergies = new QVBoxLayout();
-    boxAllergies->setSpacing(8);
+    boxAllergies->setSpacing(6);
     QLabel* lblAllergies = new QLabel("Dị ứng <font color='red'>*</font>", cardAdminInfo); lblAllergies->setStyleSheet(labelStyle);
     txtAllergies = new QLineEdit("", cardAdminInfo); 
     txtAllergies->setStyleSheet(inputStyle);
@@ -312,8 +318,9 @@ void PatientView::createDetailView() {
     boxAllergies->addWidget(lblAllergies); boxAllergies->addWidget(txtAllergies);
     inputGridLayout->addLayout(boxAllergies, 2, 0, Qt::AlignVCenter);
 
+    // 8. Email
     QVBoxLayout* boxEmail = new QVBoxLayout();
-    boxEmail->setSpacing(8);
+    boxEmail->setSpacing(6);
     QLabel* lblEmail = new QLabel("Email <font color='red'>*</font>", cardAdminInfo); lblEmail->setStyleSheet(labelStyle);
     txtEmail = new QLineEdit("", cardAdminInfo); 
     txtEmail->setStyleSheet(inputStyle);
@@ -321,8 +328,9 @@ void PatientView::createDetailView() {
     boxEmail->addWidget(lblEmail); boxEmail->addWidget(txtEmail);
     inputGridLayout->addLayout(boxEmail, 2, 1, Qt::AlignVCenter);
 
+    // 9. Số CCCD
     QVBoxLayout* boxCitizenID = new QVBoxLayout();
-    boxCitizenID->setSpacing(8);
+    boxCitizenID->setSpacing(6);
     QLabel* lblCitizenID = new QLabel("Số CCCD <font color='red'>*</font>", cardAdminInfo); lblCitizenID->setStyleSheet(labelStyle);
     txtCitizenID = new QLineEdit("", cardAdminInfo); 
     txtCitizenID->setStyleSheet(inputStyle);
@@ -330,8 +338,9 @@ void PatientView::createDetailView() {
     boxCitizenID->addWidget(lblCitizenID); boxCitizenID->addWidget(txtCitizenID);
     inputGridLayout->addLayout(boxCitizenID, 2, 2, Qt::AlignVCenter);
 
+    // 10. Mã bảo hiểm
     QVBoxLayout* boxInsurance = new QVBoxLayout();
-    boxInsurance->setSpacing(8);
+    boxInsurance->setSpacing(6);
     QLabel* lblInsurance = new QLabel("Mã bảo hiểm <font color='red'>*</font>", cardAdminInfo); lblInsurance->setStyleSheet(labelStyle);
     txtInsurance = new QLineEdit("", cardAdminInfo); 
     txtInsurance->setStyleSheet(inputStyle);
@@ -339,8 +348,9 @@ void PatientView::createDetailView() {
     boxInsurance->addWidget(lblInsurance); boxInsurance->addWidget(txtInsurance);
     inputGridLayout->addLayout(boxInsurance, 3, 0, Qt::AlignVCenter);
 
+    // 11. Nhóm máu
     QVBoxLayout* boxBloodType = new QVBoxLayout();
-    boxBloodType->setSpacing(8);
+    boxBloodType->setSpacing(6);
     QLabel* lblBloodType = new QLabel("Nhóm máu <font color='red'>*</font>", cardAdminInfo); lblBloodType->setStyleSheet(labelStyle);
     txtBloodType = new QLineEdit("", cardAdminInfo); 
     txtBloodType->setStyleSheet(inputStyle);
@@ -348,33 +358,33 @@ void PatientView::createDetailView() {
     boxBloodType->addWidget(lblBloodType); boxBloodType->addWidget(txtBloodType);
     inputGridLayout->addLayout(boxBloodType, 3, 1, Qt::AlignVCenter);
 
+    // 12. Người liên hệ khẩn cấp (Sắp xếp lại vào cột 2 hàng 3 để cân bằng grid)
     QVBoxLayout* boxEmergencyName = new QVBoxLayout();
-    boxEmergencyName->setSpacing(8);
+    boxEmergencyName->setSpacing(6);
     QLabel* lblEmergencyName = new QLabel("Người liên hệ khẩn cấp <font color='red'>*</font>", cardAdminInfo); lblEmergencyName->setStyleSheet(labelStyle);
     txtEmergencyName = new QLineEdit("", cardAdminInfo); 
     txtEmergencyName->setStyleSheet(inputStyle);
     txtEmergencyName->setReadOnly(true);
     boxEmergencyName->addWidget(lblEmergencyName); boxEmergencyName->addWidget(txtEmergencyName);
-    inputGridLayout->addLayout(boxEmergencyName, 4, 0, Qt::AlignVCenter);
+    inputGridLayout->addLayout(boxEmergencyName, 3, 2, Qt::AlignVCenter);
 
+    // 13. SĐT liên hệ khẩn cấp (Chuyển xuống hàng 4)
     QVBoxLayout* boxEmergencyPhone = new QVBoxLayout();
-    boxEmergencyPhone->setSpacing(8);
+    boxEmergencyPhone->setSpacing(6);
     QLabel* lblEmergencyPhone = new QLabel("SĐT liên hệ khẩn cấp <font color='red'>*</font>", cardAdminInfo); lblEmergencyPhone->setStyleSheet(labelStyle);
     txtEmergencyPhone = new QLineEdit("", cardAdminInfo); 
     txtEmergencyPhone->setStyleSheet(inputStyle);
     txtEmergencyPhone->setReadOnly(true);
     boxEmergencyPhone->addWidget(lblEmergencyPhone); boxEmergencyPhone->addWidget(txtEmergencyPhone);
-    inputGridLayout->addLayout(boxEmergencyPhone, 4, 1, Qt::AlignVCenter);
+    inputGridLayout->addLayout(boxEmergencyPhone, 4, 0, Qt::AlignVCenter);
 
     QList<QLineEdit*> patientInputs = { txtPatientID, txtFullName, txtDob, txtPhone, txtAddress, txtAllergies, txtEmail, txtCitizenID, txtInsurance, txtBloodType, txtEmergencyName, txtEmergencyPhone };
     for (QLineEdit* input : patientInputs) {
         input->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         input->setMinimumHeight(34);
     }
-
     cardAdminLayout->addLayout(inputGridLayout);
     leftPartLayout->addWidget(cardAdminInfo);
-
     QFrame* cardNotes = new QFrame(m_infoSubPage);
     cardNotes->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; }");
     QVBoxLayout* cardNotesLayout = new QVBoxLayout(cardNotes);
@@ -685,7 +695,7 @@ void PatientView::createDetailView() {
         m_detailStackedWidget->setCurrentWidget(m_recordSubPage);
     });
 
-    connect(m_btnBack, &QPushButton::clicked, this, &PatientView::showPatientList);
+    connect(m_btnBack, &QPushButton::clicked, this, &PatientWidget::showPatientList);
     
     connect(m_btnEditInfo, &QPushButton::clicked, this, [this, radioContainer]() {
         if (m_btnEditInfo->text() == "Chỉnh sửa thông tin") {
@@ -760,7 +770,7 @@ void PatientView::createDetailView() {
     });
 }
 
-void PatientView::handlePatientSelected(int row, int column) {
+void PatientWidget::handlePatientSelected(int row, int column) {
     Q_UNUSED(row);
     Q_UNUSED(column);
     
@@ -773,8 +783,8 @@ void PatientView::handlePatientSelected(int row, int column) {
     m_mainStackedWidget->setCurrentWidget(m_detailViewWidget);
 }
 
-void PatientView::showPatientList() {
+void PatientWidget::showPatientList() {
     m_mainStackedWidget->setCurrentWidget(m_listViewWidget);
 }
 
-PatientView::~PatientView() {}
+PatientWidget::~PatientWidget() {}

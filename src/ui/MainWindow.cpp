@@ -1,3 +1,4 @@
+// MainWindow.cpp
 #include "MainWindow.h"
 #include "model/IAuthenticatable.h"
 #include "model/SystemUser.h"
@@ -17,12 +18,19 @@
 #include <QVBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+  setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
   setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
-  this->setFixedSize(1000, 600);
+  this->setMinimumSize(800, 500);
   
   QScreen *screen = QGuiApplication::primaryScreen();
   if (screen) {
-      this->move(screen->geometry().center() - this->rect().center());
+      QRect screenGeometry = screen->geometry();
+      
+      int width = 1000;  // Nếu vẫn hơi thiếu bạn tăng lên 850
+      int height = 610; // Nếu vẫn hơi thiếu bạn tăng lên 550
+      
+      this->resize(width, height);
+      this->move(screenGeometry.center() - this->rect().center());
   }
   
   auto staffRepo = std::make_shared<StaffRepository>();
@@ -84,17 +92,14 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget *page) {
   QScreen *screen = QGuiApplication::primaryScreen();
   if (screen) {
     QRect screenGeometry = screen->geometry();
-    int width = screenGeometry.width() * 0.85;
-    int height = screenGeometry.height() * 0.85;
+    int width = screenGeometry.width();
+    int height = screenGeometry.height();
 
-    // preventing further resize.
-    this->setFixedSize(width, height);
-
-    // Center the window on the screen
+    this->resize(width, height);
     this->move(screenGeometry.center() - this->rect().center());
   }
 
-  this->showNormal();
+  this->showMaximized();
 }
 
 void MainWindow::switchToDoctorDashboard(
@@ -192,11 +197,16 @@ void MainWindow::handleGlobalLogout() {
     m_stackedWidget->setCurrentIndex(0);
 
     this->showNormal();
-    this->setFixedSize(1000, 600);
     
     QScreen *screen = QGuiApplication::primaryScreen();
     if (screen) {
-        this->move(screen->geometry().center() - this->rect().center());
+        QRect screenGeometry = screen->geometry();
+      
+        int width = 1000;  
+        int height = 610; 
+        
+        this->resize(width, height);
+        this->move(screenGeometry.center() - this->rect().center());
     }
     
     m_loginWidget->clearFields();

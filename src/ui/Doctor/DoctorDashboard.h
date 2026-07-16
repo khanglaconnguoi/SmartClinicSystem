@@ -1,16 +1,14 @@
 #pragma once
-
-#include "../BaseDashboard.h" // Đường dẫn trỏ tới lớp cha Base của bạn
+#include "../BaseDashboard.h"
 #include <memory>
 #include <QTableWidget>
 
-// Forward declaration các lớp cần thiết để tối ưu hóa thời gian biên dịch
 class IAuthenticatable;
 class QVBoxLayout;
 class QHBoxLayout;
-
 class QStackedWidget;
 class QCalendarWidget;
+class PatientWidget;
 
 class DoctorDashboardWidget : public BaseDashboardWidget {
     Q_OBJECT
@@ -26,21 +24,18 @@ private:
     std::shared_ptr<IAuthenticatable> m_currentUser;
     int m_currentExaminingRow = -1;
 
-    // Sidebar buttons và stacked widget để quản lý các trang con
     QStackedWidget* m_stackedWidget   = nullptr;
     QPushButton*    m_btnDash         = nullptr;
     QPushButton*    m_btnPatients     = nullptr;
     QPushButton*    m_btnAppoint      = nullptr;
     QPushButton*    m_btnSetting      = nullptr;
 
-    // Các trang con
     QWidget*            m_overviewPage     = nullptr;
-    QWidget*            m_patientsPage     = nullptr;
+    PatientWidget*      m_patientsPage     = nullptr;
     QWidget*            m_appointmentsPage = nullptr;
     QWidget*            m_settingsPage     = nullptr;
     class ClinicalExamWidget* m_clinicalExamPage = nullptr;
 
-    // Hàm dựng layout từng trang con
     void buildSidebar();
     void buildOverviewPage();
     void buildPatientsPage();
@@ -50,7 +45,6 @@ private:
 
     QFrame* makeCard(QWidget* parent = nullptr);
 
-    // Hàm helper vẽ các thành phần trong trang Overview
     void createDoctorCards(QWidget* parentPage, QVBoxLayout* pageLayout);
     void createDoctorCharts(QWidget* parentPage, QVBoxLayout* pageLayout);
     void createDoctorTable(QWidget* parentPage, QVBoxLayout* pageLayout);
