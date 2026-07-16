@@ -1,19 +1,28 @@
 #include "PatientDashboard.h"
 #include "../../model/IAuthenticatable.h"
+#include "../../service/AuthService.h"
+#include "../../service/PatientService.h"
+#include "../../service/StaffService.h"
+#include "../../service/AppointmentService.h"
 #include <QDate>
-
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QPainter>
 #include <QPainterPath>
+#include <QMessageBox>
 #include <QGraphicsDropShadowEffect>
 
 // =============================================================================
 // CONSTRUCTOR
 // =============================================================================
-PatientDashboardWidget::PatientDashboardWidget(std::shared_ptr<IAuthenticatable> user,
-                                               QWidget *parent)
-    : BaseDashboardWidget(user, parent), m_currentUser(user)
+PatientDashboardWidget::PatientDashboardWidget(
+    std::shared_ptr<IAuthenticatable> user,
+    std::shared_ptr<StaffService> staffService,
+    std::shared_ptr<PatientService> patientService,
+    std::shared_ptr<AppointmentService> appointmentService,
+    QWidget *parent)
+    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent),
+      m_currentUser(user)
 {
     initializeDashboard();
 }
@@ -313,77 +322,122 @@ void PatientDashboardWidget::createUpcomingAppointments() {
     sep->setStyleSheet("background: #F3F4F6; border: none; max-height: 1px;");
     vl->addWidget(sep);
 
-    // Dữ liệu mẫu lịch hẹn
-    struct ApptInfo {
-        QString date, time, doctor, specialty, status, statusColor, statusBg;
-    };
+    // Gọi Service để lấy dữ liệu lịch hẹn thực tế
+    auto records = m_baseAppointmentService->getPatientAppointments(m_currentUser->getAccountId());
 
-    QList<ApptInfo> appts = {
-        { "02/07/2026", "09:00", "BS. Nguyễn Văn An",   "Nội khoa",      "Đã xác nhận", "#4B94F2", "#ACDEF2" },
-        { "08/07/2026", "14:30", "BS. Trần Thị Bình",   "Tim mạch",      "Chờ duyệt",   "#5F6368", "#F1F3F4" },
-        { "15/07/2026", "10:00", "BS. Lê Minh Tuấn",    "Da liễu",       "Đã xác nhận", "#4B94F2", "#ACDEF2" },
-    };
+    if (records.isEmpty()) {
+        QLabel* emptyLbl = new QLabel("Không có lịch hẹn sắp tới.", section);
+        emptyLbl->setStyleSheet("color: #6B7280; font-style: italic;");
+        vl->addWidget(emptyLbl);
+    } else {
+        // Chỉ hiển thị tối đa 3 lịch hẹn gần nhất (upcoming)
+        int count = 0;
+        for (const auto& a : records) {
+            if (count >= 3) break;
 
-    for (const auto& a : appts) {
-        QFrame* item = new QFrame(section);
-        item->setObjectName("AppointmentItem");
-        item->setStyleSheet(
-            "QFrame#AppointmentItem { background: #F9FAFB; border-radius: 10px; border: 1px solid #EAEAEA; }"
-            "QFrame#AppointmentItem:hover { background: #EEF2FF; border-color: #C7D2FE; }"
-        );
-        item->setCursor(Qt::PointingHandCursor);
+            QFrame* item = new QFrame(section);
+            item->setObjectName("AppointmentItem");
+            item->setStyleSheet(
+                "QFrame#AppointmentItem { background: #F9FAFB; border-radius: 10px; border: 1px solid #EAEAEA; }"
+                "QFrame#AppointmentItem:hover { background: #EEF2FF; border-color: #C7D2FE; }"
+            );
+            item->setCursor(Qt::PointingHandCursor);
 
-        QHBoxLayout* hl = new QHBoxLayout(item);
-        hl->setContentsMargins(16, 12, 16, 12);
-        hl->setSpacing(16);
+            QHBoxLayout* hl = new QHBoxLayout(item);
+            hl->setContentsMargins(16, 12, 16, 12);
+            hl->setSpacing(16);
 
-        // Khối ngày tháng
-        QFrame* dateBadge = new QFrame(item);
-        dateBadge->setFixedSize(52, 52);
-        dateBadge->setStyleSheet("QFrame { background: #ACDEF2; border-radius: 8px; border: none; }");
-        QVBoxLayout* dv = new QVBoxLayout(dateBadge);
-        dv->setContentsMargins(4, 4, 4, 4);
-        dv->setSpacing(0);
-        QStringList dateParts = a.date.split('/');
-        QLabel* dayLbl = new QLabel(dateParts.value(0), dateBadge);
-        dayLbl->setAlignment(Qt::AlignCenter);
-        dayLbl->setStyleSheet("font-size: 18px; font-weight: bold; color: #4B94F2;");
-        QLabel* monLbl = new QLabel(
-            QString("Th.%1").arg(dateParts.value(1)), dateBadge
-        );
-        monLbl->setAlignment(Qt::AlignCenter);
-        monLbl->setStyleSheet("font-size: 10px; color: #4B94F2; font-weight: 600;");
-        dv->addWidget(dayLbl);
-        dv->addWidget(monLbl);
+            // Khối ngày tháng
+            QFrame* dateBadge = new QFrame(item);
+            dateBadge->setFixedSize(52, 52);
+            dateBadge->setStyleSheet("QFrame { background: #ACDEF2; border-radius: 8px; border: none; }");
+            QVBoxLayout* dv = new QVBoxLayout(dateBadge);
+            dv->setContentsMargins(4, 4, 4, 4);
+            dv->setSpacing(0);
+            QStringList dateParts = a.appointmentDate.split('-');
+            QString dayStr = dateParts.size() == 3 ? dateParts[2] : "??";
+            QString monthStr = dateParts.size() == 3 ? dateParts[1] : "??";
 
-        // Thông tin chính
-        QVBoxLayout* info = new QVBoxLayout();
-        info->setSpacing(3);
-        QLabel* drLbl = new QLabel(a.doctor, item);
-        drLbl->setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;");
-        QLabel* spLbl = new QLabel(QString("%1  ·  %2").arg(a.specialty, a.time), item);
-        spLbl->setStyleSheet("font-size: 12px; color: #6B7280;");
-        info->addWidget(drLbl);
-        info->addWidget(spLbl);
+            QLabel* dayLbl = new QLabel(dayStr, dateBadge);
+            dayLbl->setAlignment(Qt::AlignCenter);
+            dayLbl->setStyleSheet("font-size: 18px; font-weight: bold; color: #4B94F2;");
+            QLabel* monLbl = new QLabel(QString("Th.%1").arg(monthStr), dateBadge);
+            monLbl->setAlignment(Qt::AlignCenter);
+            monLbl->setStyleSheet("font-size: 10px; color: #4B94F2; font-weight: 600;");
+            dv->addWidget(dayLbl);
+            dv->addWidget(monLbl);
 
-        // Badge trạng thái
-        QLabel* statusLbl = new QLabel(a.status, item);
-        statusLbl->setAlignment(Qt::AlignCenter);
-        statusLbl->setFixedHeight(26);
-        statusLbl->setContentsMargins(10, 0, 10, 0);
-        statusLbl->setStyleSheet(QString(
-            "color: %1; background: %2; border-radius: 6px;"
-            "font-size: 11px; font-weight: 600; padding: 0 10px;"
-        ).arg(a.statusColor, a.statusBg));
+            // Thông tin chính
+            QVBoxLayout* info = new QVBoxLayout();
+            info->setSpacing(3);
+            QLabel* drLbl = new QLabel(a.doctorName, item);
+            drLbl->setStyleSheet("font-size: 14px; font-weight: 600; color: #111827;");
+            QString spTime = QString("%1  ·  %2 - %3").arg(a.doctorSpecialty, a.startTime, a.endTime);
+            QLabel* spLbl = new QLabel(spTime, item);
+            spLbl->setStyleSheet("font-size: 12px; color: #6B7280;");
+            info->addWidget(drLbl);
+            info->addWidget(spLbl);
 
-        hl->addWidget(dateBadge);
-        hl->addLayout(info, 1);
-        hl->addWidget(statusLbl);
+            // Badge trạng thái
+            QString statusColor = "#5F6368";
+            QString statusBg = "#F1F3F4";
+            if (a.status == "PENDING") { statusColor = "#F59E0B"; statusBg = "#FEF3C7"; }
+            else if (a.status == "CONFIRMED") { statusColor = "#4B94F2"; statusBg = "#ACDEF2"; }
+            else if (a.status == "COMPLETED") { statusColor = "#10B981"; statusBg = "#D1FAE5"; }
+            else if (a.status == "CANCELLED") { statusColor = "#EF4444"; statusBg = "#FEE2E2"; }
 
-        vl->addWidget(item);
+            QLabel* statusLbl = new QLabel(a.status, item);
+            statusLbl->setAlignment(Qt::AlignCenter);
+            statusLbl->setFixedHeight(26);
+            statusLbl->setContentsMargins(10, 0, 10, 0);
+            statusLbl->setStyleSheet(QString(
+                "color: %1; background: %2; border-radius: 6px;"
+                "font-size: 11px; font-weight: 600; padding: 0 10px;"
+            ).arg(statusColor, statusBg));
+
+            hl->addWidget(dateBadge);
+            hl->addLayout(info, 1);
+            hl->addWidget(statusLbl);
+
+            // Nút Hủy
+            if (a.status == "PENDING" || a.status == "CONFIRMED") {
+                QPushButton* btnCancel = new QPushButton("Hủy", item);
+                btnCancel->setCursor(Qt::PointingHandCursor);
+                btnCancel->setStyleSheet(
+                    "QPushButton { background: #FEE2E2; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 4px; padding: 4px 8px; font-weight: bold; font-size: 11px; }"
+                    "QPushButton:hover { background: #FECACA; }"
+                );
+                int id = a.appointmentId;
+                connect(btnCancel, &QPushButton::clicked, this, [this, id]() {
+                    onCancelAppointmentClicked(id);
+                });
+                hl->addWidget(btnCancel);
+            }
+
+            vl->addWidget(item);
+            count++;
+        }
     }
 
     m_scrollLayout->addWidget(section);
+}
+
+void PatientDashboardWidget::onCancelAppointmentClicked(int appointmentId) {
+    QMessageBox::StandardButton reply = QMessageBox::question(this, "Xác nhận hủy lịch", "Bạn có chắc chắn muốn hủy lịch khám này không?", QMessageBox::Yes | QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+        if (m_baseAppointmentService->cancelAppointment(appointmentId)) {
+            QMessageBox::information(this, "Thành công", "Đã hủy lịch hẹn thành công.");
+            // Refresh dashboard
+            if (m_scrollArea) {
+                m_mainContentLayout->removeWidget(m_scrollArea);
+                m_scrollArea->deleteLater();
+                m_scrollArea = nullptr;
+            }
+            buildScrollableContent();
+        } else {
+            QMessageBox::warning(this, "Lỗi", "Không thể hủy lịch hẹn. Vui lòng thử lại sau.");
+        }
+    }
 }
 
 // =============================================================================

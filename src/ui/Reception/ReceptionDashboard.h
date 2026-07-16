@@ -19,7 +19,7 @@ class ReceptionDashboardWidget : public BaseDashboardWidget {
     Q_OBJECT
 
 public:
-    explicit ReceptionDashboardWidget(std::shared_ptr<IAuthenticatable> user, std::shared_ptr<StaffService> staffService, QWidget *parent = nullptr);
+    explicit ReceptionDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, std::shared_ptr<StaffService> staffService = nullptr, std::shared_ptr<PatientService> patientService = nullptr, std::shared_ptr<AppointmentService> appointmentService = nullptr, QWidget *parent = nullptr);
     virtual ~ReceptionDashboardWidget() override = default;
 
 protected:

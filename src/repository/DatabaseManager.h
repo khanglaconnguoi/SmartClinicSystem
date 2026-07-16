@@ -31,20 +31,6 @@ public:
   DatabaseManager(const DatabaseManager &) = delete;
   DatabaseManager &operator=(const DatabaseManager &) = delete;
 
-    struct AppointmentRecord {
-        int appointmentId;
-        int patientId;
-        QString doctorId;
-        QString appointmentDate;
-        QString startTime;
-        QString endTime;
-        QString status;
-        QString reason;
-        QString notes;
-        QString patientName;
-        QString patientCode;
-        QString roomNumber;
-    };
 
     struct PatientRecord {
         int patientId;
@@ -53,10 +39,7 @@ public:
         QString phone;
     };
 
-    QList<AppointmentRecord> getDoctorAppointments(const QString &doctorId, const QString &date = "");
-    bool updateAppointmentStatus(int appointmentId, const QString &status);
     std::optional<PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId);
-    bool createAppointment(int patientId, const QString &doctorCode, int createdBy, const QString &date, const QString &startTime, const QString &reason);
 
 
   QSqlQuery executeQuery(const QString &sql, const QVariantList &params = {});

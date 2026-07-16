@@ -540,10 +540,15 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
     return m_patientRepository->getAllergiesByPatientId(patientId);
   }
 
-  std::optional<InsuranceResultDTO> PatientService::getInsurance(
-      int patientId) {
+std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) const {
     return m_patientRepository->getInsuranceByPatientId(patientId);
-  }
+}
+
+std::optional<DatabaseManager::PatientRecord> PatientService::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
+    return m_patientRepository->getPatientByPhoneOrCitizenId(phone, citizenId);
+}
+
+
 
   bool PatientService::checkDrugAllergyConflict(int patientId,
                                                 const QString &drugName) const {

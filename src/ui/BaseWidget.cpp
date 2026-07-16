@@ -4,8 +4,8 @@
 #include "service/StaffService.h"
 #include <QDebug>
 
-BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user, QWidget *parent)
-    : QWidget(parent), m_sidebarFrame(nullptr), m_mainContentWidget(nullptr), m_currentUser(user)
+BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user, std::shared_ptr<StaffService> staffService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
+    : QWidget(parent), m_sidebarFrame(nullptr), m_mainContentWidget(nullptr), m_currentUser(user), m_baseStaffService(std::move(staffService)), m_basePatientService(std::move(patientService)), m_baseAppointmentService(std::move(appointmentService))
 {
     m_globalLayout = new QHBoxLayout(this);
     m_globalLayout->setContentsMargins(0, 0, 0, 0);
@@ -111,9 +111,12 @@ void BaseDashboardWidget::handleAvatarClicked() {
         qWarning() << "Không có thông tin người dùng hiện tại để xem hồ sơ.";
         return;
     }
+    if (!m_baseStaffService) {
+        qWarning() << "Thiếu StaffService để hiển thị hồ sơ.";
+        return;
+    }
 
-    auto staffService = std::make_shared<StaffService>(std::make_shared<StaffRepository>());
-    auto* profileDialog = new ProfileWidget(staffService, this);
+    auto* profileDialog = new ProfileWidget(m_baseStaffService, this);
     profileDialog->setAttribute(Qt::WA_DeleteOnClose);
     profileDialog->loadProfile(m_currentUser->getAccountId());
     profileDialog->show();

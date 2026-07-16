@@ -11,8 +11,7 @@ class PatientDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT
 
 public:
-  explicit PatientDashboardWidget(std::shared_ptr<IAuthenticatable> user,
-                                  QWidget *parent = nullptr);
+    explicit PatientDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, std::shared_ptr<StaffService> staffService = nullptr, std::shared_ptr<PatientService> patientService = nullptr, std::shared_ptr<AppointmentService> appointmentService = nullptr, QWidget *parent = nullptr);
   virtual ~PatientDashboardWidget() override = default;
 
 protected:
@@ -49,4 +48,7 @@ private:
   // Helper
   QFrame *makeCard(QWidget *parent = nullptr);
   void setActiveSidebarBtn(QPushButton *btn);
+
+private slots:
+  void onCancelAppointmentClicked(int appointmentId);
 };

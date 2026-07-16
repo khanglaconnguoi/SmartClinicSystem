@@ -23,6 +23,7 @@
 #include <memory>
 
 #include "repository/StaffRepository.h"
+#include "repository/DatabaseManager.h"
 
 struct ResetPasswordResult {
     bool result;
@@ -43,6 +44,10 @@ private:
     QString validateStaffBaseInput(const StaffInputDTO& staff, int staffId = -1);
     QString validateDoctorInput(const DoctorInputDTO& doctor, int staffId = -1);
     QString validateNurseInput(const NurseInputDTO& nurse, int staffId = -1);
+    
+    QString validateStaffUpdate(const StaffUpdateDTO& staff);
+    QString validateDoctorUpdate(const DoctorUpdateDTO& doctor);
+    QString validateNurseUpdate(const NurseUpdateDTO& nurse);
 
     QString generateStaffCode(UserRole role) const;
     QString generateRandomPassword() const;
@@ -103,11 +108,11 @@ public:
 
     QString hireNewDoctor(const DoctorInputDTO& doctor);
     QString hireNewNurse(const NurseInputDTO& nurse);
-    //bool hireNewReceptionist(/*...*/);
+    QString hireNewReceptionist(const ReceptionistInputDTO& receptionist);
 
-    QString editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId);
-    QString editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId);
-    QString editNurseInformation(const NurseInputDTO& nurseInformation, int staffId);
+    QString editStaffBaseInformation(const StaffUpdateDTO& staffInformation);
+    QString editDoctorInformation(const DoctorUpdateDTO& doctorInformation);
+    QString editNurseInformation(const NurseUpdateDTO& nurseInformation);
 
 
     bool deactivateStaff(int staffId) {
@@ -126,6 +131,19 @@ public:
         QString shift,                     
         bool onlyActive,
         bool includeDeleted
+    ) const;
+
+    QList<std::shared_ptr<SystemUser>> searchNurses(
+        QString searchKey,
+        int departmentId = -1,
+        bool onlyActive = true,
+        bool includeDeleted = false
+    ) const;
+
+    QList<std::shared_ptr<SystemUser>> searchReceptionists(
+        QString searchKey,
+        bool onlyActive = true,
+        bool includeDeleted = false
     ) const;
 
     bool changePassword(int staffId, const QString& plainPassword);
