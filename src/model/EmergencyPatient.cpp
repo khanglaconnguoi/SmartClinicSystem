@@ -22,14 +22,14 @@ EmergencyPatient::EmergencyPatient()
               QString(),              // m_bloodType
               QString(),              // m_allergies
               QString(),              // m_insurance
-              PatientType::EMERGENCY, // m_type
+              PatientType::Emergency, // m_type
               QString(),              // m_emergencyContactName
               QString()               // m_emergencyContactPhone
               ),
       m_emergencyRoomId(QString()), m_emergencyDoctorId(QString()),
       m_injuryCause(QString()), m_injuryDescription(QString()),
       m_admissionDate(QDate()), m_dischargeDate(QDate()),
-      m_status(EmergencyPatientState::EMERGENCY) {}
+      m_status(EmergencyPatientState::Emergency) {}
 
 // ---------------------------------------------------------------------------
 // Pure Virtual Overrides
@@ -40,10 +40,10 @@ EmergencyPatient::EmergencyPatient()
  *
  * Mặc định luôn là CRITICAL vì là cấp cứu.
  *
- * @return PatientPriority::CRITICAL
+ * @return PatientPriority::Critical
  */
 PatientPriority EmergencyPatient::getPriority() const {
-  return PatientPriority::CRITICAL;
+  return PatientPriority::Critical;
 }
 
 /**

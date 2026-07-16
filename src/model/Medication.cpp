@@ -40,7 +40,7 @@ MedicationSummaryDTO Medication::toSummary() const {
     MedicationSummaryDTO dto;
     dto.medicationId = m_medicationId;
     dto.brandName = m_brandName;
-    dto.category = m_category;
+    dto.categories = m_categories;
     dto.unit = m_unit;
     dto.unitPrice = m_unitPrice;
     dto.stockQuantity = m_stockQuantity;

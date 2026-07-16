@@ -1,33 +1,62 @@
 #pragma once
 #include "dto/MedicalRecordDTOs.h"
 #include <memory>
-#include <optional>
 #include <QList>
 
 class MedicalRecordRepository;
 class PatientService;
-class PharmacyService;   // của đồng đội — forward declare, chưa tồn tại file thật
-struct PrescriptionItemDTO; // của đồng đội — forward declare
 
 class MedicalRecordService {
 private:
   std::shared_ptr<MedicalRecordRepository> m_recordRepository;
   std::shared_ptr<PatientService> m_patientService;
-  std::shared_ptr<PharmacyService> m_pharmacyService;
 
 public:
+  /**
+   * @brief Chuẩn hóa dữ liệu hồ sơ khám trước khi INSERT.
+   *        Trim khoảng trắng, chuẩn hóa severity chẩn đoán về IN HOA.
+   *        LUÔN gọi trước validate.
+   */
+  static void normalizeMedicalRecordInput(MedicalRecordInsertDTO &dto);
+
+  /**
+   * @brief Chuẩn hóa dữ liệu hồ sơ khám trước khi UPDATE.
+   */
+  static void normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto);
+
+  /**
+   * @brief Chuẩn hóa tiêu chí tìm kiếm.
+   */
+  static void normalizeSearchCriteria(MedicalRecordSearchCriteria &criteria);
+
+  static QString validateVitalSigns(const VitalSigns &vitals);
+  static QString validateTemperature(double temperature);
+  static QString validateHeartRate(int heartRate);
+  static QString validateWeight(double weight);
+  static QString validateHeight(double height);
+
+  static QString validateChiefComplaint(const QString &complaint);
+  static QString validateDiagnosisList(const QList<Diagnosis> &diagnoses);
+  static QString validateDiagnosisDescription(const QString &desc);
+  static QString validateDiagnosisSeverity(const QString &severity);
+
   explicit MedicalRecordService(
       std::shared_ptr<MedicalRecordRepository> recordRepo,
-      std::shared_ptr<PatientService> patientService,
-      std::shared_ptr<PharmacyService> pharmacyService);
+      std::shared_ptr<PatientService> patientService);
 
-  // ── Phần của bạn ──
-  int createMedicalRecord(const MedicalRecordInsertDTO &dto);
-  bool updateMedicalRecord(const MedicalRecordUpdateDTO &dto);
+  int  createMedicalRecord(MedicalRecordInsertDTO &dto);
+  bool updateMedicalRecord(MedicalRecordUpdateDTO &dto);
   bool softDeleteMedicalRecord(int recordId);
   QList<MedicalRecordResultDTO> getMedicalHistory(int patientId);
 
-  // ── Phần đồng đội — CHỈ khai báo, không cài đặt ──
-  bool addPrescription(int recordId, const QList<PrescriptionItemDTO> &items);
-  std::optional<QList<PrescriptionItemDTO>> getPrescriptionByRecordId(int recordId);
+  /**
+   * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.
+   *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
+   */
+  QList<MedicalRecordSummaryDTO> searchMedicalRecords(MedicalRecordSearchCriteria criteria);
+
+  /**
+   * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
+   */
+  int countSearchResults(MedicalRecordSearchCriteria criteria);
 };

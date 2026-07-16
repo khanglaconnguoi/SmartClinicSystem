@@ -1,8 +1,16 @@
+#include "dto/BillingDTOs.h"
+#include "dto/MedicalRecordDTOs.h"
 #include "dto/PatientDTOs.h"
+#include "dto/PrescriptionDTOs.h"
 #include "model/CommonEnums.h"
+#include "repository/BillingRepository.h"
 #include "repository/DatabaseManager.h"
+#include "repository/MedicalRecordRepository.h"
 #include "repository/PatientRepository.h"
+#include "service/BillingService.h"
+#include "service/MedicalRecordService.h"
 #include "service/PatientService.h"
+#include "service/Validation.h"
 #include "ui/MainWindow.h"
 #include <QApplication>
 #include <QDate>
@@ -12,8 +20,8 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QTextStream>
+#include <memory>
 
-// Log handler ghi ra file để debug (vì WIN32 app không có console)
 static QFile logFile;
 
 void messageHandler(QtMsgType type, const QMessageLogContext &ctx,
@@ -46,22 +54,11 @@ void messageHandler(QtMsgType type, const QMessageLogContext &ctx,
   out.flush();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-static int getLastInsertedPatientId() {
-  QSqlQuery q =
-      DatabaseManager::getInstance().selectQuery("SELECT MAX(patient_id) FROM patients");
-  if (q.next())
-    return q.value(0).toInt();
-  return -1;
-}
-
 static void seedDatabase() {
   DatabaseManager &db = DatabaseManager::getInstance();
-  db.executeQuery("INSERT OR IGNORE INTO departments (department_id, "
-                  "department_code, department_name) VALUES (1, 'D01', 'Test Dept')");
+  db.executeQuery(
+      "INSERT OR IGNORE INTO departments (department_id, department_code, "
+      "department_name) VALUES (1, 'D01', 'Test Dept')");
   db.executeQuery("INSERT OR IGNORE INTO rooms (room_id, room_number, "
                   "room_type, status) VALUES (1, '101', 'WARD', 'AVAILABLE')");
   db.executeQuery(
@@ -72,297 +69,343 @@ static void seedDatabase() {
       "'test@test.com', 'Address', 1)");
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Allergy & Insurance Tests
-// ─────────────────────────────────────────────────────────────────────────────
-
-static void runAllergyInsuranceTests() {
-  qDebug() << "\n========================================";
-  qDebug() << "  Allergy & Insurance Integration Tests";
-  qDebug() << "========================================";
-
-  auto repo = std::make_shared<PatientRepository>();
-  PatientService service(repo);
-
-  // ── Test 1: Insert OutPatient với nhiều dị ứng và bảo hiểm ─────────────────
-  qDebug() << "\n--- Test 1: AddOutPatient với allergies & insurance ---";
-  bool t1ok = service.AddOutPatient(
-      0,   // patientId = 0 (auto)
-      0,   // doctorId  = 0 (chưa gán)
-      "Ho Thi Mai",
-      QDate(1992, 7, 20),
-      "Female",
-      "079092012345",           // CCCD hợp lệ
-      "0912000111",
-      "hothi.mai@test.com",
-      "12 Pham Ngu Lao, HCM",
-      "AB+",
-      "Penicillin, Aspirin, Pollen",  // 3 dị ứng cách nhau bởi dấu phẩy
-      "BHYT-123456789",               // số thẻ bảo hiểm
-      PatientType::OUTPATIENT,
-      "Nguyen Van Hai",
-      "0900111222"
-  );
-
-  int pid1 = -1;
-  if (t1ok) {
-    pid1 = getLastInsertedPatientId();
-    qDebug() << "[PASS] AddOutPatient (patient_id:" << pid1 << ")";
-  } else {
-    qDebug() << "[FAIL] AddOutPatient";
-  }
-
-  // ── Test 2: Đọc lại allergies từ DB ─────────────────────────────────────────
-  qDebug() << "\n--- Test 2: Đọc allergies của bệnh nhân vừa thêm ---";
-  if (pid1 > 0) {
-    QList<AllergyResultDTO> allergies = service.getAllergies(pid1);
-    if (allergies.size() == 3) {
-      qDebug() << "[PASS] getAllergies trả về đúng 3 mục:";
-      for (const auto &a : allergies) {
-        qDebug() << "       -" << a.allergenName << "| severity:" << a.severity
-                 << "| isActive:" << a.isActive;
-      }
-    } else {
-      qDebug() << "[FAIL] getAllergies – expected 3, got:" << allergies.size();
-      for (const auto &a : allergies) {
-        qDebug() << "       -" << a.allergenName;
-      }
-    }
-  } else {
-    qDebug() << "[SKIP] – Insert bước 1 thất bại";
-  }
-
-  // ── Test 3: Đọc lại insurance từ DB ─────────────────────────────────────────
-  qDebug() << "\n--- Test 3: Đọc insurance của bệnh nhân vừa thêm ---";
-  if (pid1 > 0) {
-    auto ins = service.getInsurance(pid1);
-    if (ins.has_value()) {
-      qDebug() << "[PASS] getInsurance OK:";
-      qDebug() << "       Provider    :" << ins->providerName;
-      qDebug() << "       PolicyNumber:" << ins->policyNumber;
-      qDebug() << "       Type        :" << ins->insuranceType;
-      qDebug() << "       Coverage    :" << ins->coveragePercent << "%";
-      qDebug() << "       isActive    :" << ins->isActive;
-    } else {
-      qDebug() << "[FAIL] getInsurance – trả về nullopt";
-    }
-  } else {
-    qDebug() << "[SKIP] – Insert bước 1 thất bại";
-  }
-
-  // ── Test 4: getPatientById – allergies + insurance trong DTO ─────────────────
-  qDebug() << "\n--- Test 4: getPatientById trả về đúng allergies & insurance ---";
-  if (pid1 > 0) {
-    auto detail = service.getPatientById(pid1);
-    if (detail.has_value()) {
-      qDebug() << "[PASS] getPatientById OK – fullName:" << detail->fullName;
-
-      // Kiểm tra allergies
-      if (detail->allergies.size() == 3) {
-        qDebug() << "[PASS] PatientDetailDTO.allergies có 3 mục:";
-        for (const auto &a : detail->allergies) {
-          qDebug() << "       -" << a.allergenName;
-        }
-      } else {
-        qDebug() << "[FAIL] PatientDetailDTO.allergies – expected 3, got:"
-                 << detail->allergies.size();
-      }
-
-      // Kiểm tra insurance
-      if (detail->insurance.has_value()) {
-        qDebug() << "[PASS] PatientDetailDTO.insurance có giá trị:"
-                 << detail->insurance->policyNumber;
-      } else {
-        qDebug() << "[FAIL] PatientDetailDTO.insurance – nullopt";
-      }
-    } else {
-      qDebug() << "[FAIL] getPatientById trả về nullopt";
-    }
-  } else {
-    qDebug() << "[SKIP] – Insert bước 1 thất bại";
-  }
-
-  // ── Test 5: Bệnh nhân không có dị ứng, không có bảo hiểm ───────────────────
-  qDebug() << "\n--- Test 5: AddOutPatient KHÔNG có allergies & insurance ---";
-  bool t5ok = service.AddOutPatient(
-      0, 0,
-      "Phan Van Binh",
-      QDate(1975, 3, 10),
-      "Male",
-      "001075056789",
-      "0908777888",
-      "phanvanbinh@test.com",
-      "45 Hang Bai, HN",
-      "O-",
-      "",   // không có dị ứng
-      "",   // không có bảo hiểm
-      PatientType::OUTPATIENT,
-      "Phan Thi Lan",
-      "0901234000"
-  );
-  int pid5 = -1;
-  if (t5ok) {
-    pid5 = getLastInsertedPatientId();
-    qDebug() << "[PASS] AddOutPatient no-allergy (patient_id:" << pid5 << ")";
-
-    QList<AllergyResultDTO> allergies5 = service.getAllergies(pid5);
-    if (allergies5.isEmpty()) {
-      qDebug() << "[PASS] getAllergies trả về rỗng (đúng)";
-    } else {
-      qDebug() << "[FAIL] getAllergies – expected 0, got:" << allergies5.size();
-    }
-
-    auto ins5 = service.getInsurance(pid5);
-    if (!ins5.has_value()) {
-      qDebug() << "[PASS] getInsurance trả về nullopt (đúng – chưa có BH)";
-    } else {
-      qDebug() << "[FAIL] getInsurance – expected nullopt";
-    }
-  } else {
-    qDebug() << "[FAIL] AddOutPatient no-allergy";
-  }
-
-  // ── Test 6: InPatient với allergies ─────────────────────────────────────────
-  qDebug() << "\n--- Test 6: AddInPatient với allergies ---";
-  bool t6ok = service.AddInPatient(
-      0,
-      "Le Thi Cam",
-      QDate(1988, 9, 5),
-      "Female",
-      "048088099001",
-      "0977555666",
-      "lethicam@test.com",
-      "22 Tran Hung Dao, Da Nang",
-      "B-",
-      "Shellfish, Latex",  // 2 dị ứng
-      "PRIVATE-987654",    // bảo hiểm tư nhân
-      PatientType::INPATIENT,
-      "Le Van Dung",
-      "0901222333",
-      "1",                 // roomId
-      "1",                 // doctorId
-      QDate::currentDate(),
-      QDate::currentDate().addDays(7),
-      "Appendicitis"
-  );
-  int pid6 = -1;
-  if (t6ok) {
-    pid6 = getLastInsertedPatientId();
-    qDebug() << "[PASS] AddInPatient (patient_id:" << pid6 << ")";
-
-    QList<AllergyResultDTO> allergies6 = service.getAllergies(pid6);
-    if (allergies6.size() == 2) {
-      qDebug() << "[PASS] Allergies InPatient – 2 mục:";
-      for (const auto &a : allergies6)
-        qDebug() << "       -" << a.allergenName;
-    } else {
-      qDebug() << "[FAIL] Allergies InPatient – expected 2, got:" << allergies6.size();
-    }
-  } else {
-    qDebug() << "[FAIL] AddInPatient";
-  }
-
-  // ── Test 7: UNIQUE constraint – thêm lại cùng allergen_name ─────────────────
-  qDebug() << "\n--- Test 7: Kiểm tra UNIQUE allergen_name (INSERT OR IGNORE) ---";
-  if (pid1 > 0) {
-    // Thêm trực tiếp qua repository để test constraint
-    QList<AllergyInsertDTO> dupes;
-    AllergyInsertDTO dup;
-    dup.patientId    = pid1;
-    dup.allergenName = "PENICILLIN"; // cùng tên nhưng chữ hoa → COLLATE NOCASE → bị IGNORE
-    dup.severity     = "SEVERE";
-    dupes.append(dup);
-
-    bool insertDupe = repo->insertAllergies(dupes);
-    // INSERT OR IGNORE → vẫn trả true nhưng không tạo bản ghi mới
-    QList<AllergyResultDTO> afterDupe = service.getAllergies(pid1);
-    if (afterDupe.size() == 3) {
-      qDebug() << "[PASS] UNIQUE COLLATE NOCASE hoạt động – vẫn còn 3 mục (không bị duplicate)";
-    } else {
-      qDebug() << "[FAIL] Duplicate allergen – expected 3, got:" << afterDupe.size();
-    }
-    Q_UNUSED(insertDupe);
-  } else {
-    qDebug() << "[SKIP]";
-  }
-
-  // ── Test 8: upsertInsurance – cập nhật bảo hiểm ─────────────────────────────
-  qDebug() << "\n--- Test 8: upsertInsurance cập nhật bảo hiểm hiện có ---";
-  if (pid1 > 0) {
-    InsuranceInsertDTO newIns;
-    newIns.patientId      = pid1;
-    newIns.providerName   = "Bao Viet";
-    newIns.policyNumber   = "BHYT-NEW-99999";
-    newIns.insuranceType  = "PRIVATE";
-    newIns.coveragePercent = 90.0;
-    newIns.validFrom      = "2024-01-01";
-    newIns.validTo        = "2026-12-31";
-
-    bool upserted = repo->upsertInsurance(newIns);
-    if (upserted) {
-      auto updated = service.getInsurance(pid1);
-      if (updated.has_value() && updated->policyNumber == "BHYT-NEW-99999") {
-        qDebug() << "[PASS] upsertInsurance cập nhật thành công:";
-        qDebug() << "       PolicyNumber:" << updated->policyNumber;
-        qDebug() << "       Provider    :" << updated->providerName;
-        qDebug() << "       Type        :" << updated->insuranceType;
-        qDebug() << "       Coverage    :" << updated->coveragePercent << "%";
-      } else {
-        qDebug() << "[FAIL] upsertInsurance – giá trị sau update không đúng";
-      }
-    } else {
-      qDebug() << "[FAIL] upsertInsurance – exec thất bại";
-    }
-  } else {
-    qDebug() << "[SKIP]";
-  }
-
-  qDebug() << "\n========================================";
-  qDebug() << "  Allergy & Insurance Tests DONE";
-  qDebug() << "========================================\n";
+static int getLastInsertedPatientId() {
+  QSqlQuery q = DatabaseManager::getInstance().selectQuery(
+      "SELECT MAX(patient_id) FROM patients");
+  if (q.next())
+    return q.value(0).toInt();
+  return -1;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// main
-// ─────────────────────────────────────────────────────────────────────────────
+static void testValidations() {
+  qDebug() << "\n==================================================";
+  qDebug() << "                TESTING VALIDATIONS               ";
+  qDebug() << "==================================================";
+
+  PatientInputDTO dto;
+
+  // 1. Test Phone Normalization
+  dto.phone = "+84 988.123-456";
+  dto.emergencyContactPhone = " 090 123 4567 ";
+  PatientService::normalizePatientInput(dto);
+  qDebug() << "[1] Phone Normalization:";
+  qDebug() << "    Expected: 0988123456 | Got:" << dto.phone;
+  qDebug() << "    Expected: 0901234567 | Got:" << dto.emergencyContactPhone;
+
+  // 2. Test Name Validation
+  QString badName1 = "Nguyễn Văn A 123";
+  QString badName2 = "Trần @ Anh";
+  QString goodName = "Nguyễn Văn A";
+  qDebug() << "\n[2] Name Validation:";
+  qDebug() << "    Input:" << badName1
+           << "-> Error:" << Validation::validateFullName(badName1);
+  qDebug() << "    Input:" << badName2
+           << "-> Error:" << Validation::validateFullName(badName2);
+  qDebug() << "    Input:" << goodName
+           << "-> Error:" << Validation::validateFullName(goodName);
+
+  // 3. Test Age Validation
+  QDate futureDate = QDate::currentDate().addDays(1);
+  QDate veryOldDate = QDate::currentDate().addYears(-151);
+  QDate normalDate = QDate(1990, 1, 1);
+  qDebug() << "\n[3] Age Validation:";
+  qDebug() << "    Future Date (" << futureDate.toString()
+           << ") -> Error:" << Validation::validateDateOfBirth(futureDate);
+  qDebug() << "    Age > 150 (" << veryOldDate.toString()
+           << ") -> Error:" << Validation::validateDateOfBirth(veryOldDate);
+  qDebug() << "    Normal Date (" << normalDate.toString()
+           << ") -> Error:" << Validation::validateDateOfBirth(normalDate);
+
+  // 4. Test Address and Reason length
+  PatientInputDTO lengthDto;
+  lengthDto.address = QString(300, 'A'); // > 255 chars
+  qDebug() << "\n[4] Address Length Validation (> 255):";
+  qDebug() << "    Error:"
+           << PatientService::validateBaseInput(lengthDto, "PT001");
+
+  InPatientInputDTO inDto;
+  inDto.roomId = 1;
+  inDto.doctorId = 1;
+  inDto.reason = QString(1500, 'B'); // > 1000 chars
+  qDebug() << "\n[5] InPatient Reason Length (> 1000):";
+  qDebug() << "    Error:"
+           << PatientService::validateInPatientReason(inDto.reason);
+
+  // 6. Test Billing/Invoice Validation
+  QList<PrescriptionItemDTO> badItems;
+  PrescriptionItemDTO pBad;
+  pBad.brandName = "Thuốc âm tiền";
+  pBad.quantity = 0; // Invalid
+  pBad.unitPrice = -5000; // Invalid
+  badItems.append(pBad);
+  
+  BillingService billingService(nullptr); // Repo can be null for validation
+  qDebug() << "\n[6] Invoice Validation (Bad Patient/Record ID & Bad Items):";
+  qDebug() << "    Error:" << billingService.validateInvoiceInput(-1, -1, -50000, badItems);
+
+  qDebug() << "==================================================\n";
+}
+
+static void runComprehensiveTests() {
+  qDebug() << ">>> TESTING 1 2 3: runComprehensiveTests IS CALLED";
+  qDebug() << "\n==================================================";
+  qDebug() << "          COMPREHENSIVE INTEGRATION TESTS         ";
+  qDebug() << "==================================================";
+
+  auto patientRepo = std::make_shared<PatientRepository>();
+  auto patientService = std::make_shared<PatientService>(patientRepo);
+
+  auto mrRepo = std::make_shared<MedicalRecordRepository>();
+  MedicalRecordService mrService(mrRepo, patientService);
+
+  auto billingRepo = std::make_shared<BillingRepository>();
+  BillingService billingService(billingRepo);
+
+  // ---------------------------------------------------------
+  // 1. PATIENT SERVICE TESTS
+  // ---------------------------------------------------------
+  qDebug() << "\n[1] TEST: PATIENT SERVICE";
+
+  // 1.1 Add OutPatient
+  OutPatientInputDTO pOut;
+  pOut.fullName = "  Le Thi Xuan  ";
+  pOut.dateOfBirth = QDate(1995, 2, 14);
+  pOut.gender = Gender::Female;
+  pOut.citizenId = "048195000123";
+  pOut.phone = "0909111222";
+  pOut.address = "Hai Chau, Da Nang";
+  pOut.bloodType = " AB- ";
+  pOut.type = PatientType::Outpatient;
+  pOut.email = "lexuan@test.com";
+  pOut.emergencyContactName = "Le Van A";
+  pOut.emergencyContactPhone = "0900111222";
+  pOut.allergies = "Seafood";
+  pOut.insurance = "BHYT-123456";
+  bool okOut = patientService->addOutPatient(pOut);
+  int pidOut = getLastInsertedPatientId();
+  qDebug() << "  -> Add OutPatient:" << (okOut ? "PASS" : "FAIL")
+           << "ID:" << pidOut;
+
+  // 1.2 Add InPatient
+  InPatientInputDTO pIn;
+  pIn.fullName = "Tran Van Y";
+  pIn.dateOfBirth = QDate(1980, 8, 8);
+  pIn.gender = Gender::Male;
+  pIn.citizenId = "048080000321";
+  pIn.phone = "0988777666";
+  pIn.address = "Thanh Khe, Da Nang";
+  pIn.bloodType = "O+";
+  pIn.type = PatientType::Inpatient;
+  pIn.email = "tranvany@test.com";
+  pIn.emergencyContactName = "Tran Thi Z";
+  pIn.emergencyContactPhone = "0988000111";
+  pIn.roomId = 1;
+  pIn.doctorId = 1;
+  pIn.admissionDate = QDate::currentDate();
+  pIn.reason = "Dengue fever";
+  bool okIn = patientService->addInPatient(pIn);
+  int pidIn = getLastInsertedPatientId();
+  qDebug() << "  -> Add InPatient:" << (okIn ? "PASS" : "FAIL")
+           << "ID:" << pidIn;
+
+  // 1.3 Add Emergency
+  EmergencyPatientInputDTO pEm;
+  pEm.fullName = "Vo Z";
+  pEm.dateOfBirth = QDate(2000, 1, 1);
+  pEm.gender = Gender::Male;
+  pEm.citizenId = "048200000999";
+  pEm.phone = "0911222333";
+  pEm.address = "Son Tra, Da Nang";
+  pEm.bloodType = "UNKNOWN";
+  pEm.type = PatientType::Emergency;
+  pEm.email = "voz@test.com";
+  pEm.emergencyContactName = "Vo Van W";
+  pEm.emergencyContactPhone = "0911000222";
+  pEm.roomId = 1;
+  pEm.doctorId = 1;
+  pEm.admissionDate = QDate::currentDate();
+  pEm.injuryCause = "Traffic accident";
+  pEm.injuryDescription = "Head trauma";
+  bool okEm = patientService->addEmergencyPatient(pEm);
+  int pidEm = getLastInsertedPatientId();
+  qDebug() << "  -> Add EmergencyPatient:" << (okEm ? "PASS" : "FAIL")
+           << "ID:" << pidEm;
+
+  // 1.4 Search Patient
+  PatientSearchCriteria pSearch;
+  pSearch.searchKey = "XUAN";
+  auto searchRes = patientService->searchPatients(pSearch);
+  qDebug() << "  -> Search Patient 'XUAN':"
+           << (searchRes.size() > 0 ? "PASS" : "FAIL")
+           << "Found:" << searchRes.size();
+
+  // 1.5 Update Patient
+  if (pidOut > 0) {
+    PatientInputDTO uDto;
+    uDto.fullName = "Le Thi Xuan Updated";
+    uDto.dateOfBirth = QDate(1995, 2, 14);
+    uDto.gender = Gender::Female;
+    uDto.citizenId = "048195000123";
+    uDto.phone = "0909999888";
+    uDto.address = "Lien Chieu, Da Nang";
+    uDto.bloodType = "AB-";
+    uDto.email = "lexuan@test.com";
+    uDto.emergencyContactName = "Le Van A";
+    uDto.emergencyContactPhone = "0900111222";
+    uDto.type = PatientType::Outpatient;
+    bool okUpdate = patientService->updatePatient(pidOut, uDto);
+    qDebug() << "  -> Update Patient:" << (okUpdate ? "PASS" : "FAIL");
+  }
+
+  // 1.6 Soft Delete Patient
+  if (pidEm > 0) {
+    bool okDel = patientService->softDeletePatient(pidEm);
+    qDebug() << "  -> Soft Delete Patient:" << (okDel ? "PASS" : "FAIL");
+  }
+
+  // ---------------------------------------------------------
+  // 2. MEDICAL RECORD SERVICE TESTS
+  // ---------------------------------------------------------
+  qDebug() << "\n[2] TEST: MEDICAL RECORD SERVICE";
+  int recordId = -1;
+
+  if (pidOut > 0) {
+    // 2.1 Create Medical Record
+    MedicalRecordInsertDTO mrDto;
+    mrDto.patientId = pidOut;
+    mrDto.doctorId = 1;
+    mrDto.visitDateTime = QDateTime::currentDateTime();
+    mrDto.vitals.bloodPressure = "110/70";
+    mrDto.vitals.heartRate = 80;
+    mrDto.vitals.temperature = 37.5;
+    mrDto.vitals.weight = 50.0;
+    mrDto.vitals.height = 160.0;
+    mrDto.chiefComplaint = "  Sốt, ho khan  ";
+    mrDto.clinicalNotes = "Họng đỏ";
+    mrDto.treatment = "Paracetamol, uống nhiều nước";
+    mrDto.nextVisitDate = QDate::currentDate().addDays(3);
+
+    Diagnosis diag1;
+    diag1.icdCode = "j02.9"; // -> J02.9
+    diag1.description = "Viêm họng cấp";
+    diag1.severity = "MODERATE";
+    mrDto.diagnoses.append(diag1);
+
+    recordId = mrService.createMedicalRecord(mrDto);
+    qDebug() << "  -> Create MedicalRecord:" << (recordId > 0 ? "PASS" : "FAIL")
+             << "RecordID:" << recordId;
+
+    // 2.2 Update Medical Record
+    if (recordId > 0) {
+      MedicalRecordUpdateDTO uMrDto;
+      uMrDto.recordId = recordId;
+      uMrDto.doctorId = 1;
+      uMrDto.visitDateTime = QDateTime::currentDateTime();
+      uMrDto.vitals.bloodPressure = "110/70";
+      uMrDto.vitals.heartRate = 85;
+      uMrDto.vitals.temperature = 38.5;
+      uMrDto.vitals.weight = 50.0;
+      uMrDto.vitals.height = 160.0;
+      uMrDto.chiefComplaint = "Sốt, ho nhiều";
+      uMrDto.clinicalNotes = "Viêm họng nặng hơn";
+      uMrDto.treatment = "Kháng sinh + Paracetamol";
+
+      Diagnosis diag2;
+      diag2.icdCode = "J02.9";
+      diag2.description = "Viêm họng cấp tính";
+      diag2.severity = "SEVERE";
+      uMrDto.diagnoses.append(diag2);
+
+      bool okMrUpdate = mrService.updateMedicalRecord(uMrDto);
+      qDebug() << "  -> Update MedicalRecord:"
+               << (okMrUpdate ? "PASS" : "FAIL");
+    }
+
+    // 2.3 Search Medical Record
+    MedicalRecordSearchCriteria mrSearch;
+    mrSearch.searchKey = "Sốt";
+    mrSearch.patientId = pidOut;
+    auto mrSearchRes = mrService.searchMedicalRecords(mrSearch);
+    qDebug() << "  -> Search MedicalRecord 'Sốt':"
+             << (mrSearchRes.size() > 0 ? "PASS" : "FAIL")
+             << "Found:" << mrSearchRes.size();
+  }
+
+  // ---------------------------------------------------------
+  // 3. BILLING SERVICE TESTS
+  // ---------------------------------------------------------
+  qDebug() << "\n[3] TEST: BILLING SERVICE";
+  int invoiceId = -1;
+
+  if (pidOut > 0 && recordId > 0) {
+    // 3.1 Generate Invoice
+    QList<PrescriptionItemDTO> pItems;
+    PrescriptionItemDTO p1, p2;
+    p1.brandName = "Paracetamol 500mg";
+    p1.quantity = 15;
+    p1.unitPrice = 2000.0;
+    p2.brandName = "Amoxicillin 250mg";
+    p2.quantity = 20;
+    p2.unitPrice = 3000.0;
+    pItems.append(p1);
+    pItems.append(p2);
+
+    bool billOk = billingService.generateInvoice(
+        pidOut, recordId, PatientType::Outpatient, 200000.0, pItems);
+    qDebug() << "  -> Generate Invoice:" << (billOk ? "PASS" : "FAIL");
+
+    // 3.2 Get Invoice
+    if (billOk) {
+      auto invoices = billingService.getInvoiceByRecordId(recordId);
+      if (invoices.has_value()) {
+        invoiceId = invoices->invoiceId;
+        qDebug() << "  -> Invoice Code:" << invoices->invoiceCode
+                 << "| Total:" << invoices->totalAmount;
+      }
+    }
+
+    // 3.3 Search Invoice
+    InvoiceSearchCriteria invSearch;
+    invSearch.patientId = pidOut;
+    auto invSearchRes = billingService.searchInvoices(invSearch);
+    qDebug() << "  -> Search Invoices by Patient:"
+             << (invSearchRes.size() > 0 ? "PASS" : "FAIL")
+             << "Found:" << invSearchRes.size();
+
+    // 3.4 Cancel Invoice (Soft delete/status update)
+    if (invoiceId > 0) {
+      bool cancelOk = billingService.cancelInvoice(invoiceId);
+      qDebug() << "  -> Cancel Invoice:" << (cancelOk ? "PASS" : "FAIL");
+    }
+  }
+
+  qDebug() << "\n==================================================";
+  qDebug() << "             ALL TESTS COMPLETED                  ";
+  qDebug() << "==================================================\n";
+}
 
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
-  logFile.setFileName(app.applicationDirPath() + "/debug.log");
-  if (!logFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    qWarning() << "Cannot open log file:" << logFile.fileName();
-  }
-  qInstallMessageHandler(messageHandler);
-
   qDebug() << "=== SmartClinicSystem started ===";
-  qDebug() << "Available SQL drivers:" << QSqlDatabase::drivers();
 
   DatabaseManager &db = DatabaseManager::getInstance();
   if (!db.isOpen()) {
     qCritical() << "FATAL: Cannot open hospital.db — aborting startup.";
-    QMessageBox::critical(
-        nullptr, "Database Error",
-        "Không thể mở hoặc tạo file hospital.db.\n\n"
-        "Vui lòng kiểm tra:\n"
-        "  • Thư mục 'database/' có tồn tại và có quyền ghi không?\n"
-        "  • Driver QSQLITE có được cài đặt không?\n\n"
-        "Xem chi tiết trong debug.log.");
-    logFile.close();
+    QMessageBox::critical(nullptr, "Database Error", "Không thể mở CSDL.");
     return 1;
   }
 
-  qDebug() << "Database connection OK — hospital.db ready";
-
+  // Tự động seed dữ liệu mẫu
   seedDatabase();
-  runAllergyInsuranceTests();
+
+  testValidations();
+  
+  // Chạy thêm luồng tạo dữ liệu mẫu (bệnh nhân, hồ sơ khám, hóa đơn)
+  runComprehensiveTests();
 
   MainWindow window;
   window.show();
 
-  int result = app.exec();
-
-  qDebug() << "=== SmartClinicSystem exited ===";
-  logFile.close();
-  return result;
+  return app.exec();
 }

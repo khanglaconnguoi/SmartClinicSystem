@@ -13,7 +13,7 @@ private:
     int m_medicationId;
     QString m_brandName;
     QList<MedicationIngredientDTO> m_ingredients;
-    QString m_category;
+    QList<QString> m_categories;  // Một thuốc thuộc nhiều danh mục
     QString m_unit;
     double m_unitPrice;
     int m_stockQuantity;
@@ -29,7 +29,7 @@ public:
         int medicationId,
         const QString& brandName,
         const QList<MedicationIngredientDTO>& ingredients,
-        const QString& category,
+        const QList<QString>& categories,
         const QString& unit,
         double unitPrice,
         int stockQuantity,
@@ -43,7 +43,7 @@ public:
         m_medicationId(medicationId),
         m_brandName(brandName),
         m_ingredients(ingredients),
-        m_category(category),
+        m_categories(categories),
         m_unit(unit),
         m_unitPrice(unitPrice),
         m_stockQuantity(stockQuantity),
@@ -60,7 +60,7 @@ public:
     int getMedicationId() const { return m_medicationId; }
     QString getBrandName() const { return m_brandName; }
     QList<MedicationIngredientDTO> getIngredients() const { return m_ingredients; }
-    QString getCategory() const { return m_category; }
+    QList<QString> getCategories() const { return m_categories; }
     QString getUnit() const { return m_unit; }
     double getUnitPrice() const { return m_unitPrice; }
     int getStockQuantity() const { return m_stockQuantity; }

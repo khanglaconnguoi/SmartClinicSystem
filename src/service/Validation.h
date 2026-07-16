@@ -6,13 +6,13 @@
  *    - Chuỗi rỗng ""     → đầu vào hợp lệ
  *    - Chuỗi lỗi khác   → mô tả lý do không hợp lệ
  *
- *  Tất cả hàm đều được đặt trong namespace Validation — không cần khởi tạo đối tượng.
+ *  Tất cả hàm đều được đặt trong namespace Validation — không cần khởi tạo đối
+ * tượng.
  */
 #pragma once
-#include "model/MedicalRecord.h"
 #include <QDate>
-#include <QString>
 #include <QList>
+#include <QString>
 
 namespace Validation {
 
@@ -25,47 +25,32 @@ inline constexpr qsizetype FULL_NAME_MAX_LENGTH = 100;
 
 // ── Trường đơn lẻ ─────────────────────────────────────────────────────────
 
-QString validatePlainPassword(const QString& plainPassword);
-QString validateFullName(const QString& fullName);
+QString validatePlainPassword(const QString &plainPassword);
+QString validateFullName(const QString &fullName);
 
 /**
  * @brief Kiểm tra CCCD/CMND 12 chữ số với tiền tố tỉnh/thành hợp lệ.
  */
-QString validateCitizenId(const QString& citizenId);
+QString validateCitizenId(const QString &citizenId);
 
 /**
  * @brief Kiểm tra số điện thoại Việt Nam (10 hoặc 11 chữ số, bắt đầu bằng 0).
  */
-QString validatePhoneNumber(const QString& phoneNumber);
+QString validatePhoneNumber(const QString &phoneNumber);
 
 /**
  * @brief Kiểm tra định dạng địa chỉ email.
  */
-QString validateEmail(const QString& email);
-
-QString validateAddress(const QString& address);
-QString validateDateOfBirth(const QDate& dateOfBirth);
+QString validateEmail(const QString &email);
 
 /**
- * @brief Kiểm tra nhóm máu (A+/A-/B+/B-/AB+/AB-/O+/O-/UNKNOWN).
+ * @brief Kiểm tra địa chỉ không rỗng.
  */
-QString validateBloodType(const QString &bloodType);
+QString validateAddress(const QString &address);
 
 /**
- * @brief Kiểm tra khoảng ngày hợp lệ, dùng cho bộ lọc tìm kiếm theo ngày.
- *
- *  Hợp lệ khi:
- *    - Cả hai ngày đều rỗng (không lọc theo ngày), hoặc
- *    - Chỉ một trong hai ngày được cung cấp, hoặc
- *    - Cả hai ngày hợp lệ và fromDate <= toDate.
- *
- * @param fromDate Ngày bắt đầu khoảng lọc (có thể rỗng — QDate không hợp lệ).
- * @param toDate   Ngày kết thúc khoảng lọc (có thể rỗng — QDate không hợp lệ).
+ * @brief Kiểm tra ngày sinh hợp lệ (không lớn hơn ngày hiện tại).
  */
-QString validateDateRange(const QDate &fromDate, const QDate &toDate);
+QString validateDateOfBirth(const QDate &dateOfBirth);
 
-QString validateVitalSigns(const VitalSigns &vitals);
-QString validateChiefComplaint(const QString &complaint);
-QString validateDiagnosisList(const QList<Diagnosis> &diagnoses);
-
-}  // namespace Validation
+} // namespace Validation

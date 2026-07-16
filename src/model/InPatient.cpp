@@ -14,7 +14,7 @@
 InPatient::InPatient()
     : Patient(0, QString(), QString(), QDate(), QString(), QString(), QString(),
               QString(), QString(), QString(), QString(), QString(),
-              PatientType::INPATIENT, QString(), QString()),
+              PatientType::Inpatient, QString(), QString()),
       m_admissionId(QString()), m_roomId(QString()),
       m_admittingDoctorId(QString()), m_admissionDate(QDate()),
       m_dischargeDate(QDate()), m_reason(QString()), m_status(QString()) {}
@@ -27,7 +27,7 @@ InPatient::InPatient()
  *
  * @return PatientPriority::High
  */
-PatientPriority InPatient::getPriority() const { return PatientPriority::HIGH; }
+PatientPriority InPatient::getPriority() const { return PatientPriority::High; }
 
 /**
  * @brief Trả về loại hình thanh toán của bệnh nhân nội trú.

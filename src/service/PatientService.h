@@ -2,7 +2,7 @@
  * @file    PatientService.h
  * @brief   Service layer cho module Patient.
  *
- *  Các hàm validate là private — chỉ dùng nội bộ trong class này.
+ *  Các hàm validate là public static — UI có thể gọi trực tiếp để kiểm tra từng ô.
  *  Mỗi hàm validate trả về chuỗi rỗng "" nếu hợp lệ,
  *  hoặc chuỗi mô tả lỗi nếu không hợp lệ.
  */
@@ -21,66 +21,68 @@ class PatientService {
 private:
   std::shared_ptr<PatientRepository> m_patientRepository;
 
-  // ── Validate nhóm trường theo loại bệnh nhân ────────────────────────────
-
-  /**
-   * @brief Kiểm tra toàn bộ trường cơ bản của bảng `patients`.
-   *        Bao gồm: patientId, patientCode, fullName, dateOfBirth, gender,
-   *                 citizenId, phone, email, address, bloodType, allergies,
-   *                 insurance, type, emergencyContactName,
-   * emergencyContactPhone.
-   */
-  static QString
-  validateBaseInput(int patientId, const QString &patientCode,
-                    const QString &fullName, const QDate &dateOfBirth,
-                    const QString &gender, const QString &citizenId,
-                    const QString &phone, const QString &email,
-                    const QString &address, const QString &bloodType,
-                    const QString &allergies, const QString &insurance,
-                    const QString &type, const QString &emergencyContactName,
-                    const QString &emergencyContactPhone);
-
-  /**
-   * @brief Kiểm tra trường đặc thù của bệnh nhân nội trú (`in_patients`).
-   *        Bao gồm: roomId, doctorId,
-   *                 admissionDate, dischargeDate, reason.
-   */
-  static QString validateInPatientInput(const QString &roomId,
-                                        const QString &doctorId,
-                                        const QDate &admissionDate,
-                                        const QDate &dischargeDate,
-                                        const QString &reason);
-
-  /**
-   * @brief Kiểm tra trường đặc thù của bệnh nhân cấp cứu
-   *        (`emergency_patients`).
-   *        Bao gồm: roomId, doctorId,
-   *                 injuryCause, injuryDescription,
-   *                 admissionDate, dischargeDate.
-   */
-  static QString validateEmergencyPatientInput(const QString &roomId,
-                                               const QString &doctorId,
-                                               const QString &injuryCause,
-                                               const QString &injuryDescription,
-                                               const QDate &admissionDate,
-                                               const QDate &dischargeDate);
-
-  /**
-   * @brief Kiểm tra trường cơ bản khi UPDATE bảng `patients`.
-   *        Bỏ qua patientCode, allergies, insurance, type
-   *        vì những trường đó không thay đổi trong luồng cập nhật.
-   */
-  static QString
-  validateUpdateBaseInput(int patientId, const QString &fullName,
-                          const QDate &dateOfBirth, const QString &gender,
-                          const QString &citizenId, const QString &phone,
-                          const QString &email, const QString &bloodType,
-                          const QString &allergies, const QString &insurance);
-
+  // ── (Các private member cũ đã chuyển xuống dưới public hoặc xoá)
 public:
   explicit PatientService(std::shared_ptr<PatientRepository> patientRepository)
       : m_patientRepository(patientRepository) {}
   ~PatientService() {}
+
+  // ── Validate nhóm trường theo loại bệnh nhân ────────────────────────────
+  // ── Đã được đưa ra public để UI có thể gọi kiểm tra ──────────────────────
+
+  /**
+   * @brief Kiểm tra toàn bộ trường cơ bản của bảng `patients`.
+   *        Dùng thông tin từ PatientInputDTO.
+   */
+  static QString validateBaseInput(const PatientInputDTO &dto, const QString &patientCode = "");
+
+  /**
+   * @brief Kiểm tra trường đặc thù của bệnh nhân nội trú (`in_patients`).
+   */
+  static QString validateInPatientInput(const InPatientInputDTO &dto);
+
+  /**
+   * @brief Kiểm tra trường đặc thù của bệnh nhân cấp cứu (`emergency_patients`).
+   */
+  static QString validateEmergencyPatientInput(const EmergencyPatientInputDTO &dto);
+
+  /**
+   * @brief Kiểm tra trường cơ bản khi UPDATE bảng `patients`.
+   *        Bỏ qua các trường không thay đổi.
+   */
+  static QString validateUpdateBaseInput(const PatientInputDTO &dto, int patientId);
+
+  /**
+   * @brief Chuẩn hóa dữ liệu đầu vào từ UI:
+   *        trim khoảng trắng, chuẩn hóa chữ hoa/thường, email về lowercase...
+   *        LUÔN gọi trước validate — đảm bảo validate trên dữ liệu đã sạch.
+   */
+  static void normalizePatientInput(PatientInputDTO &dto);
+
+  /**
+   * @brief Chuẩn hóa tiêu chí tìm kiếm trước khi lọc (vd: cắt khoảng trắng từ khoá).
+   */
+  static void normalizeSearchCriteria(PatientSearchCriteria &criteria);
+
+  static QString validateDateRange(const QDate &fromDate, const QDate &toDate);
+
+  // ── Validate các trường đơn lẻ dành cho UI gọi trực tiếp ───────────────
+  static QString validatePatientCode(const QString &patientCode);
+  static QString validateEmergencyContactName(const QString &name);
+  static QString validateBloodType(const QString &bloodType);
+
+  static QString validateInPatientRoomId(std::optional<int> roomId);
+  static QString validateInPatientDoctorId(std::optional<int> doctorId);
+  static QString validateInPatientDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate);
+  static QString validateInPatientReason(const QString &reason);
+
+  static QString validateEmergencyRoomId(std::optional<int> roomId);
+  static QString validateEmergencyDoctorId(std::optional<int> doctorId);
+  static QString validateEmergencyDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate);
+  static QString validateEmergencyInjuryCause(const QString &cause);
+  static QString validateEmergencyInjuryDescription(const QString &desc);
+
+
 
   /**
    * @brief Tạo mã bệnh nhân theo loại (OUT-yyyyMMdd-NNNN / IN-… / EMER-…).
@@ -90,98 +92,40 @@ public:
   /**
    * @brief Đăng ký bệnh nhân ngoại trú.
    */
-  bool AddOutPatient(int patientId, int doctorId, const QString &fullName,
-                     const QDate &dateOfBirth, const QString &gender,
-                     const QString &citizenId, const QString &phone,
-                     const QString &email, const QString &address,
-                     const QString &bloodType, const QString &allergies,
-                     const QString &insurance, PatientType type,
-                     const QString &emergencyContactName,
-                     const QString &emergencyContactPhone);
+  bool addOutPatient(OutPatientInputDTO &dto);
 
   /**
    * @brief Nhập viện bệnh nhân nội trú.
    */
-  bool AddInPatient(int patientId, const QString &fullName,
-                    const QDate &dateOfBirth, const QString &gender,
-                    const QString &citizenId, const QString &phone,
-                    const QString &email, const QString &address,
-                    const QString &bloodType, const QString &allergies,
-                    const QString &insurance, PatientType type,
-                    const QString &emergencyContactName,
-                    const QString &emergencyContactPhone, const QString &roomId,
-                    const QString &doctorId, const QDate &admissionDate,
-                    const QDate &dischargeDate, const QString &reason);
+  bool addInPatient(InPatientInputDTO &dto);
 
   /**
    * @brief Tiếp nhận bệnh nhân cấp cứu.
    */
-  bool AddEmergencyPatient(
-      int patientId, const QString &fullName, const QDate &dateOfBirth,
-      const QString &gender, const QString &citizenId, const QString &phone,
-      const QString &email, const QString &address, const QString &bloodType,
-      const QString &allergies, const QString &insurance, PatientType type,
-      const QString &emergencyContactName, const QString &emergencyContactPhone,
-      const QString &roomId, const QString &doctorId,
-      const QString &injuryCause, const QString &injuryDescription,
-      const QDate &admissionDate, const QDate &dischargeDate);
+  bool addEmergencyPatient(EmergencyPatientInputDTO &dto);
 
   /**
    * @brief Cập nhật thông tin cơ bản của bệnh nhân trong bảng `patients`.
    */
-  bool UpdatePatient(int patientId, const QString &fullName,
-                     const QDate &dateOfBirth, const QString &gender,
-                     const QString &citizenId, const QString &phone,
-                     const QString &email, const QString &address,
-                     const QString &bloodType, const QString &allergies,
-                     const QString &insurance,
-                     const QString &emergencyContactName,
-                     const QString &emergencyContactPhone);
+  bool updatePatient(int patientId, PatientInputDTO &dto);
 
   /**
    * @brief Cập nhật thông tin bệnh nhân ngoại trú.
    *        Ghi đè cả `patients` lẫn `out_patients`.
    */
-  bool UpdateOutPatient(int patientId, int doctorId, const QString &fullName,
-                        const QDate &dateOfBirth, const QString &gender,
-                        const QString &citizenId, const QString &phone,
-                        const QString &email, const QString &address,
-                        const QString &bloodType, const QString &allergies,
-                        const QString &insurance,
-                        const QString &emergencyContactName,
-                        const QString &emergencyContactPhone,
-                        const QString &status);
+  bool updateOutPatient(int patientId, OutPatientInputDTO &dto, const QString &status = "REGISTERED");
 
   /**
    * @brief Cập nhật thông tin bệnh nhân nội trú.
    *        Ghi đè cả `patients` lẫn `in_patients`.
    */
-  bool UpdateInPatient(int patientId, const QString &fullName,
-                       const QDate &dateOfBirth, const QString &gender,
-                       const QString &citizenId, const QString &phone,
-                       const QString &email, const QString &address,
-                       const QString &bloodType, const QString &allergies,
-                       const QString &insurance,
-                       const QString &emergencyContactName,
-                       const QString &emergencyContactPhone,
-                       const QString &roomId, const QString &doctorId,
-                       const QDate &admissionDate, const QDate &dischargeDate,
-                       const QString &reason, const QString &status);
+  bool updateInPatient(int patientId, InPatientInputDTO &dto, const QString &status = "ADMITTED");
 
   /**
    * @brief Cập nhật thông tin bệnh nhân cấp cứu.
    *        Ghi đè cả `patients` lẫn `emergency_patients`.
    */
-  bool UpdateEmergencyPatient(
-      int patientId, const QString &fullName, const QDate &dateOfBirth,
-      const QString &gender, const QString &citizenId, const QString &phone,
-      const QString &email, const QString &address, const QString &bloodType,
-      const QString &allergies, const QString &insurance,
-      const QString &emergencyContactName, const QString &emergencyContactPhone,
-      const QString &roomId, const QString &doctorId,
-      const QString &injuryCause, const QString &injuryDescription,
-      const QDate &admissionDate, const QDate &dischargeDate,
-      const QString &status);
+  bool updateEmergencyPatient(int patientId, EmergencyPatientInputDTO &dto, const QString &status = "EMERGENCY");
 
   /**
    * @brief Tìm kiếm bệnh nhân kết hợp tất cả các tiêu chí.
@@ -189,8 +133,8 @@ public:
    * @param criteria Tiêu chí tìm kiếm (từ UI).
    * @return Danh sách kết quả (đã limit/offset). Rỗng nếu lỗi validation.
    */
-  QVector<PatientSearchResultDTO>
-  searchPatients(const PatientSearchCriteria &criteria);
+  QList<PatientSearchResultDTO>
+  searchPatients(PatientSearchCriteria criteria);
 
   /**
    * @brief Lấy thông tin chi tiết một bệnh nhân.
@@ -204,7 +148,7 @@ public:
    * @param criteria Tiêu chí tìm kiếm (từ UI).
    * @return Tổng số lượng. 0 nếu có lỗi validation.
    */
-  int countSearchResults(const PatientSearchCriteria &criteria);
+  int countSearchResults(PatientSearchCriteria criteria);
 
   bool softDeletePatient(int patientId);
   bool restorePatient(int patientId);

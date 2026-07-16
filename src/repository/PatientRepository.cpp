@@ -531,20 +531,20 @@ std::optional<PatientDetailDTO> PatientRepository::getPatientById(int patientId)
     dto.patientCode = query.value("patient_code").toString();
     dto.fullName = query.value("full_name").toString();
     dto.dateOfBirth = QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
-    dto.gender = stringToGender(query.value("gender").toString());
+    dto.gender = genderFromString(query.value("gender").toString());
     dto.citizenId = query.value("citizen_id").toString();
     dto.phone = query.value("phone").toString();
     dto.email = query.value("email").toString();
     dto.address = query.value("address").toString();
     dto.bloodType = query.value("blood_type").toString();
-    dto.defaultPatientType = stringToPatientType(query.value("default_patient_type").toString());
+    dto.defaultPatientType = patientTypeFromString(query.value("default_patient_type").toString());
     dto.emergencyContactName = query.value("emergency_contact_name").toString();
     dto.emergencyContactPhone = query.value("emergency_contact_phone").toString();
     dto.isDeleted = query.value("is_deleted").toBool();
     dto.createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
     dto.updatedAt = QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
 
-    dto.currentType = stringToPatientType(query.value("current_type").toString());
+    dto.currentType = patientTypeFromString(query.value("current_type").toString());
     dto.status = query.value("status").toString();
 
     if (!query.isNull("room_id")) dto.roomId = query.value("room_id").toInt();
@@ -566,18 +566,18 @@ std::optional<PatientDetailDTO> PatientRepository::getPatientById(int patientId)
   return std::nullopt;
 }
 
-QVector<PatientSearchResultDTO>
+QList<PatientSearchResultDTO>
 PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
-  QVector<PatientSearchResultDTO> results;
+  QList<PatientSearchResultDTO> results;
 
   // Mỗi nhánh UNION ALL ứng với 1 loại bệnh nhân. Nếu criteria.type được
   // set, chỉ build nhánh tương ứng để tránh quét thừa 2 bảng còn lại.
   const bool wantOut =
-      !criteria.type.has_value() || criteria.type == PatientType::OUTPATIENT;
+      !criteria.type.has_value() || criteria.type == PatientType::Outpatient;
   const bool wantIn =
-      !criteria.type.has_value() || criteria.type == PatientType::INPATIENT;
+      !criteria.type.has_value() || criteria.type == PatientType::Inpatient;
   const bool wantEmergency =
-      !criteria.type.has_value() || criteria.type == PatientType::EMERGENCY;
+      !criteria.type.has_value() || criteria.type == PatientType::Emergency;
 
   QStringList branches;
   QVariantList params;
@@ -651,9 +651,9 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
     row.fullName = query.value("full_name").toString();
     row.dateOfBirth = QDate::fromString(query.value("date_of_birth").toString(),
                                         "yyyy-MM-dd");
-    row.gender = stringToGender(query.value("gender").toString());
+    row.gender = genderFromString(query.value("gender").toString());
     row.phone = query.value("phone").toString();
-    row.type = stringToPatientType(query.value("type").toString());
+    row.type = patientTypeFromString(query.value("type").toString());
     row.statusLabel = query.value("status_label").toString();
     row.roomId = query.value("room_id").isNull()
                      ? QString()
@@ -667,11 +667,11 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
 int PatientRepository::countSearchResults(
     const PatientSearchCriteria &criteria) {
   const bool wantOut =
-      !criteria.type.has_value() || criteria.type == PatientType::OUTPATIENT;
+      !criteria.type.has_value() || criteria.type == PatientType::Outpatient;
   const bool wantIn =
-      !criteria.type.has_value() || criteria.type == PatientType::INPATIENT;
+      !criteria.type.has_value() || criteria.type == PatientType::Inpatient;
   const bool wantEmergency =
-      !criteria.type.has_value() || criteria.type == PatientType::EMERGENCY;
+      !criteria.type.has_value() || criteria.type == PatientType::Emergency;
 
   QStringList branches;
   QVariantList params;

@@ -26,7 +26,7 @@ OutPatient::OutPatient()
               QString(),               // m_bloodType
               QString(),               // m_allergies
               QString(),               // m_insurance
-              PatientType::OUTPATIENT, // m_type
+              PatientType::Outpatient, // m_type
               QString(),               // m_emergencyContactName
               QString())               // m_emergencyContactPhone
 {}
@@ -43,7 +43,7 @@ OutPatient::OutPatient()
  * @return PatientPriority::Normal
  */
 PatientPriority OutPatient::getPriority() const {
-  return PatientPriority::NORMAL;
+  return PatientPriority::Normal;
 }
 
 /**
