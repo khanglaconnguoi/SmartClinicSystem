@@ -134,7 +134,7 @@ public:
    * @return Danh sách kết quả (đã limit/offset). Rỗng nếu lỗi validation.
    */
   QList<PatientSearchResultDTO>
-  searchPatients(PatientSearchCriteria criteria);
+  searchPatients(const PatientSearchCriteria& criteria);
 
   /**
    * @brief Lấy thông tin chi tiết một bệnh nhân.
@@ -148,7 +148,7 @@ public:
    * @param criteria Tiêu chí tìm kiếm (từ UI).
    * @return Tổng số lượng. 0 nếu có lỗi validation.
    */
-  int countSearchResults(PatientSearchCriteria criteria);
+  int countSearchResults(const PatientSearchCriteria& criteria);
 
   bool softDeletePatient(int patientId);
   bool restorePatient(int patientId);

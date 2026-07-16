@@ -180,7 +180,7 @@ std::optional<InvoiceResultDTO> BillingRepository::getInvoiceByRecordId(int reco
     QVariant recId = query.value("record_id");
     dto.recordId = recId.isNull() ? std::nullopt : std::make_optional(recId.toInt());
     
-    dto.patientType = patientTypeFromString(query.value("patient_type").toString());
+    dto.patientType = patientTypeFromEn(query.value("patient_type").toString());
     dto.consultationFee = query.value("consultation_fee").toDouble();
     dto.medicationFee = query.value("medication_fee").toDouble();
     dto.totalAmount = query.value("total_amount").toDouble();
@@ -222,7 +222,7 @@ QList<InvoiceResultDTO> BillingRepository::getInvoicesByPatientId(int patientId)
         QVariant recId = query.value("record_id");
         dto.recordId = recId.isNull() ? std::nullopt : std::make_optional(recId.toInt());
         
-        dto.patientType = patientTypeFromString(query.value("patient_type").toString());
+        dto.patientType = patientTypeFromEn(query.value("patient_type").toString());
         dto.consultationFee = query.value("consultation_fee").toDouble();
         dto.medicationFee = query.value("medication_fee").toDouble();
         dto.totalAmount = query.value("total_amount").toDouble();
@@ -280,7 +280,7 @@ QString BillingRepository::buildSearchWhereClause(
 
   if (criteria.patientType.has_value()) {
     conditions << "i.patient_type = ?";
-    outParams << patientTypeToString(criteria.patientType.value());
+    outParams << patientTypeToEn(criteria.patientType.value());
   }
 
   if (criteria.fromDate.has_value() && criteria.fromDate->isValid()) {
@@ -334,7 +334,7 @@ QList<InvoiceSummaryDTO> BillingRepository::searchInvoices(
     QVariant recId  = query.value("record_id");
     dto.recordId    = recId.isNull() ? std::nullopt : std::make_optional(recId.toInt());
 
-    dto.patientType  = patientTypeFromString(query.value("patient_type").toString());
+    dto.patientType  = patientTypeFromEn(query.value("patient_type").toString());
     dto.totalAmount  = query.value("total_amount").toDouble();
     dto.status       = query.value("status").toString();
     dto.issuedDate   = query.value("issued_date").toDate();
