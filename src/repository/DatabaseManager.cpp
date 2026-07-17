@@ -224,7 +224,7 @@ bool DatabaseManager::createTables() {
           patient_id       INTEGER NOT NULL UNIQUE,
           provider_name    TEXT    NOT NULL,
           policy_number    TEXT    NOT NULL,
-          insurance_type   TEXT    NOT NULL DEFAULT 'BHYT' CHECK (insurance_type IN ('BHYT','PRIVATE','OTHER')),
+          insurance_type   TEXT    NOT NULL DEFAULT 'NATIONAL' CHECK (insurance_type IN ('NATIONAL','COMMERCIAL','OTHER')),
           coverage_percent REAL    NOT NULL DEFAULT 80,
           valid_from       TEXT,
           valid_to         TEXT,

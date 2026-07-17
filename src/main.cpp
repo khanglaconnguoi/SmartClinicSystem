@@ -180,7 +180,6 @@ static void runComprehensiveTests() {
   pOut.email = "lexuan@test.com";
   pOut.emergencyContactName = "Le Van A";
   pOut.emergencyContactPhone = "0900111222";
-  pOut.allergies = "Seafood";
   pOut.insurance = "BHYT-123456";
   bool okOut = patientService->addOutPatient(pOut);
   int pidOut = getLastInsertedPatientId();
@@ -291,6 +290,13 @@ static void runComprehensiveTests() {
     diag1.description = "Viêm họng cấp";
     diag1.severity = "MODERATE";
     mrDto.diagnoses.append(diag1);
+
+    // Dị ứng phát hiện trong lần khám này
+    AllergyInsertDTO allergy1;
+    allergy1.allergenName = "Seafood";
+    allergy1.severity = "MILD";
+    allergy1.notes = "Phát hiện trong lần khám đầu tiên";
+    mrDto.newAllergies.append(allergy1);
 
     recordId = mrService.createMedicalRecord(mrDto);
     qDebug() << "  -> Create MedicalRecord:" << (recordId > 0 ? "PASS" : "FAIL")
