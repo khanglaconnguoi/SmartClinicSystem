@@ -108,7 +108,7 @@ bool DatabaseManager::createTables() {
           date_of_birth           TEXT    NOT NULL,
           gender                  TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
           citizen_id              TEXT    UNIQUE,
-          phone                   TEXT    NOT NULL,
+          phone_number            TEXT    NOT NULL,
           email                   TEXT    NOT NULL,
           address                 TEXT    NOT NULL,
           blood_type              TEXT    NOT NULL DEFAULT 'UNKNOWN' CHECK (blood_type IN ('A+','A-','B+','B-','AB+','AB-','O+','O-','UNKNOWN')),
@@ -199,6 +199,7 @@ bool DatabaseManager::createTables() {
       CREATE TABLE IF NOT EXISTS patient_allergies (
           allergy_id    INTEGER PRIMARY KEY AUTOINCREMENT,
           patient_id    INTEGER NOT NULL,
+          ingredient_id INTEGER,
           allergen_name TEXT    NOT NULL COLLATE NOCASE,
           severity      TEXT    NOT NULL DEFAULT 'MODERATE' CHECK (severity IN ('MILD', 'MODERATE', 'SEVERE')),
           notes         TEXT,
@@ -206,6 +207,7 @@ bool DatabaseManager::createTables() {
           recorded_at   TEXT    NOT NULL DEFAULT (datetime('now')),
           updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
           FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
+          FOREIGN KEY (ingredient_id) REFERENCES active_ingredients(ingredient_id) ON DELETE SET NULL,
           UNIQUE (patient_id, allergen_name)
       );
   )";
@@ -322,7 +324,7 @@ bool DatabaseManager::createTables() {
       CREATE TABLE IF NOT EXISTS invoice_items (
           item_id       INTEGER PRIMARY KEY AUTOINCREMENT,
           invoice_id    INTEGER NOT NULL,
-          item_type     TEXT NOT NULL,
+          item_type     TEXT NOT NULL CHECK (item_type IN ('CONSULTATION','MEDICATION','ROOM_FEE','SERVICE','PROCEDURE','OTHER')),
           description   TEXT NOT NULL,
           quantity      INTEGER NOT NULL DEFAULT 1,
           unit_price    REAL NOT NULL,
@@ -355,7 +357,6 @@ bool DatabaseManager::createTables() {
     CREATE TABLE IF NOT EXISTS medications (
         medication_id       INTEGER PRIMARY KEY AUTOINCREMENT,
         brand_name          TEXT NOT NULL,
-        category            TEXT,
         unit                TEXT NOT NULL,
         unit_price          REAL NOT NULL DEFAULT 0,
         stock_quantity      INTEGER NOT NULL DEFAULT 0,
@@ -370,6 +371,20 @@ bool DatabaseManager::createTables() {
   )";
   if (!query.exec(sqlMedications)) {
     qDebug() << "Lỗi bảng Medications:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  const QString sqlMedicationCategories = R"(
+    CREATE TABLE IF NOT EXISTS medication_categories (
+      medication_id   INTEGER NOT NULL,
+      category_name   TEXT NOT NULL,
+      PRIMARY KEY (medication_id, category_name),
+      FOREIGN KEY (medication_id) REFERENCES medications(medication_id) ON DELETE CASCADE
+    );
+  )";
+  if (!query.exec(sqlMedicationCategories)) {
+    qDebug() << "Lỗi bảng Medication Categories:" << query.lastError().text();
     m_db.rollback();
     return false;
   }
@@ -454,6 +469,7 @@ bool DatabaseManager::createTables() {
           staff_id      INTEGER PRIMARY KEY AUTOINCREMENT,
           staff_code    TEXT    NOT NULL UNIQUE,
           password_hash TEXT    NOT NULL,
+          must_change_password  INTEGER NOT NULL DEFAULT 1 CHECK (must_change_password IN (0,1)),
           full_name     TEXT    NOT NULL,
           avatar        BLOB,
           role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
