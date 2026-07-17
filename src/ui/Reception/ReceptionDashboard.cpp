@@ -248,7 +248,16 @@ void ReceptionDashboardWidget::onConfirmClicked() {
     QString startTime = timeSlot.split(" - ").first();
     int createdBy = m_currentUser->getAccountId();
     
-    bool success = m_baseAppointmentService->createAppointment(m_currentPatientId, doctorCode, createdBy, date, startTime, "Khám bệnh");
+    AppointmentInputDTO input = {
+        m_currentPatientId,
+        doctorCode,
+        createdBy,
+        date,
+        startTime,
+        "Khám bệnh"
+    };
+    
+    bool success = m_baseAppointmentService->createAppointment(input);
     if (success) {
         QMessageBox::information(this, "Thành công", "Đăng ký lịch khám thành công!");
         
