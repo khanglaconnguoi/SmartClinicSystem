@@ -10,19 +10,20 @@
 QString BillingRepository::generateInvoiceCode() {
     DatabaseManager &db = DatabaseManager::getInstance();
     QString todayStr = QDate::currentDate().toString("yyyyMMdd");
-    QString prefix = "INV-" + todayStr + "-";
-    
+    QString prefix = "INV" + todayStr;
+
     QString sql = "SELECT COUNT(*) FROM invoices WHERE invoice_code LIKE ?";
     QSqlQuery query = db.selectQuery(sql, {prefix + "%"});
-    
+
     int count = 0;
     if (query.next()) {
         count = query.value(0).toInt();
     }
-    
+
     int nextNumber = count + 1;
     return prefix + QString("%1").arg(nextNumber, 4, 10, QLatin1Char('0'));
 }
+
 
 bool BillingRepository::insertInvoice(const InvoiceInsertDTO &dto) {
     DatabaseManager &db = DatabaseManager::getInstance();

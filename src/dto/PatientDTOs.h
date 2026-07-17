@@ -35,10 +35,10 @@
  * @brief Dùng để INSERT một dị ứng vào bảng `patient_allergies`.
  */
 struct AllergyInsertDTO {
-  int patientId;
-  QString allergenName; // tên chất gây dị ứng
-  QString severity;     // 'MILD' | 'MODERATE' | 'SEVERE'
-  QString notes;        // ghi chú thêm (tùy chọn)
+  int patientId;        // patient_id    NOT NULL  (tự gán bởi Service/Repo)
+  QString allergenName; // allergen_name NOT NULL  COLLATE NOCASE  UNIQUE per patient
+  QString severity;     // severity      NOT NULL  DEFAULT 'MODERATE'  CHECK: MILD|MODERATE|SEVERE
+  QString notes;        // notes         nullable
 };
 
 /**
@@ -62,14 +62,14 @@ struct AllergyResultDTO {
  * @brief Dùng để INSERT / UPSERT bản ghi bảo hiểm vào `patient_insurance`.
  */
 struct InsuranceInsertDTO {
-  int patientId;
-  QString providerName;          // tên công ty bảo hiểm
-  QString policyNumber;          // số thẻ / hợp đồng
-  QString insuranceType;         // 'BHYT' | 'PRIVATE' | 'OTHER'
-  double coveragePercent = 80.0; // % chi trả
-  QString validFrom;             // ngày hiệu lực  (yyyy-MM-dd)
-  QString validTo;               // ngày hết hạn   (yyyy-MM-dd)
-  QString notes;
+  int patientId;                 // patient_id       NOT NULL  (tự gán bởi Service/Repo)
+  QString providerName;          // provider_name    NOT NULL
+  QString policyNumber;          // policy_number    NOT NULL
+  QString insuranceType;         // insurance_type   NOT NULL  DEFAULT 'BHYT'  CHECK: BHYT|PRIVATE|OTHER
+  double coveragePercent = 80.0; // coverage_percent NOT NULL  DEFAULT 80
+  QString validFrom;             // valid_from       nullable  (yyyy-MM-dd)
+  QString validTo;               // valid_to         nullable  (yyyy-MM-dd)
+  QString notes;                 // notes            nullable
 };
 
 /**
@@ -101,20 +101,20 @@ struct InsuranceResultDTO {
  *        Map với bảng `patients`.
  */
 struct PatientInputDTO {
-  // ── patients ──────────────────────────────────────────
-  QString fullName;              // full_name           NOT NULL
-  QDate   dateOfBirth;           // date_of_birth        NOT NULL
-  Gender  gender;                // gender               NOT NULL
-  QString citizenId;             // citizen_id           UNIQUE (nullable)
-  QString phone;                 // phone                (nullable)
-  QString email;                 // email                (nullable)
-  QString address;               // address              (nullable)
-  QString bloodType;             // blood_type           DEFAULT 'UNKNOWN'
-  QString allergies;             // allergies            (nullable, future use)
-  QString insurance;             // insurance            (nullable, future use)
-  PatientType type;              // default_patient_type DEFAULT 'OUTPATIENT'
-  QString emergencyContactName;  // emergency_contact_name  (nullable)
-  QString emergencyContactPhone; // emergency_contact_phone (nullable)
+  // ── patients ─────────────────────────────────────────────────────────────
+  QString fullName;  // full_name               NOT NULL
+  QDate dateOfBirth; // date_of_birth            NOT NULL
+  Gender gender;     // gender                   NOT NULL  CHECK: MALE|FEMALE|OTHER
+  QString citizenId; // citizen_id               nullable  UNIQUE
+  QString phone;     // phone                    NOT NULL
+  QString email;     // email                    NOT NULL  (DB: NOT NULL, dù có thể rỗng)
+  QString address;   // address                  NOT NULL
+  QString bloodType; // blood_type               NOT NULL  DEFAULT 'UNKNOWN'  CHECK: A+|A-|B+|B-|AB+|AB-|O+|O-|UNKNOWN
+  // QString allergies; // → dùng QList<AllergyInsertDTO> riêng biệt
+  QString insurance;             // → raw string bảo hiểm từ UI (Service sẽ parse)
+  PatientType type;              // default_patient_type  NOT NULL  DEFAULT 'OUTPATIENT'  CHECK: OUTPATIENT|INPATIENT|EMERGENCY
+  QString emergencyContactName;  // emergency_contact_name  NOT NULL
+  QString emergencyContactPhone; // emergency_contact_phone NOT NULL
 
   virtual ~PatientInputDTO() = default;
 };
@@ -124,11 +124,12 @@ struct PatientInputDTO {
  *        Map với bảng `in_patients`.
  */
 struct InPatientInputDTO : public PatientInputDTO {
-  std::optional<int> roomId;          // room_id             (nullable FK)
-  std::optional<int> doctorId;        // admitting_doctor_id (nullable FK)
-  QDate admissionDate;                // admission_date       NOT NULL
-  std::optional<QDate> dischargeDate; // discharge_date       (nullable)
-  QString reason;                     // reason               (nullable)
+  // ── in_patients ───────────────────────────────────────────────────────────
+  std::optional<int> roomId;          // room_id        nullable  FK → rooms
+  std::optional<int> doctorId;        // doctor_id      nullable  FK → staff
+  QDate admissionDate;                // admission_date NOT NULL  DEFAULT datetime('now')
+  std::optional<QDate> dischargeDate; // discharge_date nullable  CHECK: >= admission_date
+  QString reason;                     // reason         nullable
 };
 
 /**
@@ -136,12 +137,13 @@ struct InPatientInputDTO : public PatientInputDTO {
  *        Map với bảng `emergency_patients_admissions`.
  */
 struct EmergencyPatientInputDTO : public PatientInputDTO {
-  std::optional<int> roomId;          // room_id              (nullable FK)
-  std::optional<int> doctorId;        // emergency_doctor_id  (nullable FK)
-  QString injuryCause;                // injury_cause         (nullable)
-  QString injuryDescription;          // injury_description   (nullable)
-  QDate admissionDate;                // admission_date       NOT NULL
-  std::optional<QDate> dischargeDate; // discharge_date       (nullable)
+  // ── emergency_patients ────────────────────────────────────────────────────
+  std::optional<int> roomId;          // room_id              nullable  FK → rooms
+  std::optional<int> doctorId;        // doctor_id            nullable  FK → staff
+  QString injuryCause;                // injury_cause         nullable
+  QString injuryDescription;          // injury_description   nullable
+  QDate admissionDate;                // admission_date       NOT NULL  DEFAULT datetime('now')
+  std::optional<QDate> dischargeDate; // discharge_date       nullable  CHECK: >= admission_date
 };
 
 /**
@@ -149,7 +151,10 @@ struct EmergencyPatientInputDTO : public PatientInputDTO {
  *        Map với bảng `out_patients`.
  */
 struct OutPatientInputDTO : public PatientInputDTO {
-  std::optional<int> doctorId;
+  // ── out_patients ──────────────────────────────────────────────────────────
+  std::optional<int> doctorId; // doctor_id  nullable  FK → staff
+  // status  NOT NULL  DEFAULT 'REGISTERED'  CHECK: REGISTERED|WAITING FOR TREATMENT|TREATMENT|DISCHARGED
+  //         → do Repository tự gán, UI không cần nhập
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -169,23 +174,23 @@ struct PatientInsertDTO {
   // ── sinh bởi Service ──────────────────────────────────
   QString patientCode; // patient_code         NOT NULL UNIQUE
 
-  // ── từ PatientInputDTO ────────────────────────────────
-  QString fullName;              // full_name            NOT NULL
-  QString dateOfBirth;           // date_of_birth        NOT NULL
-  QString gender;                // gender               NOT NULL
-  QString citizenId;             // citizen_id           (nullable)
-  QString phone;                 // phone                (nullable)
-  QString email;                 // email                (nullable)
-  QString address;               // address              (nullable)
-  QString bloodType;             // blood_type           DEFAULT 'UNKNOWN'
-  QString type;                  // default_patient_type DEFAULT 'OUTPATIENT'
-  QString emergencyContactName;  // emergency_contact_name  (nullable)
-  QString emergencyContactPhone; // emergency_contact_phone (nullable)
+  // ── từ PatientInputDTO ──────────────────────────────────────────────────
+  QString fullName;              // full_name               NOT NULL
+  QString dateOfBirth;           // date_of_birth           NOT NULL  (yyyy-MM-dd)
+  QString gender;                // gender                  NOT NULL  CHECK: MALE|FEMALE|OTHER
+  QString citizenId;             // citizen_id              nullable  UNIQUE
+  QString phone;                 // phone                   NOT NULL
+  QString email;                 // email                   NOT NULL
+  QString address;               // address                 NOT NULL
+  QString bloodType;             // blood_type              NOT NULL  DEFAULT 'UNKNOWN'  CHECK: A+|A-|B+|B-|AB+|AB-|O+|O-|UNKNOWN
+  QString type;                  // default_patient_type    NOT NULL  DEFAULT 'OUTPATIENT'  CHECK: OUTPATIENT|INPATIENT|EMERGENCY
+  QString emergencyContactName;  // emergency_contact_name  NOT NULL
+  QString emergencyContactPhone; // emergency_contact_phone NOT NULL
 
-  // ── dị ứng & bảo hiểm ──────────────────────────────────
-  QList<AllergyInsertDTO> allergies; // danh sách dị ứng (có thể rỗng)
-  std::optional<InsuranceInsertDTO>
-      insurance; // bảo hiểm (nullopt nếu không có)
+  // ── dị ứng & bảo hiểm ─────────────────────────────────────────────────
+  QList<AllergyInsertDTO> allergies;           // patient_allergies  nullable  (danh sách, có thể rỗng)
+  std::optional<InsuranceInsertDTO> insurance; // patient_insurance  nullable  (nullopt nếu không có)
+
 
   PatientInsertDTO() = default;
   virtual ~PatientInsertDTO() = default;
@@ -200,8 +205,11 @@ struct PatientInsertDTO {
         email(inputInformation.email.trimmed()),
         address(inputInformation.address.trimmed()),
         bloodType(inputInformation.bloodType.trimmed()),
-        type(inputInformation.type == PatientType::Inpatient ? "INPATIENT" : 
-             (inputInformation.type == PatientType::Emergency ? "EMERGENCY" : "OUTPATIENT")),
+        type(inputInformation.type == PatientType::Inpatient
+                 ? "INPATIENT"
+                 : (inputInformation.type == PatientType::Emergency
+                        ? "EMERGENCY"
+                        : "OUTPATIENT")),
         emergencyContactName(inputInformation.emergencyContactName.trimmed()),
         emergencyContactPhone(
             inputInformation.emergencyContactPhone.trimmed()) {}
@@ -226,12 +234,13 @@ struct OutPatientInsertDTO : public PatientInsertDTO {
  *        Repository tự gán status = 'ADMITTED'.
  */
 struct InPatientInsertDTO : public PatientInsertDTO {
-  std::optional<int> roomId;   // room_id              (nullable)
-  std::optional<int> doctorId; // admitting_doctor_id  (nullable)
-  QString admissionDate;       // admission_date       NOT NULL
-  QString dischargeDate;       // discharge_date       (nullable)
-  QString reason;              // reason               (nullable)
-  QString status;              // status  DEFAULT 'ADMITTED'
+  // ── in_patients ───────────────────────────────────────────────────────────
+  std::optional<int> roomId;   // room_id        nullable  FK → rooms
+  std::optional<int> doctorId; // doctor_id      nullable  FK → staff
+  QString admissionDate;       // admission_date NOT NULL  (yyyy-MM-dd)
+  QString dischargeDate;       // discharge_date nullable  CHECK: >= admission_date
+  QString reason;              // reason         nullable
+  QString status;              // status         NOT NULL  DEFAULT 'ADMITTED'  CHECK: ADMITTED|DISCHARGED|TRANSFERRED
   InPatientInsertDTO(const InPatientInputDTO &inputInformation,
                      const QString &generatePatientCode)
       : PatientInsertDTO(inputInformation, generatePatientCode),
@@ -247,13 +256,14 @@ struct InPatientInsertDTO : public PatientInsertDTO {
  *        Repository tự gán status = 'EMERGENCY'.
  */
 struct EmergencyPatientInsertDTO : public PatientInsertDTO {
-  std::optional<int> roomId;   // room_id              (nullable)
-  std::optional<int> doctorId; // emergency_doctor_id  (nullable)
-  QString injuryCause;         // injury_cause         (nullable)
-  QString injuryDescription;   // injury_description   (nullable)
-  QString admissionDate;       // admission_date       NOT NULL
-  QString dischargeDate;       // discharge_date       (nullable)
-  QString status;              // status  DEFAULT 'EMERGENCY'
+  // ── emergency_patients ────────────────────────────────────────────────────
+  std::optional<int> roomId;   // room_id             nullable  FK → rooms
+  std::optional<int> doctorId; // doctor_id           nullable  FK → staff
+  QString injuryCause;         // injury_cause        nullable
+  QString injuryDescription;   // injury_description  nullable
+  QString admissionDate;       // admission_date      NOT NULL  DEFAULT datetime('now')  (yyyy-MM-dd)
+  QString dischargeDate;       // discharge_date      nullable  CHECK: >= admission_date
+  QString status;              // status              NOT NULL  DEFAULT 'EMERGENCY'  CHECK: EMERGENCY|DISCHARGED|TRANSFERRED
 
   EmergencyPatientInsertDTO(const EmergencyPatientInputDTO &inputInformation,
                             const QString &generatePatientCode)
@@ -277,18 +287,19 @@ struct EmergencyPatientInsertDTO : public PatientInsertDTO {
  * @brief UPDATE bảng `patients` (thông tin cơ bản).
  */
 struct PatientUpdateDTO {
-  int patientId; // PK – bắt buộc
+  int patientId; // PK – NOT NULL  (bắt buộc để xác định bản ghi)
 
-  QString fullName;
-  QString dateOfBirth;
-  QString gender;
-  QString citizenId;
-  QString phone;
-  QString email;
-  QString address;
-  QString bloodType;
-  QString emergencyContactName;
-  QString emergencyContactPhone;
+  // ── patients (tất cả NOT NULL trong DB) ──────────────────────────────────
+  QString fullName;              // full_name               NOT NULL
+  QString dateOfBirth;           // date_of_birth           NOT NULL  (yyyy-MM-dd)
+  QString gender;                // gender                  NOT NULL  CHECK: MALE|FEMALE|OTHER
+  QString citizenId;             // citizen_id              nullable  UNIQUE
+  QString phone;                 // phone                   NOT NULL
+  QString email;                 // email                   NOT NULL
+  QString address;               // address                 NOT NULL
+  QString bloodType;             // blood_type              NOT NULL  DEFAULT 'UNKNOWN'  CHECK: A+|A-|B+|B-|AB+|AB-|O+|O-|UNKNOWN
+  QString emergencyContactName;  // emergency_contact_name  NOT NULL
+  QString emergencyContactPhone; // emergency_contact_phone NOT NULL
   PatientUpdateDTO() = default;
   virtual ~PatientUpdateDTO() = default;
   PatientUpdateDTO(const PatientInputDTO &inputInformation, int pId) {
@@ -310,8 +321,9 @@ struct PatientUpdateDTO {
  * @brief UPDATE bảng `out_patients` (chỉ status thay đổi theo nghiệp vụ).
  */
 struct OutPatientUpdateDTO : public PatientUpdateDTO {
-  QString status;
-  std::optional<int> doctorId;
+  // ── out_patients ──────────────────────────────────────────────────────────
+  QString status;              // status    NOT NULL  CHECK: REGISTERED|WAITING FOR TREATMENT|TREATMENT|DISCHARGED
+  std::optional<int> doctorId; // doctor_id nullable  FK → staff
   OutPatientUpdateDTO(const OutPatientInputDTO &inputInformation, int pId,
                       const QString &newStatus = "REGISTERED")
       : PatientUpdateDTO(inputInformation, pId), status(newStatus),
@@ -322,12 +334,13 @@ struct OutPatientUpdateDTO : public PatientUpdateDTO {
  * @brief UPDATE bảng `in_patients`.
  */
 struct InPatientUpdateDTO : public PatientUpdateDTO {
-  std::optional<int> roomId;
-  std::optional<int> doctorId;
-  QString admissionDate;
-  QString dischargeDate;
-  QString reason;
-  QString status;
+  // ── in_patients ───────────────────────────────────────────────────────────
+  std::optional<int> roomId;   // room_id        nullable  FK → rooms
+  std::optional<int> doctorId; // doctor_id      nullable  FK → staff
+  QString admissionDate;       // admission_date NOT NULL  (yyyy-MM-dd)
+  QString dischargeDate;       // discharge_date nullable  CHECK: >= admission_date
+  QString reason;              // reason         nullable
+  QString status;              // status         NOT NULL  CHECK: ADMITTED|DISCHARGED|TRANSFERRED
   InPatientUpdateDTO(const InPatientInputDTO &inputInformation, int pId,
                      const QString &newStatus = "ADMITTED")
       : PatientUpdateDTO(inputInformation, pId),
@@ -342,13 +355,14 @@ struct InPatientUpdateDTO : public PatientUpdateDTO {
  * @brief UPDATE bảng `emergency_patients_admissions`.
  */
 struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
-  std::optional<int> roomId;
-  std::optional<int> doctorId;
-  QString injuryCause;
-  QString injuryDescription;
-  QString admissionDate;
-  QString dischargeDate;
-  QString status;
+  // ── emergency_patients ────────────────────────────────────────────────────
+  std::optional<int> roomId;   // room_id             nullable  FK → rooms
+  std::optional<int> doctorId; // doctor_id           nullable  FK → staff
+  QString injuryCause;         // injury_cause        nullable
+  QString injuryDescription;   // injury_description  nullable
+  QString admissionDate;       // admission_date      NOT NULL  (yyyy-MM-dd)
+  QString dischargeDate;       // discharge_date      nullable  CHECK: >= admission_date
+  QString status;              // status              NOT NULL  CHECK: EMERGENCY|DISCHARGED|TRANSFERRED
   EmergencyPatientUpdateDTO(const EmergencyPatientInputDTO &inputInformation,
                             int pId, const QString &newStatus = "EMERGENCY")
       : PatientUpdateDTO(inputInformation, pId),

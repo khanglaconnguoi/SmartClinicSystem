@@ -40,6 +40,13 @@ public:
   static QString validateDiagnosisDescription(const QString &desc);
   static QString validateDiagnosisSeverity(const QString &severity);
 
+  /**
+   * @brief Validate danh sách dị ứng mới gửi kèm hồ sơ khám.
+   *        Cho phép danh sách rỗng (dị ứng là optional).
+   *        Kiểm tra từng item: allergenName không rỗng, severity hợp lệ.
+   */
+  static QString validateAllergyList(const QList<AllergyInsertDTO> &allergies);
+
   explicit MedicalRecordService(
       std::shared_ptr<MedicalRecordRepository> recordRepo,
       std::shared_ptr<PatientService> patientService);

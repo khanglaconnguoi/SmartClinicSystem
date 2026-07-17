@@ -73,6 +73,33 @@ MedicalRecordService::validateDiagnosisList(const QList<Diagnosis> &diagnoses) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Validate: Allergy list
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @brief Kiểm tra từng dị ứng trong danh sách.
+ *        Danh sách rỗng là hợp lệ (dị ứng là optional).
+ *        Mỗi item phải có: allergenName không rỗng, severity âm2MILD/MODERATE/SEVERE.
+ */
+QString MedicalRecordService::validateAllergyList(
+    const QList<AllergyInsertDTO> &allergies) {
+  if (allergies.isEmpty())
+    return ""; // optional — cho phép rỗng
+
+  const QStringList validSeverities = {"MILD", "MODERATE", "SEVERE"};
+  for (int i = 0; i < allergies.size(); ++i) {
+    const AllergyInsertDTO &a = allergies.at(i);
+    if (a.allergenName.trimmed().isEmpty())
+      return QString("Dị ứng #%1: Tên chất gây dị ứng không được để trống.").arg(i + 1);
+    if (a.allergenName.trimmed().length() > 200)
+      return QString("Dị ứng #%1: Tên quá dài (tối đa 200 ký tự).").arg(i + 1);
+    if (!validSeverities.contains(a.severity.trimmed().toUpper()))
+      return QString("Dị ứng #%1: Mức độ không hợp lệ (phải là MILD/MODERATE/SEVERE).").arg(i + 1);
+  }
+  return "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Normalize
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -86,6 +113,13 @@ void MedicalRecordService::normalizeMedicalRecordInput(
     d.description = d.description.simplified();
     d.severity = d.severity.trimmed().toUpper();
     d.icdCode = d.icdCode.trimmed().toUpper();
+  }
+
+  // Normalize allergy list
+  for (AllergyInsertDTO &a : dto.newAllergies) {
+    a.allergenName = a.allergenName.trimmed();
+    a.severity = a.severity.trimmed().toUpper();
+    a.notes = a.notes.trimmed();
   }
 }
 
@@ -125,6 +159,12 @@ int MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
   QString errDiag = validateDiagnosisList(dto.diagnoses);
   if (!errDiag.isEmpty()) {
     qDebug() << "Validation failed (diagnoses):" << errDiag;
+    return -1;
+  }
+
+  QString errAllergy = validateAllergyList(dto.newAllergies);
+  if (!errAllergy.isEmpty()) {
+    qDebug() << "Validation failed (allergies):" << errAllergy;
     return -1;
   }
 

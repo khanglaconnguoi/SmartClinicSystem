@@ -10,50 +10,49 @@ enum class PatientType { Outpatient, Inpatient, Emergency };
 enum class PatientPriority { Low, Normal, High, Critical };
 
 enum class OutPatientState {
-    Registered,
-    WaitingForTreatment,
-    Treatment,
-    Discharged
+  Registered,
+  WaitingForTreatment,
+  Treatment,
+  Discharged
 };
 
-// helper
 enum class InPatientState { Admitted, Discharged, Transferred };
 
 enum class EmergencyPatientState { Emergency, Discharged, Transferred };
 
 enum class MedicationCategory {
-    Antibiotics,
-    Analgesics,
-    Antipyretics,
-    Cardiovascular,
-    Antidiabetics,
-    Vitamins,
-    Respiratory,
-    Gastrointestinal,
-    Dermatological
+  Antibiotics,
+  Analgesics,
+  Antipyretics,
+  Cardiovascular,
+  Antidiabetics,
+  Vitamins,
+  Respiratory,
+  Gastrointestinal,
+  Dermatological
 };
 
 enum class MedicationUnit {
-    Tablet,     // Viên
-    Packet,     // Gói
-    Bottle,     // Chai
-    Vial,       // Lọ
-    Ampoule,    // Ống
-    Tube,       // Tuýp
-    Blister,    // Vỉ
-    Box         // Hộp
+  Tablet,  // Viên
+  Packet,  // Gói
+  Bottle,  // Chai
+  Vial,    // Lọ
+  Ampoule, // Ống
+  Tube,    // Tuýp
+  Blister, // Vỉ
+  Box      // Hộp
 };
 
 inline QString genderToString(Gender gender) {
-    switch (gender) {
-    case Gender::Male:
-        return "MALE";
-    case Gender::Female:
-        return "FEMALE";
-    case Gender::Other:
-        return "OTHER";
-    }
+  switch (gender) {
+  case Gender::Male:
+    return "MALE";
+  case Gender::Female:
+    return "FEMALE";
+  case Gender::Other:
     return "OTHER";
+  }
+  return "OTHER";
 }
 
 inline Gender genderFromString(const QString &genderStr) {
@@ -184,50 +183,50 @@ emergencyPatientStateFromString(const QString &str) {
 }
 
 inline QString categoryToString(MedicationCategory category) {
-    switch (category) {
-        case MedicationCategory::Antibiotics:
-            return "Kháng sinh";
-        case MedicationCategory::Analgesics:
-            return "Giảm đau";
-        case MedicationCategory::Antipyretics:
-            return "Hạ sốt";
-        case MedicationCategory::Cardiovascular:
-            return "Tim mạch";
-        case MedicationCategory::Antidiabetics:
-            return "Trị tiểu đường";
-        case MedicationCategory::Vitamins:
-            return "Vitamin & Thực phẩm chức năng";
-        case MedicationCategory::Respiratory:
-            return "Hô hấp";
-        case MedicationCategory::Gastrointestinal:
-            return "Tiêu hóa";
-        case MedicationCategory::Dermatological:
-            return "Thuốc bôi da liễu";
-        default:
-            return "Khác";
-    }
+  switch (category) {
+  case MedicationCategory::Antibiotics:
+    return "Kháng sinh";
+  case MedicationCategory::Analgesics:
+    return "Giảm đau";
+  case MedicationCategory::Antipyretics:
+    return "Hạ sốt";
+  case MedicationCategory::Cardiovascular:
+    return "Tim mạch";
+  case MedicationCategory::Antidiabetics:
+    return "Trị tiểu đường";
+  case MedicationCategory::Vitamins:
+    return "Vitamin & Thực phẩm chức năng";
+  case MedicationCategory::Respiratory:
+    return "Hô hấp";
+  case MedicationCategory::Gastrointestinal:
+    return "Tiêu hóa";
+  case MedicationCategory::Dermatological:
+    return "Thuốc bôi da liễu";
+  default:
+    return "Khác";
+  }
 }
 
 inline MedicationCategory categoryFromString(const QString &str) {
-    if (str == "Kháng sinh")
-        return MedicationCategory::Antibiotics;
-    if (str == "Giảm đau")
-        return MedicationCategory::Analgesics;
-    if (str == "Hạ sốt")
-        return MedicationCategory::Antipyretics;
-    if (str == "Tim mạch")
-        return MedicationCategory::Cardiovascular;
-    if (str == "Trị tiểu đường")
-        return MedicationCategory::Antidiabetics;
-    if (str == "Vitamin & Thực phẩm chức năng")
-        return MedicationCategory::Vitamins;
-    if (str == "Hô hấp")
-        return MedicationCategory::Respiratory;
-    if (str == "Tiêu hóa")
-        return MedicationCategory::Gastrointestinal;
-    if (str == "Thuốc bôi da liễu")
-        return MedicationCategory::Dermatological;
+  if (str == "Kháng sinh")
+    return MedicationCategory::Antibiotics;
+  if (str == "Giảm đau")
+    return MedicationCategory::Analgesics;
+  if (str == "Hạ sốt")
+    return MedicationCategory::Antipyretics;
+  if (str == "Tim mạch")
+    return MedicationCategory::Cardiovascular;
+  if (str == "Trị tiểu đường")
+    return MedicationCategory::Antidiabetics;
+  if (str == "Vitamin & Thực phẩm chức năng")
     return MedicationCategory::Vitamins;
+  if (str == "Hô hấp")
+    return MedicationCategory::Respiratory;
+  if (str == "Tiêu hóa")
+    return MedicationCategory::Gastrointestinal;
+  if (str == "Thuốc bôi da liễu")
+    return MedicationCategory::Dermatological;
+  return MedicationCategory::Vitamins;
 }
 
 inline QStringList getAllCategories() {
@@ -237,33 +236,50 @@ inline QStringList getAllCategories() {
 }
 
 inline QString unitToString(MedicationUnit unit) {
-    switch (unit) {
-        case MedicationUnit::Tablet:  return "Viên";
-        case MedicationUnit::Packet:  return "Gói";
-        case MedicationUnit::Bottle:  return "Chai";
-        case MedicationUnit::Vial:    return "Lọ";
-        case MedicationUnit::Ampoule: return "Ống";
-        case MedicationUnit::Tube:    return "Tuýp";
-        case MedicationUnit::Blister: return "Vỉ";
-        case MedicationUnit::Box:     return "Hộp";
-        default:                      return "Khác";
-    }
+  switch (unit) {
+  case MedicationUnit::Tablet:
+    return "Viên";
+  case MedicationUnit::Packet:
+    return "Gói";
+  case MedicationUnit::Bottle:
+    return "Chai";
+  case MedicationUnit::Vial:
+    return "Lọ";
+  case MedicationUnit::Ampoule:
+    return "Ống";
+  case MedicationUnit::Tube:
+    return "Tuýp";
+  case MedicationUnit::Blister:
+    return "Vỉ";
+  case MedicationUnit::Box:
+    return "Hộp";
+  default:
+    return "Khác";
+  }
 }
 
 inline MedicationUnit unitFromString(const QString &str) {
-    if (str == "Viên")  return MedicationUnit::Tablet;
-    if (str == "Gói")   return MedicationUnit::Packet;
-    if (str == "Chai")  return MedicationUnit::Bottle;
-    if (str == "Lọ")    return MedicationUnit::Vial;
-    if (str == "Ống")   return MedicationUnit::Ampoule;
-    if (str == "Tuýp")  return MedicationUnit::Tube;
-    if (str == "Vỉ")    return MedicationUnit::Blister;
-    if (str == "Hộp")   return MedicationUnit::Box;
+  if (str == "Viên")
     return MedicationUnit::Tablet;
+  if (str == "Gói")
+    return MedicationUnit::Packet;
+  if (str == "Chai")
+    return MedicationUnit::Bottle;
+  if (str == "Lọ")
+    return MedicationUnit::Vial;
+  if (str == "Ống")
+    return MedicationUnit::Ampoule;
+  if (str == "Tuýp")
+    return MedicationUnit::Tube;
+  if (str == "Vỉ")
+    return MedicationUnit::Blister;
+  if (str == "Hộp")
+    return MedicationUnit::Box;
+  return MedicationUnit::Tablet;
 }
 
 inline QStringList getAllUnits() {
-    return {"Viên", "Gói", "Chai", "Lọ", "Ống", "Tuýp", "Vỉ", "Hộp"};
+  return {"Viên", "Gói", "Chai", "Lọ", "Ống", "Tuýp", "Vỉ", "Hộp"};
 }
 
 enum class InvoiceStatus { Unpaid, Paid, Cancelled };
@@ -290,26 +306,30 @@ inline InvoiceStatus invoiceStatusFromString(const QString &str) {
   return InvoiceStatus::Unpaid;
 }
 
-
-
-
 enum class UserRole { Admin, Doctor, Nurse, Receptionist };
 
-inline QString roleToString(UserRole role){
-    switch(role) {
-        case UserRole::Admin:         return "ADMIN";
-        case UserRole::Doctor:        return "DOCTOR";
-        case UserRole::Nurse:         return "NURSE";
-        case UserRole::Receptionist:  return "RECEPTIONIST";
-    }
+inline QString roleToString(UserRole role) {
+  switch (role) {
+  case UserRole::Admin:
     return "ADMIN";
+  case UserRole::Doctor:
+    return "DOCTOR";
+  case UserRole::Nurse:
+    return "NURSE";
+  case UserRole::Receptionist:
+    return "RECEPTIONIST";
+  }
+  return "ADMIN";
 }
 
-inline UserRole roleFromString(const QString& roleStr){
-    if(roleStr == "ADMIN")          return UserRole::Admin;
-    if(roleStr == "DOCTOR")         return UserRole::Doctor;
-    if(roleStr == "NURSE")          return UserRole::Nurse;
-    if(roleStr == "RECEPTIONIST")   return UserRole::Receptionist;
+inline UserRole roleFromString(const QString &roleStr) {
+  if (roleStr == "ADMIN")
     return UserRole::Admin;
+  if (roleStr == "DOCTOR")
+    return UserRole::Doctor;
+  if (roleStr == "NURSE")
+    return UserRole::Nurse;
+  if (roleStr == "RECEPTIONIST")
+    return UserRole::Receptionist;
+  return UserRole::Admin;
 }
-
