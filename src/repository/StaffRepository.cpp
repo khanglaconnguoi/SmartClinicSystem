@@ -321,7 +321,7 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery& query
         default:
             qWarning() << "StaffRepository::mapRowToUser - role không hỗ trợ:"
                        << query.value("role").toString();
-            return std::make_shared<SystemUser>(staffId, staffCode, passwordHash, fullName, avatar, role, isActive, mustChangePassword);
+            return nullptr;
     }
     return nullptr;
 }
