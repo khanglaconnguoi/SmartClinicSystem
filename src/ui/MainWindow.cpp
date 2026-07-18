@@ -1,3 +1,4 @@
+// MainWindow.cpp
 #include "MainWindow.h"
 #include "Admin/AdminDashboard.h"
 #include "Doctor/DoctorDashboard.h"
@@ -16,15 +17,21 @@
 #include <QScreen>
 #include <QVBoxLayout>
 
-
-MainWindow::MainWindow(std::shared_ptr<AuthService> authService, std::shared_ptr<StaffService> staffService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : QMainWindow(parent), m_authService(std::move(authService)), m_staffService(std::move(staffService)), m_patientService(std::move(patientService)), m_appointmentService(std::move(appointmentService)) {
+MainWindow::MainWindow(std::shared_ptr<AuthService> authService, std::shared_ptr<StaffService> staffService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService, QWidget *parent) : 
+    QMainWindow(parent), m_authService(std::move(authService)), m_staffService(std::move(staffService)), m_patientService(std::move(patientService)), m_appointmentService(std::move(appointmentService)) {
+  setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
   setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
-  this->setFixedSize(1000, 600);
-
+  this->setMinimumSize(800, 500);
+  
   QScreen *screen = QGuiApplication::primaryScreen();
   if (screen) {
-    this->move(screen->geometry().center() - this->rect().center());
+      QRect screenGeometry = screen->geometry();
+      
+      int width = 1000;  // Nếu vẫn hơi thiếu bạn tăng lên 850
+      int height = 610; // Nếu vẫn hơi thiếu bạn tăng lên 550
+      
+      this->resize(width, height);
+      this->move(screenGeometry.center() - this->rect().center());
   }
 
   m_stackedWidget = new QStackedWidget(this);
@@ -82,17 +89,14 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget *page) {
   QScreen *screen = QGuiApplication::primaryScreen();
   if (screen) {
     QRect screenGeometry = screen->geometry();
-    int width = screenGeometry.width() * 0.85;
-    int height = screenGeometry.height() * 0.85;
+    int width = screenGeometry.width();
+    int height = screenGeometry.height();
 
-    // preventing further resize.
-    this->setFixedSize(width, height);
-
-    // Center the window on the screen
+    this->resize(width, height);
     this->move(screenGeometry.center() - this->rect().center());
   }
 
-  this->showNormal();
+  this->showMaximized();
 }
 
 void MainWindow::switchToDoctorDashboard(
@@ -188,11 +192,16 @@ void MainWindow::handleGlobalLogout() {
     m_stackedWidget->setCurrentIndex(0);
 
     this->showNormal();
-    this->setFixedSize(1000, 600);
-
+    
     QScreen *screen = QGuiApplication::primaryScreen();
     if (screen) {
-      this->move(screen->geometry().center() - this->rect().center());
+        QRect screenGeometry = screen->geometry();
+      
+        int width = 1000;  
+        int height = 610; 
+        
+        this->resize(width, height);
+        this->move(screenGeometry.center() - this->rect().center());
     }
 
     m_loginWidget->clearFields();
