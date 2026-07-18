@@ -224,7 +224,7 @@ bool DatabaseManager::createTables() {
           patient_id       INTEGER NOT NULL UNIQUE,
           provider_name    TEXT    NOT NULL,
           policy_number    TEXT    NOT NULL,
-          insurance_type   TEXT    NOT NULL DEFAULT 'BHYT' CHECK (insurance_type IN ('BHYT','PRIVATE','OTHER')),
+          insurance_type   TEXT    NOT NULL DEFAULT 'NATIONAL' CHECK (insurance_type IN ('NATIONAL','COMMERCIAL','OTHER')),
           coverage_percent REAL    NOT NULL DEFAULT 80,
           valid_from       TEXT,
           valid_to         TEXT,
@@ -250,8 +250,8 @@ bool DatabaseManager::createTables() {
       CREATE TABLE IF NOT EXISTS medical_records (
           record_id       INTEGER PRIMARY KEY AUTOINCREMENT,
           patient_id      INTEGER NOT NULL,
-          doctor_id       INTEGER,
-          appointment_id  INTEGER,
+          doctor_id       INTEGER NOT NULL,
+          appointment_id  INTEGER NOT NULL,
           visit_datetime  TEXT NOT NULL,
           temperature     REAL,
           blood_pressure  TEXT,
@@ -353,8 +353,6 @@ bool DatabaseManager::createTables() {
     return false;
   }
 
-
-
   const QString sqlMedications = R"(
     CREATE TABLE IF NOT EXISTS medications (
         medication_id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -390,7 +388,6 @@ bool DatabaseManager::createTables() {
     m_db.rollback();
     return false;
   }
-
 
   const QString sqlMedicationIngredients = R"(
     CREATE TABLE IF NOT EXISTS medication_ingredients (
@@ -662,8 +659,6 @@ bool DatabaseManager::createTables() {
       return false;
     }
   }
-
-
 
   if (!m_db.commit()) {
     qDebug() << "Ghi dữ liệu thất bại" << m_db.lastError().text();

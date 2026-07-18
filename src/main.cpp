@@ -145,8 +145,9 @@ static void testValidations() {
   inDto.doctorId = 1;
   inDto.reason = QString(1500, 'B'); // > 1000 chars
   qDebug() << "\n[5] InPatient Reason Length (> 1000):";
-  qDebug() << "    Error:"
-           << PatientService::validateInPatientReason(inDto.reason);
+  // chua viet ham
+  // qDebug() << "    Error:"
+  //          << PatientService::validateInPatientReason(inDto.reason);
 
   // 6. Test Billing/Invoice Validation
   QList<PrescriptionItemDTO> badItems;
@@ -187,7 +188,7 @@ static void runComprehensiveTests() {
   OutPatientInputDTO pOut;
   pOut.fullName = "  Le Thi Xuan  ";
   pOut.dateOfBirth = QDate(1995, 2, 14);
-  pOut.gender = Gender::Female;
+  pOut.gender = "Nữ";
   pOut.citizenId = "048195000123";
   pOut.phone = "0909111222";
   pOut.address = "Hai Chau, Da Nang";
@@ -196,8 +197,7 @@ static void runComprehensiveTests() {
   pOut.email = "lexuan@test.com";
   pOut.emergencyContactName = "Le Van A";
   pOut.emergencyContactPhone = "0900111222";
-  pOut.allergies = "Seafood";
-  pOut.insurance = "BHYT-123456";
+  pOut.insurance.policyNumber = "BHYT-123456";
   bool okOut = patientService->addOutPatient(pOut);
   int pidOut = getLastInsertedPatientId();
   qDebug() << "  -> Add OutPatient:" << (okOut ? "PASS" : "FAIL")
@@ -207,7 +207,7 @@ static void runComprehensiveTests() {
   InPatientInputDTO pIn;
   pIn.fullName = "Tran Van Y";
   pIn.dateOfBirth = QDate(1980, 8, 8);
-  pIn.gender = Gender::Male;
+  pIn.gender = "Nam";
   pIn.citizenId = "048080000321";
   pIn.phone = "0988777666";
   pIn.address = "Thanh Khe, Da Nang";
@@ -229,7 +229,7 @@ static void runComprehensiveTests() {
   EmergencyPatientInputDTO pEm;
   pEm.fullName = "Vo Z";
   pEm.dateOfBirth = QDate(2000, 1, 1);
-  pEm.gender = Gender::Male;
+  pEm.gender = "Nam";
   pEm.citizenId = "048200000999";
   pEm.phone = "0911222333";
   pEm.address = "Son Tra, Da Nang";
@@ -258,10 +258,10 @@ static void runComprehensiveTests() {
 
   // 1.5 Update Patient
   if (pidOut > 0) {
-    PatientInputDTO uDto;
+    OutPatientInputDTO uDto;
     uDto.fullName = "Le Thi Xuan Updated";
     uDto.dateOfBirth = QDate(1995, 2, 14);
-    uDto.gender = Gender::Female;
+    uDto.gender = "Nữ";
     uDto.citizenId = "048195000123";
     uDto.phone = "0909999888";
     uDto.address = "Lien Chieu, Da Nang";
@@ -270,7 +270,8 @@ static void runComprehensiveTests() {
     uDto.emergencyContactName = "Le Van A";
     uDto.emergencyContactPhone = "0900111222";
     uDto.type = PatientType::Outpatient;
-    bool okUpdate = patientService->updatePatient(pidOut, uDto);
+    uDto.doctorId = 1;
+    bool okUpdate = patientService->updateOutPatient(pidOut, uDto);
     qDebug() << "  -> Update Patient:" << (okUpdate ? "PASS" : "FAIL");
   }
 
@@ -307,6 +308,13 @@ static void runComprehensiveTests() {
     diag1.description = "Viêm họng cấp";
     diag1.severity = "MODERATE";
     mrDto.diagnoses.append(diag1);
+
+    // Dị ứng phát hiện trong lần khám này
+    AllergyInputDTO allergy1;
+    allergy1.allergenName = "Seafood";
+    allergy1.severity = "MILD";
+    allergy1.notes = "Phát hiện trong lần khám đầu tiên";
+    mrDto.newAllergies.append(allergy1);
 
     recordId = mrService.createMedicalRecord(mrDto);
     qDebug() << "  -> Create MedicalRecord:" << (recordId > 0 ? "PASS" : "FAIL")
@@ -367,7 +375,7 @@ static void runComprehensiveTests() {
     pItems.append(p1);
     pItems.append(p2);
 
-    bool billOk = billingService.generateInvoice(
+    bool billOk = billingService.createInvoice(
         pidOut, recordId, PatientType::Outpatient, 200000.0, pItems);
     qDebug() << "  -> Generate Invoice:" << (billOk ? "PASS" : "FAIL");
 

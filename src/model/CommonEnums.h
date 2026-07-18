@@ -1,315 +1,575 @@
 #pragma once
 
+#include <QHash>
+#include <QList>
 #include <QString>
 #include <QStringList>
 
+template <typename T> struct EnumInfo {
+  T value;
+  QString viText;
+  QString enText;
+};
+
+// =====================================================================
+// SECTION 1: REMOVED ENUMS - MAPPED TO QHASH TEXT (PLAN A)
+// =====================================================================
+
+// Gender (Kept enum for Staff/Doctor compatibility, but Patient uses QString)
 enum class Gender { Male, Female, Other };
 
-enum class PatientType { Outpatient, Inpatient, Emergency };
-
-enum class PatientPriority { Low, Normal, High, Critical };
-
-enum class OutPatientState {
-    Registered,
-    WaitingForTreatment,
-    Treatment,
-    Discharged
+static const QList<EnumInfo<Gender>> genderList = {
+    {Gender::Male, "Nam", "MALE"},
+    {Gender::Female, "Nữ", "FEMALE"},
+    {Gender::Other, "Khác", "OTHER"},
 };
 
-// helper
-enum class InPatientState { Admitted, Discharged, Transferred };
-
-enum class EmergencyPatientState { Emergency, Discharged, Transferred };
-
-enum class MedicationCategory {
-    Antibiotics,
-    Analgesics,
-    Antipyretics,
-    Cardiovascular,
-    Antidiabetics,
-    Vitamins,
-    Respiratory,
-    Gastrointestinal,
-    Dermatological
-};
-
-enum class MedicationUnit {
-    Tablet,     // Viên
-    Packet,     // Gói
-    Bottle,     // Chai
-    Vial,       // Lọ
-    Ampoule,    // Ống
-    Tube,       // Tuýp
-    Blister,    // Vỉ
-    Box         // Hộp
-};
-
-inline QString genderToString(Gender gender) {
-    switch (gender) {
-    case Gender::Male:
-        return "MALE";
-    case Gender::Female:
-        return "FEMALE";
-    case Gender::Other:
-        return "OTHER";
-    }
-    return "OTHER";
+inline QString genderToVi(Gender value) {
+  for (const auto &item : genderList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Khác";
 }
 
-inline Gender genderFromString(const QString &genderStr) {
-  if (genderStr == "MALE")
-    return Gender::Male;
-  if (genderStr == "FEMALE")
-    return Gender::Female;
+inline Gender genderFromVi(const QString &text) {
+  for (const auto &item : genderList) {
+    if (item.viText == text)
+      return item.value;
+  }
   return Gender::Other;
 }
 
-inline QString patientTypeToString(PatientType type) {
-  switch (type) {
-  case PatientType::Outpatient:
-    return "Ngoại trú";
-  case PatientType::Inpatient:
-    return "Nội trú";
-  case PatientType::Emergency:
-    return "Cấp cứu";
+inline QString genderToEn(Gender value) {
+  for (const auto &item : genderList) {
+    if (item.value == value)
+      return item.enText;
   }
-  return "Ngoại trú";
+  return "OTHER";
 }
 
-inline PatientType patientTypeFromString(const QString &str) {
-  if (str == "Ngoại trú" || str == "OUTPATIENT" || str == "OutPatient")
-    return PatientType::Outpatient;
-  if (str == "Nội trú" || str == "INPATIENT" || str == "InPatient")
-    return PatientType::Inpatient;
-  if (str == "Cấp cứu" || str == "EMERGENCY" || str == "Emergency")
-    return PatientType::Emergency;
-  return PatientType::Outpatient;
-}
-
-inline QString patientPriorityToString(PatientPriority priority) {
-  switch (priority) {
-  case PatientPriority::Low:
-    return "Thấp";
-  case PatientPriority::Normal:
-    return "Bình thường";
-  case PatientPriority::High:
-    return "Cao";
-  case PatientPriority::Critical:
-    return "Khẩn cấp";
+inline Gender genderFromEn(const QString &text) {
+  for (const auto &item : genderList) {
+    if (item.enText == text)
+      return item.value;
   }
-  return "Bình thường";
+  return Gender::Other;
 }
 
-inline PatientPriority patientPriorityFromString(const QString &str) {
-  if (str == "Thấp" || str == "LOW" || str == "Low")
-    return PatientPriority::Low;
-  if (str == "Bình thường" || str == "NORMAL" || str == "Normal")
-    return PatientPriority::Normal;
-  if (str == "Cao" || str == "HIGH" || str == "High")
-    return PatientPriority::High;
-  if (str == "Khẩn cấp" || str == "CRITICAL" || str == "Critical")
-    return PatientPriority::Critical;
-  return PatientPriority::Normal;
-}
+// Legacy compatibility for Staff/Doctor
+inline QString genderToString(Gender gender) { return genderToEn(gender); }
+inline Gender genderFromString(const QString &str) { return genderFromEn(str); }
 
-inline QString outPatientStateToString(OutPatientState state) {
-  switch (state) {
-  case OutPatientState::Registered:
-    return "Đã đăng ký";
-  case OutPatientState::WaitingForTreatment:
-    return "Chờ điều trị";
-  case OutPatientState::Treatment:
-    return "Đang điều trị";
-  case OutPatientState::Discharged:
-    return "Đã xuất viện";
-  }
-  return "Đã đăng ký";
-}
+namespace GenderText {
+// Sử dụng QList<QPair> kết hợp inline (C++17) để giữ nguyên thứ tự hiển thị và
+// tối ưu bộ nhớ
+inline const QList<QPair<QString, QString>> gender = {
+    {"MALE", "Nam"}, {"FEMALE", "Nữ"}, {"OTHER", "Khác"}};
 
-inline OutPatientState outPatientStateFromString(const QString &str) {
-  if (str == "Đã đăng ký" || str == "REGISTERED")
-    return OutPatientState::Registered;
-  if (str == "Chờ điều trị" || str == "WAITING FOR TREATMENT")
-    return OutPatientState::WaitingForTreatment;
-  if (str == "Đang điều trị" || str == "TREATMENT")
-    return OutPatientState::Treatment;
-  if (str == "Đã xuất viện" || str == "DISCHARGED")
-    return OutPatientState::Discharged;
-  return OutPatientState::Registered;
-}
+// Hàm lấy danh sách hỗ trợ nạp thẳng QComboBox tại UI
+inline const QList<QPair<QString, QString>> &getList() { return gender; }
 
-inline QString inPatientStateToString(InPatientState state) {
-  switch (state) {
-  case InPatientState::Admitted:
-    return "Đã nhập viện";
-  case InPatientState::Discharged:
-    return "Đã xuất viện";
-  case InPatientState::Transferred:
-    return "Chuyển viện";
-  }
-  return "Đã nhập viện";
-}
-
-inline InPatientState inPatientStateFromString(const QString &str) {
-  if (str == "Đã nhập viện" || str == "ADMITTED")
-    return InPatientState::Admitted;
-  if (str == "Đã xuất viện" || str == "DISCHARGED")
-    return InPatientState::Discharged;
-  if (str == "Chuyển viện" || str == "TRANSFERED" || str == "TRANSFERRED")
-    return InPatientState::Transferred;
-  return InPatientState::Admitted;
-}
-
-inline QString emergencyPatientStateToString(EmergencyPatientState state) {
-  switch (state) {
-  case EmergencyPatientState::Emergency:
-    return "Cấp cứu";
-  case EmergencyPatientState::Discharged:
-    return "Đã xuất viện";
-  case EmergencyPatientState::Transferred:
-    return "Chuyển viện";
-  }
-  return "Cấp cứu";
-}
-
-inline EmergencyPatientState
-emergencyPatientStateFromString(const QString &str) {
-  if (str == "Cấp cứu" || str == "EMERGENCY")
-    return EmergencyPatientState::Emergency;
-  if (str == "Đã xuất viện" || str == "DISCHARGED")
-    return EmergencyPatientState::Discharged;
-  if (str == "Chuyển viện" || str == "TRANSFERED" || str == "TRANSFERRED")
-    return EmergencyPatientState::Transferred;
-  return EmergencyPatientState::Emergency;
-}
-
-inline QString categoryToString(MedicationCategory category) {
-    switch (category) {
-        case MedicationCategory::Antibiotics:
-            return "Kháng sinh";
-        case MedicationCategory::Analgesics:
-            return "Giảm đau";
-        case MedicationCategory::Antipyretics:
-            return "Hạ sốt";
-        case MedicationCategory::Cardiovascular:
-            return "Tim mạch";
-        case MedicationCategory::Antidiabetics:
-            return "Trị tiểu đường";
-        case MedicationCategory::Vitamins:
-            return "Vitamin & Thực phẩm chức năng";
-        case MedicationCategory::Respiratory:
-            return "Hô hấp";
-        case MedicationCategory::Gastrointestinal:
-            return "Tiêu hóa";
-        case MedicationCategory::Dermatological:
-            return "Thuốc bôi da liễu";
-        default:
-            return "Khác";
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : gender) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
     }
+  }
+  return false;
 }
 
-inline MedicationCategory categoryFromString(const QString &str) {
-    if (str == "Kháng sinh")
-        return MedicationCategory::Antibiotics;
-    if (str == "Giảm đau")
-        return MedicationCategory::Analgesics;
-    if (str == "Hạ sốt")
-        return MedicationCategory::Antipyretics;
-    if (str == "Tim mạch")
-        return MedicationCategory::Cardiovascular;
-    if (str == "Trị tiểu đường")
-        return MedicationCategory::Antidiabetics;
-    if (str == "Vitamin & Thực phẩm chức năng")
-        return MedicationCategory::Vitamins;
-    if (str == "Hô hấp")
-        return MedicationCategory::Respiratory;
-    if (str == "Tiêu hóa")
-        return MedicationCategory::Gastrointestinal;
-    if (str == "Thuốc bôi da liễu")
-        return MedicationCategory::Dermatological;
-    return MedicationCategory::Vitamins;
-}
-
-inline QStringList getAllCategories() {
-  return {"Kháng sinh", "Giảm đau",       "Hạ sốt",
-          "Tim mạch",   "Trị tiểu đường", "Vitamin & Thực phẩm chức năng",
-          "Hô hấp",     "Tiêu hóa",       "Thuốc bôi da liễu"};
-}
-
-inline QString unitToString(MedicationUnit unit) {
-    switch (unit) {
-        case MedicationUnit::Tablet:  return "Viên";
-        case MedicationUnit::Packet:  return "Gói";
-        case MedicationUnit::Bottle:  return "Chai";
-        case MedicationUnit::Vial:    return "Lọ";
-        case MedicationUnit::Ampoule: return "Ống";
-        case MedicationUnit::Tube:    return "Tuýp";
-        case MedicationUnit::Blister: return "Vỉ";
-        case MedicationUnit::Box:     return "Hộp";
-        default:                      return "Khác";
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : gender) {
+    if (pair.first == cleanEn) {
+      return pair.second;
     }
+  }
+  return "Khác";
 }
 
-inline MedicationUnit unitFromString(const QString &str) {
-    if (str == "Viên")  return MedicationUnit::Tablet;
-    if (str == "Gói")   return MedicationUnit::Packet;
-    if (str == "Chai")  return MedicationUnit::Bottle;
-    if (str == "Lọ")    return MedicationUnit::Vial;
-    if (str == "Ống")   return MedicationUnit::Ampoule;
-    if (str == "Tuýp")  return MedicationUnit::Tube;
-    if (str == "Vỉ")    return MedicationUnit::Blister;
-    if (str == "Hộp")   return MedicationUnit::Box;
-    return MedicationUnit::Tablet;
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : gender) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
+      return pair.first;
+    }
+  }
+  return "OTHER"; // Giá trị mặc định an toàn
+}
+} // namespace GenderText
+
+namespace SeverityText {
+inline const QList<QPair<QString, QString>> severities = {
+    {"MILD", "Nhẹ"}, {"MODERATE", "Trung bình"}, {"SEVERE", "Nặng"}};
+
+inline const QList<QPair<QString, QString>> &getList() { return severities; }
+
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : severities) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
+    }
+  }
+  return false;
 }
 
-inline QStringList getAllUnits() {
-    return {"Viên", "Gói", "Chai", "Lọ", "Ống", "Tuýp", "Vỉ", "Hộp"};
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : severities) {
+    if (pair.first == cleanEn) {
+      return pair.second;
+    }
+  }
+  return "Khác";
 }
 
-enum class InvoiceStatus { Unpaid, Paid, Cancelled };
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : severities) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
+      return pair.first;
+    }
+  }
+  return "MILD"; // Giá trị mặc định an toàn
+}
 
-inline QString invoiceStatusToString(InvoiceStatus status) {
-  switch (status) {
-  case InvoiceStatus::Unpaid:
-    return "Chưa thanh toán";
-  case InvoiceStatus::Paid:
-    return "Đã thanh toán";
-  case InvoiceStatus::Cancelled:
-    return "Đã hủy";
+} // namespace SeverityText
+namespace InsuraceTypeText {
+inline const QList<QPair<QString, QString>> insuraceTypes = {
+    {"NATIONAL", "Bảo hiểm y tế xã hội"},
+    {"COMMERCIAL", "Bảo hiểm y tế tư nhân"},
+    {"OTHER", "Khác"}};
+
+inline const QList<QPair<QString, QString>> &getList() { return insuraceTypes; }
+
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : insuraceTypes) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : insuraceTypes) {
+    if (pair.first == cleanEn) {
+      return pair.second;
+    }
+  }
+  return "Khác";
+}
+
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : insuraceTypes) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
+      return pair.first;
+    }
+  }
+  return "Bảo hiểm y tế xã hội"; // Giá trị mặc định an toàn
+}
+} // namespace InsuraceTypeText
+
+namespace MedicationCategoryText {
+inline const QList<QPair<QString, QString>> medicationCategories = {
+    {"ANTIBIOTICS", "Kháng sinh"},
+    {"ANALGESICS", "Giảm đau"},
+    {"ANTIPYRETICS", "Hạ sốt"},
+    {"CARDIOVASCULAR", "Tim mạch"},
+    {"ANTIDIABETICS", "Trị tiểu đường"},
+    {"VITAMINS", "Vitamin & thực phẩm chức năng"},
+    {"RESPIRATORY", "Hô hấp"},
+    {"GASTROINTESTINAL", "Tiêu hóa"},
+    {"DERMATOLOGICAL", "Thuốc bôi da liễu"}};
+
+inline const QList<QPair<QString, QString>> &getList() {
+  return medicationCategories;
+}
+
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : medicationCategories) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : medicationCategories) {
+    if (pair.first == cleanEn)
+      return pair.second;
+  }
+  return "Khác";
+}
+
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : medicationCategories) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
+      return pair.first;
+  }
+  return "VITAMINS";
+}
+} // namespace MedicationCategoryText
+
+namespace MedicationUnitText {
+// Sử dụng QList<QPair> kết hợp inline (C++17) giúp giữ nguyên thứ tự hiển thị
+// và tối ưu bộ nhớ
+inline const QList<QPair<QString, QString>> medicationUnits = {
+    {"TABLET", "Viên"}, {"PACKET", "Gói"}, {"BOTTLE", "Chai"}, {"VIAL", "Lọ"},
+    {"AMPOULE", "Ống"}, {"TUBE", "Tuýp"},  {"BLISTER", "Vỉ"},  {"BOX", "Hộp"}};
+
+// Hàm lấy danh sách hỗ trợ nạp thẳng QComboBox tại UI
+inline const QList<QPair<QString, QString>> &getList() {
+  return medicationUnits;
+}
+
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : medicationUnits) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : medicationUnits) {
+    if (pair.first == cleanEn) {
+      return pair.second;
+    }
+  }
+  return "Khác";
+}
+
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : medicationUnits) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
+      return pair.first;
+    }
+  }
+  return "TABLET"; // Giá trị mặc định an toàn
+}
+
+} // namespace MedicationUnitText
+
+namespace InvoiceStatusText {
+inline const QString UNPAID = "UNPAID";
+inline const QString PAID = "PAID";
+inline const QString CANCELLED = "CANCELLED";
+
+inline const QList<QPair<QString, QString>> statuses = {
+    {UNPAID, "Chưa thanh toán"},
+    {PAID, "Đã thanh toán"},
+    {CANCELLED, "Đã hủy"}};
+
+inline const QList<QPair<QString, QString>> &getList() { return statuses; }
+
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.first == cleanEn)
+      return pair.second;
   }
   return "Chưa thanh toán";
 }
 
-inline InvoiceStatus invoiceStatusFromString(const QString &str) {
-  if (str == "Chưa thanh toán" || str == "UNPAID" || str == "Unpaid")
-    return InvoiceStatus::Unpaid;
-  if (str == "Đã thanh toán" || str == "PAID" || str == "Paid")
-    return InvoiceStatus::Paid;
-  if (str == "Đã hủy" || str == "CANCELLED" || str == "Cancelled")
-    return InvoiceStatus::Cancelled;
-  return InvoiceStatus::Unpaid;
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
+      return pair.first;
+  }
+  return UNPAID;
+}
+} // namespace InvoiceStatusText
+
+// =====================================================================
+// SECTION 2: KEPT ENUMS (PATTERN CŨ)
+// =====================================================================
+
+// PatientType
+enum class PatientType { Outpatient, Inpatient, Emergency };
+
+static const QList<EnumInfo<PatientType>> patientTypeList = {
+    {PatientType::Outpatient, "Ngoại trú", "OUTPATIENT"},
+    {PatientType::Inpatient, "Nội trú", "INPATIENT"},
+    {PatientType::Emergency, "Cấp cứu", "EMERGENCY"},
+};
+
+inline QString patientTypeToVi(PatientType value) {
+  for (const auto &item : patientTypeList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Ngoại trú";
+}
+
+inline PatientType patientTypeFromVi(const QString &text) {
+  for (const auto &item : patientTypeList) {
+    if (item.viText == text)
+      return item.value;
+  }
+  return PatientType::Outpatient;
+}
+
+inline QString patientTypeToEn(PatientType value) {
+  for (const auto &item : patientTypeList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "OUTPATIENT";
+}
+
+inline PatientType patientTypeFromEn(const QString &text) {
+  for (const auto &item : patientTypeList) {
+    if (item.enText == text)
+      return item.value;
+  }
+  return PatientType::Outpatient;
+}
+
+// PatientPriority
+enum class PatientPriority { Low, Normal, High, Critical };
+
+static const QList<EnumInfo<PatientPriority>> patientPriorityList = {
+    {PatientPriority::Low, "Thấp", "LOW"},
+    {PatientPriority::Normal, "Bình thường", "NORMAL"},
+    {PatientPriority::High, "Cao", "HIGH"},
+    {PatientPriority::Critical, "Khẩn cấp", "CRITICAL"},
+};
+
+inline QString patientPriorityToVi(PatientPriority value) {
+  for (const auto &item : patientPriorityList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Bình thường";
+}
+
+inline PatientPriority patientPriorityFromVi(const QString &text) {
+  for (const auto &item : patientPriorityList) {
+    if (item.viText == text)
+      return item.value;
+  }
+  return PatientPriority::Normal;
+}
+
+inline QString patientPriorityToEn(PatientPriority value) {
+  for (const auto &item : patientPriorityList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "NORMAL";
+}
+
+inline PatientPriority patientPriorityFromEn(const QString &text) {
+  for (const auto &item : patientPriorityList) {
+    if (item.enText == text)
+      return item.value;
+  }
+  return PatientPriority::Normal;
+}
+
+// OutPatientState
+enum class OutPatientState {
+  Registered,
+  WaitingForTreatment,
+  Treatment,
+  Discharged
+};
+
+static const QList<EnumInfo<OutPatientState>> outPatientStateList = {
+    {OutPatientState::Registered, "Đã đăng ký", "REGISTERED"},
+    {OutPatientState::WaitingForTreatment, "Chờ điều trị",
+     "WAITING FOR TREATMENT"},
+    {OutPatientState::Treatment, "Đang điều trị", "TREATMENT"},
+    {OutPatientState::Discharged, "Đã xuất viện", "DISCHARGED"},
+};
+
+inline QString outPatientStateToVi(OutPatientState value) {
+  for (const auto &item : outPatientStateList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Đã đăng ký";
+}
+
+inline OutPatientState outPatientStateFromVi(const QString &text) {
+  for (const auto &item : outPatientStateList) {
+    if (item.viText == text)
+      return item.value;
+  }
+  return OutPatientState::Registered;
+}
+
+inline QString outPatientStateToEn(OutPatientState value) {
+  for (const auto &item : outPatientStateList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "REGISTERED";
+}
+
+inline OutPatientState outPatientStateFromEn(const QString &text) {
+  for (const auto &item : outPatientStateList) {
+    if (item.enText == text)
+      return item.value;
+  }
+  return OutPatientState::Registered;
+}
+
+// InPatientState
+enum class InPatientState { Admitted, Discharged, Transferred };
+
+static const QList<EnumInfo<InPatientState>> inPatientStateList = {
+    {InPatientState::Admitted, "Đã nhập viện", "ADMITTED"},
+    {InPatientState::Discharged, "Đã xuất viện", "DISCHARGED"},
+    {InPatientState::Transferred, "Chuyển viện", "TRANSFERRED"},
+};
+
+inline QString inPatientStateToVi(InPatientState value) {
+  for (const auto &item : inPatientStateList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Đã nhập viện";
+}
+
+inline InPatientState inPatientStateFromVi(const QString &text) {
+  for (const auto &item : inPatientStateList) {
+    if (item.viText == text)
+      return item.value;
+  }
+  return InPatientState::Admitted;
+}
+
+inline QString inPatientStateToEn(InPatientState value) {
+  for (const auto &item : inPatientStateList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "ADMITTED";
+}
+
+inline InPatientState inPatientStateFromEn(const QString &text) {
+  for (const auto &item : inPatientStateList) {
+    if (item.enText == text)
+      return item.value;
+  }
+  return InPatientState::Admitted;
+}
+
+// EmergencyPatientState
+enum class EmergencyPatientState { Emergency, Discharged, Transferred };
+
+static const QList<EnumInfo<EmergencyPatientState>> emergencyPatientStateList =
+    {
+        {EmergencyPatientState::Emergency, "Cấp cứu", "EMERGENCY"},
+        {EmergencyPatientState::Discharged, "Đã xuất viện", "DISCHARGED"},
+        {EmergencyPatientState::Transferred, "Chuyển viện", "TRANSFERRED"},
+};
+
+inline QString emergencyPatientStateToVi(EmergencyPatientState value) {
+  for (const auto &item : emergencyPatientStateList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Cấp cứu";
+}
+
+inline EmergencyPatientState emergencyPatientStateFromVi(const QString &text) {
+  for (const auto &item : emergencyPatientStateList) {
+    if (item.viText == text)
+      return item.value;
+  }
+  return EmergencyPatientState::Emergency;
+}
+
+inline QString emergencyPatientStateToEn(EmergencyPatientState value) {
+  for (const auto &item : emergencyPatientStateList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "EMERGENCY";
+}
+
+inline EmergencyPatientState emergencyPatientStateFromEn(const QString &text) {
+  for (const auto &item : emergencyPatientStateList) {
+    if (item.enText == text)
+      return item.value;
+  }
+  return EmergencyPatientState::Emergency;
 }
 
 
 
-
+// UserRole
 enum class UserRole { Admin, Doctor, Nurse, Receptionist };
 
-inline QString roleToString(UserRole role){
-    switch(role) {
-        case UserRole::Admin:         return "ADMIN";
-        case UserRole::Doctor:        return "DOCTOR";
-        case UserRole::Nurse:         return "NURSE";
-        case UserRole::Receptionist:  return "RECEPTIONIST";
-    }
-    return "ADMIN";
+static const QList<EnumInfo<UserRole>> userRoleList = {
+    {UserRole::Admin, "Quản trị viên", "ADMIN"},
+    {UserRole::Doctor, "Bác sĩ", "DOCTOR"},
+    {UserRole::Nurse, "Y tá", "NURSE"},
+    {UserRole::Receptionist, "Lễ tân", "RECEPTIONIST"},
+};
+
+inline QString userRoleToVi(UserRole value) {
+  for (const auto &item : userRoleList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Quản trị viên";
 }
 
-inline UserRole roleFromString(const QString& roleStr){
-    if(roleStr == "ADMIN")          return UserRole::Admin;
-    if(roleStr == "DOCTOR")         return UserRole::Doctor;
-    if(roleStr == "NURSE")          return UserRole::Nurse;
-    if(roleStr == "RECEPTIONIST")   return UserRole::Receptionist;
-    return UserRole::Admin;
+inline UserRole userRoleFromVi(const QString &text) {
+  for (const auto &item : userRoleList) {
+    if (item.viText == text)
+      return item.value;
+  }
+  return UserRole::Admin;
 }
 
+inline QString userRoleToEn(UserRole value) {
+  for (const auto &item : userRoleList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "ADMIN";
+}
+
+inline UserRole userRoleFromEn(const QString &text) {
+  for (const auto &item : userRoleList) {
+    if (item.enText == text)
+      return item.value;
+  }
+  return UserRole::Admin;
+}
+
+// Legacy compatibility for Staff
+inline QString roleToString(UserRole role) { return userRoleToEn(role); }
+inline UserRole roleFromString(const QString &roleStr) {
+  return userRoleFromEn(roleStr);
+}

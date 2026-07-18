@@ -21,6 +21,9 @@ private:
    */
   static QString validateSearchCriteria(const InvoiceSearchCriteria &criteria);
 
+private:
+  QString generateInvoiceCode();
+
 public:
   static QString validatePatientId(int patientId);
   static QString validateRecordId(int recordId);
@@ -38,9 +41,9 @@ public:
 
   explicit BillingService(std::shared_ptr<BillingRepository> repo);
 
-  bool generateInvoice(int patientId, int recordId, PatientType type,
-                       double consultationFee,
-                       const QList<PrescriptionItemDTO> &prescriptionItems);
+  bool createInvoice(int patientId, int recordId, PatientType type,
+                     double consultationFee,
+                     const QList<PrescriptionItemDTO> &prescriptionItems);
 
   double calculateMedicationTotal(const QList<PrescriptionItemDTO> &items) const;
   std::optional<InvoiceResultDTO> getInvoiceByRecordId(int recordId);

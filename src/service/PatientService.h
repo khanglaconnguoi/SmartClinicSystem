@@ -2,9 +2,9 @@
  * @file    PatientService.h
  * @brief   Service layer cho module Patient.
  *
- *  Các hàm validate là public static — UI có thể gọi trực tiếp để kiểm tra từng ô.
- *  Mỗi hàm validate trả về chuỗi rỗng "" nếu hợp lệ,
- *  hoặc chuỗi mô tả lỗi nếu không hợp lệ.
+ *  Các hàm validate là public static — UI có thể gọi trực tiếp để kiểm tra từng
+ * ô. Mỗi hàm validate trả về chuỗi rỗng "" nếu hợp lệ, hoặc chuỗi mô tả lỗi nếu
+ * không hợp lệ.
  */
 
 #pragma once
@@ -36,7 +36,8 @@ public:
    * @brief Kiểm tra toàn bộ trường cơ bản của bảng `patients`.
    *        Dùng thông tin từ PatientInputDTO.
    */
-  static QString validateBaseInput(const PatientInputDTO &dto, const QString &patientCode = "");
+  static QString validateBaseInput(const PatientInputDTO &dto,
+                                   const QString &patientCode = "");
 
   /**
    * @brief Kiểm tra trường đặc thù của bệnh nhân nội trú (`in_patients`).
@@ -44,15 +45,18 @@ public:
   static QString validateInPatientInput(const InPatientInputDTO &dto);
 
   /**
-   * @brief Kiểm tra trường đặc thù của bệnh nhân cấp cứu (`emergency_patients`).
+   * @brief Kiểm tra trường đặc thù của bệnh nhân cấp cứu
+   * (`emergency_patients`).
    */
-  static QString validateEmergencyPatientInput(const EmergencyPatientInputDTO &dto);
+  static QString
+  validateEmergencyPatientInput(const EmergencyPatientInputDTO &dto);
 
   /**
    * @brief Kiểm tra trường cơ bản khi UPDATE bảng `patients`.
    *        Bỏ qua các trường không thay đổi.
    */
-  static QString validateUpdateBaseInput(const PatientInputDTO &dto, int patientId);
+  static QString validateUpdateBaseInput(const PatientInputDTO &dto,
+                                         int patientId);
 
   /**
    * @brief Chuẩn hóa dữ liệu đầu vào từ UI:
@@ -62,7 +66,26 @@ public:
   static void normalizePatientInput(PatientInputDTO &dto);
 
   /**
-   * @brief Chuẩn hóa tiêu chí tìm kiếm trước khi lọc (vd: cắt khoảng trắng từ khoá).
+   * @brief Chuẩn hóa một bản ghi dị ứng:
+   *        trim allergenName, severity → UPPER, notes → simplified.
+   */
+  static void normalizeAllergyInput(AllergyInputDTO &dto);
+
+  /**
+   * @brief Chuẩn hóa toàn bộ danh sách dị ứng trong PatientInputDTO.
+   */
+  static void normalizeAllergyInputList(QList<AllergyInputDTO> &list);
+
+  /**
+   * @brief Chuẩn hóa bản ghi bảo hiểm:
+   *        trim providerName, policyNumber → UPPER, insuranceType → UPPER,
+   *        validFrom/validTo giữ nguyên định dạng yyyy-MM-dd.
+   */
+  static void normalizeInsuranceInput(InsuranceInputDTO &dto);
+
+  /**
+   * @brief Chuẩn hóa tiêu chí tìm kiếm trước khi lọc (vd: cắt khoảng trắng từ
+   * khoá).
    */
   static void normalizeSearchCriteria(PatientSearchCriteria &criteria);
 
@@ -73,18 +96,44 @@ public:
   static QString validateEmergencyContactName(const QString &name);
   static QString validateBloodType(const QString &bloodType);
 
-  static QString validateInPatientRoomId(std::optional<int> roomId);
-  static QString validateInPatientDoctorId(std::optional<int> doctorId);
-  static QString validateInPatientDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate);
+  static QString validateInPatientRoomId(int roomId);
+  static QString validateInPatientDoctorId(int doctorId);
+  static QString
+  validateInPatientDischargeDate(const QDate &admissionDate,
+                                 std::optional<QDate> dischargeDate);
   static QString validateInPatientReason(const QString &reason);
 
-  static QString validateEmergencyRoomId(std::optional<int> roomId);
-  static QString validateEmergencyDoctorId(std::optional<int> doctorId);
-  static QString validateEmergencyDischargeDate(const QDate &admissionDate, std::optional<QDate> dischargeDate);
+  static QString validateEmergencyRoomId(int roomId);
+  static QString validateEmergencyDoctorId(int doctorId);
+  static QString
+  validateEmergencyDischargeDate(const QDate &admissionDate,
+                                 std::optional<QDate> dischargeDate);
   static QString validateEmergencyInjuryCause(const QString &cause);
   static QString validateEmergencyInjuryDescription(const QString &desc);
 
+  // ── Allergy ──────────────────────────────────────────────────────────────
 
+  /**
+   * @brief Kiểm tra toàn bộ một bản ghi dị ứng sau khi đã normalize.
+   *        allergenName bắt buộc; severity phải là MILD/MODERATE/SEVERE;
+   *        notes tùy chọn, tối đa 500 ký tự.
+   */
+  static QString validateAllergyInput(const AllergyInputDTO &dto);
+
+  /**
+   * @brief Kiểm tra toàn bộ danh sách dị ứng (gọi validateAllergyInput cho
+   *        từng phần tử, trả về lỗi đầu tiên tìm được kèm chỉ số 1-based).
+   */
+  static QString validateAllergyInputList(const QList<AllergyInputDTO> &list);
+
+  // ── Insurance ────────────────────────────────────────────────────────────
+
+  /**
+   * @brief Kiểm tra toàn bộ bản ghi bảo hiểm sau khi đã normalize.
+   *        providerName, policyNumber, insuranceType bắt buộc;
+   *        coveragePercent ∈ [0, 100]; validFrom ≤ validTo (nếu cả hai có).
+   */
+  static QString validateInsuranceInput(const InsuranceInputDTO &dto);
 
   /**
    * @brief Tạo mã bệnh nhân theo loại (OUT-yyyyMMdd-NNNN / IN-… / EMER-…).
@@ -107,27 +156,25 @@ public:
   bool addEmergencyPatient(EmergencyPatientInputDTO &dto);
 
   /**
-   * @brief Cập nhật thông tin cơ bản của bệnh nhân trong bảng `patients`.
-   */
-  bool updatePatient(int patientId, PatientInputDTO &dto);
-
-  /**
    * @brief Cập nhật thông tin bệnh nhân ngoại trú.
    *        Ghi đè cả `patients` lẫn `out_patients`.
    */
-  bool updateOutPatient(int patientId, OutPatientInputDTO &dto, const QString &status = "REGISTERED");
+  bool updateOutPatient(int patientId, OutPatientInputDTO &dto,
+                        const QString &status = "REGISTERED");
 
   /**
    * @brief Cập nhật thông tin bệnh nhân nội trú.
    *        Ghi đè cả `patients` lẫn `in_patients`.
    */
-  bool updateInPatient(int patientId, InPatientInputDTO &dto, const QString &status = "ADMITTED");
+  bool updateInPatient(int patientId, InPatientInputDTO &dto,
+                       const QString &status = "ADMITTED");
 
   /**
    * @brief Cập nhật thông tin bệnh nhân cấp cứu.
    *        Ghi đè cả `patients` lẫn `emergency_patients`.
    */
-  bool updateEmergencyPatient(int patientId, EmergencyPatientInputDTO &dto, const QString &status = "EMERGENCY");
+  bool updateEmergencyPatient(int patientId, EmergencyPatientInputDTO &dto,
+                              const QString &status = "EMERGENCY");
 
   /**
    * @brief Tìm kiếm bệnh nhân kết hợp tất cả các tiêu chí.
@@ -135,13 +182,13 @@ public:
    * @param criteria Tiêu chí tìm kiếm (từ UI).
    * @return Danh sách kết quả (đã limit/offset). Rỗng nếu lỗi validation.
    */
-  QList<PatientSearchResultDTO>
-  searchPatients(PatientSearchCriteria criteria);
+  QList<PatientSearchResultDTO> searchPatients(PatientSearchCriteria criteria);
 
   /**
    * @brief Lấy thông tin chi tiết một bệnh nhân.
    * @param patientId ID bệnh nhân cần lấy
-   * @return std::optional<PatientDetailDTO> chứa dữ liệu nếu tìm thấy, std::nullopt nếu không.
+   * @return std::optional<PatientDetailDTO> chứa dữ liệu nếu tìm thấy,
+   * std::nullopt nếu không.
    */
   std::optional<PatientDetailDTO> getPatientById(int patientId);
 
@@ -159,9 +206,11 @@ public:
    * @brief Kiểm tra bệnh nhân có dị ứng với loại thuốc chỉ định không.
    * @param patientId ID bệnh nhân cần kiểm tra.
    * @param drugName  Tên thuốc cần kiểm tra (so khớp với danh sách dị ứng).
-   * @return true nếu có xung đột dị ứng, false nếu an toàn hoặc không có dữ liệu.
+   * @return true nếu có xung đột dị ứng, false nếu an toàn hoặc không có dữ
+   * liệu.
    */
-  bool checkDrugAllergyConflict(int patientId, const QString &drugName) const;
+  // bool checkDrugAllergyConflict(int patientId, const QString &drugName)
+  // const;
 
   /**
    * @brief Lấy danh sách dị ứng đang active của bệnh nhân.

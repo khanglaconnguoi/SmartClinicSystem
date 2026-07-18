@@ -40,7 +40,7 @@ public:
   QDate getDateOfBirth() const { return m_dateOfBirth; }
   int getAge() const;
   QString getAllergies() const { return m_allergies; }
-  QString getType() const { return patientTypeToString(m_type); }
+  QString getType() const { return patientTypeToVi(m_type); }
 
   // --- Pure Virtual (Đa hình) ---
   virtual PatientPriority getPriority() const = 0;

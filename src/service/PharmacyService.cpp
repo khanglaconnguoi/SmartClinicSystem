@@ -376,6 +376,55 @@ PharmacyService::searchIngredients(const QString &keyword) const {
   return m_medicationRepo->searchIngredients(cleanKeyword);
 }
 
+// ── Phân trang: Medication ────────────────────────────────────────────────────
+
+PagedResult<MedicationSummaryDTO>
+PharmacyService::searchMedicationsPaged(MedicationSearchCriteria &criteria) const {
+  // Bước 1: Normalize text fields
+  criteria.keyword      = criteria.keyword.simplified();
+  criteria.manufacturer = criteria.manufacturer.simplified();
+
+  // Bước 2: Clamp page/pageSize vào range hợp lệ
+  //   - page     : tối thiểu 1 (UI không thể gửi page = 0 hay âm)
+  //   - pageSize : [1, 200] để tránh truy vấn quá nặng
+  criteria.page     = qMax(1, criteria.page);
+  criteria.pageSize = qBound(1, criteria.pageSize, 200);
+
+  // Bước 3: Delegate xuống Repository
+  PagedResult<std::shared_ptr<Medication>> repoResult =
+      m_medicationRepo->searchMedicationsPaged(criteria);
+
+  // Bước 4: Map domain objects → DTOs (không thay đổi metadata phân trang)
+  PagedResult<MedicationSummaryDTO> dtoResult;
+  dtoResult.totalCount = repoResult.totalCount;
+  dtoResult.page       = repoResult.page;
+  dtoResult.pageSize   = repoResult.pageSize;
+  dtoResult.items.reserve(repoResult.items.size());
+
+  for (const auto &model : repoResult.items) {
+    if (model) {
+      dtoResult.items.append(model->toSummary());
+    }
+  }
+
+  return dtoResult;
+}
+
+// ── Phân trang: Active Ingredient ────────────────────────────────────────────
+
+PagedResult<ActiveIngredientDTO>
+PharmacyService::searchIngredientsPaged(IngredientSearchCriteria &criteria) const {
+  // Bước 1: Normalize keyword
+  criteria.keyword = criteria.keyword.trimmed().simplified();
+
+  // Bước 2: Clamp page/pageSize vào range hợp lệ
+  criteria.page     = qMax(1, criteria.page);
+  criteria.pageSize = qBound(1, criteria.pageSize, 200);
+
+  // Bước 3: Delegate xuống Repository (kết quả là DTO trực tiếp, không cần map)
+  return m_medicationRepo->searchIngredientsPaged(criteria);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // KÊ ĐƠN
 // ─────────────────────────────────────────────────────────────────────────────

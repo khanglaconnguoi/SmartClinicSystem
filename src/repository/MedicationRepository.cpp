@@ -460,6 +460,190 @@ QList<ActiveIngredientDTO> MedicationRepository::searchIngredients(const QString
     return result;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PHÂN TRANG
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @internal
+ * @brief Xây dựng phần WHERE và danh sách params cho Medication search
+ *        để tái sử dụng cho cả query COUNT và query SELECT.
+ *
+ *        Chiến lược tách riêng WHERE: tránh lặp code giữa hàm cũ và hàm phân trang.
+ *        Caller ghép vào sau FROM để tạo hoàn chỉnh 2 câu SQL khác nhau.
+ *
+ * @param criteria  Tiêu chí tìm kiếm (đã được normalize bởi Service).
+ * @param outParams [out] Danh sách tham số bind cho QSqlQuery.
+ * @return          Chuỗi WHERE hoàn chỉnh (bắt đầu bằng "WHERE m.is_active = 1").
+ */
+static QString buildMedicationWhereClause(const MedicationSearchCriteria& criteria,
+                                          QVariantList& outParams) {
+    QString where = " WHERE m.is_active = 1";
+
+    if (!criteria.keyword.isEmpty()) {
+        where += " AND (LOWER(m.brand_name) LIKE ? OR LOWER(ai.ingredient_name) LIKE ?)";
+        QString pattern = "%" + criteria.keyword.toLower() + "%";
+        outParams.append(pattern);
+        outParams.append(pattern);
+    }
+
+    if (!criteria.selectedIngredientIds.isEmpty()) {
+        QStringList placeholders;
+        for (int id : criteria.selectedIngredientIds) {
+            placeholders.append("?");
+            outParams.append(id);
+        }
+        where += QString(" AND mi.ingredient_id IN (%1)").arg(placeholders.join(","));
+    }
+
+    if (!criteria.selectedCategories.isEmpty()) {
+        QStringList placeholders;
+        for (const QString& cat : criteria.selectedCategories) {
+            placeholders.append("?");
+            outParams.append(cat);
+        }
+        where += QString(
+            " AND EXISTS ("
+            "   SELECT 1 FROM medication_categories mc"
+            "   WHERE mc.medication_id = m.medication_id"
+            "   AND mc.category_name IN (%1)"
+            ")"
+        ).arg(placeholders.join(","));
+    }
+
+    if (criteria.inStockOnly) {
+        where += " AND m.stock_quantity > 0";
+    }
+
+    if (criteria.excludeExpired) {
+        where += " AND (m.expiry_date IS NULL OR m.expiry_date >= ?)";
+        outParams.append(QDate::currentDate().toString("yyyy-MM-dd"));
+    }
+
+    if (criteria.criticalStockOnly) {
+        where += " AND m.stock_quantity <= m.minimum_stock";
+    } else if (criteria.lowStockOnly) {
+        where += " AND m.stock_quantity <= m.reorder_threshold AND m.stock_quantity > m.minimum_stock";
+    }
+
+    if (!criteria.maxUnitPrice.isNull() && criteria.maxUnitPrice.isValid()) {
+        where += " AND m.unit_price <= ?";
+        outParams.append(criteria.maxUnitPrice.toDouble());
+    }
+
+    if (!criteria.manufacturer.isEmpty()) {
+        where += " AND LOWER(m.manufacturer) LIKE ?";
+        outParams.append("%" + criteria.manufacturer.toLower() + "%");
+    }
+
+    return where;
+}
 
 
+PagedResult<std::shared_ptr<Medication>>
+MedicationRepository::searchMedicationsPaged(const MedicationSearchCriteria& criteria) const {
+    PagedResult<std::shared_ptr<Medication>> result;
+    result.page     = qMax(1, criteria.page);
+    result.pageSize = criteria.pageSize;
 
+    // ── Xây dựng phần FROM + JOIN dùng chung ─────────────────────────────
+    const QString fromClause = R"(
+        FROM medications m
+        LEFT JOIN medication_ingredients mi ON m.medication_id = mi.medication_id
+        LEFT JOIN active_ingredients     ai ON mi.ingredient_id = ai.ingredient_id
+    )";
+
+    // ── Bước 1: Đếm tổng bản ghi khớp (không phân trang) ─────────────────
+    QVariantList countParams;
+    QString whereClause = buildMedicationWhereClause(criteria, countParams);
+
+    QString countSql = "SELECT COUNT(DISTINCT m.medication_id)" + fromClause + whereClause;
+
+    QSqlQuery countQuery = DatabaseManager::getInstance().selectQuery(countSql, countParams);
+    if (!countQuery.next()) {
+        qWarning() << "MedicationRepository::searchMedicationsPaged - Lỗi đếm tổng bản ghi";
+        result.totalCount = 0;
+        return result;
+    }
+    result.totalCount = countQuery.value(0).toInt();
+
+    // ── Bước 2: Lấy dữ liệu trang hiện tại ──────────────────────────────
+    QVariantList dataParams;
+    whereClause = buildMedicationWhereClause(criteria, dataParams); // build lại params mới
+
+    QString dataSql = R"(
+        SELECT DISTINCT m.medication_id, m.brand_name, m.unit, m.unit_price,
+                        m.stock_quantity, m.minimum_stock, m.reorder_threshold,
+                        m.expiry_date, m.manufacturer, m.description, m.is_active
+    )" + fromClause + whereClause + " ORDER BY m.brand_name ASC";
+
+    if (criteria.pageSize > 0) {
+        // Phân trang: tính OFFSET từ page 1-indexed
+        int offset = (result.page - 1) * criteria.pageSize;
+        dataSql += " LIMIT ? OFFSET ?";
+        dataParams.append(criteria.pageSize);
+        dataParams.append(offset);
+    }
+    // pageSize == 0 → không thêm LIMIT/OFFSET → trả về tất cả (dùng nội bộ)
+
+    QSqlQuery dataQuery = DatabaseManager::getInstance().selectQuery(dataSql, dataParams);
+    while (dataQuery.next()) {
+        result.items.append(mapRowToMedication(dataQuery));
+    }
+
+    return result;
+}
+
+
+PagedResult<ActiveIngredientDTO>
+MedicationRepository::searchIngredientsPaged(const IngredientSearchCriteria& criteria) const {
+    PagedResult<ActiveIngredientDTO> result;
+    result.page     = qMax(1, criteria.page);
+    result.pageSize = criteria.pageSize;
+
+    // Chuẩn bị pattern LIKE
+    const bool hasKeyword  = !criteria.keyword.trimmed().isEmpty();
+    const QString pattern  = "%" + criteria.keyword.toLower() + "%";
+
+    // ── Bước 1: Đếm tổng bản ghi ─────────────────────────────────────────
+    QString countSql = "SELECT COUNT(*) FROM active_ingredients";
+    QVariantList countParams;
+    if (hasKeyword) {
+        countSql += " WHERE LOWER(ingredient_name) LIKE ?";
+        countParams.append(pattern);
+    }
+
+    QSqlQuery countQuery = DatabaseManager::getInstance().selectQuery(countSql, countParams);
+    if (!countQuery.next()) {
+        qWarning() << "MedicationRepository::searchIngredientsPaged - Lỗi đếm tổng bản ghi";
+        result.totalCount = 0;
+        return result;
+    }
+    result.totalCount = countQuery.value(0).toInt();
+
+    // ── Bước 2: Lấy dữ liệu trang hiện tại ──────────────────────────────
+    QString dataSql = R"(
+        SELECT ingredient_id, ingredient_name, description
+        FROM active_ingredients
+    )";
+    QVariantList dataParams;
+    if (hasKeyword) {
+        dataSql += " WHERE LOWER(ingredient_name) LIKE ?";
+        dataParams.append(pattern);
+    }
+    dataSql += " ORDER BY ingredient_name ASC";
+
+    if (criteria.pageSize > 0) {
+        int offset = (result.page - 1) * criteria.pageSize;
+        dataSql += " LIMIT ? OFFSET ?";
+        dataParams.append(criteria.pageSize);
+        dataParams.append(offset);
+    }
+
+    QSqlQuery dataQuery = DatabaseManager::getInstance().selectQuery(dataSql, dataParams);
+    while (dataQuery.next()) {
+        result.items.append(mapRowToIngredient(dataQuery));
+    }
+
+    return result;
+}
