@@ -71,11 +71,9 @@ public:
     // -- Field chung cho moi role ────────────────────────────────────
     static QString validatePlainPassword(const QString& plainPassword);
     static QString validateDateOfBirth(const QDate& dateOfBirth);
-    static QString validateDepartmentId(int departmentId);
     //static QString validateShift(const QString& shift);
  
     // -- Field dac thu Doctor ────────────────────────────────────────
-    static QString validateSpecialty(const QString& specialty);
     static QString validateLicenseNumber(const QString& licenseNumber);
     static QString validateExperienceYears(int experienceYears);
     static QString validateConsultationFee(int consultationFee);

@@ -31,6 +31,16 @@ static constexpr std::array<QStringView, 63> CITIZEN_ID_VALID_PREFIXES = {
 // Trường đơn lẻ
 // ─────────────────────────────────────────────────────────────────────────────
 
+QString validateTrimmedNotEmpty(const QString& str, const QString& errorMessage) {
+    if (str.trimmed().isEmpty()) { return errorMessage; }
+    return "";
+}
+
+QString validateValidId(int id, const QString& errorMessage) {
+    if (id <= 0) { return errorMessage; }
+    return "";
+}
+
 QString validatePlainPassword(const QString &plainPassword) {
   if (plainPassword.length() < PASSWORD_MINIMUM_LENGTH)
     return QString("Password too weak. Must have at least %1 characters.")

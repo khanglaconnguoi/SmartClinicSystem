@@ -35,9 +35,7 @@ public:
   static QString validateWeight(double weight);
   static QString validateHeight(double height);
 
-  static QString validateChiefComplaint(const QString &complaint);
   static QString validateDiagnosisList(const QList<Diagnosis> &diagnoses);
-  static QString validateDiagnosisDescription(const QString &desc);
   static QString validateDiagnosisSeverity(const QString &severity);
 
   explicit MedicalRecordService(

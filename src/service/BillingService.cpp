@@ -1,11 +1,15 @@
 #include "BillingService.h"
-#include "repository/BillingRepository.h"
-#include "factory/OutPatientInvoiceFactory.h"
-#include "factory/InPatientInvoiceFactory.h"
-#include "factory/EmergencyInvoiceFactory.h"
-#include "dto/PrescriptionDTOs.h"
+
 #include <QDate>
 #include <QDebug>
+
+#include "Validation.h"
+#include "dto/PrescriptionDTOs.h"
+#include "factory/EmergencyInvoiceFactory.h"
+#include "factory/InPatientInvoiceFactory.h"
+#include "factory/OutPatientInvoiceFactory.h"
+#include "repository/BillingRepository.h"
+
 
 BillingService::BillingService(std::shared_ptr<BillingRepository> repo)
     : m_billingRepository(repo) {}
@@ -14,15 +18,7 @@ BillingService::BillingService(std::shared_ptr<BillingRepository> repo)
 // Validate
 // ─────────────────────────────────────────────────────────────────────────────
 
-QString BillingService::validatePatientId(int patientId) {
-  if (patientId <= 0) return "Định danh bệnh nhân không hợp lệ.";
-  return "";
-}
 
-QString BillingService::validateRecordId(int recordId) {
-  if (recordId <= 0) return "Định danh hồ sơ khám không hợp lệ.";
-  return "";
-}
 
 QString BillingService::validateConsultationFee(double consultationFee) {
   if (consultationFee < 0) return "Phí khám không được âm.";
@@ -49,8 +45,8 @@ QString BillingService::validateInvoiceInput(int patientId, int recordId,
                                              double consultationFee,
                                              const QList<PrescriptionItemDTO> &items) {
   QString err;
-  if (!(err = validatePatientId(patientId)).isEmpty()) return err;
-  if (!(err = validateRecordId(recordId)).isEmpty()) return err;
+  if (!(err = Validation::validateValidId(patientId, "Định danh bệnh nhân không hợp lệ.")).isEmpty()) return err;
+  if (!(err = Validation::validateValidId(recordId, "Định danh hồ sơ khám không hợp lệ.")).isEmpty()) return err;
   if (!(err = validateConsultationFee(consultationFee)).isEmpty()) return err;
   if (!(err = validatePrescriptionItems(items)).isEmpty()) return err;
   return "";

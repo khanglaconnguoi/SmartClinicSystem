@@ -34,14 +34,6 @@ QString StaffService::validateDateOfBirth(const QDate& dateOfBirth) {
     return "";
 }
 
-/** @brief departmentId: phai > 0 */
-QString StaffService::validateDepartmentId(int departmentId) {
-    if (departmentId <= 0) {
-        return "Please select a valid department.";
-    }
-    return "";
-}
-
 // /**
 //  * @brief shift: phai la 1 trong 4 gia tri hop le
 //  *        "MORNING" | "AFTERNOON" | "NIGHT" | "FULL_DAY"
@@ -58,21 +50,15 @@ QString StaffService::validateDepartmentId(int departmentId) {
 
 
 // -- Field dac thu Doctor ────────────────────────────────────────
-/** @brief specialty: khong duoc rong */
-QString StaffService::validateSpecialty(const QString& specialty) {
-    if (specialty.trimmed().isEmpty()) {
-        return "Specialty field is required for doctors.";
-    }
-    return "";
-}
 
 /**
  * @brief licenseNumber: khong duoc rong, chi chua chu va so
  *        (Dinh dang so chung chi hanh nghe VN)
  */
 QString StaffService::validateLicenseNumber(const QString& licenseNumber) {
-    if (licenseNumber.trimmed().isEmpty()) {
-        return "Medical license number is required.";
+    QString err;
+    if (!(err = Validation::validateTrimmedNotEmpty(licenseNumber, "Medical license number is required.")).isEmpty()) {
+        return err;
     }
     // Giới hạn chỉ chứa chữ và số (Ký tự alphanumeric)
     static const QRegularExpression alphanumericRegex("^[a-zA-Z0-9]+$");
@@ -180,7 +166,7 @@ QString StaffService::validateStaffBaseInput(const StaffInputDTO& staff, int sta
     if (!(err = Validation::validatePhoneNumber(staff.phoneNumber)).isEmpty()) return err;
     if (!(err = Validation::validateEmail(staff.email)).isEmpty()) return err;
     if (!(err = Validation::validateAddress(staff.address)).isEmpty()) return err;
-    if (!(err = validateDepartmentId(staff.departmentId)).isEmpty()) return err;
+    if (!(err = Validation::validateValidId(staff.departmentId, "Please select a valid department.")).isEmpty()) return err;
     //if (!(err = validateShift(staff.shift)).isEmpty()) return err;
 
     // Chạy tiếp bộ check trùng lặp (Mặc định cho trường hợp INSERT, không loại trừ ID nào)
@@ -203,7 +189,7 @@ QString StaffService::validateStaffUpdate(const StaffUpdateDTO& staff) {
     if (!(err = Validation::validatePhoneNumber(staff.phoneNumber)).isEmpty()) return err;
     if (!(err = Validation::validateEmail(staff.email)).isEmpty()) return err;
     if (!(err = Validation::validateAddress(staff.address)).isEmpty()) return err;
-    if (!(err = validateDepartmentId(staff.departmentId)).isEmpty()) return err;
+    if (!(err = Validation::validateValidId(staff.departmentId, "Please select a valid department.")).isEmpty()) return err;
 
     if (!(err = validateCitizenIdUnique(staff.citizenId, staff.staffId)).isEmpty()) return err;
     if (!(err = validatePhoneNumberUnique(staff.phoneNumber, staff.staffId)).isEmpty()) return err;
@@ -216,7 +202,7 @@ QString StaffService::validateDoctorUpdate(const DoctorUpdateDTO& doctor) {
     QString err = validateStaffUpdate(doctor);
     if (!err.isEmpty()) return err;
     
-    if (!(err = validateSpecialty(doctor.specialty)).isEmpty()) return err;
+    if (!(err = Validation::validateTrimmedNotEmpty(doctor.specialty, "Specialty field is required for doctors.")).isEmpty()) return err;
     if (!(err = validateLicenseNumber(doctor.licenseNumber)).isEmpty()) return err;
     if (!(err = validateExperienceYears(doctor.experienceYears)).isEmpty()) return err;
     if (!(err = validateConsultationFee(doctor.consultationFee)).isEmpty()) return err;
@@ -232,7 +218,7 @@ QString StaffService::validateDoctorInput(const DoctorInputDTO& doctor, int staf
     if (!err.isEmpty()) return err;
     
     // Check các trường đặc thù của Doctor
-    if (!(err = validateSpecialty(doctor.specialty)).isEmpty()) return err;
+    if (!(err = Validation::validateTrimmedNotEmpty(doctor.specialty, "Specialty field is required for doctors.")).isEmpty()) return err;
     if (!(err = validateLicenseNumber(doctor.licenseNumber)).isEmpty()) return err;
     if (!(err = validateExperienceYears(doctor.experienceYears)).isEmpty()) return err;
     if (!(err = validateConsultationFee(doctor.consultationFee)).isEmpty()) return err;
