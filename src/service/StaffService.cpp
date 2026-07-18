@@ -189,6 +189,40 @@ QString StaffService::validateStaffBaseInput(const StaffInputDTO& staff, int sta
     if (!(err = validatePhoneNumberUnique(staff.phoneNumber, staffId)).isEmpty()) return err;
     if (!(err = validateEmailUnique(staff.email, staffId)).isEmpty()) return err;
 
+    if (!(err = validateEmailUnique(staff.email, staffId)).isEmpty()) return err;
+
+    return "";
+}
+
+QString StaffService::validateStaffUpdate(const StaffUpdateDTO& staff) {
+    QString err;
+    
+    if (!(err = Validation::validateFullName(staff.fullName)).isEmpty()) return err;
+    if (!(err = Validation::validateDateOfBirth(QDate::fromString(staff.dateOfBirth, "yyyy-MM-dd"))).isEmpty()) return err;
+    if (!(err = Validation::validateCitizenId(staff.citizenId)).isEmpty()) return err;
+    if (!(err = Validation::validatePhoneNumber(staff.phoneNumber)).isEmpty()) return err;
+    if (!(err = Validation::validateEmail(staff.email)).isEmpty()) return err;
+    if (!(err = Validation::validateAddress(staff.address)).isEmpty()) return err;
+    if (!(err = validateDepartmentId(staff.departmentId)).isEmpty()) return err;
+
+    if (!(err = validateCitizenIdUnique(staff.citizenId, staff.staffId)).isEmpty()) return err;
+    if (!(err = validatePhoneNumberUnique(staff.phoneNumber, staff.staffId)).isEmpty()) return err;
+    if (!(err = validateEmailUnique(staff.email, staff.staffId)).isEmpty()) return err;
+
+    return "";
+}
+
+QString StaffService::validateDoctorUpdate(const DoctorUpdateDTO& doctor) {
+    QString err = validateStaffUpdate(doctor);
+    if (!err.isEmpty()) return err;
+    
+    if (!(err = validateSpecialty(doctor.specialty)).isEmpty()) return err;
+    if (!(err = validateLicenseNumber(doctor.licenseNumber)).isEmpty()) return err;
+    if (!(err = validateExperienceYears(doctor.experienceYears)).isEmpty()) return err;
+    if (!(err = validateConsultationFee(doctor.consultationFee)).isEmpty()) return err;
+    
+    if (!(err = validateLicenseNumberUnique(doctor.licenseNumber, doctor.staffId)).isEmpty()) return err;
+
     return "";
 }
 
@@ -215,6 +249,15 @@ QString StaffService::validateNurseInput(const NurseInputDTO& nurse, int staffId
     if (!err.isEmpty()) return err;
     
     // Check các trường đặc thù của Nurse
+    if (!(err = validateNurseLevel(nurse.nurseLevel)).isEmpty()) return err;
+
+    return "";
+}
+
+QString StaffService::validateNurseUpdate(const NurseUpdateDTO& nurse) {
+    QString err = validateStaffUpdate(nurse);
+    if (!err.isEmpty()) return err;
+    
     if (!(err = validateNurseLevel(nurse.nurseLevel)).isEmpty()) return err;
 
     return "";
@@ -306,26 +349,41 @@ QString StaffService::hireNewNurse(const NurseInputDTO& nurse) {
     return "";
 }
 
-QString StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
-    QString err = validateStaffBaseInput(staffInformation, staffId);
+QString StaffService::hireNewReceptionist(const ReceptionistInputDTO& receptionist) {
+    QString validationError = validateStaffBaseInput(receptionist);
+    if (!validationError.isEmpty()) { return validationError; }
+
+    StaffInsertDTO insertDto(receptionist, generateStaffCode(UserRole::Receptionist),
+         QString::fromStdString(bcrypt::generateHash(
+                 generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR)), UserRole::Receptionist);
+
+    bool success = this->m_staffRepository->insertStaff(insertDto);
+
+    if (!success) { return "Failed to insert receptionist into the database."; }
+
+    return "";
+}
+
+QString StaffService::editStaffBaseInformation(const StaffUpdateDTO& staffInformation) {
+    QString err = validateStaffUpdate(staffInformation);
     if (!err.isEmpty()) return err;
-    if (!m_staffRepository->updateStaff(StaffUpdateDTO(staffInformation, staffId)))
+    if (!m_staffRepository->updateStaff(staffInformation))
         return "Repository update failed (DB error).";
     return "";
 }
 
-QString StaffService::editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId) {
-    QString err = validateDoctorInput(doctorInformation, staffId);
+QString StaffService::editDoctorInformation(const DoctorUpdateDTO& doctorInformation) {
+    QString err = validateDoctorUpdate(doctorInformation);
     if (!err.isEmpty()) return err;
-    if (!m_staffRepository->updateDoctor(DoctorUpdateDTO(doctorInformation, staffId)))
+    if (!m_staffRepository->updateDoctor(doctorInformation))
         return "Repository update failed (DB error).";
     return "";
 }
 
-QString StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, int staffId) {
-    QString err = validateNurseInput(nurseInformation, staffId);
+QString StaffService::editNurseInformation(const NurseUpdateDTO& nurseInformation) {
+    QString err = validateNurseUpdate(nurseInformation);
     if (!err.isEmpty()) return err;
-    if (!m_staffRepository->updateNurse(NurseUpdateDTO(nurseInformation, staffId)))
+    if (!m_staffRepository->updateNurse(nurseInformation))
         return "Repository update failed (DB error).";
     return "";
 }
@@ -345,6 +403,36 @@ QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
     criteria.specialty      = specialty.trimmed();
     criteria.departmentId   = departmentId;
     criteria.shift          = shift.trimmed();
+    criteria.onlyActive     = onlyActive;
+    criteria.includeDeleted = includeDeleted;
+
+    return m_staffRepository->search(criteria);
+}
+
+QList<std::shared_ptr<SystemUser>> StaffService::searchNurses(
+    QString searchKey,
+    int departmentId,
+    bool onlyActive,
+    bool includeDeleted
+) const {
+    StaffSearchCriteria criteria;
+    criteria.searchKey      = searchKey.trimmed();
+    criteria.role           = UserRole::Nurse;
+    criteria.departmentId   = departmentId;
+    criteria.onlyActive     = onlyActive;
+    criteria.includeDeleted = includeDeleted;
+
+    return m_staffRepository->search(criteria);
+}
+
+QList<std::shared_ptr<SystemUser>> StaffService::searchReceptionists(
+    QString searchKey,
+    bool onlyActive,
+    bool includeDeleted
+) const {
+    StaffSearchCriteria criteria;
+    criteria.searchKey      = searchKey.trimmed();
+    criteria.role           = UserRole::Receptionist;
     criteria.onlyActive     = onlyActive;
     criteria.includeDeleted = includeDeleted;
 

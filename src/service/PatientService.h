@@ -223,7 +223,6 @@ public:
    */
   std::optional<InsuranceResultDTO> getInsurance(int patientId) const;
 
-  // std::optional<DatabaseManager::PatientRecord>
-  // getPatientByPhoneOrCitizenId(const QString &phone,
-  //                              const QString &citizenId) const;
+  std::optional<DatabaseManager::PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
+
 };

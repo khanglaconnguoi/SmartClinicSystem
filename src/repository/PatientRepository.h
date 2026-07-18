@@ -12,6 +12,7 @@
 #pragma once
 
 #include "dto/PatientDTOs.h"
+#include "repository/DatabaseManager.h"
 #include <QString>
 
 class PatientRepository {
@@ -62,6 +63,8 @@ public:
    * @return true nếu UPDATE thành công.
    */
   bool updatePatient(const PatientUpdateDTO &dto);
+
+  std::optional<DatabaseManager::PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
 
   /**
    * @brief Cập nhật thông tin bệnh nhân ngoại trú (bảng `out_patients`).

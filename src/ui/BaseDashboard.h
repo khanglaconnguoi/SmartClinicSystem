@@ -12,6 +12,10 @@
 #include <memory>
 #include "model/IAuthenticatable.h"
 
+class StaffService;
+class PatientService;
+class AppointmentService;
+
 class ClickableLabel : public QLabel {
     Q_OBJECT
 public:
@@ -31,7 +35,7 @@ class BaseDashboardWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, QWidget *parent = nullptr);
+    explicit BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, std::shared_ptr<StaffService> staffService = nullptr, std::shared_ptr<PatientService> patientService = nullptr, std::shared_ptr<AppointmentService> appointmentService = nullptr, QWidget *parent = nullptr);
     virtual ~BaseDashboardWidget() override = default;
 
     void initializeDashboard();
@@ -56,6 +60,9 @@ protected:
     ClickableLabel* m_docNameLabel     = nullptr;
     QPushButton*  m_docAvatarBtn       = nullptr;
     std::shared_ptr<IAuthenticatable> m_currentUser;
+    std::shared_ptr<StaffService> m_baseStaffService;
+    std::shared_ptr<PatientService> m_basePatientService;
+    std::shared_ptr<AppointmentService> m_baseAppointmentService;
 
 private:
     QHBoxLayout* m_globalLayout = nullptr;

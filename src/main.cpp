@@ -9,7 +9,12 @@
 #include "repository/PatientRepository.h"
 #include "service/BillingService.h"
 #include "service/MedicalRecordService.h"
+#include "repository/StaffRepository.h"
+#include "service/AuthService.h"
 #include "service/PatientService.h"
+#include "service/StaffService.h"
+#include "repository/AppointmentRepository.h"
+#include "service/AppointmentService.h"
 #include "service/Validation.h"
 #include "ui/MainWindow.h"
 #include <QApplication>
@@ -54,6 +59,18 @@ void messageHandler(QtMsgType type, const QMessageLogContext &ctx,
   out.flush();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+static int getLastInsertedPatientId() {
+  QSqlQuery q = DatabaseManager::getInstance().selectQuery(
+      "SELECT MAX(patient_id) FROM patients");
+  if (q.next())
+    return q.value(0).toInt();
+  return -1;
+}
+
 static void seedDatabase() {
   DatabaseManager &db = DatabaseManager::getInstance();
   db.executeQuery(
@@ -69,13 +86,13 @@ static void seedDatabase() {
       "'test@test.com', 'Address', 1)");
 }
 
-static int getLastInsertedPatientId() {
-  QSqlQuery q = DatabaseManager::getInstance().selectQuery(
-      "SELECT MAX(patient_id) FROM patients");
-  if (q.next())
-    return q.value(0).toInt();
-  return -1;
-}
+// static int getLastInsertedPatientId() {
+//   QSqlQuery q = DatabaseManager::getInstance().selectQuery(
+//       "SELECT MAX(patient_id) FROM patients");
+//   if (q.next())
+//     return q.value(0).toInt();
+//   return -1;
+// }
 
 static void testValidations() {
   qDebug() << "\n==================================================";
@@ -412,7 +429,17 @@ int main(int argc, char *argv[]) {
   // Chạy thêm luồng tạo dữ liệu mẫu (bệnh nhân, hồ sơ khám, hóa đơn)
   runComprehensiveTests();
 
-  MainWindow window;
+  auto staffRepo = std::make_shared<StaffRepository>();
+  auto authService = std::make_shared<AuthService>(staffRepo);
+  auto staffService = std::make_shared<StaffService>(staffRepo);
+
+  auto patientRepo = std::make_shared<PatientRepository>();
+  auto patientService = std::make_shared<PatientService>(patientRepo);
+
+  auto appointmentRepo = std::make_shared<AppointmentRepository>();
+  auto appointmentService = std::make_shared<AppointmentService>(appointmentRepo);
+
+  MainWindow window(authService, staffService, patientService, appointmentService);
   window.show();
 
   return app.exec();

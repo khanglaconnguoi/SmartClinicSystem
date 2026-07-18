@@ -612,9 +612,15 @@ bool PatientService::restorePatient(int patientId) {
 // Allergies & Insurance
 // ───────────────────────────────────────────────────────────────────────────────
 
-QList<AllergyResultDTO> PatientService::getAllergies(int patientId) {
-  return m_patientRepository->getAllergiesByPatientId(patientId);
+std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) const {
+    return m_patientRepository->getInsuranceByPatientId(patientId);
 }
+
+std::optional<DatabaseManager::PatientRecord> PatientService::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
+    return m_patientRepository->getPatientByPhoneOrCitizenId(phone, citizenId);
+}
+
+
 
 std::optional<InsuranceResultDTO>
 PatientService::getInsurance(int patientId) const {

@@ -956,3 +956,9 @@ PatientRepository::getInsuranceByPatientId(int patientId) {
   result.updatedAt = query.value("updated_at").toString();
   return result;
 }
+
+std::optional<DatabaseManager::PatientRecord> PatientRepository::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
+    return DatabaseManager::getInstance().getPatientByPhoneOrCitizenId(phone, citizenId);
+}
+
+

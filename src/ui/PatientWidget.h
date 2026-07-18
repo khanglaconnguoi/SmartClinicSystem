@@ -1,6 +1,4 @@
-// Patient.h
 #pragma once
-
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -20,22 +18,22 @@
 #include <QGraphicsDropShadowEffect>
 #include <QDateEdit>
 
-class PatientView : public QWidget {
+class PatientWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit PatientView(QWidget *parent = nullptr);
-    ~PatientView() override;
+    explicit PatientWidget(QWidget *parent = nullptr);
+    ~PatientWidget() override;
 
 private slots:
     void handlePatientSelected(int row, int column);
     void showPatientList();
+    //void onAddMedicationClicked();
 
 private:
     void setupUi();
     void createListView();
     void createDetailView();
-    void createMedicalRecordPage();
 
     QVBoxLayout* m_mainLayout;
     QStackedWidget* m_mainStackedWidget;

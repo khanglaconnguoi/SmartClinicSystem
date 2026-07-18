@@ -44,6 +44,10 @@ struct NurseInputDTO : public StaffInputDTO {
     QString certification;
 };
 
+struct ReceptionistInputDTO : public StaffInputDTO {
+    QString shift;
+};
+
 // ── INSERT DTOs ───────────────────────────────────────────────────────
 // Dùng khi TẠO MỚI nhân viên (Service → Repository)
 // Service chịu trách nhiệm:
