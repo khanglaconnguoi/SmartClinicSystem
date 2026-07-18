@@ -18,9 +18,9 @@ private:
   // Helper riêng của bạn — insert từng dòng chẩn đoán sau khi đã có recordId.
   bool insertDiagnoses(int recordId, const QList<Diagnosis> &diagnoses);
 
-  // Helper: gán patientId vào từng AllergyInsertDTO rồi ủy qua PatientRepository.
+  // Helper: gán patientId vào từng AllergyInputDTO rồi ủy qua PatientRepository.
   bool insertNewAllergies(int patientId,
-                          const QList<AllergyInsertDTO> &items);
+                          const QList<AllergyInputDTO> &items);
 
   /**
    * @brief Build mệnh đề WHERE động dựa trên tiêu chí tìm kiếm.

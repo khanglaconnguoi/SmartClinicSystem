@@ -8,7 +8,6 @@
 
 class BillingRepository {
 private:
-    QString generateInvoiceCode(); // helper sinh mã "INV-yyyyMMdd-NNNN"
 
     /**
      * @brief Build mệnh đề WHERE động dựa trên tiêu chí tìm kiếm.
@@ -18,6 +17,9 @@ private:
                                    QVariantList &outParams) const;
 
 public:
+    // Helper for Service layer to generate invoice codes
+    int countInvoicesByPrefix(const QString &prefix);
+
     bool insertInvoice(const InvoiceInsertDTO &dto);
     bool updateInvoice(const InvoiceUpdateDTO &dto);
     bool cancelInvoice(int invoiceId);

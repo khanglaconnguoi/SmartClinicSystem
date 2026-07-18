@@ -7,21 +7,15 @@
 #include <QSqlError>
 #include <QtDebug>
 
-QString BillingRepository::generateInvoiceCode() {
+int BillingRepository::countInvoicesByPrefix(const QString &prefix) {
     DatabaseManager &db = DatabaseManager::getInstance();
-    QString todayStr = QDate::currentDate().toString("yyyyMMdd");
-    QString prefix = "INV" + todayStr;
-
     QString sql = "SELECT COUNT(*) FROM invoices WHERE invoice_code LIKE ?";
     QSqlQuery query = db.selectQuery(sql, {prefix + "%"});
 
-    int count = 0;
     if (query.next()) {
-        count = query.value(0).toInt();
+        return query.value(0).toInt();
     }
-
-    int nextNumber = count + 1;
-    return prefix + QString("%1").arg(nextNumber, 4, 10, QLatin1Char('0'));
+    return 0;
 }
 
 
@@ -31,28 +25,23 @@ bool BillingRepository::insertInvoice(const InvoiceInsertDTO &dto) {
         return false;
     }
 
-    QString invoiceCode = generateInvoiceCode();
-
     QString sql = R"(
         INSERT INTO invoices (
             invoice_code, patient_id, record_id, patient_type,
             consultation_fee, medication_fee, total_amount, status, issued_date
         )
-        VALUES (?,?,?,?,?,?,?,'UNPAID',?)
+        VALUES (?,?,?,?,?,?,?,?,?)
     )";
 
-    QString dbType = "OUTPATIENT";
-    if (dto.patientType == PatientType::Inpatient) dbType = "INPATIENT";
-    else if (dto.patientType == PatientType::Emergency) dbType = "EMERGENCY";
-
     QVariantList params;
-    params << invoiceCode
+    params << dto.invoiceCode
            << dto.patientId
            << (dto.recordId.has_value() ? QVariant(dto.recordId.value()) : QVariant(QVariant::Int))
-           << dbType
+           << dto.patientType
            << dto.consultationFee
            << dto.medicationFee
            << dto.totalAmount
+           << dto.status
            << dto.issuedDate;
 
     QSqlQuery query(db.database());

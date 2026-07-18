@@ -180,7 +180,7 @@ static void runComprehensiveTests() {
   pOut.email = "lexuan@test.com";
   pOut.emergencyContactName = "Le Van A";
   pOut.emergencyContactPhone = "0900111222";
-  pOut.insurance = "BHYT-123456";
+  pOut.insurance.policyNumber = "BHYT-123456";
   bool okOut = patientService->addOutPatient(pOut);
   int pidOut = getLastInsertedPatientId();
   qDebug() << "  -> Add OutPatient:" << (okOut ? "PASS" : "FAIL")
@@ -241,7 +241,7 @@ static void runComprehensiveTests() {
 
   // 1.5 Update Patient
   if (pidOut > 0) {
-    PatientInputDTO uDto;
+    OutPatientInputDTO uDto;
     uDto.fullName = "Le Thi Xuan Updated";
     uDto.dateOfBirth = QDate(1995, 2, 14);
     uDto.gender = "Nữ";
@@ -253,7 +253,8 @@ static void runComprehensiveTests() {
     uDto.emergencyContactName = "Le Van A";
     uDto.emergencyContactPhone = "0900111222";
     uDto.type = PatientType::Outpatient;
-    bool okUpdate = patientService->updatePatient(pidOut, uDto);
+    uDto.doctorId = 1;
+    bool okUpdate = patientService->updateOutPatient(pidOut, uDto);
     qDebug() << "  -> Update Patient:" << (okUpdate ? "PASS" : "FAIL");
   }
 
@@ -292,7 +293,7 @@ static void runComprehensiveTests() {
     mrDto.diagnoses.append(diag1);
 
     // Dị ứng phát hiện trong lần khám này
-    AllergyInsertDTO allergy1;
+    AllergyInputDTO allergy1;
     allergy1.allergenName = "Seafood";
     allergy1.severity = "MILD";
     allergy1.notes = "Phát hiện trong lần khám đầu tiên";
@@ -357,7 +358,7 @@ static void runComprehensiveTests() {
     pItems.append(p1);
     pItems.append(p2);
 
-    bool billOk = billingService.generateInvoice(
+    bool billOk = billingService.createInvoice(
         pidOut, recordId, PatientType::Outpatient, 200000.0, pItems);
     qDebug() << "  -> Generate Invoice:" << (billOk ? "PASS" : "FAIL");
 

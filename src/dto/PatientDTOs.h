@@ -200,7 +200,7 @@ struct PatientInsertDTO {
   PatientInsertDTO() = default;
   virtual ~PatientInsertDTO() = default;
   PatientInsertDTO(const PatientInputDTO &inputInformation,
-                   const QString &generatePatientCode, const QString &type)
+                   const QString &generatePatientCode, const QString &patientType)
       : patientCode(generatePatientCode.trimmed()),
         fullName(inputInformation.fullName.trimmed()),
         dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
@@ -209,7 +209,7 @@ struct PatientInsertDTO {
         phone(inputInformation.phone.trimmed()),
         email(inputInformation.email.trimmed()),
         address(inputInformation.address.trimmed()),
-        bloodType(inputInformation.bloodType.trimmed()), type(type.trimmed()),
+        bloodType(inputInformation.bloodType.trimmed()), type(patientType.trimmed()),
         emergencyContactName(inputInformation.emergencyContactName.trimmed()),
         emergencyContactPhone(
             inputInformation.emergencyContactPhone.trimmed()),

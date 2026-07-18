@@ -103,8 +103,8 @@ public:
                                  std::optional<QDate> dischargeDate);
   static QString validateInPatientReason(const QString &reason);
 
-  static QString validateEmergencyRoomId(std::optional<int> roomId);
-  static QString validateEmergencyDoctorId(std::optional<int> doctorId);
+  static QString validateEmergencyRoomId(int roomId);
+  static QString validateEmergencyDoctorId(int doctorId);
   static QString
   validateEmergencyDischargeDate(const QDate &admissionDate,
                                  std::optional<QDate> dischargeDate);
@@ -154,11 +154,6 @@ public:
    * @brief Tiếp nhận bệnh nhân cấp cứu.
    */
   bool addEmergencyPatient(EmergencyPatientInputDTO &dto);
-
-  // /**
-  //  * @brief Cập nhật thông tin cơ bản của bệnh nhân trong bảng `patients`.
-  //  */
-  // bool updatePatient(int patientId, PatientInputDTO &dto);
 
   /**
    * @brief Cập nhật thông tin bệnh nhân ngoại trú.

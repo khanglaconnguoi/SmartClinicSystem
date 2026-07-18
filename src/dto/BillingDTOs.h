@@ -17,15 +17,15 @@ struct InvoiceItemDTO {
 
 struct InvoiceInsertDTO {
   // ── invoices ──────────────────────────────────────────────────────────────
-  // invoice_code  → NOT NULL UNIQUE  (tự sinh bởi Repository/Service)
+  QString invoiceCode;              // invoice_code  NOT NULL UNIQUE
   int patientId;                    // patient_id      NOT NULL  FK → patients
   std::optional<int> recordId;      // record_id       nullable  FK → medical_records
-  PatientType patientType;          // patient_type    NOT NULL  CHECK: OUTPATIENT|INPATIENT|EMERGENCY
+  QString patientType;              // patient_type    NOT NULL  CHECK: OUTPATIENT|INPATIENT|EMERGENCY
   double consultationFee;           // consultation_fee NOT NULL  DEFAULT 0
   double medicationFee;             // medication_fee   NOT NULL  DEFAULT 0
   double totalAmount;               // total_amount     NOT NULL  DEFAULT 0
-  // status  → NOT NULL DEFAULT 'UNPAID'  CHECK: UNPAID|PAID|CANCELLED  (Repository tự gán)
-  QDate issuedDate;                 // issued_date      NOT NULL
+  QString status;                   // status  → NOT NULL DEFAULT 'UNPAID'
+  QString issuedDate;               // issued_date      NOT NULL
   // paid_date → nullable  (chỉ set khi thanh toán)
 
   // ── invoice_items (chi tiết) ───────────────────────────────────────────────

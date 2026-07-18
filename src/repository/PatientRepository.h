@@ -27,14 +27,6 @@ private:
    */
   bool insertBasePatient(const PatientInsertDTO &dto, int &patientId);
 
-  /**
-   * @brief Ghi dị ứng và bảo hiểm vào DB trong cùng transaction với
-   *        insertXxxPatient(). Cần truyền patientId thực tế đã được sinh.
-   *        Bỏ qua nếu danh sách rỗng / bảo hiểm không có dữ liệu.
-   */
-  bool insertAllergiesForPatient(int patientId,
-                                 const QList<AllergyInputDTO> &allergies);
-  bool insertInsuranceForPatient(int patientId, const InsuranceInputDTO &ins);
 
 public:
   // ─── Insert ──────────────────────────────────────────────────────────────

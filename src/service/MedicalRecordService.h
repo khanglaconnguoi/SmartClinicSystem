@@ -1,7 +1,8 @@
 #pragma once
 #include "dto/MedicalRecordDTOs.h"
-#include <memory>
 #include <QList>
+#include <memory>
+
 
 class MedicalRecordRepository;
 class PatientService;
@@ -45,13 +46,13 @@ public:
    *        Cho phép danh sách rỗng (dị ứng là optional).
    *        Kiểm tra từng item: allergenName không rỗng, severity hợp lệ.
    */
-  static QString validateAllergyList(const QList<AllergyInsertDTO> &allergies);
+  static QString validateAllergyList(const QList<AllergyInputDTO> &allergies);
 
   explicit MedicalRecordService(
       std::shared_ptr<MedicalRecordRepository> recordRepo,
       std::shared_ptr<PatientService> patientService);
 
-  int  createMedicalRecord(MedicalRecordInsertDTO &dto);
+  int createMedicalRecord(MedicalRecordInsertDTO &dto);
   bool updateMedicalRecord(MedicalRecordUpdateDTO &dto);
   bool softDeleteMedicalRecord(int recordId);
   QList<MedicalRecordResultDTO> getMedicalHistory(int patientId);
@@ -60,7 +61,8 @@ public:
    * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.
    *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
    */
-  QList<MedicalRecordSummaryDTO> searchMedicalRecords(MedicalRecordSearchCriteria criteria);
+  QList<MedicalRecordSummaryDTO>
+  searchMedicalRecords(MedicalRecordSearchCriteria criteria);
 
   /**
    * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.

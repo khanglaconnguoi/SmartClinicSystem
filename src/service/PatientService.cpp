@@ -394,15 +394,15 @@ QString PatientService::validateInPatientInput(const InPatientInputDTO &dto) {
   return "";
 }
 
-QString PatientService::validateEmergencyRoomId(std::optional<int> roomId) {
-  if (!roomId.has_value())
-    return "Phòng cấp cứu không được để trống.";
+QString PatientService::validateEmergencyRoomId(int roomId) {
+  if (roomId < 0)
+    return "Id Phòng cấp cứu không hợp lệ.";
   return "";
 }
 
-QString PatientService::validateEmergencyDoctorId(std::optional<int> doctorId) {
-  if (!doctorId.has_value())
-    return "Bác sĩ trực cấp cứu không được để trống.";
+QString PatientService::validateEmergencyDoctorId(int doctorId) {
+  if (doctorId < 0)
+    return "ID bác sĩ không hợp lệ";
   return "";
 }
 
@@ -482,22 +482,6 @@ QString PatientService::validateUpdateBaseInput(const PatientInputDTO &dto,
 
   return "";
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// UpdatePatient
-// ─────────────────────────────────────────────────────────────────────────────
-
-// bool PatientService::updatePatient(int patientId, PatientInputDTO &dto) {
-//   normalizePatientInput(dto);
-//   QString err = validateUpdateBaseInput(dto, patientId);
-//   if (!err.isEmpty()) {
-//     QMessageBox::warning(nullptr, "Validation Error", err);
-//     return false;
-//   }
-
-//   PatientUpdateDTO updateDto(dto, patientId);
-//   return m_patientRepository->updatePatient(updateDto);
-// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // updateOutPatient

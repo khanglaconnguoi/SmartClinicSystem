@@ -265,6 +265,47 @@ inline QString toEn(const QString &vi) {
 
 } // namespace MedicationUnitText
 
+namespace InvoiceStatusText {
+inline const QString UNPAID = "UNPAID";
+inline const QString PAID = "PAID";
+inline const QString CANCELLED = "CANCELLED";
+
+inline const QList<QPair<QString, QString>> statuses = {
+    {UNPAID, "Chưa thanh toán"},
+    {PAID, "Đã thanh toán"},
+    {CANCELLED, "Đã hủy"}};
+
+inline const QList<QPair<QString, QString>> &getList() { return statuses; }
+
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.first == cleanEn)
+      return pair.second;
+  }
+  return "Chưa thanh toán";
+}
+
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
+      return pair.first;
+  }
+  return UNPAID;
+}
+} // namespace InvoiceStatusText
+
 // =====================================================================
 // SECTION 2: KEPT ENUMS (PATTERN CŨ)
 // =====================================================================
@@ -483,46 +524,7 @@ inline EmergencyPatientState emergencyPatientStateFromEn(const QString &text) {
   return EmergencyPatientState::Emergency;
 }
 
-// InvoiceStatus
-enum class InvoiceStatus { Unpaid, Paid, Cancelled };
 
-static const QList<EnumInfo<InvoiceStatus>> invoiceStatusList = {
-    {InvoiceStatus::Unpaid, "Chưa thanh toán", "UNPAID"},
-    {InvoiceStatus::Paid, "Đã thanh toán", "PAID"},
-    {InvoiceStatus::Cancelled, "Đã hủy", "CANCELLED"},
-};
-
-inline QString invoiceStatusToVi(InvoiceStatus value) {
-  for (const auto &item : invoiceStatusList) {
-    if (item.value == value)
-      return item.viText;
-  }
-  return "Chưa thanh toán";
-}
-
-inline InvoiceStatus invoiceStatusFromVi(const QString &text) {
-  for (const auto &item : invoiceStatusList) {
-    if (item.viText == text)
-      return item.value;
-  }
-  return InvoiceStatus::Unpaid;
-}
-
-inline QString invoiceStatusToEn(InvoiceStatus value) {
-  for (const auto &item : invoiceStatusList) {
-    if (item.value == value)
-      return item.enText;
-  }
-  return "UNPAID";
-}
-
-inline InvoiceStatus invoiceStatusFromEn(const QString &text) {
-  for (const auto &item : invoiceStatusList) {
-    if (item.enText == text)
-      return item.value;
-  }
-  return InvoiceStatus::Unpaid;
-}
 
 // UserRole
 enum class UserRole { Admin, Doctor, Nurse, Receptionist };

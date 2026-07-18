@@ -97,22 +97,7 @@ bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
   return true;
 }
 
-// bool PatientRepository::insertAllergiesForPatient(
-//     int patientId, const QList<AllergyInputDTO> &allergies) {
-//   if (allergies.isEmpty())
-//     return true;
-//   return insertAllergies(patientId, allergies);
-// }
 
-// bool PatientRepository::insertInsuranceForPatient(int patientId,
-//                                                   const InsuranceInputDTO
-//                                                   &ins) {
-//   // Bỏ qua nếu tất cả trường đều rỗng
-//   if (ins.providerName.isEmpty() && ins.policyNumber.isEmpty() &&
-//       ins.insuranceType.isEmpty())
-//     return true;
-//   return upsertInsurance(patientId, ins);
-// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public – insert out patient
@@ -155,12 +140,12 @@ bool PatientRepository::insertOutPatient(const OutPatientInsertDTO &dto) {
     return false;
   }
 
-  if (!insertAllergiesForPatient(patientId, dto.allergies)) {
+  if (!insertAllergies(patientId, dto.allergies)) {
     db.rollbackTransaction();
     return false;
   }
 
-  if (!insertInsuranceForPatient(patientId, dto.insurance)) {
+  if (!insertInsurance(patientId, dto.insurance)) {
     db.rollbackTransaction();
     return false;
   }
@@ -221,12 +206,12 @@ bool PatientRepository::insertInPatient(const InPatientInsertDTO &dto) {
     return false;
   }
 
-  if (!insertAllergiesForPatient(patientId, dto.allergies)) {
+  if (!insertAllergies(patientId, dto.allergies)) {
     db.rollbackTransaction();
     return false;
   }
 
-  if (!insertInsuranceForPatient(patientId, dto.insurance)) {
+  if (!insertInsurance(patientId, dto.insurance)) {
     db.rollbackTransaction();
     return false;
   }
@@ -290,12 +275,12 @@ bool PatientRepository::insertEmergencyPatient(
     return false;
   }
 
-  if (!insertAllergiesForPatient(patientId, dto.allergies)) {
+  if (!insertAllergies(patientId, dto.allergies)) {
     db.rollbackTransaction();
     return false;
   }
 
-  if (!insertInsuranceForPatient(patientId, dto.insurance)) {
+  if (!insertInsurance(patientId, dto.insurance)) {
     db.rollbackTransaction();
     return false;
   }
@@ -865,6 +850,12 @@ PatientRepository::getAllergiesByPatientId(int patientId) {
 
 bool PatientRepository::insertInsurance(int patientId,
                                         const InsuranceInsertDTO &dto) {
+  // Return early if no insurance data is provided
+  if (dto.providerName.isEmpty() && dto.policyNumber.isEmpty() &&
+      dto.insuranceType.isEmpty()) {
+    return true;
+  }
+
   const QString sql = R"(
     INSERT INTO patient_insurance (
         patient_id, provider_name, policy_number, insurance_type,
@@ -895,6 +886,12 @@ bool PatientRepository::insertInsurance(int patientId,
 
 bool PatientRepository::updateInsurance(int patientId,
                                         const InsuranceInsertDTO &dto) {
+  // Return early if no insurance data is provided
+  if (dto.providerName.isEmpty() && dto.policyNumber.isEmpty() &&
+      dto.insuranceType.isEmpty()) {
+    return true;
+  }
+
   const QString sql = R"(
     UPDATE patient_insurance SET
         provider_name    = ?,

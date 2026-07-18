@@ -24,17 +24,11 @@ MedicalRecordRepository::MedicalRecordRepository(
  * items rỗng, trả true ngay.
  */
 bool MedicalRecordRepository::insertNewAllergies(
-    int patientId, const QList<AllergyInsertDTO> &items) {
+    int patientId, const QList<AllergyInputDTO> &items) {
   if (!m_patientRepository || items.isEmpty())
     return true;
 
-  QList<AllergyInsertDTO> filled;
-  filled.reserve(items.size());
-  for (AllergyInsertDTO item : items) {
-    item.patientId = patientId;
-    filled.append(item);
-  }
-  return m_patientRepository->insertAllergies(filled);
+  return m_patientRepository->insertAllergies(patientId, items);
 }
 
 int MedicalRecordRepository::insertMedicalRecord(
@@ -180,7 +174,7 @@ bool MedicalRecordRepository::insertDiagnoses(
 
   for (const Diagnosis &d : diagnoses) {
     QVariantList params = {recordId, d.icdCode, d.description,
-                           d.severity.toUpper()};
+                           d.severity};
     if (!db.executeQuery(sql, params).isActive()) {
       return false;
     }

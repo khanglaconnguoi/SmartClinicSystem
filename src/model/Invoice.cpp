@@ -15,6 +15,6 @@ Invoice::Invoice(int patientId, double consultationFee, double medicationFee, co
       m_consultationFee(consultationFee),
       m_medicationFee(medicationFee),
       m_issuedDate(issuedDate),
-      m_status("UNPAID")
+      m_status(InvoiceStatusText::UNPAID)
 {
 }
