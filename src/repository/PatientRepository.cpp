@@ -525,7 +525,7 @@ PatientRepository::getPatientById(int patientId) {
   dto.fullName = query.value("full_name").toString();
   dto.dateOfBirth =
       QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
-  dto.gender = genderFromEn(query.value("gender").toString());
+  dto.gender = query.value("gender").toString();
   dto.citizenId = query.value("citizen_id").toString();
   dto.phone = query.value("phone").toString();
   dto.email = query.value("email").toString();
@@ -653,7 +653,7 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
     row.fullName = query.value("full_name").toString();
     row.dateOfBirth = QDate::fromString(query.value("date_of_birth").toString(),
                                         "yyyy-MM-dd");
-    row.gender = genderFromEn(query.value("gender").toString());
+    row.gender = query.value("gender").toString();
     row.phone = query.value("phone").toString();
     row.type = patientTypeFromEn(query.value("type").toString());
     row.statusLabel = query.value("status_label").toString();

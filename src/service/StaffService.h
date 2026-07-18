@@ -44,10 +44,7 @@ private:
     QString validateStaffBaseInput(const StaffInputDTO& staff, int staffId = -1);
     QString validateDoctorInput(const DoctorInputDTO& doctor, int staffId = -1);
     QString validateNurseInput(const NurseInputDTO& nurse, int staffId = -1);
-    
-    QString validateStaffUpdate(const StaffUpdateDTO& staff);
-    QString validateDoctorUpdate(const DoctorUpdateDTO& doctor);
-    QString validateNurseUpdate(const NurseUpdateDTO& nurse);
+    QString validatePharmacistInput(const PharmacistInputDTO& pharmacist, int staffId = -1);
 
     QString generateStaffCode(UserRole role) const;
     QString generateRandomPassword() const;
@@ -82,6 +79,9 @@ public:
  
     // -- Field dac thu Nurse ─────────────────────────────────────────
     static QString validateNurseLevel(const QString& nurseLevel);
+
+    // -- Field dac thu Pharmacist ────────────────────────────────────
+    //static QString validatePharmacySection(const QString& pharmacySection);
  
     // =================================================================
     // UNIQUENESS VALIDATORS — public non-static (can DB)
@@ -109,10 +109,15 @@ public:
     QString hireNewDoctor(const DoctorInputDTO& doctor);
     QString hireNewNurse(const NurseInputDTO& nurse);
     QString hireNewReceptionist(const ReceptionistInputDTO& receptionist);
+    QString hireNewPharmacist(const PharmacistInputDTO& pharmacist);
 
-    QString editStaffBaseInformation(const StaffUpdateDTO& staffInformation);
-    QString editDoctorInformation(const DoctorUpdateDTO& doctorInformation);
-    QString editNurseInformation(const NurseUpdateDTO& nurseInformation);
+
+    QString editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId);
+    QString editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId);
+    QString editNurseInformation(const NurseInputDTO& nurseInformation, int staffId);
+    QString editPharmacistInformation(const PharmacistInputDTO& pharmacistInformation, int staffId);
+
+
 
 
     bool deactivateStaff(int staffId) {

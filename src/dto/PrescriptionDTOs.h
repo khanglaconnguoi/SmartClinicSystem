@@ -74,3 +74,6 @@ struct PrescriptionResultDTO {
     std::optional<PrescriptionActionInfoDTO> cancelledInfo; // Có giá trị nếu status == "CANCELLED" (đã gồm lý do hủy bên trong)
 };
 
+
+
+

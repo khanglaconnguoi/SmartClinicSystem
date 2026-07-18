@@ -11,7 +11,7 @@
 class StaffRepository {
 private:
     std::shared_ptr<SystemUser> mapRowToUser(const QSqlQuery& query) const;
-
+    std::unique_ptr<StaffProfileDTO> queryProfile(const QString& whereClause, const QVariantList& params) const;
     bool insertStaffBase(const StaffInsertDTO& staff, int& staffId);
 public:
     StaffRepository() = default;
@@ -20,10 +20,14 @@ public:
     bool insertStaff(const StaffInsertDTO& staff);
     bool insertDoctor(const DoctorInsertDTO& doctor);
     bool insertNurse(const NurseInsertDTO& nurse);
+    bool insertPharmacist(const PharmacistInsertDTO& pharmacist);
+
 
     bool updateStaff(const StaffUpdateDTO& staff);
     bool updateDoctor(const DoctorUpdateDTO& doctor);
     bool updateNurse(const NurseUpdateDTO& nurse);
+    bool updatePharmacist(const PharmacistUpdateDTO& pharmacist);
+
 
     bool deactivate(int staffId);
     bool reactivate(int staffId);

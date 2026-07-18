@@ -18,7 +18,7 @@
 struct StaffInputDTO {
     QString     fullName;
     QPixmap     avatar;
-    Gender      gender;
+    QString     gender;
     QDate       dateOfBirth;
     QString     citizenId;
     QString     phoneNumber;
@@ -46,6 +46,12 @@ struct NurseInputDTO : public StaffInputDTO {
 
 struct ReceptionistInputDTO : public StaffInputDTO {
     QString shift;
+};
+
+struct PharmacistInputDTO : public StaffInputDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
 };
 
 // ── INSERT DTOs ───────────────────────────────────────────────────────
@@ -81,7 +87,7 @@ struct StaffInsertDTO {
         passwordHash(generatedPasswordHash),
         fullName(inputInformation.fullName.trimmed()),
         role(userRoleToEn(inputRole).trimmed()),
-        gender(genderToEn(inputInformation.gender).trimmed()),
+        gender(inputInformation.gender),
         dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
         citizenId(inputInformation.citizenId.trimmed()),
         phoneNumber(inputInformation.phoneNumber.trimmed()),
@@ -133,6 +139,24 @@ struct NurseInsertDTO : public StaffInsertDTO {
         certification(inputInformation.certification.trimmed()) {}
 };
 
+
+struct PharmacistInsertDTO : public StaffInsertDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears = 0;
+
+    PharmacistInsertDTO() = default;
+    ~PharmacistInsertDTO() override = default;
+    PharmacistInsertDTO(const PharmacistInputDTO& inputInformation,
+                    const QString& generatedStaffCode,
+                    const QString& generatedPasswordHash)
+      : StaffInsertDTO(inputInformation, generatedStaffCode, generatedPasswordHash, UserRole::Pharmacist),
+        licenseNumber(inputInformation.licenseNumber.trimmed()),
+        pharmacySection(inputInformation.pharmacySection.trimmed()),
+        experienceYears(inputInformation.experienceYears) {}
+
+};
+
 // ── UPDATE DTO ────────────────────────────────────────────────────────
 // Dùng khi CẬP NHẬT thông tin — chỉ chứa field được phép sửa
 // Không có: staffCode (key), role (không đổi), createdAt (bất biến)
@@ -157,7 +181,7 @@ struct StaffUpdateDTO {
     StaffUpdateDTO(const StaffInputDTO& inputInformation, int inputId)
       : staffId(inputId),
         fullName(inputInformation.fullName.trimmed()),
-        gender(genderToString(inputInformation.gender).trimmed()),
+        gender(inputInformation.gender.trimmed()),
         dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
         citizenId(inputInformation.citizenId.trimmed()),
         phoneNumber(inputInformation.phoneNumber.trimmed()),
@@ -204,6 +228,20 @@ struct NurseUpdateDTO : public StaffUpdateDTO {
         certification(inputInformation.certification.trimmed()) {}
 };
 
+struct PharmacistUpdateDTO : public StaffUpdateDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
+
+    PharmacistUpdateDTO() = default;
+    ~PharmacistUpdateDTO() override = default;
+    PharmacistUpdateDTO(const PharmacistInputDTO& inputInformation, int inputId)
+      : StaffUpdateDTO(inputInformation, inputId),
+        licenseNumber(inputInformation.licenseNumber.trimmed()),
+        pharmacySection(inputInformation.pharmacySection.trimmed()),
+        experienceYears(inputInformation.experienceYears) {}
+};
+
 // ── SEARCH CRITERIA ───────────────────────────────────────────────────
 #include <optional>
 
@@ -245,7 +283,7 @@ struct StaffProfileDTO {
     // ── Editable fields (map 1-1 voi StaffInputDTO) ────────────
     QString  fullName;
     QPixmap  avatar;
-    Gender   gender;
+    QString  gender;
     QDate    dateOfBirth;
     QString  citizenId;
     QString  phoneNumber;
@@ -332,6 +370,34 @@ struct NurseProfileDTO : public StaffProfileDTO {
     }
 };
 
+struct PharmacistProfileDTO : public StaffProfileDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
+
+    ~PharmacistProfileDTO() override = default;
+
+
+    std::unique_ptr<StaffInputDTO> toInputDTO() const override {
+        auto dto = std::make_unique<PharmacistInputDTO>();
+        dto->fullName     = fullName;
+        dto->avatar       = avatar;
+        dto->gender       = gender;
+        dto->dateOfBirth  = dateOfBirth;
+        dto->citizenId    = citizenId;
+        dto->phoneNumber  = phoneNumber;
+        dto->email        = email;
+        dto->address      = address;
+        dto->departmentId = departmentId;
+        dto->shift        = shift;
+        // Pharmacist-specific
+        dto->licenseNumber   = licenseNumber;
+        dto->pharmacySection = pharmacySection;
+        dto->experienceYears = experienceYears;
+        return dto;
+    }
+};
+
 /**
  * @brief Public profile — xem thong tin cua nguoi khac
  *        Khong chua thong tin ca nhan nhay cam (CCCD, email, dien thoai, dia chi...)
@@ -357,4 +423,11 @@ struct DoctorPublicProfileDTO : public StaffPublicProfileDTO {
 struct NursePublicProfileDTO : public StaffPublicProfileDTO {
     // Nurse public
     QString nurseLevel;     // "JUNIOR" | "SENIOR" | "HEAD"
+};
+
+struct PharmacistPublicProfileDTO : public StaffPublicProfileDTO {
+    // Pharmacist public
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
 };

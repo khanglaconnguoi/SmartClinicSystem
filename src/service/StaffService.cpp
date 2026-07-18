@@ -194,38 +194,6 @@ QString StaffService::validateStaffBaseInput(const StaffInputDTO& staff, int sta
     return "";
 }
 
-QString StaffService::validateStaffUpdate(const StaffUpdateDTO& staff) {
-    QString err;
-    
-    if (!(err = Validation::validateFullName(staff.fullName)).isEmpty()) return err;
-    if (!(err = Validation::validateDateOfBirth(QDate::fromString(staff.dateOfBirth, "yyyy-MM-dd"))).isEmpty()) return err;
-    if (!(err = Validation::validateCitizenId(staff.citizenId)).isEmpty()) return err;
-    if (!(err = Validation::validatePhoneNumber(staff.phoneNumber)).isEmpty()) return err;
-    if (!(err = Validation::validateEmail(staff.email)).isEmpty()) return err;
-    if (!(err = Validation::validateAddress(staff.address)).isEmpty()) return err;
-    if (!(err = validateDepartmentId(staff.departmentId)).isEmpty()) return err;
-
-    if (!(err = validateCitizenIdUnique(staff.citizenId, staff.staffId)).isEmpty()) return err;
-    if (!(err = validatePhoneNumberUnique(staff.phoneNumber, staff.staffId)).isEmpty()) return err;
-    if (!(err = validateEmailUnique(staff.email, staff.staffId)).isEmpty()) return err;
-
-    return "";
-}
-
-QString StaffService::validateDoctorUpdate(const DoctorUpdateDTO& doctor) {
-    QString err = validateStaffUpdate(doctor);
-    if (!err.isEmpty()) return err;
-    
-    if (!(err = validateSpecialty(doctor.specialty)).isEmpty()) return err;
-    if (!(err = validateLicenseNumber(doctor.licenseNumber)).isEmpty()) return err;
-    if (!(err = validateExperienceYears(doctor.experienceYears)).isEmpty()) return err;
-    if (!(err = validateConsultationFee(doctor.consultationFee)).isEmpty()) return err;
-    
-    if (!(err = validateLicenseNumberUnique(doctor.licenseNumber, doctor.staffId)).isEmpty()) return err;
-
-    return "";
-}
-
 QString StaffService::validateDoctorInput(const DoctorInputDTO& doctor, int staffId) {
     // Check các trường cơ bản trước
     QString err = validateStaffBaseInput(doctor, staffId);
@@ -243,6 +211,7 @@ QString StaffService::validateDoctorInput(const DoctorInputDTO& doctor, int staf
     return "";
 }
 
+
 QString StaffService::validateNurseInput(const NurseInputDTO& nurse, int staffId) {
     // Check các trường cơ bản trước
     QString err = validateStaffBaseInput(nurse, staffId);
@@ -254,11 +223,17 @@ QString StaffService::validateNurseInput(const NurseInputDTO& nurse, int staffId
     return "";
 }
 
-QString StaffService::validateNurseUpdate(const NurseUpdateDTO& nurse) {
-    QString err = validateStaffUpdate(nurse);
+
+
+QString StaffService::validatePharmacistInput(const PharmacistInputDTO& pharmacist, int staffId) {
+    // Check các trường cơ bản trước
+    QString err = validateStaffBaseInput(pharmacist, staffId);
     if (!err.isEmpty()) return err;
     
-    if (!(err = validateNurseLevel(nurse.nurseLevel)).isEmpty()) return err;
+    // Check các trường đặc thù của Pharmacist
+    if (!(err = validateLicenseNumber(pharmacist.licenseNumber)).isEmpty()) return err;
+    //if (!(err = validatePharmacySection(pharmacist.pharmacySection)).isEmpty()) return err;
+    if (!(err = validateExperienceYears(pharmacist.experienceYears)).isEmpty()) return err;
 
     return "";
 }
@@ -281,6 +256,9 @@ QString StaffService::generateStaffCode(UserRole role) const {
             roleCode = 'N';
             break;
         case UserRole::Receptionist:
+            roleCode = 'R';
+            break;
+        case UserRole::Pharmacist:
             roleCode = 'R';
             break;
     }
@@ -364,26 +342,47 @@ QString StaffService::hireNewReceptionist(const ReceptionistInputDTO& receptioni
     return "";
 }
 
-QString StaffService::editStaffBaseInformation(const StaffUpdateDTO& staffInformation) {
-    QString err = validateStaffUpdate(staffInformation);
+QString StaffService::hireNewPharmacist(const PharmacistInputDTO& pharmacist) {
+    QString validationError = validatePharmacistInput(pharmacist);
+    if (!validationError.isEmpty()) { return validationError; }
+
+    bool success = this->m_staffRepository->insertPharmacist({pharmacist, generateStaffCode(UserRole::Pharmacist),
+            QString::fromStdString(bcrypt::generateHash(
+                    generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR))});
+
+    if (!success) { return "Failed to insert pharmacist into the database."; }
+
+    return "";
+}
+
+QString StaffService::editStaffBaseInformation(const StaffInputDTO& staffInformation, int staffId) {
+    QString err = validateStaffBaseInput(staffInformation, staffId);
     if (!err.isEmpty()) return err;
-    if (!m_staffRepository->updateStaff(staffInformation))
+    if (!m_staffRepository->updateStaff(StaffUpdateDTO(staffInformation, staffId)))
         return "Repository update failed (DB error).";
     return "";
 }
 
-QString StaffService::editDoctorInformation(const DoctorUpdateDTO& doctorInformation) {
-    QString err = validateDoctorUpdate(doctorInformation);
+QString StaffService::editDoctorInformation(const DoctorInputDTO& doctorInformation, int staffId) {
+    QString err = validateDoctorInput(doctorInformation, staffId);
     if (!err.isEmpty()) return err;
-    if (!m_staffRepository->updateDoctor(doctorInformation))
+    if (!m_staffRepository->updateDoctor(DoctorUpdateDTO(doctorInformation, staffId)))
         return "Repository update failed (DB error).";
     return "";
 }
 
-QString StaffService::editNurseInformation(const NurseUpdateDTO& nurseInformation) {
-    QString err = validateNurseUpdate(nurseInformation);
+QString StaffService::editNurseInformation(const NurseInputDTO& nurseInformation, int staffId) {
+    QString err = validateNurseInput(nurseInformation, staffId);
     if (!err.isEmpty()) return err;
-    if (!m_staffRepository->updateNurse(nurseInformation))
+    if (!m_staffRepository->updateNurse(NurseUpdateDTO(nurseInformation, staffId)))
+        return "Repository update failed (DB error).";
+    return "";
+}
+
+QString StaffService::editPharmacistInformation(const PharmacistInputDTO& pharmacistInformation, int staffId) {
+    QString err = validatePharmacistInput(pharmacistInformation);
+    if (!err.isEmpty()) return err;
+    if (!m_staffRepository->updatePharmacist(PharmacistUpdateDTO(pharmacistInformation, staffId)))
         return "Repository update failed (DB error).";
     return "";
 }
