@@ -25,6 +25,18 @@ inline constexpr qsizetype FULL_NAME_MAX_LENGTH = 100;
 
 // ── Trường đơn lẻ ─────────────────────────────────────────────────────────
 
+/**
+ * @brief Validates if a string is not empty after trimming whitespace.
+ * @return The error message if invalid; otherwise an empty string.
+ */
+QString validateTrimmedNotEmpty(const QString &str, const QString &errorMessage);
+
+/**
+ * @brief Validates if a database ID is valid (strictly greater than 0).
+ * @return The error message if invalid; otherwise an empty string.
+ */
+QString validateValidId(int id, const QString &errorMessage);
+
 QString validatePlainPassword(const QString &plainPassword);
 QString validateFullName(const QString &fullName);
 

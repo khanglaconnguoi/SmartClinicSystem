@@ -1,7 +1,11 @@
 #include "MedicalRecordService.h"
+
+#include <QDebug>
+
+#include "Validation.h"
 #include "model/MedicalRecord.h"
 #include "repository/MedicalRecordRepository.h"
-#include <QDebug>
+
 
 MedicalRecordService::MedicalRecordService(
     std::shared_ptr<MedicalRecordRepository> recordRepo,
@@ -45,18 +49,7 @@ QString MedicalRecordService::validateVitalSigns(const VitalSigns &vitals) {
   return "";
 }
 
-QString MedicalRecordService::validateChiefComplaint(const QString &complaint) {
-  if (complaint.isEmpty())
-    return "Lý do khám không được để trống.";
-  return "";
-}
 
-QString
-MedicalRecordService::validateDiagnosisDescription(const QString &desc) {
-  if (desc.isEmpty())
-    return "Mô tả chẩn đoán không được để trống.";
-  return "";
-}
 
 QString
 MedicalRecordService::validateDiagnosisSeverity(const QString &severity) {
@@ -71,7 +64,7 @@ MedicalRecordService::validateDiagnosisList(const QList<Diagnosis> &diagnoses) {
     return "Phải có ít nhất một chẩn đoán.";
   for (const Diagnosis &d : diagnoses) {
     QString err;
-    if (!(err = validateDiagnosisDescription(d.description)).isEmpty())
+    if (!(err = Validation::validateTrimmedNotEmpty(d.description, "Mô tả chẩn đoán không được để trống.")).isEmpty())
       return err;
     if (!(err = validateDiagnosisSeverity(d.severity)).isEmpty())
       return err;
@@ -161,7 +154,7 @@ int MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
     return -1;
   }
 
-  QString errChief = validateChiefComplaint(dto.chiefComplaint);
+  QString errChief = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.");
   if (!errChief.isEmpty()) {
     qDebug() << "Validation failed (chief complaint):" << errChief;
     return -1;
@@ -191,7 +184,7 @@ bool MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
     return false;
   }
 
-  QString errChief = validateChiefComplaint(dto.chiefComplaint);
+  QString errChief = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.");
   if (!errChief.isEmpty()) {
     qDebug() << "Validation failed (chief complaint):" << errChief;
     return false;

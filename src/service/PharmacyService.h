@@ -80,8 +80,6 @@ public:
     // ════════════════════════════════════════════════════════════════
 
     // -- Field thông tin cơ bản thuốc ─────────────────────────────────
-    static QString validateBrandName(const QString& brandName);
-    static QString validateUnit(const QString& unit);
     static QString validateUnitPrice(double unitPrice);
     static QString validateStockQuantity(int stockQuantity);
     static QString validateMinimumStock(int minimumStock);
@@ -91,8 +89,6 @@ public:
     // -- Field danh mục thuốc ────────────────────────────────────────
     /** @brief Kiểm tra danh sách danh mục: không rỗng, mỗi danh mục không được là chuỗi trống */
     static QString validateCategories(const QList<QString>& categories);
-    /** @brief Kiểm tra 1 danh mục đơn lẻ — UI gọi real-time khi người dùng nhập tên danh mục */
-    static QString validateCategoryEntry(const QString& category);
 
     // -- Field thành phần hoạt chất ───────────────────────────────────
     /** @brief Kiểm tra danh sách hoạt chất: ít nhất 1, ingredientId > 0, strength không rỗng */
@@ -106,8 +102,6 @@ public:
     // ════════════════════════════════════════════════════════════════
 
     static QString validatePrescriptionItemQuantity(int quantity);
-    static QString validatePrescriptionItemDosage(const QString& dosage);
-    static QString validatePrescriptionItemFrequency(const QString& frequency);
     static QString validatePrescriptionItemDuration(int durationDays);
 
     // ════════════════════════════════════════════════════════════════

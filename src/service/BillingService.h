@@ -25,8 +25,6 @@ private:
   QString generateInvoiceCode();
 
 public:
-  static QString validatePatientId(int patientId);
-  static QString validateRecordId(int recordId);
   static QString validateConsultationFee(double consultationFee);
   static QString validatePrescriptionItems(const QList<PrescriptionItemDTO> &items);
   static void normalizeSearchCriteria(InvoiceSearchCriteria &criteria);

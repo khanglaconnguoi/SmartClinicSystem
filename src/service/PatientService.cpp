@@ -305,27 +305,14 @@ bool PatientService::addEmergencyPatient(EmergencyPatientInputDTO &dto) {
 // Nhóm trường theo loại bệnh nhân
 // ─────────────────────────────────────────────────────────────────────────────
 
-QString PatientService::validatePatientCode(const QString &patientCode) {
-  if (patientCode.isEmpty())
-    return "Mã bệnh nhân không được để trống.";
-  return "";
-}
 
-QString PatientService::validateEmergencyContactName(const QString &name) {
-  if (name.trimmed().isEmpty())
-    return "Người liên hệ khẩn cấp không được để trống.";
-  return "";
-}
 
 QString PatientService::validateBaseInput(const PatientInputDTO &dto,
                                           const QString &patientCode) {
   QString err;
-  if (!(err = validatePatientCode(patientCode)).isEmpty())
-    return err;
-  if (!(err = Validation::validateFullName(dto.fullName)).isEmpty())
-    return err;
-  if (dto.dateOfBirth > QDate::currentDate() ||
-      dto.dateOfBirth.year() < QDate::currentDate().year() - 150)
+  if (!(err = Validation::validateTrimmedNotEmpty(patientCode, "Mã bệnh nhân không được để trống.")).isEmpty()) return err;
+  if (!(err = Validation::validateFullName(dto.fullName)).isEmpty()) return err;
+  if (dto.dateOfBirth > QDate::currentDate() || dto.dateOfBirth.year() < QDate::currentDate().year() - 150)
     return "Ngày sinh không hợp lệ (tuổi phải nhỏ hơn 150)";
 
   if (!(err = Validation::validateCitizenId(dto.citizenId)).isEmpty())
@@ -340,13 +327,9 @@ QString PatientService::validateBaseInput(const PatientInputDTO &dto,
   if (dto.address.length() > 255)
     return "Địa chỉ không được vượt quá 255 ký tự.";
 
-  if (!(err = validateBloodType(dto.bloodType)).isEmpty())
-    return err;
-  if (!(err = validateEmergencyContactName(dto.emergencyContactName)).isEmpty())
-    return err;
-  if (!(err = Validation::validatePhoneNumber(dto.emergencyContactPhone))
-           .isEmpty())
-    return err;
+  if (!(err = validateBloodType(dto.bloodType)).isEmpty()) return err;
+  if (!(err = Validation::validateTrimmedNotEmpty(dto.emergencyContactName, "Người liên hệ khẩn cấp không được để trống.")).isEmpty()) return err;
+  if (!(err = Validation::validatePhoneNumber(dto.emergencyContactPhone)).isEmpty()) return err;
 
   return "";
 }
@@ -371,8 +354,9 @@ QString PatientService::validateInPatientDischargeDate(
 }
 
 QString PatientService::validateInPatientReason(const QString &reason) {
-  if (reason.trimmed().isEmpty())
-    return "Lý do nhập viện không được để trống.";
+  QString err;
+  if (!(err = Validation::validateTrimmedNotEmpty(reason, "Lý do nhập viện không được để trống.")).isEmpty())
+    return err;
   if (reason.trimmed().length() > 1000)
     return "Lý do nhập viện không được vượt quá 1000 ký tự.";
   return "";
@@ -414,17 +398,18 @@ QString PatientService::validateEmergencyDischargeDate(
 }
 
 QString PatientService::validateEmergencyInjuryCause(const QString &cause) {
-  if (cause.trimmed().isEmpty())
-    return "Nguyên nhân chấn thương không được để trống.";
+  QString err;
+  if (!(err = Validation::validateTrimmedNotEmpty(cause, "Nguyên nhân chấn thương không được để trống.")).isEmpty())
+    return err;
   if (cause.trimmed().length() > 255)
     return "Nguyên nhân chấn thương không được vượt quá 255 ký tự.";
   return "";
 }
 
-QString
-PatientService::validateEmergencyInjuryDescription(const QString &desc) {
-  if (desc.trimmed().isEmpty())
-    return "Mô tả chấn thương không được để trống.";
+QString PatientService::validateEmergencyInjuryDescription(const QString &desc) {
+  QString err;
+  if (!(err = Validation::validateTrimmedNotEmpty(desc, "Mô tả chấn thương không được để trống.")).isEmpty())
+    return err;
   if (desc.trimmed().length() > 1000)
     return "Mô tả chấn thương không được vượt quá 1000 ký tự.";
   return "";

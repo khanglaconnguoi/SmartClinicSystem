@@ -92,8 +92,6 @@ public:
   static QString validateDateRange(const QDate &fromDate, const QDate &toDate);
 
   // ── Validate các trường đơn lẻ dành cho UI gọi trực tiếp ───────────────
-  static QString validatePatientCode(const QString &patientCode);
-  static QString validateEmergencyContactName(const QString &name);
   static QString validateBloodType(const QString &bloodType);
 
   static QString validateInPatientRoomId(int roomId);

@@ -2,8 +2,12 @@
  * @file    service/PharmacyService.cpp
  */
 #include "PharmacyService.h"
+
 #include <QDebug>
 #include <QSet>
+
+#include "Validation.h"
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRIVATE VALIDATOR
@@ -44,9 +48,9 @@ void PharmacyService::normalizeMedicationInput(
 QString PharmacyService::validateMedicationInput(
     const MedicationInputDTO &input) const {
   QString err;
-  if (!(err = validateBrandName(input.brandName)).isEmpty())
+  if (!(err = Validation::validateTrimmedNotEmpty(input.brandName, "Tên thuốc không được để trống.")).isEmpty())
     return err;
-  if (!(err = validateUnit(input.unit)).isEmpty())
+  if (!(err = Validation::validateTrimmedNotEmpty(input.unit, "Đơn vị tính không được để trống.")).isEmpty())
     return err;
   if (!(err = validateUnitPrice(input.unitPrice)).isEmpty())
     return err;
@@ -71,19 +75,7 @@ QString PharmacyService::validateMedicationInput(
 // FORMAT VALIDATORS — public static (Medication)
 // ───────────────────────────────────────────────────────────────────────────────
 
-/** @brief Tên thuốc (brandName): không được rỗng */
-QString PharmacyService::validateBrandName(const QString &brandName) {
-  if (brandName.trimmed().isEmpty())
-    return "Tên thuốc không được để trống.";
-  return "";
-}
 
-/** @brief Đơn vị tính (unit): không được rỗng */
-QString PharmacyService::validateUnit(const QString &unit) {
-  if (unit.trimmed().isEmpty())
-    return "Đơn vị tính không được để trống.";
-  return "";
-}
 
 /** @brief Đơn giá (unitPrice): không được âm */
 QString PharmacyService::validateUnitPrice(double unitPrice) {
@@ -155,11 +147,11 @@ QString PharmacyService::validateIngredients(
  */
 QString PharmacyService::validateIngredientEntry(int ingredientId,
                                                  const QString &strength) {
-  if (ingredientId <= 0)
-    return "Hoạt chất không hợp lệ.";
-  if (strength.trimmed().isEmpty())
-    return QString("Hàm lượng của hoạt chất ID=%1 không được để trống.")
-        .arg(ingredientId);
+  QString err;
+  if (!(err = Validation::validateValidId(ingredientId, "Hoạt chất không hợp lệ.")).isEmpty())
+    return err;
+  if (!(err = Validation::validateTrimmedNotEmpty(strength, QString("Hàm lượng của hoạt chất ID=%1 không được để trống.").arg(ingredientId))).isEmpty())
+    return err;
   return "";
 }
 
@@ -172,21 +164,13 @@ QString PharmacyService::validateCategories(const QList<QString>& categories) {
   if (categories.isEmpty())
     return "Thuốc phải có ít nhất 1 danh mục.";
   for (const QString& cat : categories) {
-    QString err = validateCategoryEntry(cat);
+    QString err = Validation::validateTrimmedNotEmpty(cat, "Tên danh mục không được để trống.");
     if (!err.isEmpty()) return err;
   }
   return "";
 }
 
-/**
- * @brief Kiểm tra 1 danh mục đơn lẻ: không được là chuỗi trống.
- *        UI gọi real-time khi người dùng gõ tên từng danh mục.
- */
-QString PharmacyService::validateCategoryEntry(const QString& category) {
-  if (category.trimmed().isEmpty())
-    return "Tên danh mục không được để trống.";
-  return "";
-}
+
 
 // ───────────────────────────────────────────────────────────────────────────────
 // FORMAT VALIDATORS — public static (Prescription Item)
@@ -199,20 +183,7 @@ QString PharmacyService::validatePrescriptionItemQuantity(int quantity) {
   return "";
 }
 
-/** @brief Liều dùng (dosage): không được rỗng */
-QString PharmacyService::validatePrescriptionItemDosage(const QString &dosage) {
-  if (dosage.trimmed().isEmpty())
-    return "Liều dùng không được để trống.";
-  return "";
-}
 
-/** @brief Tần suất dùng (frequency): không được rỗng */
-QString
-PharmacyService::validatePrescriptionItemFrequency(const QString &frequency) {
-  if (frequency.trimmed().isEmpty())
-    return "Tần suất dùng không được để trống.";
-  return "";
-}
 
 /** @brief Số ngày dùng (durationDays): phải > 0 */
 QString PharmacyService::validatePrescriptionItemDuration(int durationDays) {
@@ -258,9 +229,9 @@ QString PharmacyService::validatePrescriptionInput(
     QString err;
     if (!(err = validatePrescriptionItemQuantity(item.quantity)).isEmpty())
       return err;
-    if (!(err = validatePrescriptionItemDosage(item.dosage)).isEmpty())
+    if (!(err = Validation::validateTrimmedNotEmpty(item.dosage, "Liều dùng không được để trống.")).isEmpty())
       return err;
-    if (!(err = validatePrescriptionItemFrequency(item.frequency)).isEmpty())
+    if (!(err = Validation::validateTrimmedNotEmpty(item.frequency, "Tần suất dùng không được để trống.")).isEmpty())
       return err;
     if (!(err = validatePrescriptionItemDuration(item.durationDays)).isEmpty())
       return err;
