@@ -52,7 +52,36 @@ private:
     QString generateStaffCode(UserRole role) const;
     QString generateRandomPassword() const;
 
-public:
+    // =================================================================
+    // NORMALIZE (private static)
+    // Trim all QString fields in-place — called BEFORE validation
+    // Insert flow: operate on InputDTO
+    // Update flow: operate on UpdateDTO
+    // =================================================================
+    static void normalizeStaffInput(StaffInputDTO& dto);
+    static void normalizeDoctorInput(DoctorInputDTO& dto);
+    static void normalizeNurseInput(NurseInputDTO& dto);
+
+    static void normalizeStaffUpdate(StaffUpdateDTO& dto);
+    static void normalizeDoctorUpdate(DoctorUpdateDTO& dto);
+    static void normalizeNurseUpdate(NurseUpdateDTO& dto);
+
+    // =================================================================
+    // MAPPING HELPERS (private static) — Insert flow only
+    // Convert a normalized InputDTO into a repo-level InsertDTO.
+    // No trimming here — assumes input is already normalized.
+    // =================================================================
+    static StaffInsertDTO mapStaffToInsertDTO(
+            const StaffInputDTO& input,
+            const QString& staffCode,
+            const QString& passwordHash,
+            UserRole role);
+    static DoctorInsertDTO mapDoctorToInsertDTO(
+            const DoctorInputDTO& input, const QString& staffCode, const QString& passwordHash);
+    static NurseInsertDTO mapNurseToInsertDTO(
+            const NurseInputDTO& input, const QString& staffCode, const QString& passwordHash);
+
+   public:
     explicit StaffService(std::shared_ptr<StaffRepository> staffRepository) 
         : m_staffRepository(staffRepository) {}
 
@@ -104,13 +133,13 @@ public:
     }
 
 
-    QString hireNewDoctor(const DoctorInputDTO& doctor);
-    QString hireNewNurse(const NurseInputDTO& nurse);
-    QString hireNewReceptionist(const ReceptionistInputDTO& receptionist);
+    QString hireNewDoctor(DoctorInputDTO doctor);
+    QString hireNewNurse(NurseInputDTO nurse);
+    QString hireNewReceptionist(ReceptionistInputDTO receptionist);
 
-    QString editStaffBaseInformation(const StaffUpdateDTO& staffInformation);
-    QString editDoctorInformation(const DoctorUpdateDTO& doctorInformation);
-    QString editNurseInformation(const NurseUpdateDTO& nurseInformation);
+    QString editStaffBaseInformation(StaffUpdateDTO staffInformation);
+    QString editDoctorInformation(DoctorUpdateDTO doctorInformation);
+    QString editNurseInformation(NurseUpdateDTO nurseInformation);
 
 
     bool deactivateStaff(int staffId) {

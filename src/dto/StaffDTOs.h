@@ -70,33 +70,6 @@ struct StaffInsertDTO {
     int         departmentId;
     QString     hireDate;       // "yyyy-MM-dd"
     QString     shift;
-
-    StaffInsertDTO() = default;
-    virtual ~StaffInsertDTO() = default;
-    StaffInsertDTO(const StaffInputDTO& inputInformation, 
-                   const QString& generatedStaffCode, 
-                   const QString& generatedPasswordHash,
-                   UserRole inputRole)
-      : staffCode(generatedStaffCode.trimmed()),
-        passwordHash(generatedPasswordHash),
-        fullName(inputInformation.fullName.trimmed()),
-        role(userRoleToEn(inputRole).trimmed()),
-        gender(genderToEn(inputInformation.gender).trimmed()),
-        dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
-        citizenId(inputInformation.citizenId.trimmed()),
-        phoneNumber(inputInformation.phoneNumber.trimmed()),
-        email(inputInformation.email.trimmed()), // Làm sạch & Chuẩn hóa email
-        address(inputInformation.address.trimmed()),
-        departmentId(inputInformation.departmentId),
-        hireDate(QDate::currentDate().toString("yyyy-MM-dd")), 
-        shift(inputInformation.shift.trimmed()) {
-
-        if (!inputInformation.avatar.isNull()) {
-            QBuffer buffer(&avatarBytes);
-            buffer.open(QIODevice::WriteOnly);
-            inputInformation.avatar.save(&buffer, "PNG"); // Chuẩn hóa ảnh về dạng định dạng PNG thô
-        }
-    }
 };
 
 struct DoctorInsertDTO : public StaffInsertDTO {
@@ -105,32 +78,11 @@ struct DoctorInsertDTO : public StaffInsertDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
-
-    DoctorInsertDTO() = default;
-    ~DoctorInsertDTO() override = default;
-    DoctorInsertDTO(const DoctorInputDTO& inputInformation,
-                    const QString& generatedStaffCode,
-                    const QString& generatedPasswordHash)
-      : StaffInsertDTO(inputInformation, generatedStaffCode, generatedPasswordHash, UserRole::Doctor),
-        specialty(inputInformation.specialty.trimmed()),
-        licenseNumber(inputInformation.licenseNumber.trimmed()),
-        experienceYears(inputInformation.experienceYears),
-        consultationFee(inputInformation.consultationFee),
-        bio(inputInformation.bio.trimmed()) {}
 };
 
 struct NurseInsertDTO : public StaffInsertDTO {
     QString nurseLevel;
     QString certification;
-
-    NurseInsertDTO() = default;
-    ~NurseInsertDTO() override = default;
-    NurseInsertDTO(const NurseInputDTO& inputInformation,
-                   const QString& generatedStaffCode,
-                   const QString& generatedPasswordHash)
-      : StaffInsertDTO(inputInformation, generatedStaffCode, generatedPasswordHash, UserRole::Nurse),
-        nurseLevel(inputInformation.nurseLevel.trimmed()),
-        certification(inputInformation.certification.trimmed()) {}
 };
 
 // ── UPDATE DTO ────────────────────────────────────────────────────────
@@ -151,27 +103,6 @@ struct StaffUpdateDTO {
     QString     address;            // ADMIN & DOCTOR
     int         departmentId;       // ADMIN   
     QString     shift;              // ADMIN
-
-    StaffUpdateDTO() = default;
-    virtual ~StaffUpdateDTO() = default;
-    StaffUpdateDTO(const StaffInputDTO& inputInformation, int inputId)
-      : staffId(inputId),
-        fullName(inputInformation.fullName.trimmed()),
-        gender(genderToString(inputInformation.gender).trimmed()),
-        dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
-        citizenId(inputInformation.citizenId.trimmed()),
-        phoneNumber(inputInformation.phoneNumber.trimmed()),
-        email(inputInformation.email.trimmed()),
-        address(inputInformation.address.trimmed()),
-        departmentId(inputInformation.departmentId),
-        shift(inputInformation.shift) {
-            
-        if (!inputInformation.avatar.isNull()) {
-            QBuffer buffer(&avatarBytes);
-            buffer.open(QIODevice::WriteOnly);
-            inputInformation.avatar.save(&buffer, "PNG"); // Chuẩn hóa ảnh về dạng định dạng PNG thô
-        }
-    }
 };
 
 struct DoctorUpdateDTO : public StaffUpdateDTO {
@@ -180,28 +111,11 @@ struct DoctorUpdateDTO : public StaffUpdateDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
-
-    DoctorUpdateDTO() = default;
-    ~DoctorUpdateDTO() override = default;
-    DoctorUpdateDTO(const DoctorInputDTO& inputInformation, int inputId)
-      : StaffUpdateDTO(inputInformation, inputId),
-        specialty(inputInformation.specialty.trimmed()),
-        licenseNumber(inputInformation.licenseNumber.trimmed()),
-        experienceYears(inputInformation.experienceYears),
-        consultationFee(inputInformation.consultationFee),
-        bio(inputInformation.bio.trimmed()) {}
 };
 
 struct NurseUpdateDTO : public StaffUpdateDTO {
     QString nurseLevel;
     QString certification;
-
-    NurseUpdateDTO() = default;
-    ~NurseUpdateDTO() override = default;
-    NurseUpdateDTO(const NurseInputDTO& inputInformation, int inputId)
-      : StaffUpdateDTO(inputInformation, inputId),
-        nurseLevel(inputInformation.nurseLevel.trimmed()),
-        certification(inputInformation.certification.trimmed()) {}
 };
 
 // ── SEARCH CRITERIA ───────────────────────────────────────────────────
