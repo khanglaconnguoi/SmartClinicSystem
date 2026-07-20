@@ -407,36 +407,38 @@ QString StaffService::generateRandomPassword() const {
     return password;
 }
 
-QString StaffService::hireNewDoctor(DoctorInputDTO input) {
+StaffHireResult StaffService::hireNewDoctor(DoctorInputDTO input) {
     normalizeDoctorInput(input);
     QString validationError = validateDoctorInput(input);
-    if (!validationError.isEmpty()) { return validationError; }
+    if (!validationError.isEmpty()) { return StaffHireResult{validationError, "", ""}; }
 
     const QString staffCode = generateStaffCode(UserRole::Doctor);
-    const QString passwordHash = QString::fromStdString(bcrypt::generateHash(
-            generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR));
+    const QString plainPassword = generateRandomPassword();
+    const QString passwordHash = QString::fromStdString(
+            bcrypt::generateHash(plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
 
     DoctorInsertDTO insertDto = mapDoctorToInsertDTO(input, staffCode, passwordHash);
     if (!this->m_staffRepository->insertDoctor(insertDto)) {
-        return "Failed to insert doctor into the database.";
+        return StaffHireResult{"Failed to insert doctor into the database.", "", ""};
     }
-    return "";
+    return StaffHireResult{"", staffCode, plainPassword};
 }
 
-QString StaffService::hireNewNurse(NurseInputDTO input) {
+StaffHireResult StaffService::hireNewNurse(NurseInputDTO input) {
     normalizeNurseInput(input);
     QString validationError = validateNurseInput(input);
-    if (!validationError.isEmpty()) { return validationError; }
+    if (!validationError.isEmpty()) { return StaffHireResult{validationError, "", ""}; }
 
     const QString staffCode = generateStaffCode(UserRole::Nurse);
-    const QString passwordHash = QString::fromStdString(bcrypt::generateHash(
-            generateRandomPassword().toStdString(), PASSWORD_HASH_COST_FACTOR));
+    const QString plainPassword = generateRandomPassword();
+    const QString passwordHash = QString::fromStdString(
+            bcrypt::generateHash(plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
 
     NurseInsertDTO insertDto = mapNurseToInsertDTO(input, staffCode, passwordHash);
     if (!this->m_staffRepository->insertNurse(insertDto)) {
-        return "Failed to insert nurse into the database.";
+        return StaffHireResult{"Failed to insert nurse into the database.", "", ""};
     }
-    return "";
+    return StaffHireResult{"", staffCode, plainPassword};
 }
 
 QString StaffService::hireNewReceptionist(ReceptionistInputDTO input) {

@@ -30,6 +30,12 @@ struct ResetPasswordResult {
     QString newPassword;
 };
 
+struct StaffHireResult {
+    QString errorMessage;
+    QString staffCode;
+    QString plainPassword;
+};
+
 class StaffService {
 private:
     std::shared_ptr<StaffRepository> m_staffRepository;
@@ -133,8 +139,8 @@ private:
     }
 
 
-    QString hireNewDoctor(DoctorInputDTO doctor);
-    QString hireNewNurse(NurseInputDTO nurse);
+    StaffHireResult hireNewDoctor(DoctorInputDTO doctor);
+    StaffHireResult hireNewNurse(NurseInputDTO nurse);
     QString hireNewReceptionist(ReceptionistInputDTO receptionist);
 
     QString editStaffBaseInformation(StaffUpdateDTO staffInformation);

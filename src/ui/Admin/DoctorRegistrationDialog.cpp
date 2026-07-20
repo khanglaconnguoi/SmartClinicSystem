@@ -346,13 +346,15 @@ void DoctorRegistrationDialog::handleSave() {
     dto.consultationFee = consultationFee;
     dto.bio = bio;
 
-    QString errorMsg = m_staffService->hireNewDoctor(dto);
-    if (!errorMsg.isEmpty()) {
-      QMessageBox::critical(this, "Lỗi", errorMsg);
+    StaffHireResult result = m_staffService->hireNewDoctor(dto);
+    if (!result.errorMessage.isEmpty()) {
+      QMessageBox::critical(this, "Lỗi", result.errorMessage);
       return;
     }
     QMessageBox::information(this, "Thành công",
-                             "Tạo tài khoản Bác sĩ thành công!");
+                             QString("Tạo tài khoản Bác sĩ thành công!\nMã nhân viên: %1\nMật khẩu: %2")
+                             .arg(result.staffCode)
+                             .arg(result.plainPassword));
   } else {
     DoctorUpdateDTO updateDto;
     updateDto.staffId = m_editStaffId;
