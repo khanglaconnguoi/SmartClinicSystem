@@ -50,10 +50,7 @@ private:
     QString validateStaffBaseInput(const StaffInputDTO& staff, int staffId = -1);
     QString validateDoctorInput(const DoctorInputDTO& doctor, int staffId = -1);
     QString validateNurseInput(const NurseInputDTO& nurse, int staffId = -1);
-    
-    QString validateStaffUpdate(const StaffUpdateDTO& staff);
-    QString validateDoctorUpdate(const DoctorUpdateDTO& doctor);
-    QString validateNurseUpdate(const NurseUpdateDTO& nurse);
+    QString validatePharmacistInput(const PharmacistInputDTO& pharmacist, int staffId = -1);
 
     QString generateStaffCode(UserRole role) const;
     QString generateRandomPassword() const;
@@ -67,10 +64,7 @@ private:
     static void normalizeStaffInput(StaffInputDTO& dto);
     static void normalizeDoctorInput(DoctorInputDTO& dto);
     static void normalizeNurseInput(NurseInputDTO& dto);
-
-    static void normalizeStaffUpdate(StaffUpdateDTO& dto);
-    static void normalizeDoctorUpdate(DoctorUpdateDTO& dto);
-    static void normalizeNurseUpdate(NurseUpdateDTO& dto);
+    static void normalizePharmacistInput(PharmacistInputDTO& dto);
 
     // =================================================================
     // MAPPING HELPERS (private static) — Insert flow only
@@ -86,7 +80,13 @@ private:
             const DoctorInputDTO& input, const QString& staffCode, const QString& passwordHash);
     static NurseInsertDTO mapNurseToInsertDTO(
             const NurseInputDTO& input, const QString& staffCode, const QString& passwordHash);
+    static PharmacistInsertDTO mapPharmacistToInsertDTO(
+            const PharmacistInputDTO& input, const QString& staffCode, const QString& passwordHash);
 
+    static StaffUpdateDTO mapStaffToUpdateDTO(const StaffInputDTO& dto, int staffId);
+    static DoctorUpdateDTO mapDoctorToUpdateDTO(const DoctorInputDTO& dto, int staffId);
+    static NurseUpdateDTO mapNurseToUpdateDTO(const NurseInputDTO& dto, int staffId);
+    static PharmacistUpdateDTO mapPharmacistToUpdateDTO(const PharmacistInputDTO& dto, int staffId);
    public:
     explicit StaffService(std::shared_ptr<StaffRepository> staffRepository) 
         : m_staffRepository(staffRepository) {}
@@ -115,6 +115,9 @@ private:
  
     // -- Field dac thu Nurse ─────────────────────────────────────────
     static QString validateNurseLevel(const QString& nurseLevel);
+
+    // -- Field dac thu Pharmacist ────────────────────────────────────
+    //static QString validatePharmacySection(const QString& pharmacySection);
  
     // =================================================================
     // UNIQUENESS VALIDATORS — public non-static (can DB)
@@ -141,11 +144,15 @@ private:
 
     StaffHireResult hireNewDoctor(DoctorInputDTO doctor);
     StaffHireResult hireNewNurse(NurseInputDTO nurse);
-    QString hireNewReceptionist(ReceptionistInputDTO receptionist);
+    // StaffHireResult hireNewReceptionist(ReceptionistInputDTO receptionist);
+    StaffHireResult hireNewPharmacist(PharmacistInputDTO pharmacist);
 
-    QString editStaffBaseInformation(StaffUpdateDTO staffInformation);
-    QString editDoctorInformation(DoctorUpdateDTO doctorInformation);
-    QString editNurseInformation(NurseUpdateDTO nurseInformation);
+    QString editStaffBaseInformation(StaffInputDTO staffInformation, int staffId);
+    QString editDoctorInformation(DoctorInputDTO doctorInformation, int staffId);
+    QString editNurseInformation(NurseInputDTO nurseInformation, int staffId);
+    QString editPharmacistInformation(PharmacistInputDTO pharmacistInformation, int staffId);
+
+
 
 
     bool deactivateStaff(int staffId) {

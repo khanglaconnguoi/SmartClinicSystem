@@ -527,23 +527,24 @@ bool DatabaseManager::createTables() {
     return false;
   }
 
-  // Bảng Login Information
-  QString createLoginInformation = R"(
-      CREATE TABLE IF NOT EXISTS login_information (
-          user_id       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-          username      TEXT NOT NULL,
-          password_hash TEXT NOT NULL,
-          created_at    TEXT NOT NULL,
-          staff_id      INTEGER NOT NULL,
-          account_type  TEXT NOT NULL,
-          CONSTRAINT login_information_staff_FK FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
-      );
+  // Bảng Nurse Profiles
+  QString createPharmacistProfiles = R"(
+    CREATE TABLE IF NOT EXISTS pharmacist_profiles (
+        staff_id          INTEGER PRIMARY KEY,
+        license_number    TEXT NOT NULL UNIQUE,
+        pharmacy_section  TEXT,
+        experience_years  INTEGER NOT NULL DEFAULT 0 CHECK (experience_years >= 0),
+        FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
+    );
   )";
-  if (!query.exec(createLoginInformation)) {
-    qDebug() << "Lỗi bảng Login Information:" << query.lastError().text();
+  if (!query.exec(createPharmacistProfiles)) {
+    qDebug() << "Lỗi bảng Pharmacist Profiles:" << query.lastError().text();
     m_db.rollback();
     return false;
   }
+
+
+
 
   // -------------------------------------------------
 

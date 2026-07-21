@@ -410,7 +410,7 @@ struct PatientDetailDTO {
   QString patientCode;
   QString fullName;
   QDate dateOfBirth;
-  Gender gender;
+  QString gender;
   QString citizenId;
   QString phone;
   QString email;
@@ -491,7 +491,7 @@ struct PatientSearchResultDTO {
   QString patientCode;
   QString fullName;
   QDate dateOfBirth;
-  Gender gender;
+  QString gender;
   QString phone;
 
   PatientType type;    // OUTPATIENT / INPATIENT / EMERGENCY
