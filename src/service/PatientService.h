@@ -23,7 +23,21 @@ class PatientService {
 private:
   std::shared_ptr<PatientRepository> m_patientRepository;
 
-  // ── (Các private member cũ đã chuyển xuống dưới public hoặc xoá)
+  // =================================================================
+  // MAPPING HELPERS (private static)
+  // Convert a normalized InputDTO into a repo-level InsertDTO/UpdateDTO.
+  // No trimming here — assumes input is already normalized.
+  // =================================================================
+  static PatientInsertDTO mapPatientToInsertDTO(const PatientInputDTO &input, const QString &patientCode, const QString &patientType);
+  static OutPatientInsertDTO mapOutPatientToInsertDTO(const OutPatientInputDTO &input, const QString &patientCode);
+  static InPatientInsertDTO mapInPatientToInsertDTO(const InPatientInputDTO &input, const QString &patientCode);
+  static EmergencyPatientInsertDTO mapEmergencyPatientToInsertDTO(const EmergencyPatientInputDTO &input, const QString &patientCode);
+
+  static PatientUpdateDTO mapPatientToUpdateDTO(const PatientInputDTO &input, int patientId);
+  static OutPatientUpdateDTO mapOutPatientToUpdateDTO(const OutPatientInputDTO &input, int patientId, const QString &status);
+  static InPatientUpdateDTO mapInPatientToUpdateDTO(const InPatientInputDTO &input, int patientId, const QString &status);
+  static EmergencyPatientUpdateDTO mapEmergencyPatientToUpdateDTO(const EmergencyPatientInputDTO &input, int patientId, const QString &status);
+
 public:
   explicit PatientService(std::shared_ptr<PatientRepository> patientRepository)
       : m_patientRepository(patientRepository) {}
@@ -58,12 +72,17 @@ public:
   static QString validateUpdateBaseInput(const PatientInputDTO &dto,
                                          int patientId);
 
+
   /**
    * @brief Chuẩn hóa dữ liệu đầu vào từ UI:
    *        trim khoảng trắng, chuẩn hóa chữ hoa/thường, email về lowercase...
    *        LUÔN gọi trước validate — đảm bảo validate trên dữ liệu đã sạch.
    */
   static void normalizePatientInput(PatientInputDTO &dto);
+
+  static void normalizeInPatientInput(InPatientInputDTO &dto);
+  static void normalizeOutPatientInput(OutPatientInputDTO &dto);
+  static void normalizeEmergencyPatientInput(EmergencyPatientInputDTO &dto);
 
   /**
    * @brief Chuẩn hóa một bản ghi dị ứng:
@@ -89,25 +108,15 @@ public:
    */
   static void normalizeSearchCriteria(PatientSearchCriteria &criteria);
 
-  static QString validateDateRange(const QDate &fromDate, const QDate &toDate);
-
   // ── Validate các trường đơn lẻ dành cho UI gọi trực tiếp ───────────────
   static QString validateBloodType(const QString &bloodType);
 
-  static QString validateInPatientRoomId(int roomId);
-  static QString validateInPatientDoctorId(int doctorId);
   static QString
   validateInPatientDischargeDate(const QDate &admissionDate,
                                  std::optional<QDate> dischargeDate);
-  static QString validateInPatientReason(const QString &reason);
-
-  static QString validateEmergencyRoomId(int roomId);
-  static QString validateEmergencyDoctorId(int doctorId);
   static QString
   validateEmergencyDischargeDate(const QDate &admissionDate,
                                  std::optional<QDate> dischargeDate);
-  static QString validateEmergencyInjuryCause(const QString &cause);
-  static QString validateEmergencyInjuryDescription(const QString &desc);
 
   // ── Allergy ──────────────────────────────────────────────────────────────
 
@@ -141,38 +150,38 @@ public:
   /**
    * @brief Đăng ký bệnh nhân ngoại trú.
    */
-  bool addOutPatient(OutPatientInputDTO &dto);
+  QString addOutPatient(OutPatientInputDTO &dto);
 
   /**
    * @brief Nhập viện bệnh nhân nội trú.
    */
-  bool addInPatient(InPatientInputDTO &dto);
+  QString addInPatient(InPatientInputDTO &dto);
 
   /**
    * @brief Tiếp nhận bệnh nhân cấp cứu.
    */
-  bool addEmergencyPatient(EmergencyPatientInputDTO &dto);
+  QString addEmergencyPatient(EmergencyPatientInputDTO &dto);
 
   /**
    * @brief Cập nhật thông tin bệnh nhân ngoại trú.
    *        Ghi đè cả `patients` lẫn `out_patients`.
    */
-  bool updateOutPatient(int patientId, OutPatientInputDTO &dto,
-                        const QString &status = "REGISTERED");
+  QString updateOutPatient(int patientId, OutPatientInputDTO &dto,
+                           const QString &status = "REGISTERED");
 
   /**
    * @brief Cập nhật thông tin bệnh nhân nội trú.
    *        Ghi đè cả `patients` lẫn `in_patients`.
    */
-  bool updateInPatient(int patientId, InPatientInputDTO &dto,
-                       const QString &status = "ADMITTED");
+  QString updateInPatient(int patientId, InPatientInputDTO &dto,
+                          const QString &status = "ADMITTED");
 
   /**
    * @brief Cập nhật thông tin bệnh nhân cấp cứu.
    *        Ghi đè cả `patients` lẫn `emergency_patients`.
    */
-  bool updateEmergencyPatient(int patientId, EmergencyPatientInputDTO &dto,
-                              const QString &status = "EMERGENCY");
+  QString updateEmergencyPatient(int patientId, EmergencyPatientInputDTO &dto,
+                                 const QString &status = "EMERGENCY");
 
   /**
    * @brief Tìm kiếm bệnh nhân kết hợp tất cả các tiêu chí.

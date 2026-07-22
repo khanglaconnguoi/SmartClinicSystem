@@ -260,7 +260,7 @@ void AdminPatientRegistrationDialog::handleSave() {
   QString emerName = m_txtEmergencyContactName->text().trimmed();
   QString emerPhone = m_txtEmergencyContactPhone->text().trimmed();
 
-  bool success = false;
+  QString errorMsg;
   if (type == PatientType::Outpatient) {
       OutPatientInputDTO dto;
       dto.fullName = fullName;
@@ -278,7 +278,7 @@ void AdminPatientRegistrationDialog::handleSave() {
       dto.emergencyContactPhone = emerPhone;
       dto.doctorId = std::nullopt;
       
-      success = m_patientService->addOutPatient(dto);
+      errorMsg = m_patientService->addOutPatient(dto);
   } else if (type == PatientType::Inpatient) {
       InPatientInputDTO dto;
       dto.fullName = fullName;
@@ -300,7 +300,7 @@ void AdminPatientRegistrationDialog::handleSave() {
       dto.dischargeDate = std::nullopt;
       dto.reason = "Chưa xác định";
 
-      success = m_patientService->addInPatient(dto);
+      errorMsg = m_patientService->addInPatient(dto);
   } else if (type == PatientType::Emergency) {
       EmergencyPatientInputDTO dto;
       dto.fullName = fullName;
@@ -323,12 +323,11 @@ void AdminPatientRegistrationDialog::handleSave() {
       dto.admissionDate = QDate::currentDate();
       dto.dischargeDate = std::nullopt;
 
-      success = m_patientService->addEmergencyPatient(dto);
+      errorMsg = m_patientService->addEmergencyPatient(dto);
   }
 
-  if (!success) {
-      // QMessageBox::critical(this, "Lỗi", "Không thể thêm bệnh nhân. Vui lòng kiểm tra lại thông tin.");
-      // Validation error is already shown in PatientService
+  if (!errorMsg.isEmpty()) {
+      QMessageBox::warning(this, "Lỗi kiểm tra dữ liệu", errorMsg);
       return;
   }
 

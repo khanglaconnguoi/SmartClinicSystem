@@ -56,13 +56,13 @@ QString validatePhoneNumber(const QString &phoneNumber);
 QString validateEmail(const QString &email);
 
 /**
- * @brief Kiểm tra địa chỉ không rỗng.
- */
-QString validateAddress(const QString &address);
-
-/**
  * @brief Kiểm tra ngày sinh hợp lệ (không lớn hơn ngày hiện tại).
  */
 QString validateDateOfBirth(const QDate &dateOfBirth);
+
+/**
+ * @brief Kiểm tra khoảng ngày hợp lệ (fromDate <= toDate).
+ */
+QString validateDateRange(const QDate &fromDate, const QDate &toDate);
 
 } // namespace Validation

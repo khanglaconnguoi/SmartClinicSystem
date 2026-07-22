@@ -216,17 +216,16 @@ void PharmacyService::normalizePrescriptionInput(
 
 QString PharmacyService::validatePrescriptionInput(
     const PrescriptionInputDTO &input) const {
-  if (input.recordId <= 0)
-    return "Hồ sơ khám không hợp lệ.";
-
-  if (input.doctorId <= 0)
-    return "Thông tin bác sĩ không hợp lệ.";
+    QString err;
+  if (!(err = Validation::validateValidId(input.recordId, "Hồ sơ khám không hợp lệ.")).isEmpty())
+    return err;
+  if (!(err = Validation::validateValidId(input.doctorId, "Thông tin bác sĩ không hợp lệ.")).isEmpty())
+    return err;
 
   if (input.items.isEmpty())
     return "Đơn thuốc phải có ít nhất 1 loại thuốc.";
 
   for (const auto &item : input.items) {
-    QString err;
     if (!(err = validatePrescriptionItemQuantity(item.quantity)).isEmpty())
       return err;
     if (!(err = Validation::validateTrimmedNotEmpty(item.dosage, "Liều dùng không được để trống.")).isEmpty())
@@ -260,12 +259,12 @@ QString PharmacyService::addMedication(MedicationInputDTO &dto) {
 
 QString PharmacyService::updateMedication(int medicationId,
                                           MedicationInputDTO &dto) {
-  if (medicationId <= 0)
-    return "ID thuốc không hợp lệ.";
+  QString err;
+  if (!(err = Validation::validateValidId(medicationId, "ID thuốc không hợp lệ.")).isEmpty())
+    return err;
 
   normalizeMedicationInput(dto);
 
-  QString err = validateMedicationInput(dto);
   if (!err.isEmpty())
     return err;
 
@@ -478,6 +477,8 @@ QString PharmacyService::dispensePrescription(int prescriptionId,
 // ─────────────────────────────────────────────────────────────────────────────
 // TRUY VẤN
 // ─────────────────────────────────────────────────────────────────────────────
+
+
 
 QList<PrescriptionResultDTO> PharmacyService::searchPrescriptions(
     PrescriptionSearchCriteria &criteria) const {

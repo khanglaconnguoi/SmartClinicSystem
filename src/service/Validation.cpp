@@ -145,13 +145,6 @@ QString validateEmail(const QString &email) {
   return "";
 }
 
-QString validateAddress(const QString &address) {
-  if (address.trimmed().isEmpty()) {
-    return "Address is required.";
-  }
-  return "";
-}
-
 QString validateDateOfBirth(const QDate &dateOfBirth) {
   if (dateOfBirth.isNull()) {
     return "Date of birth is required.";
@@ -164,6 +157,17 @@ QString validateDateOfBirth(const QDate &dateOfBirth) {
   if (dateOfBirth.year() < today.year() - 150) {
     return "Date of birth is unrealistic (age > 150).";
   }
+
+  return "";
+}
+
+QString validateDateRange(const QDate &fromDate, const QDate &toDate) {
+  if (!fromDate.isValid() || !toDate.isValid())
+    return "";
+
+  if (fromDate > toDate)
+    return "Ngày bắt đầu (Từ ngày) không được lớn hơn ngày kết thúc (Đến "
+           "ngày).";
 
   return "";
 }

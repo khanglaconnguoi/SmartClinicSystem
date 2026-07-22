@@ -198,9 +198,9 @@ static void runComprehensiveTests() {
   pOut.emergencyContactName = "Le Van A";
   pOut.emergencyContactPhone = "0900111222";
   pOut.insurance.policyNumber = "BHYT-123456";
-  bool okOut = patientService->addOutPatient(pOut);
+  QString errOut = patientService->addOutPatient(pOut);
   int pidOut = getLastInsertedPatientId();
-  qDebug() << "  -> Add OutPatient:" << (okOut ? "PASS" : "FAIL")
+  qDebug() << "  -> Add OutPatient:" << (errOut.isEmpty() ? "PASS" : "FAIL")
            << "ID:" << pidOut;
 
   // 1.2 Add InPatient
@@ -220,9 +220,9 @@ static void runComprehensiveTests() {
   pIn.doctorId = 1;
   pIn.admissionDate = QDate::currentDate();
   pIn.reason = "Dengue fever";
-  bool okIn = patientService->addInPatient(pIn);
+  QString errIn = patientService->addInPatient(pIn);
   int pidIn = getLastInsertedPatientId();
-  qDebug() << "  -> Add InPatient:" << (okIn ? "PASS" : "FAIL")
+  qDebug() << "  -> Add InPatient:" << (errIn.isEmpty() ? "PASS" : "FAIL")
            << "ID:" << pidIn;
 
   // 1.3 Add Emergency
@@ -243,9 +243,9 @@ static void runComprehensiveTests() {
   pEm.admissionDate = QDate::currentDate();
   pEm.injuryCause = "Traffic accident";
   pEm.injuryDescription = "Head trauma";
-  bool okEm = patientService->addEmergencyPatient(pEm);
+  QString errEm = patientService->addEmergencyPatient(pEm);
   int pidEm = getLastInsertedPatientId();
-  qDebug() << "  -> Add EmergencyPatient:" << (okEm ? "PASS" : "FAIL")
+  qDebug() << "  -> Add EmergencyPatient:" << (errEm.isEmpty() ? "PASS" : "FAIL")
            << "ID:" << pidEm;
 
   // 1.4 Search Patient
@@ -271,8 +271,8 @@ static void runComprehensiveTests() {
     uDto.emergencyContactPhone = "0900111222";
     uDto.type = PatientType::Outpatient;
     uDto.doctorId = 1;
-    bool okUpdate = patientService->updateOutPatient(pidOut, uDto);
-    qDebug() << "  -> Update Patient:" << (okUpdate ? "PASS" : "FAIL");
+    QString errUpdate = patientService->updateOutPatient(pidOut, uDto);
+    qDebug() << "  -> Update Patient:" << (errUpdate.isEmpty() ? "PASS" : "FAIL");
   }
 
   // 1.6 Soft Delete Patient

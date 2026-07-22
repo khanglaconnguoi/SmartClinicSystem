@@ -199,36 +199,6 @@ struct PatientInsertDTO {
 
   PatientInsertDTO() = default;
   virtual ~PatientInsertDTO() = default;
-  PatientInsertDTO(const PatientInputDTO &inputInformation,
-                   const QString &generatePatientCode, const QString &patientType)
-      : patientCode(generatePatientCode.trimmed()),
-        fullName(inputInformation.fullName.trimmed()),
-        dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
-        gender(inputInformation.gender),
-        citizenId(inputInformation.citizenId.trimmed()),
-        phone(inputInformation.phone.trimmed()),
-        email(inputInformation.email.trimmed()),
-        address(inputInformation.address.trimmed()),
-        bloodType(inputInformation.bloodType.trimmed()), type(patientType.trimmed()),
-        emergencyContactName(inputInformation.emergencyContactName.trimmed()),
-        emergencyContactPhone(
-            inputInformation.emergencyContactPhone.trimmed()),
-        allergies(inputInformation.allergies) {
-    // Convert InsuranceInputDTO (QDate) -> InsuranceInsertDTO (QString) tai day
-    // de repo khong can xu ly logic chuyen doi nua.
-    const auto &ins = inputInformation.insurance;
-    insurance.providerName   = ins.providerName;
-    insurance.policyNumber   = ins.policyNumber;
-    insurance.insuranceType  = ins.insuranceType;
-    insurance.coveragePercent = ins.coveragePercent;
-    insurance.validFrom = ins.validFrom.isValid()
-                              ? ins.validFrom.toString("yyyy-MM-dd")
-                              : QString();
-    insurance.validTo = ins.validTo.isValid()
-                            ? ins.validTo.toString("yyyy-MM-dd")
-                            : QString();
-    insurance.notes = ins.notes;
-  }
 };
 
 
@@ -240,12 +210,7 @@ struct OutPatientInsertDTO : public PatientInsertDTO {
   int doctorId;   // doctor_id            (nullable)
   QString status; // status  DEFAULT 'REGISTERED'
 
-  OutPatientInsertDTO(const OutPatientInputDTO &inputInformation,
-                      const QString &generatePatientCode)
-      : PatientInsertDTO(inputInformation, generatePatientCode,
-                         patientTypeToEn(PatientType::Outpatient)),
-        doctorId(inputInformation.doctorId),
-        status(outPatientStateToEn(OutPatientState::Registered)) {}
+
 };
 
 /**
@@ -259,16 +224,7 @@ struct InPatientInsertDTO : public PatientInsertDTO {
   QString dischargeDate; // discharge_date       (nullable)
   QString reason;        // reason               (nullable)
   QString status;        // status  DEFAULT 'ADMITTED'
-  InPatientInsertDTO(const InPatientInputDTO &inputInformation,
-                     const QString &generatePatientCode)
-      : PatientInsertDTO(inputInformation, generatePatientCode,
-                         patientTypeToEn(PatientType::Inpatient)),
-        roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
-        admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
-        dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
-            "yyyy-MM-dd")),
-        reason(inputInformation.reason.trimmed()),
-        status(inPatientStateToEn(InPatientState::Admitted)) {}
+
 };
 
 /**
@@ -284,17 +240,7 @@ struct EmergencyPatientInsertDTO : public PatientInsertDTO {
   QString dischargeDate;       // discharge_date       (nullable)
   QString status;              // status  DEFAULT 'EMERGENCY'
 
-  EmergencyPatientInsertDTO(const EmergencyPatientInputDTO &inputInformation,
-                            const QString &generatePatientCode)
-      : PatientInsertDTO(inputInformation, generatePatientCode,
-                         patientTypeToEn(PatientType::Emergency)),
-        roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
-        injuryCause(inputInformation.injuryCause.trimmed()),
-        injuryDescription(inputInformation.injuryDescription.trimmed()),
-        admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
-        dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
-            "yyyy-MM-dd")),
-        status(emergencyPatientStateToEn(EmergencyPatientState::Emergency)) {}
+
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -321,19 +267,6 @@ struct PatientUpdateDTO {
   QString emergencyContactPhone;
   PatientUpdateDTO() = default;
   virtual ~PatientUpdateDTO() = default;
-  PatientUpdateDTO(const PatientInputDTO &inputInformation, int pId) {
-    this->patientId = pId;
-    this->fullName = inputInformation.fullName.trimmed();
-    this->dateOfBirth = inputInformation.dateOfBirth.toString("yyyy-MM-dd");
-    this->gender = inputInformation.gender;
-    this->citizenId = inputInformation.citizenId.trimmed();
-    this->phone = inputInformation.phone.trimmed();
-    this->email = inputInformation.email.trimmed();
-    this->address = inputInformation.address.trimmed();
-    this->bloodType = inputInformation.bloodType;
-    this->emergencyContactName = inputInformation.emergencyContactName;
-    this->emergencyContactPhone = inputInformation.emergencyContactPhone;
-  }
 };
 
 /**
@@ -342,10 +275,7 @@ struct PatientUpdateDTO {
 struct OutPatientUpdateDTO : public PatientUpdateDTO {
   QString status;
   std::optional<int> doctorId;
-  OutPatientUpdateDTO(const OutPatientInputDTO &inputInformation, int pId,
-                      const QString &newStatus = "REGISTERED")
-      : PatientUpdateDTO(inputInformation, pId), status(newStatus),
-        doctorId(inputInformation.doctorId) {}
+
 };
 
 /**
@@ -358,14 +288,7 @@ struct InPatientUpdateDTO : public PatientUpdateDTO {
   QString dischargeDate;
   QString reason;
   QString status;
-  InPatientUpdateDTO(const InPatientInputDTO &inputInformation, int pId,
-                     const QString &newStatus = "ADMITTED")
-      : PatientUpdateDTO(inputInformation, pId),
-        roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
-        admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
-        dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
-            "yyyy-MM-dd")),
-        reason(inputInformation.reason), status(newStatus) {}
+
 };
 
 /**
@@ -379,16 +302,7 @@ struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
   QString admissionDate;
   QString dischargeDate;
   QString status;
-  EmergencyPatientUpdateDTO(const EmergencyPatientInputDTO &inputInformation,
-                            int pId, const QString &newStatus = "EMERGENCY")
-      : PatientUpdateDTO(inputInformation, pId),
-        roomId(inputInformation.roomId), doctorId(inputInformation.doctorId),
-        injuryCause(inputInformation.injuryCause),
-        injuryDescription(inputInformation.injuryDescription),
-        admissionDate(inputInformation.admissionDate.toString("yyyy-MM-dd")),
-        dischargeDate(inputInformation.dischargeDate.value_or(QDate()).toString(
-            "yyyy-MM-dd")),
-        status(newStatus) {}
+
 };
 
 // //

@@ -165,7 +165,7 @@ QString StaffService::validateStaffBaseInput(const StaffInputDTO& staff, int sta
     if (!(err = Validation::validateCitizenId(staff.citizenId)).isEmpty()) return err;
     if (!(err = Validation::validatePhoneNumber(staff.phoneNumber)).isEmpty()) return err;
     if (!(err = Validation::validateEmail(staff.email)).isEmpty()) return err;
-    if (!(err = Validation::validateAddress(staff.address)).isEmpty()) return err;
+    if (!(err = Validation::validateTrimmedNotEmpty(staff.address, "Address is required.")).isEmpty()) return err;
     if (!(err = Validation::validateValidId(staff.departmentId, "Please select a valid department.")).isEmpty()) return err;
     //if (!(err = validateShift(staff.shift)).isEmpty()) return err;
 
@@ -236,7 +236,7 @@ void StaffService::normalizeStaffInput(StaffInputDTO& dto) {
     dto.citizenId = dto.citizenId.trimmed();
     dto.phoneNumber = dto.phoneNumber.trimmed();
     dto.email = dto.email.trimmed();
-    dto.address = dto.address.trimmed();
+    dto.address = dto.address.simplified();
     dto.shift = dto.shift.trimmed();
 }
 
