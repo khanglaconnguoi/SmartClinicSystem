@@ -220,6 +220,14 @@ public:
   // const;
 
   /**
+   * @brief Thêm danh sách dị ứng cho bệnh nhân đã tồn tại.
+   * @param patientId ID bệnh nhân.
+   * @param allergies Danh sách thông tin dị ứng từ UI.
+   * @return "" nếu thành công, hoặc chuỗi thông báo lỗi.
+   */
+  QString addAllergiesToPatient(int patientId, QList<AllergyInputDTO> allergies);
+
+  /**
    * @brief Lấy danh sách dị ứng đang active của bệnh nhân.
    */
   QList<AllergyResultDTO> getAllergies(int patientId);

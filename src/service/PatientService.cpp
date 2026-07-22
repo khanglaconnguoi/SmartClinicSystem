@@ -58,7 +58,7 @@ void PatientService::normalizePatientInput(PatientInputDTO &dto) {
   dto.email = dto.email.trimmed();
   dto.address = dto.address.simplified();
   dto.bloodType = dto.bloodType.trimmed().toUpper();
-  normalizeAllergyInputList(dto.allergies);
+//   normalizeAllergyInputList(dto.allergies);
   normalizeInsuranceInput(dto.insurance);
   dto.emergencyContactName = dto.emergencyContactName.simplified();
   dto.emergencyContactPhone = dto.emergencyContactPhone.trimmed();
@@ -125,7 +125,7 @@ PatientInsertDTO PatientService::mapPatientToInsertDTO(
   dto.type = patientType;
   dto.emergencyContactName = input.emergencyContactName;
   dto.emergencyContactPhone = input.emergencyContactPhone;
-  dto.allergies = input.allergies;
+//   dto.allergies = input.allergies;
 
   const auto &ins = input.insurance;
   dto.insurance.providerName = ins.providerName;
@@ -407,7 +407,7 @@ QString PatientService::validateBaseInput(const PatientInputDTO &dto,
   if (!(err = Validation::validateTrimmedNotEmpty(dto.emergencyContactName, "Người liên hệ khẩn cấp không được để trống.")).isEmpty()) return err;
   if (!(err = Validation::validatePhoneNumber(dto.emergencyContactPhone)).isEmpty()) return err;
 
-  if (!(err = validateAllergyInputList(dto.allergies)).isEmpty()) return err;
+//   if (!(err = validateAllergyInputList(dto.allergies)).isEmpty()) return err;
   if (!(err = validateInsuranceInput(dto.insurance)).isEmpty()) return err;
 
   return "";
@@ -609,9 +609,33 @@ bool PatientService::restorePatient(int patientId) {
   return m_patientRepository->restorePatient(patientId);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Allergies & Insurance
-// ───────────────────────────────────────────────────────────────────────────────
+QString PatientService::addAllergiesToPatient(int patientId, QList<AllergyInputDTO> allergies) {
+  QString err;
+  if (!(err = Validation::validateValidId(patientId, "ID bệnh nhân không hợp lệ.")).isEmpty())
+    return err;
+
+  if (!m_patientRepository->getPatientById(patientId).has_value())
+    return "Không tìm thấy bệnh nhân trong hệ thống.";
+
+  if (allergies.isEmpty())
+    return "Danh sách dị ứng không được để trống.";
+
+  normalizeAllergyInputList(allergies);
+
+  if (!(err = validateAllergyInputList(allergies)).isEmpty())
+    return err;
+
+  if (!m_patientRepository->insertAllergies(patientId, allergies))
+    return "Lỗi hệ thống khi lưu thông tin dị ứng. Vui lòng thử lại.";
+
+  return "";
+}
+
+QList<AllergyResultDTO> PatientService::getAllergies(int patientId) {
+  if (patientId <= 0)
+    return {};
+  return m_patientRepository->getAllergiesByPatientId(patientId);
+}
 
 std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) const {
     return m_patientRepository->getInsuranceByPatientId(patientId);

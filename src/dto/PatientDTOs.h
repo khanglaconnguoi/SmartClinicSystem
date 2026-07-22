@@ -121,7 +121,7 @@ struct PatientInputDTO {
   QString email;     // email                (nullable)
   QString address;   // address              (nullable)
   QString bloodType; // blood_type           DEFAULT 'UNKNOWN'
-  QList<AllergyInputDTO> allergies;
+//   QList<AllergyInputDTO> allergies;
   InsuranceInputDTO insurance;   // insurance            (nullable, future use)
   PatientType type;              // default_patient_type DEFAULT 'OUTPATIENT'
   QString emergencyContactName;  // emergency_contact_name  (nullable)

@@ -108,8 +108,8 @@ public:
     // KHO THUỐC — Medication Inventory
     // ════════════════════════════════════════════════════════════════
 
-    QString addMedication(MedicationInputDTO& dto);
-    QString updateMedication(int medicationId, MedicationInputDTO& dto);
+    QString addMedication(MedicationInputDTO dto);
+    QString updateMedication(int medicationId, MedicationInputDTO dto);
 
 
     /**

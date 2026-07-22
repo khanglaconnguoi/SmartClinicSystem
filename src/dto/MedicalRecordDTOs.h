@@ -54,19 +54,19 @@ struct MedicalRecordResultDTO {
   QList<Diagnosis> diagnoses;         // từ bảng diagnoses (JOIN)
 };
 
-struct MedicalRecordUpdateDTO {
-  // ── medical_records ──────────────────────────────────────────────────────
-  int recordId;            // record_id      NOT NULL  PK  (bắt buộc để UPDATE)
-  int doctorId;            // doctor_id      NOT NULL  FK → staff
-  int appointmentId;       // appointment_id NOT NULL  FK → appointments
-  QDateTime visitDateTime; // visit_datetime NOT NULL
-  VitalSigns vitals;       // tất cả nullable trong DB
-  QString chiefComplaint;  // chief_complaint nullable  (Service: require)
-  QString clinicalNotes;   // clinical_notes  nullable  (Service: require)
-  QString treatment;       // treatment       nullable  (Service: require)
-  std::optional<QDate> nextVisitDate; // next_visit_date nullable
-  QList<Diagnosis> diagnoses;         // require ≥1 item  (Service validate)
-};
+// struct MedicalRecordUpdateDTO {
+//   // ── medical_records ──────────────────────────────────────────────────────
+//   int recordId;            // record_id      NOT NULL  PK  (bắt buộc để UPDATE)
+//   int doctorId;            // doctor_id      NOT NULL  FK → staff
+//   int appointmentId;       // appointment_id NOT NULL  FK → appointments
+//   QDateTime visitDateTime; // visit_datetime NOT NULL
+//   VitalSigns vitals;       // tất cả nullable trong DB
+//   QString chiefComplaint;  // chief_complaint nullable  (Service: require)
+//   QString clinicalNotes;   // clinical_notes  nullable  (Service: require)
+//   QString treatment;       // treatment       nullable  (Service: require)
+//   std::optional<QDate> nextVisitDate; // next_visit_date nullable
+//   QList<Diagnosis> diagnoses;         // require ≥1 item  (Service validate)
+// };
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEARCH DTOs

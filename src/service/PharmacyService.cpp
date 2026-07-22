@@ -243,35 +243,31 @@ QString PharmacyService::validatePrescriptionInput(
 // KHO THUỐC
 // ─────────────────────────────────────────────────────────────────────────────
 
-QString PharmacyService::addMedication(MedicationInputDTO &dto) {
-  normalizeMedicationInput(dto);
+QString PharmacyService::addMedication(MedicationInputDTO dto) {
+    normalizeMedicationInput(dto);
 
-  QString err =
-      validateMedicationInput(dto); // excludeMedicationId = -1 (INSERT)
-  if (!err.isEmpty())
-    return err;
+    QString err = validateMedicationInput(dto);  // excludeMedicationId = -1 (INSERT)
+    if (!err.isEmpty()) return err;
 
-  if (!m_medicationRepo->insertMedication(dto))
-    return "Lỗi hệ thống khi thêm thuốc mới. Vui lòng thử lại.";
+    if (!m_medicationRepo->insertMedication(dto))
+        return "Lỗi hệ thống khi thêm thuốc mới. Vui lòng thử lại.";
 
-  return "";
+    return "";
 }
 
-QString PharmacyService::updateMedication(int medicationId,
-                                          MedicationInputDTO &dto) {
-  QString err;
-  if (!(err = Validation::validateValidId(medicationId, "ID thuốc không hợp lệ.")).isEmpty())
-    return err;
+QString PharmacyService::updateMedication(int medicationId, MedicationInputDTO dto) {
+    QString err;
+    if (!(err = Validation::validateValidId(medicationId, "ID thuốc không hợp lệ.")).isEmpty())
+        return err;
 
-  normalizeMedicationInput(dto);
+    normalizeMedicationInput(dto);
 
-  if (!err.isEmpty())
-    return err;
+    if (!(err = validateMedicationInput(dto)).isEmpty()) return err;
 
-  if (!m_medicationRepo->updateMedication(medicationId, dto))
-    return "Lỗi hệ thống khi cập nhật thông tin thuốc. Vui lòng thử lại.";
+    if (!m_medicationRepo->updateMedication(medicationId, dto))
+        return "Lỗi hệ thống khi cập nhật thông tin thuốc. Vui lòng thử lại.";
 
-  return "";
+    return "";
 }
 
 QList<MedicationSummaryDTO>

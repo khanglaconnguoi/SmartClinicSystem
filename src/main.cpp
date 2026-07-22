@@ -316,9 +316,9 @@ static void runComprehensiveTests() {
     allergy1.notes = "Phát hiện trong lần khám đầu tiên";
     mrDto.newAllergies.append(allergy1);
 
-    recordId = mrService.createMedicalRecord(mrDto);
-    qDebug() << "  -> Create MedicalRecord:" << (recordId > 0 ? "PASS" : "FAIL")
-             << "RecordID:" << recordId;
+    QString errRecord = mrService.createMedicalRecord(mrDto);
+    qDebug() << "  -> Create MedicalRecord:" << (errRecord.isEmpty() ? "PASS" : "FAIL")
+             << "Error:" << errRecord;
 
     // 2.2 Update Medical Record
     if (recordId > 0) {

@@ -271,7 +271,7 @@ void AdminPatientRegistrationDialog::handleSave() {
       dto.email = email;
       dto.address = address;
       dto.bloodType = bloodType;
-      dto.allergies = allergies;
+//    dto.allergies = allergies;
       dto.insurance = insurance;
       dto.type = type;
       dto.emergencyContactName = emerName;
@@ -289,7 +289,7 @@ void AdminPatientRegistrationDialog::handleSave() {
       dto.email = email;
       dto.address = address;
       dto.bloodType = bloodType;
-      dto.allergies = allergies;
+//    dto.allergies = allergies;
       dto.insurance = insurance;
       dto.type = type;
       dto.emergencyContactName = emerName;
@@ -311,7 +311,7 @@ void AdminPatientRegistrationDialog::handleSave() {
       dto.email = email;
       dto.address = address;
       dto.bloodType = bloodType;
-      dto.allergies = allergies;
+//    dto.allergies = allergies;
       dto.insurance = insurance;
       dto.type = type;
       dto.emergencyContactName = emerName;

@@ -5,6 +5,7 @@
 #include "Validation.h"
 #include "model/MedicalRecord.h"
 #include "repository/MedicalRecordRepository.h"
+#include "service/PatientService.h"
 
 
 MedicalRecordService::MedicalRecordService(
@@ -127,77 +128,86 @@ void MedicalRecordService::normalizeMedicalRecordInput(
   }
 }
 
-void MedicalRecordService::normalizeMedicalRecordUpdate(
-    MedicalRecordUpdateDTO &dto) {
-  dto.chiefComplaint = dto.chiefComplaint.trimmed();
-  dto.clinicalNotes = dto.clinicalNotes.trimmed();
-  dto.treatment = dto.treatment.trimmed();
+// void MedicalRecordService::normalizeMedicalRecordUpdate(
+//     MedicalRecordUpdateDTO &dto) {
+//   dto.chiefComplaint = dto.chiefComplaint.trimmed();
+//   dto.clinicalNotes = dto.clinicalNotes.trimmed();
+//   dto.treatment = dto.treatment.trimmed();
 
-  for (Diagnosis &d : dto.diagnoses) {
-    d.description = d.description.simplified();
-    d.severity = d.severity.trimmed().toUpper();
-    d.icdCode = d.icdCode.trimmed().toUpper();
-  }
-}
+//   for (Diagnosis &d : dto.diagnoses) {
+//     d.description = d.description.simplified();
+//     d.severity = d.severity.trimmed().toUpper();
+//     d.icdCode = d.icdCode.trimmed().toUpper();
+//   }
+// }
 
 void MedicalRecordService::normalizeSearchCriteria(
     MedicalRecordSearchCriteria &criteria) {
   criteria.searchKey = criteria.searchKey.simplified();
 }
 
-int MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
+QString MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
   normalizeMedicalRecordInput(dto);
 
-  QString errVitals = validateVitalSigns(dto.vitals);
-  if (!errVitals.isEmpty()) {
-    qDebug() << "Validation failed (vitals):" << errVitals;
-    return -1;
+  QString err;
+
+  if (!(err = validateVitalSigns(dto.vitals)).isEmpty()) {
+    qDebug() << "Validation failed (vitals):" << err;
+    return err;
   }
 
-  QString errChief = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.");
-  if (!errChief.isEmpty()) {
-    qDebug() << "Validation failed (chief complaint):" << errChief;
-    return -1;
+  if (!(err = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.")).isEmpty()) {
+    qDebug() << "Validation failed (chief complaint):" << err;
+    return err;
   }
 
-  QString errDiag = validateDiagnosisList(dto.diagnoses);
-  if (!errDiag.isEmpty()) {
-    qDebug() << "Validation failed (diagnoses):" << errDiag;
-    return -1;
+  if (!(err = validateDiagnosisList(dto.diagnoses)).isEmpty()) {
+    qDebug() << "Validation failed (diagnoses):" << err;
+    return err;
   }
 
-  QString errAllergy = validateAllergyList(dto.newAllergies);
-  if (!errAllergy.isEmpty()) {
-    qDebug() << "Validation failed (allergies):" << errAllergy;
-    return -1;
+  if (!(err = validateAllergyList(dto.newAllergies)).isEmpty()) {
+    qDebug() << "Validation failed (allergies):" << err;
+    return err;
   }
 
-  return m_recordRepository->insertMedicalRecord(dto);
+  if (m_recordRepository->insertMedicalRecord(dto) <= 0) {
+    return "Lỗi hệ thống khi lưu hồ sơ khám. Vui lòng thử lại.";
+  }
+
+  if (!dto.newAllergies.isEmpty()) {
+    if (!(err = m_patientService->addAllergiesToPatient(dto.patientId, dto.newAllergies)).isEmpty()) {
+      qDebug() << "Add allergies failed:" << err;
+      return err;
+    }
+  }
+
+  return "";
 }
 
-bool MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
-  normalizeMedicalRecordUpdate(dto);
+// bool MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
+//   normalizeMedicalRecordUpdate(dto);
 
-  QString errVitals = validateVitalSigns(dto.vitals);
-  if (!errVitals.isEmpty()) {
-    qDebug() << "Validation failed (vitals):" << errVitals;
-    return false;
-  }
+//   QString errVitals = validateVitalSigns(dto.vitals);
+//   if (!errVitals.isEmpty()) {
+//     qDebug() << "Validation failed (vitals):" << errVitals;
+//     return false;
+//   }
 
-  QString errChief = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.");
-  if (!errChief.isEmpty()) {
-    qDebug() << "Validation failed (chief complaint):" << errChief;
-    return false;
-  }
+//   QString errChief = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.");
+//   if (!errChief.isEmpty()) {
+//     qDebug() << "Validation failed (chief complaint):" << errChief;
+//     return false;
+//   }
 
-  QString errDiag = validateDiagnosisList(dto.diagnoses);
-  if (!errDiag.isEmpty()) {
-    qDebug() << "Validation failed (diagnoses):" << errDiag;
-    return false;
-  }
+//   QString errDiag = validateDiagnosisList(dto.diagnoses);
+//   if (!errDiag.isEmpty()) {
+//     qDebug() << "Validation failed (diagnoses):" << errDiag;
+//     return false;
+//   }
 
-  return m_recordRepository->updateMedicalRecord(dto);
-}
+//   return m_recordRepository->updateMedicalRecord(dto);
+// }
 
 bool MedicalRecordService::softDeleteMedicalRecord(int recordId) {
   return m_recordRepository->softDeleteMedicalRecord(recordId);
