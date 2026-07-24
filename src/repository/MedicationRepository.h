@@ -33,13 +33,12 @@ public:
 
   // ── DÙNG CHO UI (bác sĩ chọn thuốc khi lập đơn)
   // ─────────────────────────────
-  QList<std::shared_ptr<Medication>>
-  searchMedications(const MedicationSearchCriteria &criteria) const;
+  //QList<std::shared_ptr<Medication>> searchMedications(const MedicationSearchCriteria &criteria) const;
   QList<std::shared_ptr<Medication>> findLowStock() const;
   QList<std::shared_ptr<Medication>>
   findExpiringBefore(const QDate &date) const;
 
-  QList<ActiveIngredientDTO> searchIngredients(const QString &keyword) const;
+  //QList<ActiveIngredientDTO> searchIngredients(const QString &keyword) const;
 
   // ── PHÂN TRANG — các hàm dưới đây dùng LIMIT/OFFSET + COUNT(*) ────────────
 

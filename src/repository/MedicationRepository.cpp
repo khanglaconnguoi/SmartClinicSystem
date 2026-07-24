@@ -320,89 +320,89 @@ std::shared_ptr<Medication> MedicationRepository::findById(int medicationId) con
 }
 
 
-QList<std::shared_ptr<Medication>> MedicationRepository::searchMedications(const MedicationSearchCriteria& criteria) const {
-    QList<std::shared_ptr<Medication>> result;
+// QList<std::shared_ptr<Medication>> MedicationRepository::searchMedications(const MedicationSearchCriteria& criteria) const {
+//     QList<std::shared_ptr<Medication>> result;
     
-    QString sql = R"(
-        SELECT DISTINCT m.medication_id, m.brand_name, m.unit, m.unit_price,
-                        m.stock_quantity, m.minimum_stock, m.reorder_threshold, m.expiry_date,
-                        m.manufacturer, m.description, m.is_active
-        FROM medications m
-        LEFT JOIN medication_ingredients mi ON m.medication_id = mi.medication_id
-        LEFT JOIN active_ingredients ai ON mi.ingredient_id = ai.ingredient_id
-        WHERE m.is_active = 1
-    )";
+//     QString sql = R"(
+//         SELECT DISTINCT m.medication_id, m.brand_name, m.unit, m.unit_price,
+//                         m.stock_quantity, m.minimum_stock, m.reorder_threshold, m.expiry_date,
+//                         m.manufacturer, m.description, m.is_active
+//         FROM medications m
+//         LEFT JOIN medication_ingredients mi ON m.medication_id = mi.medication_id
+//         LEFT JOIN active_ingredients ai ON mi.ingredient_id = ai.ingredient_id
+//         WHERE m.is_active = 1
+//     )";
     
-    QVariantList params;
+//     QVariantList params;
 
-    if (!criteria.keyword.isEmpty()) {
-        sql += " AND (LOWER(m.brand_name) LIKE ? OR LOWER(ai.ingredient_name) LIKE ?)";
-        QString pattern = "%" + criteria.keyword.toLower() + "%";
-        params.append(pattern);
-        params.append(pattern);
-    }
+//     if (!criteria.keyword.isEmpty()) {
+//         sql += " AND (LOWER(m.brand_name) LIKE ? OR LOWER(ai.ingredient_name) LIKE ?)";
+//         QString pattern = "%" + criteria.keyword.toLower() + "%";
+//         params.append(pattern);
+//         params.append(pattern);
+//     }
 
-    if (!criteria.selectedIngredientIds.isEmpty()) {
-        QStringList placeholders;
-        for (int id : criteria.selectedIngredientIds) {
-            placeholders.append("?");
-            params.append(id);
-        }
-        sql += QString(" AND mi.ingredient_id IN (%1)").arg(placeholders.join(","));
-    } 
+//     if (!criteria.selectedIngredientIds.isEmpty()) {
+//         QStringList placeholders;
+//         for (int id : criteria.selectedIngredientIds) {
+//             placeholders.append("?");
+//             params.append(id);
+//         }
+//         sql += QString(" AND mi.ingredient_id IN (%1)").arg(placeholders.join(","));
+//     } 
 
-    if (!criteria.selectedCategories.isEmpty()) {
-        QStringList placeholders;
-        for (const QString& cat : criteria.selectedCategories) {
-            placeholders.append("?");
-            params.append(cat);
-        }
-        // EXISTS đảm bảo thuốc khớp ít nhất 1 danh mục trong selectedCategories
-        sql += QString(
-            " AND EXISTS ("
-            "   SELECT 1 FROM medication_categories mc"
-            "   WHERE mc.medication_id = m.medication_id"
-            "   AND mc.category_name IN (%1)"
-            ")"
-        ).arg(placeholders.join(","));
-    }
+//     if (!criteria.selectedCategories.isEmpty()) {
+//         QStringList placeholders;
+//         for (const QString& cat : criteria.selectedCategories) {
+//             placeholders.append("?");
+//             params.append(cat);
+//         }
+//         // EXISTS đảm bảo thuốc khớp ít nhất 1 danh mục trong selectedCategories
+//         sql += QString(
+//             " AND EXISTS ("
+//             "   SELECT 1 FROM medication_categories mc"
+//             "   WHERE mc.medication_id = m.medication_id"
+//             "   AND mc.category_name IN (%1)"
+//             ")"
+//         ).arg(placeholders.join(","));
+//     }
 
-    if (criteria.inStockOnly) {
-        sql += " AND m.stock_quantity > 0";
-    }
+//     if (criteria.inStockOnly) {
+//         sql += " AND m.stock_quantity > 0";
+//     }
 
-    if (criteria.excludeExpired) {
-        sql += " AND (m.expiry_date IS NULL OR m.expiry_date >= ?)";
-        params.append(QDate::currentDate().toString("yyyy-MM-dd"));
-    }
+//     if (criteria.excludeExpired) {
+//         sql += " AND (m.expiry_date IS NULL OR m.expiry_date >= ?)";
+//         params.append(QDate::currentDate().toString("yyyy-MM-dd"));
+//     }
 
-    if (criteria.criticalStockOnly) {
-        sql += " AND m.stock_quantity <= m.minimum_stock";
-    } 
-    else if (criteria.lowStockOnly) {
-        sql += " AND m.stock_quantity <= m.reorder_threshold AND m.stock_quantity > m.minimum_stock";
-    }
+//     if (criteria.criticalStockOnly) {
+//         sql += " AND m.stock_quantity <= m.minimum_stock";
+//     } 
+//     else if (criteria.lowStockOnly) {
+//         sql += " AND m.stock_quantity <= m.reorder_threshold AND m.stock_quantity > m.minimum_stock";
+//     }
 
-    if (!criteria.maxUnitPrice.isNull() && criteria.maxUnitPrice.isValid()) {
-        sql += " AND m.unit_price <= ?";
-        params.append(criteria.maxUnitPrice.toDouble());
-    }
+//     if (!criteria.maxUnitPrice.isNull() && criteria.maxUnitPrice.isValid()) {
+//         sql += " AND m.unit_price <= ?";
+//         params.append(criteria.maxUnitPrice.toDouble());
+//     }
 
-    if (!criteria.manufacturer.isEmpty()) {
-        sql += " AND LOWER(m.manufacturer) LIKE ?";
-        QString pattern = "%" + criteria.manufacturer.toLower() + "%";
-        params.append(pattern);
-    }
+//     if (!criteria.manufacturer.isEmpty()) {
+//         sql += " AND LOWER(m.manufacturer) LIKE ?";
+//         QString pattern = "%" + criteria.manufacturer.toLower() + "%";
+//         params.append(pattern);
+//     }
 
-    sql += " ORDER BY m.brand_name ASC";
+//     sql += " ORDER BY m.brand_name ASC";
 
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-    while (query.next()) {
-        result.append(mapRowToMedication(query));
-    }
+//     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+//     while (query.next()) {
+//         result.append(mapRowToMedication(query));
+//     }
     
-    return result;
-}
+//     return result;
+// }
 
 
 
@@ -441,24 +441,24 @@ QList<std::shared_ptr<Medication>> MedicationRepository::findExpiringBefore(cons
 }
 
 
-QList<ActiveIngredientDTO> MedicationRepository::searchIngredients(const QString& keyword) const {
-    QString sql = R"(
-        SELECT ingredient_id, ingredient_name, description
-        FROM active_ingredients
-        WHERE LOWER(ingredient_name) LIKE ?
-        ORDER BY ingredient_name ASC
-    )";
+// QList<ActiveIngredientDTO> MedicationRepository::searchIngredients(const QString& keyword) const {
+//     QString sql = R"(
+//         SELECT ingredient_id, ingredient_name, description
+//         FROM active_ingredients
+//         WHERE LOWER(ingredient_name) LIKE ?
+//         ORDER BY ingredient_name ASC
+//     )";
 
-    QString pattern = "%" + keyword.toLower() + "%";
-    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { pattern });
-    QList<ActiveIngredientDTO> result;
+//     QString pattern = "%" + keyword.toLower() + "%";
+//     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { pattern });
+//     QList<ActiveIngredientDTO> result;
 
-    while (query.next()) {
-        result.append(mapRowToIngredient(query));
-    }
+//     while (query.next()) {
+//         result.append(mapRowToIngredient(query));
+//     }
     
-    return result;
-}
+//     return result;
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHÂN TRANG

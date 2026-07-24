@@ -270,25 +270,25 @@ QString PharmacyService::updateMedication(int medicationId, MedicationInputDTO d
     return "";
 }
 
-QList<MedicationSummaryDTO>
-PharmacyService::searchMedications(MedicationSearchCriteria &criteria) const {
-  criteria.keyword = criteria.keyword.simplified();
-  criteria.manufacturer = criteria.manufacturer.simplified();
-  // selectedCategories: UI đã gửi chuỗi sạch, không cần normalize tại đây
-  QList<std::shared_ptr<Medication>> models =
-      m_medicationRepo->searchMedications(criteria);
-  QList<MedicationSummaryDTO> dtos;
+// QList<MedicationSummaryDTO>
+// PharmacyService::searchMedications(MedicationSearchCriteria& criteria) const {
+//   criteria.keyword = criteria.keyword.simplified();
+//   criteria.manufacturer = criteria.manufacturer.simplified();
+//   // selectedCategories: UI đã gửi chuỗi sạch, không cần normalize tại đây
+//   QList<std::shared_ptr<Medication>> models =
+//       m_medicationRepo->searchMedications(criteria);
+//   QList<MedicationSummaryDTO> dtos;
 
-  dtos.reserve(models.size());
+//   dtos.reserve(models.size());
 
-  for (const auto &model : models) {
-    if (model) {
-      dtos.append(model->toSummary());
-    }
-  }
+//   for (const auto &model : models) {
+//     if (model) {
+//       dtos.append(model->toSummary());
+//     }
+//   }
 
-  return dtos;
-}
+//   return dtos;
+// }
 
 std::optional<MedicationSummaryDTO>
 PharmacyService::getMedicationById(int medicationId) const {
@@ -331,21 +331,21 @@ PharmacyService::getExpiringMedications(int withinDays) const {
   return dtos;
 }
 
-QList<ActiveIngredientDTO>
-PharmacyService::searchIngredients(const QString &keyword) const {
-  if (keyword.trimmed().isEmpty()) {
-    return QList<ActiveIngredientDTO>();
-  }
+// QList<ActiveIngredientDTO>
+// PharmacyService::searchIngredients(const QString &keyword) const {
+//   if (keyword.trimmed().isEmpty()) {
+//     return QList<ActiveIngredientDTO>();
+//   }
 
-  QString cleanKeyword = keyword.trimmed().simplified();
+//   QString cleanKeyword = keyword.trimmed().simplified();
 
-  return m_medicationRepo->searchIngredients(cleanKeyword);
-}
+//   return m_medicationRepo->searchIngredients(cleanKeyword);
+// }
 
 // ── Phân trang: Medication ────────────────────────────────────────────────────
 
 PagedResult<MedicationSummaryDTO>
-PharmacyService::searchMedicationsPaged(MedicationSearchCriteria &criteria) const {
+PharmacyService::searchMedicationsPaged(MedicationSearchCriteria criteria) const {
   // Bước 1: Normalize text fields
   criteria.keyword      = criteria.keyword.simplified();
   criteria.manufacturer = criteria.manufacturer.simplified();
@@ -379,9 +379,9 @@ PharmacyService::searchMedicationsPaged(MedicationSearchCriteria &criteria) cons
 // ── Phân trang: Active Ingredient ────────────────────────────────────────────
 
 PagedResult<ActiveIngredientDTO>
-PharmacyService::searchIngredientsPaged(IngredientSearchCriteria &criteria) const {
+PharmacyService::searchIngredientsPaged(IngredientSearchCriteria criteria) const {
   // Bước 1: Normalize keyword
-  criteria.keyword = criteria.keyword.trimmed().simplified();
+  criteria.keyword = criteria.keyword.simplified();
 
   // Bước 2: Clamp page/pageSize vào range hợp lệ
   criteria.page     = qMax(1, criteria.page);

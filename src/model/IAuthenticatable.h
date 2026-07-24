@@ -9,6 +9,7 @@ class IAuthenticatable {
 public:
     virtual ~IAuthenticatable() = default;
 
+
     // ── Định danh ─────────────────────────────────────────────
     virtual int         getAccountId()    const = 0;
     virtual QString     getStaffCode()     const = 0;  // staffCode với staff, email với patient
