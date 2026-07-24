@@ -91,71 +91,59 @@ int MedicalRecordRepository::insertMedicalRecord(
     return -1;
   }
 
-  // Insert dị ứng NGOÀI transaction chính (best-effort):
-  // Nếu thất bại (vd: allergen_name đã tồn tại), chỉ log warning —
-  // KHÔNG rollback hồ sơ bệnh án vì dữ liệu lâm sàng đã được ghi an toàn.
-  if (!dto.newAllergies.isEmpty()) {
-    if (!insertNewAllergies(dto.patientId, dto.newAllergies)) {
-      qWarning()
-          << "insertMedicalRecord: insertNewAllergies thất bại (best-effort) "
-             "— record_id="
-          << recordId << "vẫn được lưu.";
-    }
-  }
-
   return recordId;
 }
 
-bool MedicalRecordRepository::updateMedicalRecord(
-    const MedicalRecordUpdateDTO &dto) {
-  DatabaseManager &db = DatabaseManager::getInstance();
-  if (!db.beginTransaction()) {
-    return false;
-  }
+// bool MedicalRecordRepository::updateMedicalRecord(
+//     const MedicalRecordUpdateDTO &dto) {
+//   DatabaseManager &db = DatabaseManager::getInstance();
+//   if (!db.beginTransaction()) {
+//     return false;
+//   }
 
-  const QString sql = R"(
-    UPDATE medical_records
-    SET doctor_id = ?, appointment_id = ?, visit_datetime = ?,
-        temperature = ?, blood_pressure = ?, heart_rate = ?, weight = ?, height = ?,
-        chief_complaint = ?, clinical_notes = ?, treatment = ?, next_visit_date = ?
-    WHERE record_id = ?
-  )";
+//   const QString sql = R"(
+//     UPDATE medical_records
+//     SET doctor_id = ?, appointment_id = ?, visit_datetime = ?,
+//         temperature = ?, blood_pressure = ?, heart_rate = ?, weight = ?, height = ?,
+//         chief_complaint = ?, clinical_notes = ?, treatment = ?, next_visit_date = ?
+//     WHERE record_id = ?
+//   )";
 
-  QVariantList params = {
-      dto.doctorId,
-      dto.appointmentId,
-      dto.visitDateTime,
-      dto.vitals.temperature,
-      dto.vitals.bloodPressure,
-      dto.vitals.heartRate,
-      dto.vitals.weight,
-      dto.vitals.height,
-      dto.chiefComplaint,
-      dto.clinicalNotes,
-      dto.treatment,
-      dto.nextVisitDate.has_value() ? QVariant(dto.nextVisitDate.value())
-                                    : QVariant(QVariant::Date),
-      dto.recordId};
+//   QVariantList params = {
+//       dto.doctorId,
+//       dto.appointmentId,
+//       dto.visitDateTime,
+//       dto.vitals.temperature,
+//       dto.vitals.bloodPressure,
+//       dto.vitals.heartRate,
+//       dto.vitals.weight,
+//       dto.vitals.height,
+//       dto.chiefComplaint,
+//       dto.clinicalNotes,
+//       dto.treatment,
+//       dto.nextVisitDate.has_value() ? QVariant(dto.nextVisitDate.value())
+//                                     : QVariant(QVariant::Date),
+//       dto.recordId};
 
-  if (!db.executeQuery(sql, params).isActive()) {
-    db.rollbackTransaction();
-    return false;
-  }
+//   if (!db.executeQuery(sql, params).isActive()) {
+//     db.rollbackTransaction();
+//     return false;
+//   }
 
-  // Delete old diagnoses and insert new ones
-  const QString delDiagSql = "DELETE FROM diagnoses WHERE record_id = ?";
-  if (!db.executeQuery(delDiagSql, {dto.recordId}).isActive()) {
-    db.rollbackTransaction();
-    return false;
-  }
+//   // Delete old diagnoses and insert new ones
+//   const QString delDiagSql = "DELETE FROM diagnoses WHERE record_id = ?";
+//   if (!db.executeQuery(delDiagSql, {dto.recordId}).isActive()) {
+//     db.rollbackTransaction();
+//     return false;
+//   }
 
-  if (!insertDiagnoses(dto.recordId, dto.diagnoses)) {
-    db.rollbackTransaction();
-    return false;
-  }
+//   if (!insertDiagnoses(dto.recordId, dto.diagnoses)) {
+//     db.rollbackTransaction();
+//     return false;
+//   }
 
-  return db.commitTransaction();
-}
+//   return db.commitTransaction();
+// }
 
 bool MedicalRecordRepository::softDeleteMedicalRecord(int recordId) {
   DatabaseManager &db = DatabaseManager::getInstance();

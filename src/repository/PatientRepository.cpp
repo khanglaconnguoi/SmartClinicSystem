@@ -331,6 +331,15 @@ bool PatientRepository::updatePatient(const PatientUpdateDTO &dto) {
 }
 
 bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
+  DatabaseManager &db = DatabaseManager::getInstance();
+  if (!db.beginTransaction())
+    return false;
+
+  if (!updatePatient(dto)) {
+    db.rollbackTransaction();
+    return false;
+  }
+
   const QString sql = R"(
     UPDATE out_patients
     SET
@@ -345,10 +354,26 @@ bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  QSqlQuery query = db.executeQuery(sql, params);
+  if (query.lastError().isValid()) {
+    db.rollbackTransaction();
+    qWarning() << "UPDATE OUT_PATIENT ERROR:" << query.lastError().text();
+    return false;
+  }
+
+  return db.commitTransaction();
 }
 
 bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
+  DatabaseManager &db = DatabaseManager::getInstance();
+  if (!db.beginTransaction())
+    return false;
+
+  if (!updatePatient(dto)) {
+    db.rollbackTransaction();
+    return false;
+  }
+
   const QString sql = R"(
     UPDATE in_patients
     SET
@@ -371,11 +396,27 @@ bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  QSqlQuery query = db.executeQuery(sql, params);
+  if (query.lastError().isValid()) {
+    db.rollbackTransaction();
+    qWarning() << "UPDATE IN_PATIENT ERROR:" << query.lastError().text();
+    return false;
+  }
+
+  return db.commitTransaction();
 }
 
 bool PatientRepository::updateEmergencyPatient(
     const EmergencyPatientUpdateDTO &dto) {
+  DatabaseManager &db = DatabaseManager::getInstance();
+  if (!db.beginTransaction())
+    return false;
+
+  if (!updatePatient(dto)) {
+    db.rollbackTransaction();
+    return false;
+  }
+
   const QString sql = R"(
     UPDATE emergency_patients
     SET
@@ -400,7 +441,14 @@ bool PatientRepository::updateEmergencyPatient(
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  QSqlQuery query = db.executeQuery(sql, params);
+  if (query.lastError().isValid()) {
+    db.rollbackTransaction();
+    qWarning() << "UPDATE EMERGENCY_PATIENT ERROR:" << query.lastError().text();
+    return false;
+  }
+
+  return db.commitTransaction();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

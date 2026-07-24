@@ -108,8 +108,8 @@ public:
     // KHO THUỐC — Medication Inventory
     // ════════════════════════════════════════════════════════════════
 
-    QString addMedication(MedicationInputDTO& dto);
-    QString updateMedication(int medicationId, MedicationInputDTO& dto);
+    QString addMedication(MedicationInputDTO dto);
+    QString updateMedication(int medicationId, MedicationInputDTO dto);
 
 
     /**
@@ -120,7 +120,7 @@ public:
      *        Dùng cho các luồng nội bộ không cần phân trang
      *        (VD: load danh sách thả xuống nhỏ).
      */
-    QList<MedicationSummaryDTO> searchMedications(MedicationSearchCriteria& criteria) const;
+    // QList<MedicationSummaryDTO> searchMedications(MedicationSearchCriteria& criteria) const;
 
     /**
      * @brief Tìm kiếm thuốc có phân trang — UI chính (bảng danh sánh thuốc, trang Admin).
@@ -136,7 +136,7 @@ public:
      * @return          PagedResult có items, totalCount, page, pageSize.
      */
     PagedResult<MedicationSummaryDTO> searchMedicationsPaged(
-        MedicationSearchCriteria& criteria) const;
+        MedicationSearchCriteria criteria) const;
 
     /**
      * @brief Lấy chi tiết 1 thuốc theo ID — dùng khi bác sĩ xem thông tin
@@ -158,7 +158,7 @@ public:
     QList<MedicationSummaryDTO> getExpiringMedications(int withinDays = 30) const;
 
 
-    QList<ActiveIngredientDTO> searchIngredients(const QString& keyword) const;
+    // QList<ActiveIngredientDTO> searchIngredients(const QString& keyword) const;
 
     /**
      * @brief Tìm kiếm hoạt chất có phân trang.
@@ -176,7 +176,7 @@ public:
      * @return          PagedResult có items, totalCount, page, pageSize.
      */
     PagedResult<ActiveIngredientDTO> searchIngredientsPaged(
-        IngredientSearchCriteria& criteria) const;
+        IngredientSearchCriteria criteria) const;
 
     // ════════════════════════════════════════════════════════════════
     // KÊ ĐƠN — Prescription Creation

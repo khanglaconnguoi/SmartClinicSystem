@@ -216,17 +216,16 @@ void PharmacyService::normalizePrescriptionInput(
 
 QString PharmacyService::validatePrescriptionInput(
     const PrescriptionInputDTO &input) const {
-  if (input.recordId <= 0)
-    return "Hồ sơ khám không hợp lệ.";
-
-  if (input.doctorId <= 0)
-    return "Thông tin bác sĩ không hợp lệ.";
+    QString err;
+  if (!(err = Validation::validateValidId(input.recordId, "Hồ sơ khám không hợp lệ.")).isEmpty())
+    return err;
+  if (!(err = Validation::validateValidId(input.doctorId, "Thông tin bác sĩ không hợp lệ.")).isEmpty())
+    return err;
 
   if (input.items.isEmpty())
     return "Đơn thuốc phải có ít nhất 1 loại thuốc.";
 
   for (const auto &item : input.items) {
-    QString err;
     if (!(err = validatePrescriptionItemQuantity(item.quantity)).isEmpty())
       return err;
     if (!(err = Validation::validateTrimmedNotEmpty(item.dosage, "Liều dùng không được để trống.")).isEmpty())
@@ -244,56 +243,52 @@ QString PharmacyService::validatePrescriptionInput(
 // KHO THUỐC
 // ─────────────────────────────────────────────────────────────────────────────
 
-QString PharmacyService::addMedication(MedicationInputDTO &dto) {
-  normalizeMedicationInput(dto);
+QString PharmacyService::addMedication(MedicationInputDTO dto) {
+    normalizeMedicationInput(dto);
 
-  QString err =
-      validateMedicationInput(dto); // excludeMedicationId = -1 (INSERT)
-  if (!err.isEmpty())
-    return err;
+    QString err = validateMedicationInput(dto);  // excludeMedicationId = -1 (INSERT)
+    if (!err.isEmpty()) return err;
 
-  if (!m_medicationRepo->insertMedication(dto))
-    return "Lỗi hệ thống khi thêm thuốc mới. Vui lòng thử lại.";
+    if (!m_medicationRepo->insertMedication(dto))
+        return "Lỗi hệ thống khi thêm thuốc mới. Vui lòng thử lại.";
 
-  return "";
+    return "";
 }
 
-QString PharmacyService::updateMedication(int medicationId,
-                                          MedicationInputDTO &dto) {
-  if (medicationId <= 0)
-    return "ID thuốc không hợp lệ.";
+QString PharmacyService::updateMedication(int medicationId, MedicationInputDTO dto) {
+    QString err;
+    if (!(err = Validation::validateValidId(medicationId, "ID thuốc không hợp lệ.")).isEmpty())
+        return err;
 
-  normalizeMedicationInput(dto);
+    normalizeMedicationInput(dto);
 
-  QString err = validateMedicationInput(dto);
-  if (!err.isEmpty())
-    return err;
+    if (!(err = validateMedicationInput(dto)).isEmpty()) return err;
 
-  if (!m_medicationRepo->updateMedication(medicationId, dto))
-    return "Lỗi hệ thống khi cập nhật thông tin thuốc. Vui lòng thử lại.";
+    if (!m_medicationRepo->updateMedication(medicationId, dto))
+        return "Lỗi hệ thống khi cập nhật thông tin thuốc. Vui lòng thử lại.";
 
-  return "";
+    return "";
 }
 
-QList<MedicationSummaryDTO>
-PharmacyService::searchMedications(MedicationSearchCriteria &criteria) const {
-  criteria.keyword = criteria.keyword.simplified();
-  criteria.manufacturer = criteria.manufacturer.simplified();
-  // selectedCategories: UI đã gửi chuỗi sạch, không cần normalize tại đây
-  QList<std::shared_ptr<Medication>> models =
-      m_medicationRepo->searchMedications(criteria);
-  QList<MedicationSummaryDTO> dtos;
+// QList<MedicationSummaryDTO>
+// PharmacyService::searchMedications(MedicationSearchCriteria& criteria) const {
+//   criteria.keyword = criteria.keyword.simplified();
+//   criteria.manufacturer = criteria.manufacturer.simplified();
+//   // selectedCategories: UI đã gửi chuỗi sạch, không cần normalize tại đây
+//   QList<std::shared_ptr<Medication>> models =
+//       m_medicationRepo->searchMedications(criteria);
+//   QList<MedicationSummaryDTO> dtos;
 
-  dtos.reserve(models.size());
+//   dtos.reserve(models.size());
 
-  for (const auto &model : models) {
-    if (model) {
-      dtos.append(model->toSummary());
-    }
-  }
+//   for (const auto &model : models) {
+//     if (model) {
+//       dtos.append(model->toSummary());
+//     }
+//   }
 
-  return dtos;
-}
+//   return dtos;
+// }
 
 std::optional<MedicationSummaryDTO>
 PharmacyService::getMedicationById(int medicationId) const {
@@ -336,21 +331,21 @@ PharmacyService::getExpiringMedications(int withinDays) const {
   return dtos;
 }
 
-QList<ActiveIngredientDTO>
-PharmacyService::searchIngredients(const QString &keyword) const {
-  if (keyword.trimmed().isEmpty()) {
-    return QList<ActiveIngredientDTO>();
-  }
+// QList<ActiveIngredientDTO>
+// PharmacyService::searchIngredients(const QString &keyword) const {
+//   if (keyword.trimmed().isEmpty()) {
+//     return QList<ActiveIngredientDTO>();
+//   }
 
-  QString cleanKeyword = keyword.trimmed().simplified();
+//   QString cleanKeyword = keyword.trimmed().simplified();
 
-  return m_medicationRepo->searchIngredients(cleanKeyword);
-}
+//   return m_medicationRepo->searchIngredients(cleanKeyword);
+// }
 
 // ── Phân trang: Medication ────────────────────────────────────────────────────
 
 PagedResult<MedicationSummaryDTO>
-PharmacyService::searchMedicationsPaged(MedicationSearchCriteria &criteria) const {
+PharmacyService::searchMedicationsPaged(MedicationSearchCriteria criteria) const {
   // Bước 1: Normalize text fields
   criteria.keyword      = criteria.keyword.simplified();
   criteria.manufacturer = criteria.manufacturer.simplified();
@@ -384,9 +379,9 @@ PharmacyService::searchMedicationsPaged(MedicationSearchCriteria &criteria) cons
 // ── Phân trang: Active Ingredient ────────────────────────────────────────────
 
 PagedResult<ActiveIngredientDTO>
-PharmacyService::searchIngredientsPaged(IngredientSearchCriteria &criteria) const {
+PharmacyService::searchIngredientsPaged(IngredientSearchCriteria criteria) const {
   // Bước 1: Normalize keyword
-  criteria.keyword = criteria.keyword.trimmed().simplified();
+  criteria.keyword = criteria.keyword.simplified();
 
   // Bước 2: Clamp page/pageSize vào range hợp lệ
   criteria.page     = qMax(1, criteria.page);
@@ -478,6 +473,8 @@ QString PharmacyService::dispensePrescription(int prescriptionId,
 // ─────────────────────────────────────────────────────────────────────────────
 // TRUY VẤN
 // ─────────────────────────────────────────────────────────────────────────────
+
+
 
 QList<PrescriptionResultDTO> PharmacyService::searchPrescriptions(
     PrescriptionSearchCriteria &criteria) const {

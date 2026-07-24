@@ -40,7 +40,7 @@ public:
 
   // ── Phần của bạn ──
   int insertMedicalRecord(const MedicalRecordInsertDTO &dto); // trả -1 nếu lỗi
-  bool updateMedicalRecord(const MedicalRecordUpdateDTO &dto);
+//   bool updateMedicalRecord(const MedicalRecordUpdateDTO &dto);
   bool softDeleteMedicalRecord(int recordId);
   std::optional<MedicalRecordResultDTO> findById(int recordId);
   QList<MedicalRecordResultDTO> getHistoryByPatientId(int patientId);
