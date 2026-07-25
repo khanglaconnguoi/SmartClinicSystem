@@ -223,6 +223,7 @@ CREATE TABLE IF NOT EXISTS inpatient_admissions (
 -- 4.1 ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS appointments (
     appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_number    INTEGER NOT NULL CHECK (ticket_number > 0),
     patient_id       INTEGER NOT NULL,
     doctor_id        INTEGER NOT NULL,
     room_id          INTEGER,
@@ -236,6 +237,13 @@ CREATE TABLE IF NOT EXISTS appointments (
     notes            TEXT,
     created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+
+    called_at        TEXT,
+    started_at       TEXT,
+    completed_at     TEXT,
+
+
+
     FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
     FOREIGN KEY (doctor_id)  REFERENCES staff(staff_id)    ON DELETE RESTRICT,
     FOREIGN KEY (room_id)    REFERENCES rooms(room_id) ON DELETE SET NULL,
@@ -245,28 +253,28 @@ CREATE TABLE IF NOT EXISTS appointments (
 );
 
 -- 4.2 -- Queue ticket (State Pattern persistence) ----------------------
-CREATE TABLE IF NOT EXISTS queue_tickets (
-    ticket_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    ticket_number  INTEGER NOT NULL CHECK (ticket_number > 0),
-    patient_id     INTEGER NOT NULL,
-    doctor_id      INTEGER,
-    appointment_id INTEGER,
-    room_id        INTEGER,
-    queue_date     TEXT    NOT NULL DEFAULT (date('now')),
-    priority_level INTEGER NOT NULL DEFAULT 0 CHECK (priority_level BETWEEN 0 AND 3),
-    status         TEXT    NOT NULL DEFAULT 'REGISTERED'
-                            CHECK (status IN ('REGISTERED','WAITING','CALLED','IN_PROGRESS','COMPLETED','CANCELLED')),
-    registered_at  TEXT    NOT NULL DEFAULT (datetime('now')),
-    called_at      TEXT,
-    started_at     TEXT,
-    completed_at   TEXT,
-    cancel_reason  TEXT,
-    FOREIGN KEY (patient_id)     REFERENCES patients(patient_id) ON DELETE CASCADE,
-    FOREIGN KEY (doctor_id)      REFERENCES staff(staff_id) ON DELETE SET NULL,
-    FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL,
-    FOREIGN KEY (room_id)        REFERENCES rooms(room_id) ON DELETE SET NULL,
-    UNIQUE (queue_date, ticket_number)
-);
+-- CREATE TABLE IF NOT EXISTS queue_tickets (
+--     ticket_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+--     ticket_number  INTEGER NOT NULL CHECK (ticket_number > 0),
+--     -- patient_id     INTEGER NOT NULL,
+--     -- doctor_id      INTEGER,
+--     appointment_id INTEGER,
+--     -- room_id        INTEGER,
+--     -- queue_date     TEXT    NOT NULL DEFAULT (date('now')),
+--     priority_level INTEGER NOT NULL DEFAULT 0 CHECK (priority_level BETWEEN 0 AND 3),
+--     status         TEXT    NOT NULL DEFAULT 'REGISTERED'
+--                             CHECK (status IN ('REGISTERED','WAITING','CALLED','IN_PROGRESS','COMPLETED','CANCELLED')),
+--     registered_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+--     called_at      TEXT,
+--     started_at     TEXT,
+--     completed_at   TEXT,
+--     cancel_reason  TEXT,
+--     -- FOREIGN KEY (patient_id)     REFERENCES patients(patient_id) ON DELETE CASCADE,
+--     -- FOREIGN KEY (doctor_id)      REFERENCES staff(staff_id) ON DELETE SET NULL,
+--     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE SET NULL,
+--     -- FOREIGN KEY (room_id)        REFERENCES rooms(room_id) ON DELETE SET NULL,
+--     UNIQUE (queue_date, ticket_number)
+-- );
 
 -- =====================================================================
 -- SECTION 5: CLINICAL / ELECTRONIC MEDICAL RECORDS (EMR)

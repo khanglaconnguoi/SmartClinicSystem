@@ -18,3 +18,12 @@ struct AppointmentRecordDTO {
     QString doctorName;
     QString doctorSpecialty;
 };
+
+struct AppointmentInputDTO {
+    int patientId;
+    QString doctorCode;
+    int createdBy;
+    QString date;
+    QString startTime;
+    QString reason;
+};
