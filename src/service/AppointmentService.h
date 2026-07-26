@@ -56,6 +56,7 @@ class AppointmentService {
     // QList<AppointmentRecordDTO> getDoctorAppointments(
     //         const QString& doctorId, const QDate& date) const;
     QList<AppointmentRecordDTO> getPatientAppointments(int patientId) const;
+    QList<AppointmentRecordDTO> getAppointmentsByDate(const QDate& date) const;
     bool updateAppointmentStatus(int appointmentId, const QString& status) const;
     QPair<QString, int> checkInPatient(int appointmentId) const;
     bool cancelAppointment(int appointmentId) const;

@@ -561,13 +561,13 @@ bool DatabaseManager::createTables() {
         start_time       TEXT    NOT NULL,
         end_time         TEXT,
         status           TEXT    NOT NULL DEFAULT 'SCHEDULED'
-                              CHECK (status IN ('SCHEDULED','CONFIRMED','CHECKED_IN','COMPLETED','CANCELLED','NO_SHOW')),
+                              CHECK (status IN ('SCHEDULED','CHECKED_IN','STARTED','COMPLETED','CANCELLED','NO_SHOW')),
         reason           TEXT,
         notes            TEXT,
         created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
         updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
 
-        called_at        TEXT,
+        checked_in_at    TEXT,
         started_at       TEXT,
         completed_at     TEXT,
 

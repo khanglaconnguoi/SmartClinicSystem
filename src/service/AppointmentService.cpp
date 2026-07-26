@@ -123,6 +123,11 @@ QList<AppointmentRecordDTO> AppointmentService::getDoctorAppointments(
 //     return m_appointmentRepository->getDoctorAppointments(doctorId, dateStr);
 // }
 
+QList<AppointmentRecordDTO> AppointmentService::getAppointmentsByDate(const QDate& date) const {
+    QString dateStr = date.isValid() ? date.toString("yyyy-MM-dd") : "";
+    return m_appointmentRepository->getAppointmentsByDate(dateStr);
+}
+
 QList<AppointmentRecordDTO> AppointmentService::getPatientAppointments(int patientId) const {
     return m_appointmentRepository->getPatientAppointments(patientId);
 }

@@ -263,16 +263,16 @@ namespace InvoiceStatusText {
 
 namespace AppointmentStatusText {
     inline const QString SCHEDULED  = "SCHEDULED";
-    inline const QString CONFIRMED  = "CONFIRMED";
     inline const QString CHECKED_IN = "CHECKED_IN";
+    inline const QString STARTED    = "STARTED";
     inline const QString COMPLETED  = "COMPLETED";
     inline const QString CANCELLED  = "CANCELLED";
     inline const QString NO_SHOW    = "NO_SHOW";
 
     inline const QList<QPair<QString, QString>> statuses = {
         {SCHEDULED,  "Đã hẹn"},
-        {CONFIRMED,  "Đã xác nhận"},
         {CHECKED_IN, "Đã check-in"},
+        {STARTED,    "Đang khám"},
         {COMPLETED,  "Đã khám"},
         {CANCELLED,  "Đã hủy"},
         {NO_SHOW,    "Vắng mặt"}};

@@ -9,7 +9,7 @@ QList<AppointmentRecordDTO> AppointmentRepository::getDoctorAppointments(int doc
   QList<AppointmentRecordDTO> list;
 
   QString sql = R"(
-        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, p.full_name, p.patient_code, r.room_number, a.ticket_number, a.called_at, a.started_at, a.completed_at
+        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, p.full_name, p.patient_code, r.room_number, a.ticket_number, a.checked_in_at, a.started_at, a.completed_at
         FROM appointments a
         JOIN patients p ON a.patient_id = p.patient_id
         LEFT JOIN rooms r ON a.room_id = r.room_id
@@ -45,7 +45,7 @@ QList<AppointmentRecordDTO> AppointmentRepository::getDoctorAppointments(int doc
     if (rec.roomNumber.isEmpty())
       rec.roomNumber = "N/A";
     rec.ticketNumber = query.value(12).toInt();
-    rec.calledAt = query.value(13).toString();
+    rec.checkedInAt = query.value(13).toString();
     rec.startedAt = query.value(14).toString();
     rec.completedAt = query.value(15).toString();
 
@@ -107,11 +107,57 @@ QList<AppointmentRecordDTO> AppointmentRepository::getDoctorAppointments(int doc
 //   return list;
 // }
 
+QList<AppointmentRecordDTO> AppointmentRepository::getAppointmentsByDate(const QString &date) const {
+  QList<AppointmentRecordDTO> list;
+
+  QString sql = R"(
+        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, p.full_name, p.patient_code, r.room_number, a.ticket_number, a.checked_in_at, a.started_at, a.completed_at, s.full_name, dp.specialty
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.patient_id
+        LEFT JOIN rooms r ON a.room_id = r.room_id
+        LEFT JOIN staff s ON a.doctor_id = s.staff_id
+        LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
+        WHERE a.appointment_date = ?
+        ORDER BY a.start_time ASC
+    )";
+  QVariantList params = {date};
+
+  qDebug() << "getAppointmentsByDate - Executing query for date:" << date;
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+
+  while (query.next()) {
+    AppointmentRecordDTO rec;
+    rec.appointmentId = query.value(0).toInt();
+    rec.patientId = query.value(1).toInt();
+    rec.doctorId = query.value(2).toString();
+    rec.appointmentDate = query.value(3).toString();
+    rec.startTime = query.value(4).toString();
+    rec.endTime = query.value(5).toString();
+    rec.status = query.value(6).toString();
+    rec.reason = query.value(7).toString();
+    rec.notes = query.value(8).toString();
+    rec.patientName = query.value(9).toString();
+    rec.patientCode = query.value(10).toString();
+    rec.roomNumber = query.value(11).toString();
+    if (rec.roomNumber.isEmpty())
+      rec.roomNumber = "N/A";
+    rec.ticketNumber = query.value(12).toInt();
+    rec.checkedInAt = query.value(13).toString();
+    rec.startedAt = query.value(14).toString();
+    rec.completedAt = query.value(15).toString();
+    rec.doctorName = query.value(16).toString();
+    rec.doctorSpecialty = query.value(17).toString();
+    list.append(rec);
+  }
+
+  return list;
+}
+
 QList<AppointmentRecordDTO> AppointmentRepository::getPatientAppointments(int patientId) const {
   QList<AppointmentRecordDTO> list;
 
   QString sql = R"(
-        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, s.full_name, dp.specialty, r.room_number, a.ticket_number, a.called_at, a.started_at, a.completed_at
+        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, s.full_name, dp.specialty, r.room_number, a.ticket_number, a.checked_in_at, a.started_at, a.completed_at
         FROM appointments a
         JOIN staff s ON a.doctor_id = s.staff_id
         LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
@@ -141,7 +187,7 @@ QList<AppointmentRecordDTO> AppointmentRepository::getPatientAppointments(int pa
     if (rec.roomNumber.isEmpty())
       rec.roomNumber = "N/A";
     rec.ticketNumber = query.value(12).toInt();
-    rec.calledAt = query.value(13).toString();
+    rec.checkedInAt = query.value(13).toString();
     rec.startedAt = query.value(14).toString();
     rec.completedAt = query.value(15).toString();
     list.append(rec);
@@ -154,8 +200,8 @@ bool AppointmentRepository::updateAppointmentStatus(int appointmentId, const QSt
   QString sql = R"(
         UPDATE appointments
         SET status = ?,
-            called_at = CASE WHEN ? = 'CALLED' AND called_at IS NULL THEN datetime('now') ELSE called_at END,
-            started_at = CASE WHEN ? IN ('CHECKED_IN', 'IN_PROGRESS') AND started_at IS NULL THEN datetime('now') ELSE started_at END,
+            checked_in_at = CASE WHEN ? = 'CHECKED_IN' AND checked_in_at IS NULL THEN datetime('now') ELSE checked_in_at END,
+            started_at = CASE WHEN ? = 'STARTED' AND started_at IS NULL THEN datetime('now') ELSE started_at END,
             completed_at = CASE WHEN ? = 'COMPLETED' AND completed_at IS NULL THEN datetime('now') ELSE completed_at END,
             updated_at = datetime('now')
         WHERE appointment_id = ?
@@ -193,11 +239,12 @@ QPair<QString, int> AppointmentRepository::checkInPatient(int appointmentId) con
     nextTicket = ticketQuery.value(0).toInt();
   }
 
-  // 3. Update appointment status to CHECKED_IN and set ticket_number
+  // 3. Update appointment status to CHECKED_IN, set ticket_number and checked_in_at
   QString updateSql = R"(
         UPDATE appointments
         SET status = 'CHECKED_IN',
             ticket_number = ?,
+            checked_in_at = CASE WHEN checked_in_at IS NULL THEN datetime('now') ELSE checked_in_at END,
             updated_at = datetime('now')
         WHERE appointment_id = ?
     )";

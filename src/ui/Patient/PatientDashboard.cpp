@@ -381,8 +381,7 @@ void PatientDashboardWidget::createUpcomingAppointments() {
             // Badge trạng thái
             QString statusColor = "#5F6368";
             QString statusBg = "#F1F3F4";
-            if (a.status == "PENDING") { statusColor = "#F59E0B"; statusBg = "#FEF3C7"; }
-            else if (a.status == "CONFIRMED") { statusColor = "#4B94F2"; statusBg = "#ACDEF2"; }
+            if (a.status == "PENDING" || a.status == "SCHEDULED") { statusColor = "#F59E0B"; statusBg = "#FEF3C7"; }
             else if (a.status == "COMPLETED") { statusColor = "#10B981"; statusBg = "#D1FAE5"; }
             else if (a.status == "CANCELLED") { statusColor = "#EF4444"; statusBg = "#FEE2E2"; }
 
@@ -400,7 +399,7 @@ void PatientDashboardWidget::createUpcomingAppointments() {
             hl->addWidget(statusLbl);
 
             // Nút Hủy
-            if (a.status == "PENDING" || a.status == "CONFIRMED") {
+            if (a.status == "PENDING" || a.status == "SCHEDULED") {
                 QPushButton* btnCancel = new QPushButton("Hủy", item);
                 btnCancel->setCursor(Qt::PointingHandCursor);
                 btnCancel->setStyleSheet(

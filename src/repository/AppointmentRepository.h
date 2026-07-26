@@ -15,6 +15,7 @@ class AppointmentRepository {
     // QList<AppointmentRecordDTO> getDoctorAppointments(
     //         const QString& doctorId, const QString& date = "") const;
     QList<AppointmentRecordDTO> getPatientAppointments(int patientId) const;
+    QList<AppointmentRecordDTO> getAppointmentsByDate(const QString& date) const;
     bool updateAppointmentStatus(int appointmentId, const QString& status) const;
     QPair<QString, int> checkInPatient(int appointmentId) const;
     bool cancelAppointment(int appointmentId) const;
