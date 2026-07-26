@@ -227,8 +227,7 @@ void NurseRegistrationDialog::loadNurseData(NurseProfileDTO* nurse) {
     m_txtEmail->setText(nurse->email);
     m_txtAddress->setText(nurse->address);
     
-    QString genderText = (nurse->gender == Gender::Male) ? "Nam" :
-                         (nurse->gender == Gender::Female) ? "Nữ" : "Khác";
+    QString genderText = GenderText::toVi(nurse->gender);
     m_cbGender->setCurrentText(genderText);
     
     m_dtDateOfBirth->setDate(nurse->dateOfBirth);
@@ -270,9 +269,7 @@ void NurseRegistrationDialog::handleSave() {
     return;
   }
 
-  Gender gender = (m_cbGender->currentText() == "Nam")  ? Gender::Male
-                  : (m_cbGender->currentText() == "Nữ") ? Gender::Female
-                                                        : Gender::Other;
+  QString gender = GenderText::toEn(m_cbGender->currentText());
 
   QDate dob = m_dtDateOfBirth->date();
   
@@ -287,21 +284,21 @@ void NurseRegistrationDialog::handleSave() {
 
   QPixmap avatar;
 
-  if (m_editStaffId == -1) {
-      NurseInputDTO dto;
-      dto.fullName = fullName;
-      dto.avatar = avatar;
-      dto.gender = gender;
-      dto.dateOfBirth = dob;
-      dto.citizenId = citizenId;
-      dto.phoneNumber = phone;
-      dto.email = email;
-      dto.address = address;
-      dto.departmentId = departmentId;
-      dto.shift = shift;
-      dto.nurseLevel = nurseLevel;
-      dto.certification = certification;
+  NurseInputDTO dto;
+  dto.fullName = fullName;
+  dto.avatar = avatar;
+  dto.gender = gender;
+  dto.dateOfBirth = dob;
+  dto.citizenId = citizenId;
+  dto.phoneNumber = phone;
+  dto.email = email;
+  dto.address = address;
+  dto.departmentId = departmentId;
+  dto.shift = shift;
+  dto.nurseLevel = nurseLevel;
+  dto.certification = certification;
 
+  if (m_editStaffId == -1) {
       StaffHireResult result = m_staffService->hireNewNurse(dto);
       if (!result.errorMessage.isEmpty()) {
           QMessageBox::critical(this, "Lỗi", result.errorMessage);
@@ -312,20 +309,7 @@ void NurseRegistrationDialog::handleSave() {
                                .arg(result.staffCode)
                                .arg(result.plainPassword));
   } else {
-      NurseUpdateDTO updateDto;
-      updateDto.staffId = m_editStaffId;
-      updateDto.fullName = fullName;
-      updateDto.gender = (gender == Gender::Male) ? "MALE" : (gender == Gender::Female) ? "FEMALE" : "OTHER";
-      updateDto.dateOfBirth = dob.toString("yyyy-MM-dd");
-      updateDto.citizenId = citizenId;
-      updateDto.phoneNumber = phone;
-      updateDto.email = email;
-      updateDto.address = address;
-      updateDto.departmentId = departmentId;
-      updateDto.shift = shift;
-      updateDto.nurseLevel = nurseLevel;
-
-      QString errorMsg = m_staffService->editNurseInformation(updateDto);
+      QString errorMsg = m_staffService->editNurseInformation(dto, m_editStaffId);
       if (!errorMsg.isEmpty()) {
           QMessageBox::critical(this, "Lỗi", errorMsg);
           return;

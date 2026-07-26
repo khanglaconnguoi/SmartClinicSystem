@@ -726,12 +726,12 @@ QSqlQuery DatabaseManager::selectQuery(const QString &sql,
 std::optional<DatabaseManager::PatientRecord>
 DatabaseManager::getPatientByPhoneOrCitizenId(const QString &phone,
                                               const QString &citizenId) {
-  QString sql = "SELECT patient_id, patient_code, full_name, phone FROM "
+  QString sql = "SELECT patient_id, patient_code, full_name, phone_number FROM "
                 "patients WHERE is_deleted = 0 AND (";
   QVariantList params;
   QStringList conditions;
   if (!phone.isEmpty()) {
-    conditions << "phone = ?";
+    conditions << "phone_number = ?";
     params << phone;
   }
   if (!citizenId.isEmpty()) {

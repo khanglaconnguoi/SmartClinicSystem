@@ -43,7 +43,7 @@ bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
         date_of_birth,
         gender,
         citizen_id,
-        phone,
+        phone_number,
         email,
         address,
         blood_type,
@@ -97,8 +97,6 @@ bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
   return true;
 }
 
-
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Public – insert out patient
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,7 +127,7 @@ bool PatientRepository::insertOutPatient(const OutPatientInsertDTO &dto) {
 
   const QVariantList params = {
       patientId,
-      dto.doctorId,
+      dto.doctorId.has_value() ? QVariant(dto.doctorId.value()) : QVariant(),
       dto.status,
   };
 
@@ -191,8 +189,8 @@ bool PatientRepository::insertInPatient(const InPatientInsertDTO &dto) {
 
   const QVariantList params = {
       patientId,
-      dto.roomId,
-      dto.doctorId,
+      dto.roomId <= 0 ? QVariant() : dto.roomId,
+      dto.doctorId <= 0 ? QVariant() : dto.doctorId,
       dto.admissionDate,
       dto.dischargeDate.isEmpty() ? QVariant() : dto.dischargeDate,
       dto.reason.isEmpty() ? QVariant() : dto.reason,
@@ -259,8 +257,8 @@ bool PatientRepository::insertEmergencyPatient(
 
   const QVariantList params = {
       patientId,
-      dto.roomId.has_value() ? QVariant(dto.roomId.value()) : QVariant(),
-      dto.doctorId.has_value() ? QVariant(dto.doctorId.value()) : QVariant(),
+      dto.roomId <= 0 ? QVariant() : dto.roomId,
+      dto.doctorId <= 0 ? QVariant() : dto.doctorId,
       dto.injuryCause.isEmpty() ? QVariant() : dto.injuryCause,
       dto.injuryDescription.isEmpty() ? QVariant() : dto.injuryDescription,
       dto.admissionDate,
@@ -1005,8 +1003,9 @@ PatientRepository::getInsuranceByPatientId(int patientId) {
   return result;
 }
 
-std::optional<DatabaseManager::PatientRecord> PatientRepository::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
-    return DatabaseManager::getInstance().getPatientByPhoneOrCitizenId(phone, citizenId);
+std::optional<DatabaseManager::PatientRecord>
+PatientRepository::getPatientByPhoneOrCitizenId(
+    const QString &phone, const QString &citizenId) const {
+  return DatabaseManager::getInstance().getPatientByPhoneOrCitizenId(phone,
+                                                                     citizenId);
 }
-
-

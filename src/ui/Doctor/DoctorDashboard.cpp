@@ -1,11 +1,11 @@
 #include "DoctorDashboard.h"
 #include "../../model/IAuthenticatable.h"
 #include "../../model/SystemUser.h"
+#include "../../service/AppointmentService.h"
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
-#include "../../service/AppointmentService.h"
-#include "ClinicalExamWidget.h"
 #include "../PatientWidget.h"
+#include "ClinicalExamWidget.h"
 #include <QCalendarWidget>
 #include <QDate>
 #include <QDebug>
@@ -16,6 +16,7 @@
 #include <QPainterPath>
 #include <QScrollArea>
 #include <QStackedWidget>
+
 
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QBarSeries>
@@ -28,9 +29,9 @@ DoctorDashboardWidget::DoctorDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
     std::shared_ptr<StaffService> staffService,
     std::shared_ptr<PatientService> patientService,
-    std::shared_ptr<AppointmentService> appointmentService,
-    QWidget *parent)
-    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent),
+    std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
+    : BaseDashboardWidget(user, staffService, patientService,
+                          appointmentService, parent),
       m_overviewPage(nullptr), m_patientsPage(nullptr),
       m_appointmentsPage(nullptr), m_settingsPage(nullptr),
       m_clinicalExamPage(nullptr), m_currentExaminingRow(-1) {
@@ -529,8 +530,7 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
     if (m_currentExaminingRow >= 0 &&
         m_currentExaminingRow < m_rowApptMeta.size()) {
       int apptId = m_rowApptMeta[m_currentExaminingRow].appointmentId;
-      m_baseAppointmentService->updateAppointmentStatus(apptId,
-                                                             "COMPLETED");
+      m_baseAppointmentService->updateAppointmentStatus(apptId, "COMPLETED");
     }
 
     refreshAppointmentsTables();
@@ -561,8 +561,7 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
     if (m_currentExaminingRow >= 0 &&
         m_currentExaminingRow < m_apptPageMeta.size()) {
       int apptId = m_apptPageMeta[m_currentExaminingRow].appointmentId;
-      m_baseAppointmentService->updateAppointmentStatus(apptId,
-                                                             "COMPLETED");
+      m_baseAppointmentService->updateAppointmentStatus(apptId, "COMPLETED");
     }
 
     refreshAppointmentsTables();
@@ -575,14 +574,14 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
 }
 
 void DoctorDashboardWidget::refreshAppointmentsTables() {
-  QString docId = "BS01";
+  int docId = 1;
   if (auto sysUser = std::dynamic_pointer_cast<SystemUser>(m_currentUser)) {
-    docId = sysUser->getStaffCode();
+    docId = sysUser->getAccountId();
   }
-  QString todayStr = QDate::currentDate().toString("yyyy-MM-dd");
+  QDate today = QDate::currentDate();
 
   if (m_patientTable) {
-    auto records = m_baseAppointmentService->getDoctorAppointments(docId, todayStr);
+    auto records = m_baseAppointmentService->getDoctorAppointments(docId, today);
     m_rowApptMeta.clear();
     m_patientTable->setRowCount(0);
     int rowIdx = 0;
@@ -675,8 +674,8 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
   }
 }
 
-QFrame* DoctorDashboardWidget::makeCard(QWidget* parent) {
-  QFrame* card = new QFrame(parent);
+QFrame *DoctorDashboardWidget::makeCard(QWidget *parent) {
+  QFrame *card = new QFrame(parent);
   card->setObjectName("DashboardCard");
   card->setStyleSheet("QFrame#DashboardCard {"
                       "   background-color: #FFFFFF;"

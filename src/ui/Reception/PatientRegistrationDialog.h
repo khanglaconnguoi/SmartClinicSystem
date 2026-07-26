@@ -2,15 +2,18 @@
 
 #include <QDialog>
 
+#include <memory>
+
 class QLineEdit;
 class QComboBox;
 class QDateEdit;
 class QPushButton;
+class PatientService;
 
 class PatientRegistrationDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit PatientRegistrationDialog(QWidget* parent = nullptr);
+    explicit PatientRegistrationDialog(std::shared_ptr<PatientService> patientService, QWidget* parent = nullptr);
     ~PatientRegistrationDialog() = default;
 
 signals:
@@ -18,6 +21,7 @@ signals:
     void saved(QString phone, QString name);
 
 private:
+    std::shared_ptr<PatientService> m_patientService;
     void setupUi();
 
     QLineEdit* m_txtFullName;
@@ -29,6 +33,13 @@ private:
     QLineEdit* m_txtAddress;
     QComboBox* m_cboBloodType;
     QComboBox* m_cboPatientType;
+    // Các trường Bảo hiểm y tế
+    QComboBox *m_cbInsuranceType;
+    QLineEdit *m_txtInsuranceProvider;
+    QLineEdit *m_txtInsurancePolicy;
+    class QDoubleSpinBox *m_spinInsuranceCoverage;
+    QDateEdit *m_dateInsuranceFrom;
+    QDateEdit *m_dateInsuranceTo;
     QLineEdit* m_txtEmergencyName;
     QLineEdit* m_txtEmergencyPhone;
 

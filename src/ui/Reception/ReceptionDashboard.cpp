@@ -304,7 +304,7 @@ void ReceptionDashboardWidget::buildRegisterPage() {
     layout->addLayout(titleLayout);
 
     connect(btnAddPatient, &QPushButton::clicked, this, [this]() {
-        PatientRegistrationDialog dialog(this);
+        PatientRegistrationDialog dialog(m_basePatientService, this);
         connect(&dialog, &PatientRegistrationDialog::saved, this, [this](QString citizenId, QString /*name*/) {
             // Mock patient registration success
             m_currentPatientId = 9999; // Dummy ID for UI flow
@@ -335,7 +335,10 @@ void ReceptionDashboardWidget::buildRegisterPage() {
                          "border: 1px solid #4B94F2; } "
                          "QComboBox::drop-down, QDateEdit::drop-down { "
                          "subcontrol-origin: padding; subcontrol-position: top right; "
-                         "width: 30px; border-left: 1px solid #EAEAEA; }";
+                         "width: 30px; border-left: 1px solid #EAEAEA; }"
+                         "QComboBox QAbstractItemView { "
+                         "background-color: white; color: #333333; "
+                         "selection-background-color: #4B94F2; selection-color: white; outline: none; border: 1px solid #EAEAEA; }";
 
     // ---------------------------------------------------------
     // STEP 1: PATIENT INFO CARD

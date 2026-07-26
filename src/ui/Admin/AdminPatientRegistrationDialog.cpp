@@ -14,6 +14,7 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QVBoxLayout>
+#include <QDoubleSpinBox>
 
 AdminPatientRegistrationDialog::AdminPatientRegistrationDialog(
     std::shared_ptr<PatientService> patientService, QWidget *parent)
@@ -93,15 +94,16 @@ void AdminPatientRegistrationDialog::setupUi() {
       "QLineEdit:focus, QComboBox:focus, QDateEdit:focus { "
       "border: 1px solid #4B94F2; } "
       "QComboBox QAbstractItemView { "
-      "background-color: #FFFFFF; color: #111827; selection-background-color: #4B94F2; selection-color: white; }";
+      "background-color: #FFFFFF; color: #111827; selection-background-color: "
+      "#4B94F2; selection-color: white; }";
 
   // --- Loại Bệnh nhân ---
   m_cbPatientType = new QComboBox(formCard);
   m_cbPatientType->addItems({"Ngoại trú", "Nội trú", "Cấp cứu"});
   m_cbPatientType->setStyleSheet(extraInputStyle);
-  
-  QHBoxLayout* typeLayout = new QHBoxLayout();
-  QLabel* lblType = new QLabel("Loại Bệnh nhân:");
+
+  QHBoxLayout *typeLayout = new QHBoxLayout();
+  QLabel *lblType = new QLabel("Loại Bệnh nhân:");
   typeLayout->addWidget(lblType);
   typeLayout->addWidget(m_cbPatientType, 1);
   cardLayout->addLayout(typeLayout);
@@ -126,7 +128,8 @@ void AdminPatientRegistrationDialog::setupUi() {
   m_cbGender->setStyleSheet(extraInputStyle);
   form1->addRow("Giới tính:", m_cbGender);
 
-  m_dtDateOfBirth = new QDateEdit(QDate::currentDate().addYears(-30), gbPersonalInfo);
+  m_dtDateOfBirth =
+      new QDateEdit(QDate::currentDate().addYears(-30), gbPersonalInfo);
   m_dtDateOfBirth->setCalendarPopup(true);
   m_dtDateOfBirth->setDisplayFormat("dd/MM/yyyy");
   m_dtDateOfBirth->setStyleSheet(extraInputStyle);
@@ -171,21 +174,60 @@ void AdminPatientRegistrationDialog::setupUi() {
   form3->setSpacing(12);
 
   m_cbBloodType = new QComboBox(gbMedicalInfo);
-  m_cbBloodType->addItems({"Chưa rõ", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"});
+  m_cbBloodType->addItems(
+      {"Chưa rõ", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"});
   m_cbBloodType->setStyleSheet(extraInputStyle);
   form3->addRow("Nhóm máu:", m_cbBloodType);
 
   m_txtAllergies = new QLineEdit(gbMedicalInfo);
-  m_txtAllergies->setPlaceholderText("Cách nhau bởi dấu phẩy (vd: Penicillin, Hải sản)");
+  m_txtAllergies->setPlaceholderText(
+      "Cách nhau bởi dấu phẩy (vd: Penicillin, Hải sản)");
   m_txtAllergies->setStyleSheet(extraInputStyle);
   form3->addRow("Dị ứng:", m_txtAllergies);
 
-  m_txtInsurance = new QLineEdit(gbMedicalInfo);
-  m_txtInsurance->setPlaceholderText("Mã thẻ BHYT");
-  m_txtInsurance->setStyleSheet(extraInputStyle);
-  form3->addRow("Bảo hiểm:", m_txtInsurance);
+  // --- Group 4: Thông tin Bảo hiểm Y tế ---
+  QGroupBox *gbInsuranceInfo = new QGroupBox("Thông tin Bảo hiểm Y tế", formCard);
+  gbInsuranceInfo->setStyleSheet(groupBoxStyle);
+  QFormLayout *form4 = new QFormLayout(gbInsuranceInfo);
+  form4->setContentsMargins(15, 25, 15, 15);
+  form4->setSpacing(12);
+
+  m_cbInsuranceType = new QComboBox(gbInsuranceInfo);
+  m_cbInsuranceType->addItems({"Không có", "Bảo hiểm y tế xã hội", "Bảo hiểm y tế tư nhân", "Khác"});
+  m_cbInsuranceType->setStyleSheet(extraInputStyle);
+  form4->addRow("Loại bảo hiểm:", m_cbInsuranceType);
+
+  m_txtInsuranceProvider = new QLineEdit(gbInsuranceInfo);
+  m_txtInsuranceProvider->setPlaceholderText("Tên công ty / Nơi cấp...");
+  m_txtInsuranceProvider->setStyleSheet(extraInputStyle);
+  form4->addRow("Nơi cấp:", m_txtInsuranceProvider);
+
+  m_txtInsurancePolicy = new QLineEdit(gbInsuranceInfo);
+  m_txtInsurancePolicy->setPlaceholderText("Mã thẻ / Hợp đồng...");
+  m_txtInsurancePolicy->setStyleSheet(extraInputStyle);
+  form4->addRow("Mã thẻ:", m_txtInsurancePolicy);
+
+  m_spinInsuranceCoverage = new QDoubleSpinBox(gbInsuranceInfo);
+  m_spinInsuranceCoverage->setRange(0.0, 100.0);
+  m_spinInsuranceCoverage->setValue(80.0);
+  m_spinInsuranceCoverage->setSuffix(" %");
+  m_spinInsuranceCoverage->setStyleSheet(extraInputStyle);
+  form4->addRow("Mức chi trả:", m_spinInsuranceCoverage);
+
+  m_dateInsuranceFrom = new QDateEdit(QDate::currentDate(), gbInsuranceInfo);
+  m_dateInsuranceFrom->setCalendarPopup(true);
+  m_dateInsuranceFrom->setDisplayFormat("dd/MM/yyyy");
+  m_dateInsuranceFrom->setStyleSheet(extraInputStyle);
+  form4->addRow("Hiệu lực từ:", m_dateInsuranceFrom);
+
+  m_dateInsuranceTo = new QDateEdit(QDate::currentDate().addYears(1), gbInsuranceInfo);
+  m_dateInsuranceTo->setCalendarPopup(true);
+  m_dateInsuranceTo->setDisplayFormat("dd/MM/yyyy");
+  m_dateInsuranceTo->setStyleSheet(extraInputStyle);
+  form4->addRow("Hiệu lực đến:", m_dateInsuranceTo);
 
   cardLayout->addWidget(gbMedicalInfo);
+  cardLayout->addWidget(gbInsuranceInfo);
 
   scrollArea->setWidget(formCard);
   containerLayout->addWidget(scrollArea);
@@ -242,93 +284,128 @@ void AdminPatientRegistrationDialog::handleSave() {
   }
 
   QString genderText = m_cbGender->currentText();
-  Gender gender = (genderText == "Nam") ? Gender::Male : (genderText == "Nữ") ? Gender::Female : Gender::Other;
+  QString gender = GenderText::toEn(genderText);
 
   QDate dob = m_dtDateOfBirth->date();
   QString email = m_txtEmail->text().trimmed();
   QString address = m_txtAddress->text().trimmed();
-  
+
   QString typeText = m_cbPatientType->currentText();
-  PatientType type = (typeText == "Nội trú") ? PatientType::Inpatient : 
-                     (typeText == "Cấp cứu") ? PatientType::Emergency : PatientType::Outpatient;
+  PatientType type = (typeText == "Nội trú")   ? PatientType::Inpatient
+                     : (typeText == "Cấp cứu") ? PatientType::Emergency
+                                               : PatientType::Outpatient;
 
   QString bloodType = m_cbBloodType->currentText();
-  if(bloodType == "Chưa rõ") bloodType = "UNKNOWN";
+  if (bloodType == "Chưa rõ")
+    bloodType = "UNKNOWN";
 
   QString allergies = m_txtAllergies->text().trimmed();
-  QString insurance = m_txtInsurance->text().trimmed();
+  
+  QString insuranceTypeStr = m_cbInsuranceType->currentText();
+  bool hasInsurance = (insuranceTypeStr != "Không có");
+  QString insuranceTypeEn = InsuraceTypeText::toEn(insuranceTypeStr);
+  QString insuranceProvider = m_txtInsuranceProvider->text().trimmed();
+  QString insurancePolicy = m_txtInsurancePolicy->text().trimmed();
+  double insuranceCoverage = m_spinInsuranceCoverage->value();
+  QDate insuranceFrom = m_dateInsuranceFrom->date();
+  QDate insuranceTo = m_dateInsuranceTo->date();
+
   QString emerName = m_txtEmergencyContactName->text().trimmed();
   QString emerPhone = m_txtEmergencyContactPhone->text().trimmed();
 
   QString errorMsg;
   if (type == PatientType::Outpatient) {
-      OutPatientInputDTO dto;
-      dto.fullName = fullName;
-      dto.dateOfBirth = dob;
-      dto.gender = gender;
-      dto.citizenId = citizenId;
-      dto.phone = phone;
-      dto.email = email;
-      dto.address = address;
-      dto.bloodType = bloodType;
-//    dto.allergies = allergies;
-      dto.insurance = insurance;
-      dto.type = type;
-      dto.emergencyContactName = emerName;
-      dto.emergencyContactPhone = emerPhone;
-      dto.doctorId = std::nullopt;
-      
-      errorMsg = m_patientService->addOutPatient(dto);
+    OutPatientInputDTO dto;
+    dto.fullName = fullName;
+    dto.dateOfBirth = dob;
+    dto.gender = gender;
+    dto.citizenId = citizenId;
+    dto.phone = phone;
+    dto.email = email;
+    dto.address = address;
+    dto.bloodType = bloodType;
+    if (hasInsurance) {
+      InsuranceInputDTO insDto;
+      insDto.policyNumber = insurancePolicy;
+      insDto.providerName = insuranceProvider;
+      insDto.insuranceType = insuranceTypeEn;
+      insDto.coveragePercent = insuranceCoverage;
+      insDto.validFrom = insuranceFrom;
+      insDto.validTo = insuranceTo;
+      dto.insurance = insDto;
+    }
+    dto.type = type;
+    dto.emergencyContactName = emerName;
+    dto.emergencyContactPhone = emerPhone;
+    //    dto.doctorId = std::nullopt;
+
+    errorMsg = m_patientService->addOutPatient(dto);
   } else if (type == PatientType::Inpatient) {
-      InPatientInputDTO dto;
-      dto.fullName = fullName;
-      dto.dateOfBirth = dob;
-      dto.gender = gender;
-      dto.citizenId = citizenId;
-      dto.phone = phone;
-      dto.email = email;
-      dto.address = address;
-      dto.bloodType = bloodType;
-//    dto.allergies = allergies;
-      dto.insurance = insurance;
-      dto.type = type;
-      dto.emergencyContactName = emerName;
-      dto.emergencyContactPhone = emerPhone;
-      dto.roomId = std::nullopt;
-      dto.doctorId = std::nullopt;
-      dto.admissionDate = QDate::currentDate();
-      dto.dischargeDate = std::nullopt;
-      dto.reason = "Chưa xác định";
+    InPatientInputDTO dto;
+    dto.fullName = fullName;
+    dto.dateOfBirth = dob;
+    dto.gender = gender;
+    dto.citizenId = citizenId;
+    dto.phone = phone;
+    dto.email = email;
+    dto.address = address;
+    dto.bloodType = bloodType;
+    if (hasInsurance) {
+      InsuranceInputDTO insDto;
+      insDto.policyNumber = insurancePolicy;
+      insDto.providerName = insuranceProvider;
+      insDto.insuranceType = insuranceTypeEn;
+      insDto.coveragePercent = insuranceCoverage;
+      insDto.validFrom = insuranceFrom;
+      insDto.validTo = insuranceTo;
+      dto.insurance = insDto;
+    }
+    dto.type = type;
+    dto.emergencyContactName = emerName;
+    dto.emergencyContactPhone = emerPhone;
+    // dto.roomId = std::nullopt;
+    // dto.doctorId = std::nullopt;
+    dto.admissionDate = QDate::currentDate();
+    dto.dischargeDate = std::nullopt;
+    dto.reason = "Chưa xác định";
 
-      errorMsg = m_patientService->addInPatient(dto);
+    errorMsg = m_patientService->addInPatient(dto);
   } else if (type == PatientType::Emergency) {
-      EmergencyPatientInputDTO dto;
-      dto.fullName = fullName;
-      dto.dateOfBirth = dob;
-      dto.gender = gender;
-      dto.citizenId = citizenId;
-      dto.phone = phone;
-      dto.email = email;
-      dto.address = address;
-      dto.bloodType = bloodType;
-//    dto.allergies = allergies;
-      dto.insurance = insurance;
-      dto.type = type;
-      dto.emergencyContactName = emerName;
-      dto.emergencyContactPhone = emerPhone;
-      dto.roomId = std::nullopt;
-      dto.doctorId = std::nullopt;
-      dto.injuryCause = "Chưa xác định";
-      dto.injuryDescription = "Chưa xác định";
-      dto.admissionDate = QDate::currentDate();
-      dto.dischargeDate = std::nullopt;
+    EmergencyPatientInputDTO dto;
+    dto.fullName = fullName;
+    dto.dateOfBirth = dob;
+    dto.gender = gender;
+    dto.citizenId = citizenId;
+    dto.phone = phone;
+    dto.email = email;
+    dto.address = address;
+    dto.bloodType = bloodType;
+    if (hasInsurance) {
+      InsuranceInputDTO insDto;
+      insDto.policyNumber = insurancePolicy;
+      insDto.providerName = insuranceProvider;
+      insDto.insuranceType = insuranceTypeEn;
+      insDto.coveragePercent = insuranceCoverage;
+      insDto.validFrom = insuranceFrom;
+      insDto.validTo = insuranceTo;
+      dto.insurance = insDto;
+    }
+    dto.type = type;
+    dto.emergencyContactName = emerName;
+    dto.emergencyContactPhone = emerPhone;
+    //   dto.roomId = std::nullopt;
+    //   dto.doctorId = std::nullopt;
+    dto.injuryCause = "Chưa xác định";
+    dto.injuryDescription = "Chưa xác định";
+    dto.admissionDate = QDate::currentDate();
+    dto.dischargeDate = std::nullopt;
 
-      errorMsg = m_patientService->addEmergencyPatient(dto);
+    errorMsg = m_patientService->addEmergencyPatient(dto);
   }
 
   if (!errorMsg.isEmpty()) {
-      QMessageBox::warning(this, "Lỗi kiểm tra dữ liệu", errorMsg);
-      return;
+    QMessageBox::warning(this, "Lỗi kiểm tra dữ liệu", errorMsg);
+    return;
   }
 
   QMessageBox::information(this, "Thành công", "Đăng ký bệnh nhân thành công!");

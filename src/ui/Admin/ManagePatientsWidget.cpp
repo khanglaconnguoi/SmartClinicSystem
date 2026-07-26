@@ -90,7 +90,7 @@ void ManagePatientsWidget::loadPatientsList() {
         QTableWidgetItem* itemName = new QTableWidgetItem(patient.fullName);
         itemName->setForeground(QBrush(QColor("#111827")));
         
-        QTableWidgetItem* itemGender = new QTableWidgetItem(genderToString(patient.gender));
+        QTableWidgetItem* itemGender = new QTableWidgetItem(GenderText::toVi(patient.gender));
         itemGender->setForeground(QBrush(QColor("#111827")));
         
         QTableWidgetItem* itemDob = new QTableWidgetItem(patient.dateOfBirth.toString("yyyy-MM-dd"));

@@ -258,9 +258,7 @@ void DoctorRegistrationDialog::loadDoctorData(DoctorProfileDTO *doctor) {
   m_txtEmail->setText(doctor->email);
   m_txtAddress->setText(doctor->address);
 
-  QString genderText = (doctor->gender == Gender::Male)     ? "Nam"
-                       : (doctor->gender == Gender::Female) ? "Nữ"
-                                                            : "Khác";
+  QString genderText = GenderText::toVi(doctor->gender);
   m_cbGender->setCurrentText(genderText);
 
   m_dtDateOfBirth->setDate(doctor->dateOfBirth);
@@ -307,9 +305,7 @@ void DoctorRegistrationDialog::handleSave() {
     return;
   }
 
-  Gender gender = (m_cbGender->currentText() == "Nam")  ? Gender::Male
-                  : (m_cbGender->currentText() == "Nữ") ? Gender::Female
-                                                        : Gender::Other;
+  QString gender = GenderText::toEn(m_cbGender->currentText());
 
   QDate dob = m_dtDateOfBirth->date();
 
@@ -328,60 +324,79 @@ void DoctorRegistrationDialog::handleSave() {
 
   QPixmap avatar;
 
+  DoctorInputDTO dto;
+  dto.fullName = fullName;
+  dto.avatar = avatar;
+  dto.gender = gender;
+  dto.dateOfBirth = dob;
+  dto.citizenId = citizenId;
+  dto.phoneNumber = phone;
+  dto.email = email;
+  dto.address = address;
+  dto.departmentId = departmentId;
+  dto.shift = shift;
+  dto.specialty = specialty;
+  dto.licenseNumber = licenseNumber;
+  dto.experienceYears = experienceYears;
+  dto.consultationFee = consultationFee;
+  dto.bio = bio;
+
+  QString errorMsg;
   if (m_editStaffId == -1) {
-    DoctorInputDTO dto;
-    dto.fullName = fullName;
-    dto.avatar = avatar;
-    dto.gender = gender;
-    dto.dateOfBirth = dob;
-    dto.citizenId = citizenId;
-    dto.phoneNumber = phone;
-    dto.email = email;
-    dto.address = address;
-    dto.departmentId = departmentId;
-    dto.shift = shift;
-    dto.specialty = specialty;
-    dto.licenseNumber = licenseNumber;
-    dto.experienceYears = experienceYears;
-    dto.consultationFee = consultationFee;
-    dto.bio = bio;
-
     StaffHireResult result = m_staffService->hireNewDoctor(dto);
-    if (!result.errorMessage.isEmpty()) {
-      QMessageBox::critical(this, "Lỗi", result.errorMessage);
+    errorMsg = result.errorMessage;
+    if (errorMsg.isEmpty()) {
+      QMessageBox msgBox(this);
+      msgBox.setWindowTitle("Thành công");
+      msgBox.setText(QString("Tạo tài khoản Bác sĩ thành công!\nMã nhân viên: %1\nMật khẩu: %2")
+                     .arg(result.staffCode)
+                     .arg(result.plainPassword));
+      msgBox.setIcon(QMessageBox::Information);
+      msgBox.setStyleSheet(
+          "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+          "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+          "QPushButton { background-color: #34A853; color: white; "
+          "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: 6px; border: none; font-size: 14px; }"
+          "QPushButton:hover { background-color: #2C8E46; }"
+      );
+      msgBox.exec();
+      accept();
       return;
     }
-    QMessageBox::information(this, "Thành công",
-                             QString("Tạo tài khoản Bác sĩ thành công!\nMã nhân viên: %1\nMật khẩu: %2")
-                             .arg(result.staffCode)
-                             .arg(result.plainPassword));
   } else {
-    DoctorUpdateDTO updateDto;
-    updateDto.staffId = m_editStaffId;
-    updateDto.fullName = fullName;
-    updateDto.gender = (gender == Gender::Male)     ? "MALE"
-                       : (gender == Gender::Female) ? "FEMALE"
-                                                    : "OTHER";
-    updateDto.dateOfBirth = dob.toString("yyyy-MM-dd");
-    updateDto.citizenId = citizenId;
-    updateDto.phoneNumber = phone;
-    updateDto.email = email;
-    updateDto.address = address;
-    updateDto.departmentId = departmentId;
-    updateDto.shift = shift;
-    updateDto.specialty = specialty;
-    updateDto.licenseNumber = licenseNumber;
-    updateDto.experienceYears = experienceYears;
-    updateDto.consultationFee = consultationFee;
-    updateDto.bio = bio;
-
-    QString errorMsg = m_staffService->editDoctorInformation(updateDto);
-    if (!errorMsg.isEmpty()) {
-      QMessageBox::critical(this, "Lỗi", errorMsg);
+    errorMsg = m_staffService->editDoctorInformation(dto, m_editStaffId);
+    if (errorMsg.isEmpty()) {
+      QMessageBox msgBox(this);
+      msgBox.setWindowTitle("Thành công");
+      msgBox.setText("Cập nhật thông tin Bác sĩ thành công!");
+      msgBox.setIcon(QMessageBox::Information);
+      msgBox.setStyleSheet(
+          "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+          "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+          "QPushButton { background-color: #34A853; color: white; "
+          "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: 6px; border: none; font-size: 14px; }"
+          "QPushButton:hover { background-color: #2C8E46; }"
+      );
+      msgBox.exec();
+      accept();
       return;
     }
-    QMessageBox::information(this, "Thành công",
-                             "Cập nhật thông tin Bác sĩ thành công!");
+  }
+
+  if (!errorMsg.isEmpty()) {
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Lỗi");
+    msgBox.setText(errorMsg);
+    msgBox.setIcon(QMessageBox::Critical);
+    msgBox.setStyleSheet(
+        "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+        "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+        "QPushButton { background-color: #EF4444; color: white; "
+        "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+        "6px; border: none; font-size: 14px; }"
+        "QPushButton:hover { background-color: #DC2828; }");
+    msgBox.exec();
+    return;
   }
 
   accept();

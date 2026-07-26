@@ -434,7 +434,7 @@ void ProfileWidget::loadProfile(int staffId) {
     lblStaffCode->setText(profile->staffCode);
     lblHireDate -> setText(profile->hireDate.toString("dd/MM/yyyy"));
     
-    txtGender->setText(profile->gender == Gender::Male ? "Nam" : "Nữ");
+    txtGender->setText(GenderText::toVi(profile->gender));
 
     if (auto docProfile = dynamic_cast<DoctorProfileDTO*>(profile.get())) {
         lblRole->setText("Bác sĩ");
@@ -514,56 +514,17 @@ void ProfileWidget::onEditClicked() {
     inputDTO->address = txtAddress->text();
     inputDTO->citizenId = txtCitizenId->text();
     inputDTO->dateOfBirth = QDate::fromString(txtDob->text(), "dd/MM/yyyy");
-    inputDTO->gender = (txtGender->text() == "Nam") ? Gender::Male : Gender::Female;
+    inputDTO->gender = GenderText::toEn(txtGender->text());
     inputDTO->departmentId = currentDepartmentId; 
     inputDTO->shift = cmbShift->currentData().toString();
 
     QString errorMsg;
     if (auto docInput = dynamic_cast<DoctorInputDTO*>(inputDTO.get())) {
-        DoctorUpdateDTO updateDto;
-        updateDto.staffId         = currentStaffId;
-        updateDto.fullName        = inputDTO->fullName;
-        updateDto.gender          = (inputDTO->gender == Gender::Male) ? "MALE" : (inputDTO->gender == Gender::Female) ? "FEMALE" : "OTHER";
-        updateDto.dateOfBirth     = inputDTO->dateOfBirth.toString("yyyy-MM-dd");
-        updateDto.citizenId       = inputDTO->citizenId;
-        updateDto.phoneNumber     = inputDTO->phoneNumber;
-        updateDto.email           = inputDTO->email;
-        updateDto.address         = inputDTO->address;
-        updateDto.departmentId    = inputDTO->departmentId;
-        updateDto.shift           = inputDTO->shift;
-        updateDto.specialty       = docInput->specialty;
-        updateDto.licenseNumber   = docInput->licenseNumber;
-        updateDto.experienceYears = docInput->experienceYears;
-        updateDto.consultationFee = docInput->consultationFee;
-        updateDto.bio             = docInput->bio;
-        errorMsg = m_staffService->editDoctorInformation(updateDto);
+        errorMsg = m_staffService->editDoctorInformation(*docInput, currentStaffId);
     } else if (auto nurseInput = dynamic_cast<NurseInputDTO*>(inputDTO.get())) {
-        NurseUpdateDTO updateDto;
-        updateDto.staffId      = currentStaffId;
-        updateDto.fullName     = inputDTO->fullName;
-        updateDto.gender       = (inputDTO->gender == Gender::Male) ? "MALE" : (inputDTO->gender == Gender::Female) ? "FEMALE" : "OTHER";
-        updateDto.dateOfBirth  = inputDTO->dateOfBirth.toString("yyyy-MM-dd");
-        updateDto.citizenId    = inputDTO->citizenId;
-        updateDto.phoneNumber  = inputDTO->phoneNumber;
-        updateDto.email        = inputDTO->email;
-        updateDto.address      = inputDTO->address;
-        updateDto.departmentId = inputDTO->departmentId;
-        updateDto.shift        = inputDTO->shift;
-        updateDto.nurseLevel   = nurseInput->nurseLevel;
-        errorMsg = m_staffService->editNurseInformation(updateDto);
+        errorMsg = m_staffService->editNurseInformation(*nurseInput, currentStaffId);
     } else {
-        StaffUpdateDTO updateDto;
-        updateDto.staffId      = currentStaffId;
-        updateDto.fullName     = inputDTO->fullName;
-        updateDto.gender       = (inputDTO->gender == Gender::Male) ? "MALE" : (inputDTO->gender == Gender::Female) ? "FEMALE" : "OTHER";
-        updateDto.dateOfBirth  = inputDTO->dateOfBirth.toString("yyyy-MM-dd");
-        updateDto.citizenId    = inputDTO->citizenId;
-        updateDto.phoneNumber  = inputDTO->phoneNumber;
-        updateDto.email        = inputDTO->email;
-        updateDto.address      = inputDTO->address;
-        updateDto.departmentId = inputDTO->departmentId;
-        updateDto.shift        = inputDTO->shift;
-        errorMsg = m_staffService->editStaffBaseInformation(updateDto);
+        errorMsg = m_staffService->editStaffBaseInformation(*inputDTO, currentStaffId);
     }
 
 
