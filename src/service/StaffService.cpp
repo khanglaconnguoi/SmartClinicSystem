@@ -324,6 +324,54 @@ PharmacistInsertDTO StaffService::mapPharmacistToInsertDTO(
     return dto;
 }
 
+StaffUpdateDTO StaffService::mapStaffToUpdateDTO(const StaffInputDTO& dto, int staffId) {
+    StaffUpdateDTO updateDto;
+    updateDto.staffId = staffId;
+    updateDto.fullName = dto.fullName;
+    if (!dto.avatar.isNull()) {
+        QBuffer buffer(&updateDto.avatarBytes);
+        buffer.open(QIODevice::WriteOnly);
+        dto.avatar.save(&buffer, "PNG");
+    }
+    updateDto.gender = dto.gender;
+    updateDto.dateOfBirth = dto.dateOfBirth.toString("yyyy-MM-dd");
+    updateDto.citizenId = dto.citizenId;
+    updateDto.phoneNumber = dto.phoneNumber;
+    updateDto.email = dto.email;
+    updateDto.address = dto.address;
+    updateDto.departmentId = dto.departmentId;
+    updateDto.shift = dto.shift;
+    return updateDto;
+}
+
+DoctorUpdateDTO StaffService::mapDoctorToUpdateDTO(const DoctorInputDTO& dto, int staffId) {
+    DoctorUpdateDTO updateDto;
+    static_cast<StaffUpdateDTO&>(updateDto) = mapStaffToUpdateDTO(dto, staffId);
+    updateDto.specialty = dto.specialty;
+    updateDto.licenseNumber = dto.licenseNumber;
+    updateDto.experienceYears = dto.experienceYears;
+    updateDto.consultationFee = dto.consultationFee;
+    updateDto.bio = dto.bio;
+    return updateDto;
+}
+
+NurseUpdateDTO StaffService::mapNurseToUpdateDTO(const NurseInputDTO& dto, int staffId) {
+    NurseUpdateDTO updateDto;
+    static_cast<StaffUpdateDTO&>(updateDto) = mapStaffToUpdateDTO(dto, staffId);
+    updateDto.nurseLevel = dto.nurseLevel;
+    updateDto.certification = dto.certification;
+    return updateDto;
+}
+
+PharmacistUpdateDTO StaffService::mapPharmacistToUpdateDTO(const PharmacistInputDTO& dto, int staffId) {
+    PharmacistUpdateDTO updateDto;
+    static_cast<StaffUpdateDTO&>(updateDto) = mapStaffToUpdateDTO(dto, staffId);
+    updateDto.licenseNumber = dto.licenseNumber;
+    updateDto.pharmacySection = dto.pharmacySection;
+    updateDto.experienceYears = dto.experienceYears;
+    return updateDto;
+}
+
 
 
 QString StaffService::generateStaffCode(UserRole role) const {
@@ -419,23 +467,23 @@ StaffHireResult StaffService::hireNewNurse(NurseInputDTO nurse) {
     return StaffHireResult{"", staffCode, plainPassword};
 }
 
-// StaffHireResult StaffService::hireNewReceptionist(ReceptionistInputDTO receptionist) {
-//     normalizeStaffInput(receptionist);
-//     QString validationError = validateStaffBaseInput(receptionist);
-//     if (!validationError.isEmpty()) { return StaffHireResult{validationError, "", ""}; }
+StaffHireResult StaffService::hireNewReceptionist(StaffInputDTO receptionist) {
+    normalizeStaffInput(receptionist);
+    QString validationError = validateStaffBaseInput(receptionist);
+    if (!validationError.isEmpty()) { return StaffHireResult{validationError, "", ""}; }
 
-//     const QString staffCode = generateStaffCode(UserRole::Receptionist);
-//     const QString plainPassword = generateRandomPassword();
-//     const QString passwordHash = QString::fromStdString(bcrypt::generateHash(
-//             plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
+    const QString staffCode = generateStaffCode(UserRole::Receptionist);
+    const QString plainPassword = generateRandomPassword();
+    const QString passwordHash = QString::fromStdString(bcrypt::generateHash(
+            plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
 
-//     StaffInsertDTO insertDto =
-//             mapStaffToInsertDTO(receptionist, staffCode, passwordHash, UserRole::Receptionist);
-//     if (!this->m_staffRepository->insertStaff(insertDto)) {
-//         return StaffHireResult{"Failed to insert receptionist into the database.", "", ""};
-//     }
-//     return StaffHireResult{"", staffCode, plainPassword};
-// }
+    StaffInsertDTO insertDto =
+            mapStaffToInsertDTO(receptionist, staffCode, passwordHash, UserRole::Receptionist);
+    if (!this->m_staffRepository->insertStaff(insertDto)) {
+        return StaffHireResult{"Failed to insert receptionist into the database.", "", ""};
+    }
+    return StaffHireResult{"", staffCode, plainPassword};
+}
 
 StaffHireResult StaffService::hireNewPharmacist(PharmacistInputDTO pharmacist) {
     normalizePharmacistInput(pharmacist);

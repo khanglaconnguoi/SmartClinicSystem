@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "dto/AppointmentDTOs.h"
-#include "model/CommonEnums.h"
 #include "repository/AppointmentRepository.h"
 #include "repository/PatientRepository.h"
 #include "repository/StaffRepository.h"
@@ -52,7 +51,7 @@ class AppointmentService {
             const QTime& endTime,
             int excludeId = -1) const;
 
-    QList<AppointmentRecordDTO> getDoctorAppointments(int doctorId, const QDate& date) const;
+    QList<AppointmentRecordDTO> getDoctorAppointments(int doctorId, const QDate& date = QDate()) const;
     // QList<AppointmentRecordDTO> getDoctorAppointments(
     //         const QString& doctorId, const QDate& date) const;
     QList<AppointmentRecordDTO> getPatientAppointments(int patientId) const;
