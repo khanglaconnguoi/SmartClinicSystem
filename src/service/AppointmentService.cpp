@@ -136,6 +136,17 @@ bool AppointmentService::updateAppointmentStatus(int appointmentId, const QStrin
     return m_appointmentRepository->updateAppointmentStatus(appointmentId, normalizedStatus);
 }
 
+QPair<QString, int> AppointmentService::checkInPatient(int appointmentId) const {
+    QString err = Validation::validateValidId(appointmentId, "Invalid appointment ID.");
+    if (!err.isEmpty()) return qMakePair(err, -1);
+
+    if (m_appointmentRepository && !m_appointmentRepository->existsById(appointmentId)) {
+        return qMakePair(QString("Appointment does not exist in the system."), -1);
+    }
+
+    return m_appointmentRepository->checkInPatient(appointmentId);
+}
+
 bool AppointmentService::cancelAppointment(int appointmentId) const {
     if (!Validation::validateValidId(appointmentId, "Invalid appointment ID.").isEmpty())
         return false;

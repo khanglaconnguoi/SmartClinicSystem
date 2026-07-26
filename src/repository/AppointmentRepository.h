@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QList>
+#include <QPair>
 #include <QString>
 
 #include "dto/AppointmentDTOs.h"
@@ -15,6 +16,7 @@ class AppointmentRepository {
     //         const QString& doctorId, const QString& date = "") const;
     QList<AppointmentRecordDTO> getPatientAppointments(int patientId) const;
     bool updateAppointmentStatus(int appointmentId, const QString& status) const;
+    QPair<QString, int> checkInPatient(int appointmentId) const;
     bool cancelAppointment(int appointmentId) const;
     bool createAppointment(const AppointmentInputDTO& input) const;
 

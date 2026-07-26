@@ -2,6 +2,7 @@
 
 #include <QDate>
 #include <QList>
+#include <QPair>
 #include <QString>
 #include <QTime>
 #include <memory>
@@ -56,6 +57,7 @@ class AppointmentService {
     //         const QString& doctorId, const QDate& date) const;
     QList<AppointmentRecordDTO> getPatientAppointments(int patientId) const;
     bool updateAppointmentStatus(int appointmentId, const QString& status) const;
+    QPair<QString, int> checkInPatient(int appointmentId) const;
     bool cancelAppointment(int appointmentId) const;
 
     QString createAppointment(AppointmentInputDTO input) const;

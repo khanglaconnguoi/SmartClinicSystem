@@ -165,6 +165,56 @@ bool AppointmentRepository::updateAppointmentStatus(int appointmentId, const QSt
   return !query.lastError().isValid();
 }
 
+QPair<QString, int> AppointmentRepository::checkInPatient(int appointmentId) const {
+  if (!DatabaseManager::getInstance().beginTransaction()) {
+    return qMakePair(QString("Failed to begin database transaction."), -1);
+  }
+
+  // 1. Fetch doctor_id and appointment_date for the appointment
+  QString findSql = "SELECT doctor_id, appointment_date FROM appointments WHERE appointment_id = ?";
+  QSqlQuery findQuery = DatabaseManager::getInstance().selectQuery(findSql, {appointmentId});
+  if (!findQuery.next()) {
+    DatabaseManager::getInstance().rollbackTransaction();
+    return qMakePair(QString("Appointment with ID %1 was not found.").arg(appointmentId), -1);
+  }
+
+  int doctorId = findQuery.value(0).toInt();
+  QString appointmentDate = findQuery.value(1).toString();
+
+  // 2. Compute MAX(ticket_number) + 1 for this doctor on this date
+  QString ticketSql = R"(
+        SELECT COALESCE(MAX(ticket_number), 0) + 1
+        FROM appointments
+        WHERE doctor_id = ? AND appointment_date = ? AND status != 'CANCELLED'
+    )";
+  QSqlQuery ticketQuery = DatabaseManager::getInstance().selectQuery(ticketSql, {doctorId, appointmentDate});
+  int nextTicket = 1;
+  if (ticketQuery.next()) {
+    nextTicket = ticketQuery.value(0).toInt();
+  }
+
+  // 3. Update appointment status to CHECKED_IN and set ticket_number
+  QString updateSql = R"(
+        UPDATE appointments
+        SET status = 'CHECKED_IN',
+            ticket_number = ?,
+            updated_at = datetime('now')
+        WHERE appointment_id = ?
+    )";
+  QSqlQuery updateQuery = DatabaseManager::getInstance().executeQuery(updateSql, {nextTicket, appointmentId});
+
+  if (updateQuery.lastError().isValid()) {
+    DatabaseManager::getInstance().rollbackTransaction();
+    return qMakePair(QString("Failed to update check-in status in database: %1").arg(updateQuery.lastError().text()), -1);
+  }
+
+  if (!DatabaseManager::getInstance().commitTransaction()) {
+    return qMakePair(QString("Failed to commit check-in transaction."), -1);
+  }
+
+  return qMakePair(QString(""), nextTicket);
+}
+
 bool AppointmentRepository::createAppointment(const AppointmentInputDTO &input) const {
   QString sql = R"(
         INSERT INTO appointments (ticket_number, patient_id, doctor_id, created_by, appointment_date, start_time, end_time, status, reason)

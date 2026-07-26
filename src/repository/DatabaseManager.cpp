@@ -589,6 +589,7 @@ bool DatabaseManager::createTables() {
   QStringList createIndexList = {
       R"( CREATE INDEX IF NOT EXISTS idx_staff_role               ON staff(role);             )",
       R"( CREATE INDEX IF NOT EXISTS idx_staff_department         ON staff(department_id);    )",
+      R"( CREATE INDEX IF NOT EXISTS idx_appointments_doctor_date ON appointments(doctor_id, appointment_date); )",
       // R"( CREATE INDEX IF NOT EXISTS idx_patients_full_name       ON
       // patients(full_name);     )"
   };
