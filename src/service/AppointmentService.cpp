@@ -132,13 +132,17 @@ QList<AppointmentRecordDTO> AppointmentService::getPatientAppointments(int patie
     return m_appointmentRepository->getPatientAppointments(patientId);
 }
 
-bool AppointmentService::updateAppointmentStatus(int appointmentId, const QString& status) const {
-    if (!Validation::validateValidId(appointmentId, "Invalid appointment ID.").isEmpty())
-        return false;
-    if (!validateAppointmentStatus(status).isEmpty()) return false;
+QString AppointmentService::updateAppointmentStatus(int appointmentId, const QString& status) const {
+    QString err = Validation::validateValidId(appointmentId, "Invalid appointment ID.");
+    if (!err.isEmpty()) return err;
+    err = validateAppointmentStatus(status);
+    if (!err.isEmpty()) return err;
 
     QString normalizedStatus = AppointmentStatusText::toEn(status);
-    return m_appointmentRepository->updateAppointmentStatus(appointmentId, normalizedStatus);
+    if (!m_appointmentRepository->updateAppointmentStatus(appointmentId, normalizedStatus)) {
+        return "Failed to update appointment status in database.";
+    }
+    return "";
 }
 
 QPair<QString, int> AppointmentService::checkInPatient(int appointmentId) const {
@@ -152,10 +156,14 @@ QPair<QString, int> AppointmentService::checkInPatient(int appointmentId) const 
     return m_appointmentRepository->checkInPatient(appointmentId);
 }
 
-bool AppointmentService::cancelAppointment(int appointmentId) const {
-    if (!Validation::validateValidId(appointmentId, "Invalid appointment ID.").isEmpty())
-        return false;
-    return m_appointmentRepository->cancelAppointment(appointmentId);
+QString AppointmentService::cancelAppointment(int appointmentId) const {
+    QString err = Validation::validateValidId(appointmentId, "Invalid appointment ID.");
+    if (!err.isEmpty()) return err;
+
+    if (!m_appointmentRepository->cancelAppointment(appointmentId)) {
+        return "Failed to cancel appointment in database.";
+    }
+    return "";
 }
 
 QString AppointmentService::createAppointment(AppointmentInputDTO input) const {
