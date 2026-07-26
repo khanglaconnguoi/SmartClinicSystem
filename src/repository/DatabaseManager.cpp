@@ -552,6 +552,7 @@ bool DatabaseManager::createTables() {
   QString createAppointments = R"(
     CREATE TABLE IF NOT EXISTS appointments (
         appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_number    INTEGER NOT NULL CHECK (ticket_number > 0),
         patient_id       INTEGER NOT NULL,
         doctor_id        INTEGER NOT NULL,
         room_id          INTEGER,
@@ -565,6 +566,11 @@ bool DatabaseManager::createTables() {
         notes            TEXT,
         created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
         updated_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+
+        called_at        TEXT,
+        started_at       TEXT,
+        completed_at     TEXT,
+
         FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE,
         FOREIGN KEY (doctor_id)  REFERENCES staff(staff_id)    ON DELETE RESTRICT,
         FOREIGN KEY (room_id)    REFERENCES rooms(room_id) ON DELETE SET NULL,

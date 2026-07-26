@@ -1,10 +1,13 @@
 #pragma once
 
+#include <QDate>
 #include <QString>
+#include <QTime>
 
 struct AppointmentRecordDTO {
-    int appointmentId;
-    int patientId;
+    int appointmentId = 0;
+    int ticketNumber = 0;
+    int patientId = 0;
     QString doctorId;
     QString appointmentDate;
     QString startTime;
@@ -17,13 +20,18 @@ struct AppointmentRecordDTO {
     QString roomNumber;
     QString doctorName;
     QString doctorSpecialty;
+    QString calledAt;
+    QString startedAt;
+    QString completedAt;
 };
 
 struct AppointmentInputDTO {
-    int patientId;
-    QString doctorCode;
-    int createdBy;
-    QString date;
-    QString startTime;
+    int patientId = 0;
+    int doctorId = 0;
+    int createdBy = 0;
+    int ticketNumber = 0;
+    QDate date;
+    QTime startTime;
+    QTime endTime;
     QString reason;
 };

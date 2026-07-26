@@ -261,6 +261,53 @@ namespace InvoiceStatusText {
     }
 } // namespace InvoiceStatusText
 
+namespace AppointmentStatusText {
+    inline const QString SCHEDULED  = "SCHEDULED";
+    inline const QString CONFIRMED  = "CONFIRMED";
+    inline const QString CHECKED_IN = "CHECKED_IN";
+    inline const QString COMPLETED  = "COMPLETED";
+    inline const QString CANCELLED  = "CANCELLED";
+    inline const QString NO_SHOW    = "NO_SHOW";
+
+    inline const QList<QPair<QString, QString>> statuses = {
+        {SCHEDULED,  "Đã hẹn"},
+        {CONFIRMED,  "Đã xác nhận"},
+        {CHECKED_IN, "Đã check-in"},
+        {COMPLETED,  "Đã khám"},
+        {CANCELLED,  "Đã hủy"},
+        {NO_SHOW,    "Vắng mặt"}};
+
+    inline const QList<QPair<QString, QString>> &getList() { return statuses; }
+
+    inline bool isValid(const QString &inputText) {
+    QString cleanInput = inputText.toUpper().trimmed();
+    for (const auto &pair : statuses) {
+        if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+        return true;
+        }
+    }
+    return false;
+    }
+
+    inline QString toVi(const QString &en) {
+    QString cleanEn = en.toUpper().trimmed();
+    for (const auto &pair : statuses) {
+        if (pair.first == cleanEn)
+        return pair.second;
+    }
+    return "Đã hẹn";
+    }
+
+    inline QString toEn(const QString &vi) {
+    QString cleanVi = vi.trimmed();
+    for (const auto &pair : statuses) {
+        if (pair.first == cleanVi.toUpper() || pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
+        return pair.first;
+    }
+    return SCHEDULED;
+    }
+} // namespace AppointmentStatusText
+
 // =====================================================================
 // SECTION 2: KEPT ENUMS (PATTERN CŨ)
 // =====================================================================

@@ -193,7 +193,7 @@ void ReceptionDashboardWidget::loadDoctorsBySpecialty(const QString& specialty) 
     for (const auto& doc : doctors) {
         auto docModel = std::dynamic_pointer_cast<Doctor>(doc);
         if (docModel) {
-            m_comboDoctor->addItem(docModel->getFullName(), docModel->getStaffCode());
+            m_comboDoctor->addItem(docModel->getFullName(), docModel->getAccountId());
         }
     }
 }
@@ -228,13 +228,13 @@ void ReceptionDashboardWidget::onConfirmClicked() {
         return;
     }
     
-    QString doctorCode = m_comboDoctor->currentData().toString();
-    if (doctorCode.isEmpty()) {
+    int doctorId = m_comboDoctor->currentData().toInt();
+    if (doctorId <= 0) {
         QMessageBox::warning(this, "Lỗi", "Vui lòng chọn bác sĩ.");
         return;
     }
     
-    QString date = m_dateEdit->date().toString("yyyy-MM-dd");
+    QDate date = m_dateEdit->date();
     
     // Get selected time slot
     QList<QTableWidgetItem*> selectedItems = m_timeSlotTable->selectedItems();
@@ -245,20 +245,23 @@ void ReceptionDashboardWidget::onConfirmClicked() {
     
     int row = selectedItems.first()->row();
     QString timeSlot = m_timeSlotTable->item(row, 0)->text();
-    QString startTime = timeSlot.split(" - ").first();
+    QStringList parts = timeSlot.split(" - ");
+    QTime startTime = QTime::fromString(parts.first().trimmed(), "HH:mm");
+    QTime endTime = (parts.size() > 1) ? QTime::fromString(parts.last().trimmed(), "HH:mm") : QTime();
     int createdBy = m_currentUser->getAccountId();
     
-    AppointmentInputDTO input = {
-        m_currentPatientId,
-        doctorCode,
-        createdBy,
-        date,
-        startTime,
-        "Khám bệnh"
-    };
+    AppointmentInputDTO input;
+    input.patientId = m_currentPatientId;
+    input.doctorId = doctorId;
+    input.createdBy = createdBy;
+    input.ticketNumber = 1;
+    input.date = date;
+    input.startTime = startTime;
+    input.endTime = endTime;
+    input.reason = "Khám bệnh";
     
-    bool success = m_baseAppointmentService->createAppointment(input);
-    if (success) {
+    QString errorMsg = m_baseAppointmentService->createAppointment(input);
+    if (errorMsg.isEmpty()) {
         QMessageBox::information(this, "Thành công", "Đăng ký lịch khám thành công!");
         
         // Reset form
@@ -274,7 +277,7 @@ void ReceptionDashboardWidget::onConfirmClicked() {
         m_btnContinue->setStyleSheet("background-color: #4B94F2; color: white; padding: 10px 25px; border-radius: 6px; font-size: 15px; font-weight: bold;");
         m_timeSlotTable->setRowCount(0);
     } else {
-        QMessageBox::warning(this, "Lỗi", "Đã xảy ra lỗi khi tạo lịch khám.");
+        QMessageBox::warning(this, "Lỗi", errorMsg);
     }
 }
 
