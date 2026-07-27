@@ -205,6 +205,12 @@ QWidget* ProfileWidget::createLeftPanel() {
     return panel;
 }
 
+void ProfileWidget::setReadOnlyMode() {
+    if (btnEdit) {
+        btnEdit->hide();
+    }
+}
+
 QWidget* ProfileWidget::createRightPanel() {
     QScrollArea *scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
