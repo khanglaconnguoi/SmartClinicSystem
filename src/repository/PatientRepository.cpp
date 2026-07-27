@@ -519,7 +519,7 @@ PatientRepository::getPatientById(int patientId) {
   const QString sql = R"(
     SELECT
       p.patient_id, p.patient_code, p.full_name, p.date_of_birth, p.gender,
-      p.citizen_id, p.phone, p.email, p.address, p.blood_type,
+      p.citizen_id, p.phone_number, p.email, p.address, p.blood_type,
       p.default_patient_type, p.emergency_contact_name,
       p.emergency_contact_phone, p.is_deleted, p.created_at, p.updated_at,
 
@@ -534,7 +534,7 @@ PatientRepository::getPatientById(int patientId) {
 
     SELECT
       p.patient_id, p.patient_code, p.full_name, p.date_of_birth, p.gender,
-      p.citizen_id, p.phone, p.email, p.address, p.blood_type,
+      p.citizen_id, p.phone_number, p.email, p.address, p.blood_type,
       p.default_patient_type, p.emergency_contact_name,
       p.emergency_contact_phone, p.is_deleted, p.created_at, p.updated_at,
 
@@ -548,7 +548,7 @@ PatientRepository::getPatientById(int patientId) {
 
     SELECT
       p.patient_id, p.patient_code, p.full_name, p.date_of_birth, p.gender,
-      p.citizen_id, p.phone, p.email, p.address, p.blood_type,
+      p.citizen_id, p.phone_number, p.email, p.address, p.blood_type,
       p.default_patient_type, p.emergency_contact_name,
       p.emergency_contact_phone, p.is_deleted, p.created_at, p.updated_at,
 
@@ -573,7 +573,7 @@ PatientRepository::getPatientById(int patientId) {
       QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
   dto.gender = query.value("gender").toString();
   dto.citizenId = query.value("citizen_id").toString();
-  dto.phone = query.value("phone").toString();
+  dto.phone = query.value("phone_number").toString();
   dto.email = query.value("email").toString();
   dto.address = query.value("address").toString();
   dto.bloodType = query.value("blood_type").toString();
@@ -636,7 +636,7 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
         buildSearchWhereClause(criteria, /*hasRoomColumn=*/false, branchParams);
     branches << QString(R"(
       SELECT p.patient_id, p.patient_code, p.full_name, p.date_of_birth,
-             p.gender, p.phone, 'OUTPATIENT' AS type, o.status AS status_label,
+             p.gender, p.phone_number, 'OUTPATIENT' AS type, o.status AS status_label,
              NULL AS room_id
       FROM patients p
       JOIN out_patients o ON p.patient_id = o.patient_id
@@ -652,7 +652,7 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
         buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
     branches << QString(R"(
       SELECT p.patient_id, p.patient_code, p.full_name, p.date_of_birth,
-             p.gender, p.phone, 'INPATIENT' AS type, i.status AS status_label,
+             p.gender, p.phone_number, 'INPATIENT' AS type, i.status AS status_label,
              i.room_id AS room_id
       FROM patients p
       JOIN in_patients i ON p.patient_id = i.patient_id
@@ -668,7 +668,7 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
         buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
     branches << QString(R"(
       SELECT p.patient_id, p.patient_code, p.full_name, p.date_of_birth,
-             p.gender, p.phone, 'EMERGENCY' AS type, e.status AS status_label,
+             p.gender, p.phone_number, 'EMERGENCY' AS type, e.status AS status_label,
              e.room_id AS room_id
       FROM patients p
       JOIN emergency_patients e ON p.patient_id = e.patient_id
@@ -700,7 +700,7 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
     row.dateOfBirth = QDate::fromString(query.value("date_of_birth").toString(),
                                         "yyyy-MM-dd");
     row.gender = query.value("gender").toString();
-    row.phone = query.value("phone").toString();
+    row.phone = query.value("phone_number").toString();
     row.type = patientTypeFromEn(query.value("type").toString());
     row.statusLabel = query.value("status_label").toString();
     row.roomId =
