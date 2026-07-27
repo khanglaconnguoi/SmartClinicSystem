@@ -54,6 +54,7 @@ public:
   getDoctorAppointments(int doctorId, const QDate &date = QDate()) const;
   QList<AppointmentRecordDTO> getPatientAppointments(int patientId) const;
   QList<AppointmentRecordDTO> getAppointmentsByDate(const QDate &date) const;
+  QStringList getAvailableTimeSlots(int doctorId, const QDate &date) const;
   QString updateAppointmentStatus(int appointmentId,
                                   const QString &status) const;
   QPair<QString, int> checkInPatient(int appointmentId) const;

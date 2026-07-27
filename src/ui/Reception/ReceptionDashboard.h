@@ -34,11 +34,13 @@ private:
     QPushButton*    m_btnOverview   = nullptr;
     QPushButton*    m_btnRegister   = nullptr;
     QPushButton*    m_btnPatients   = nullptr;
+    QPushButton*    m_btnManageAppts= nullptr;
 
     // Pages
     QWidget*        m_overviewPage   = nullptr;
     QWidget*        m_registerPage   = nullptr;
     QWidget*        m_patientsPage   = nullptr;
+    QWidget*        m_appointmentsPage = nullptr;
 
     // Registration UI elements
     class QFrame*   m_apptCard       = nullptr;
@@ -46,31 +48,46 @@ private:
     QLineEdit* m_txtPatientCitizenId  = nullptr;
     QPushButton*    m_btnContinue    = nullptr;
     QPushButton*    m_btnConfirm     = nullptr;
+    QPushButton*    m_btnCancel      = nullptr;
     int             m_currentPatientId = -1;
 
     QComboBox*      m_comboSpecialty = nullptr;
-    QComboBox*      m_comboDoctor    = nullptr;
     QDateEdit*      m_dateEdit       = nullptr;
-    QTableWidget*   m_timeSlotTable  = nullptr;
+    
+    // New UI Elements for Doctor Cards
+    class QScrollArea* m_scrollArea = nullptr;
+    QVBoxLayout*    m_doctorListLayout = nullptr;
+    
+    // State variables for selection
+    int m_selectedDoctorId = -1;
+    QString m_selectedTimeSlot = "";
+    QPushButton* m_selectedSlotButton = nullptr;
     
     // Overview UI elements
     class QLabel*   m_lblRevenue     = nullptr;
     class QLabel*   m_lblPatientNum  = nullptr;
+    
+    // Management UI
+    QTableWidget*   m_appointmentsTable = nullptr;
+    QDateEdit*      m_apptDateEdit = nullptr;
 
     // Build functions
     void buildSidebar();
     void buildOverviewPage();
     void buildRegisterPage();
     void buildPatientsPage();
+    void buildAppointmentsPage();
 
     class QFrame* makeCard(QWidget* parent = nullptr);
 
     // Helpers
     void switchPage(int index, QPushButton* activeBtn);
-    void loadAvailableTimeSlots();
-    void loadDoctorsBySpecialty(const QString& specialty);
     
-    // Slots
+private slots:
     void onContinueClicked();
     void onConfirmClicked();
+    
+    void updateDoctorList();
+    void updateAppointmentsTable();
+    void onTimeSlotClicked(int doctorId, const QString& timeSlot, QPushButton* btn);
 };

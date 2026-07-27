@@ -629,7 +629,13 @@ StaffService::searchDoctors(QString searchKey, QString specialty,
   StaffSearchCriteria criteria;
   criteria.searchKey = searchKey.trimmed();
   criteria.role = UserRole::Doctor;
-  criteria.specialty = specialty.trimmed();
+  
+  if (specialty.trimmed() == "Tất cả") {
+      criteria.specialty = "";
+  } else {
+      criteria.specialty = specialty.trimmed();
+  }
+  
   criteria.departmentId = departmentId;
   criteria.shift = shift.trimmed();
   criteria.onlyActive = onlyActive;
