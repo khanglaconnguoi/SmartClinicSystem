@@ -2,7 +2,40 @@
 
 #include <QString>
 #include <QDateTime>
+#include <QList>
+#include <QPair>
 #include <optional>
+
+struct AllergyResultDTO;
+
+struct IngredientDuplicationWarning {
+    int     ingredientId;
+    QString ingredientName;
+    QList<QPair<int, QString>> conflictingMedications; // {medicationId, brandName}
+};
+
+struct AllergyConflictWarning {
+    int     ingredientId;
+    QString ingredientName;
+    QString severity;      // "MILD" | "MODERATE" | "SEVERE"
+    QString allergyNotes;  // ghi chú dị ứng từ patient_allergies.notes
+    QList<QPair<int, QString>> conflictingMedications; // {medicationId, brandName}
+};
+
+struct PrescriptionSafetyReport {
+    QList<IngredientDuplicationWarning> duplications;
+    QList<AllergyConflictWarning>       allergyConflicts;
+
+    bool isSafe()             const { return duplications.isEmpty() && allergyConflicts.isEmpty(); }
+    bool hasDuplication()     const { return !duplications.isEmpty(); }
+    bool hasAllergyConflict() const { return !allergyConflicts.isEmpty(); }
+    bool hasSevereConflict()  const {
+        for (const auto& c : allergyConflicts)
+            if (c.severity == "SEVERE") return true;
+        return false;
+    }
+};
+
 
 struct PrescriptionActionInfoDTO {
     int       staffId = 0;

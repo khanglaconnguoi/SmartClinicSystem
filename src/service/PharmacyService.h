@@ -63,6 +63,14 @@ private:
      */
     QString validatePrescriptionInput(const PrescriptionInputDTO& input) const;
 
+    /**
+     * @brief Load và cache tất cả MedicationSummaryDTO từ danh sách items theo medicationId.
+     */
+    QMap<int, MedicationSummaryDTO> buildMedicationMap(
+        const QList<PrescriptionItemDTO>& items) const;
+
+
+
 public:
     explicit PharmacyService(
         std::shared_ptr<MedicationRepository>   medicationRepo,
@@ -183,7 +191,22 @@ public:
     // ════════════════════════════════════════════════════════════════
 
     /**
+     * @brief Kiểm tra an toàn đơn thuốc TRƯỚC khi gọi createPrescription().
+     *        Hàm này chỉ ĐỌC, không có side effect.
+     *        UI gọi khi bác sĩ nhấn "Kiểm tra & Lưu đơn".
+     *
+     * @param items     Danh sách thuốc trong đơn (chỉ cần medicationId để load)
+     * @param allergies Danh sách dị ứng của bệnh nhân (PatientService::getAllergies())
+     * @return          PrescriptionSafetyReport (rỗng = an toàn)
+     */
+    PrescriptionSafetyReport checkPrescriptionSafety(
+        const QList<PrescriptionItemDTO>& items,
+        const QList<AllergyResultDTO>&    allergies
+    ) const;
+
+    /**
      * @brief Tạo đơn thuốc mới sau khi bác sĩ hoàn thành khám.
+
      *
      * Các bước xử lý bên trong:
      *   1. Validate input (recordId hợp lệ, items không rỗng)

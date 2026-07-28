@@ -4,9 +4,12 @@
 #include "PharmacyService.h"
 
 #include <QDebug>
+#include <QMap>
 #include <QSet>
 
 #include "Validation.h"
+#include "dto/PatientDTOs.h"
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -392,8 +395,74 @@ PharmacyService::searchIngredientsPaged(IngredientSearchCriteria criteria) const
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// KÊ ĐƠN
+// KÊ ĐƠN & KIỂM TRA AN TOÀN
 // ─────────────────────────────────────────────────────────────────────────────
+
+QMap<int, MedicationSummaryDTO>
+PharmacyService::buildMedicationMap(const QList<PrescriptionItemDTO>& items) const {
+  QMap<int, MedicationSummaryDTO> medMap;
+  for (const auto& item : items) {
+    if (medMap.contains(item.medicationId)) continue;
+    auto medOpt = getMedicationById(item.medicationId);
+    if (medOpt.has_value()) {
+      medMap[item.medicationId] = medOpt.value();
+    }
+  }
+  return medMap;
+}
+
+PrescriptionSafetyReport
+PharmacyService::checkPrescriptionSafety(const QList<PrescriptionItemDTO>& items,
+                                         const QList<AllergyResultDTO>& allergies) const {
+  PrescriptionSafetyReport report;
+
+  // Bước 0: Load tất cả MedicationSummaryDTO liên quan
+  QMap<int, MedicationSummaryDTO> medMap = buildMedicationMap(items);
+
+  // Bước 1: Gom nhóm ingredientId -> danh sách thuốc {medicationId, brandName}
+  QMap<int, QList<QPair<int, QString>>> ingredientToMeds;
+  for (auto it = medMap.begin(); it != medMap.end(); ++it) {
+    for (const auto& ing : it.value().ingredients) {
+      ingredientToMeds[ing.ingredientId].append({it.key(), it.value().brandName});
+    }
+  }
+
+  // Bước 2: Phát hiện trùng hoạt chất (ingredientId xuất hiện >= 2 thuốc)
+  for (auto it = ingredientToMeds.begin(); it != ingredientToMeds.end(); ++it) {
+    if (it.value().size() >= 2) {
+      IngredientDuplicationWarning w;
+      w.ingredientId = it.key();
+      // Tìm tên hoạt chất từ medication đầu tiên chứa nó
+      const auto& firstMed = medMap[it.value().first().first];
+      for (const auto& ing : firstMed.ingredients) {
+        if (ing.ingredientId == it.key()) {
+          w.ingredientName = ing.ingredientName;
+          break;
+        }
+      }
+      w.conflictingMedications = it.value();
+      report.duplications.append(w);
+    }
+  }
+
+  // Bước 3: Kiểm tra dị ứng hoạt chất với bệnh nhân
+  for (const auto& allergy : allergies) {
+    if (!allergy.ingredientId.has_value()) continue; // Dị ứng tự do tên -> bỏ qua tự động
+    if (!allergy.isActive) continue;
+    int allergyIngId = allergy.ingredientId.value();
+    if (!ingredientToMeds.contains(allergyIngId)) continue;
+
+    AllergyConflictWarning w;
+    w.ingredientId = allergyIngId;
+    w.ingredientName = allergy.allergenName;
+    w.severity = allergy.severity;
+    w.allergyNotes = allergy.notes;
+    w.conflictingMedications = ingredientToMeds[allergyIngId];
+    report.allergyConflicts.append(w);
+  }
+
+  return report;
+}
 
 QString
 PharmacyService::createPrescription(PrescriptionInputDTO &prescription) {
