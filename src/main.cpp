@@ -251,10 +251,11 @@ static void runComprehensiveTests() {
   // 1.4 Search Patient
   PatientSearchCriteria pSearch;
   pSearch.searchKey = "XUAN";
-  auto searchRes = patientService->searchPatients(pSearch);
+  auto searchRes = patientService->searchPatientsPaged(pSearch).items;
   qDebug() << "  -> Search Patient 'XUAN':"
            << (searchRes.size() > 0 ? "PASS" : "FAIL")
            << "Found:" << searchRes.size();
+
 
   // 1.5 Update Patient
   if (pidOut > 0) {
@@ -350,10 +351,11 @@ static void runComprehensiveTests() {
     MedicalRecordSearchCriteria mrSearch;
     mrSearch.searchKey = "Sốt";
     mrSearch.patientId = pidOut;
-    auto mrSearchRes = mrService.searchMedicalRecords(mrSearch);
+    auto mrSearchRes = mrService.searchMedicalRecordsPaged(mrSearch).items;
     qDebug() << "  -> Search MedicalRecord 'Sốt':"
              << (mrSearchRes.size() > 0 ? "PASS" : "FAIL")
              << "Found:" << mrSearchRes.size();
+
   }
 
   // ---------------------------------------------------------

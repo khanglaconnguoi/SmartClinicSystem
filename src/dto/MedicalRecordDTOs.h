@@ -76,6 +76,8 @@ struct MedicalRecordResultDTO {
  * @brief Tiêu chí tìm kiếm hồ sơ khám.
  *        Tất cả trường để rỗng / -1 / nullopt = không lọc theo trường đó.
  */
+#include "dto/Pagination.h"
+
 struct MedicalRecordSearchCriteria {
   // TEXT search: LIKE trên chief_complaint, clinical_notes
   QString searchKey;
@@ -89,10 +91,11 @@ struct MedicalRecordSearchCriteria {
   std::optional<QDate> fromDate;
   std::optional<QDate> toDate;
 
-  // Phân trang
-  int limit = 50;
-  int offset = 0;
+  // Phân trang (1-indexed)
+  int page = 1;       ///< Trang hiện tại (1-indexed)
+  int pageSize = 20;  ///< Số bản ghi / trang. 0 = không phân trang (trả về tất cả)
 };
+
 
 /**
  * @brief Kết quả gọn khi tìm kiếm hồ sơ khám.

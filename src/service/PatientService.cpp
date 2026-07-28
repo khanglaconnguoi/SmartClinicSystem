@@ -564,18 +564,25 @@ QString PatientService::updateEmergencyPatient(int patientId,
 // Search / Lọc bệnh nhân
 // ─────────────────────────────────────────────────────────────────────────────
 
-QList<PatientSearchResultDTO>
-PatientService::searchPatients(PatientSearchCriteria criteria) {
+PagedResult<PatientSearchResultDTO>
+PatientService::searchPatientsPaged(PatientSearchCriteria criteria) const {
   normalizeSearchCriteria(criteria);
+  criteria.searchKey = criteria.searchKey.simplified();
+  criteria.status = criteria.status.trimmed();
+  criteria.page = qMax(1, criteria.page);
+  criteria.pageSize = qBound(0, criteria.pageSize, 200);
+
   QString err = Validation::validateDateRange(criteria.fromDate.value_or(QDate()),
                                               criteria.toDate.value_or(QDate()));
   if (!err.isEmpty()) {
-    // In service layer, returning empty list or throw exception, but let's
-    // keep previous logic
-    return QList<PatientSearchResultDTO>();
+    PagedResult<PatientSearchResultDTO> emptyResult;
+    emptyResult.page = criteria.page;
+    emptyResult.pageSize = criteria.pageSize;
+    emptyResult.totalCount = 0;
+    return emptyResult;
   }
 
-  return m_patientRepository->searchPatients(criteria);
+  return m_patientRepository->searchPatientsPaged(criteria);
 }
 
 std::optional<PatientDetailDTO> PatientService::getPatientById(int patientId) {
@@ -586,16 +593,12 @@ std::optional<PatientDetailDTO> PatientService::getPatientById(int patientId) {
   return m_patientRepository->getPatientById(patientId);
 }
 
-int PatientService::countSearchResults(PatientSearchCriteria criteria) {
-  normalizeSearchCriteria(criteria);
-  QString err = Validation::validateDateRange(criteria.fromDate.value_or(QDate()),
-                                              criteria.toDate.value_or(QDate()));
-  if (!err.isEmpty()) {
-    return 0; // Trả về 0 nếu có lỗi validate ngày tháng
-  }
+/*
+QList<PatientSearchResultDTO> PatientService::searchPatients(PatientSearchCriteria criteria) { ... }
+int PatientService::countSearchResults(PatientSearchCriteria criteria) { ... }
+*/
 
-  return m_patientRepository->countSearchResults(criteria);
-}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Xóa / Khôi phục bệnh nhân

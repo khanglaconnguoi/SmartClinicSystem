@@ -100,13 +100,13 @@ bool AppointmentRepository::updateAppointmentStatus(int appointmentId, const QSt
   return !query.lastError().isValid();
 }
 
-bool AppointmentRepository::createAppointment(int patientId, const QString &doctorCode, int createdBy, const QString &date, const QString &startTime, const QString &reason) const {
+bool AppointmentRepository::createAppointment(const AppointmentInputDTO &input) const {
   QString sql = R"(
         INSERT INTO appointments (patient_id, doctor_id, created_by, appointment_date, start_time, status, reason)
         VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?)
     )";
   QSqlQuery query = DatabaseManager::getInstance().executeQuery(
-      sql, {patientId, doctorCode, createdBy, date, startTime, reason});
+      sql, {input.patientId, input.doctorCode, input.createdBy, input.date, input.startTime, input.reason});
 
   if (!query.isActive()) {
     qWarning() << "PatientRepository::createAppointment - Lỗi:"

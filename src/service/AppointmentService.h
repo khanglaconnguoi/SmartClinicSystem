@@ -15,7 +15,7 @@ public:
     QList<AppointmentRecordDTO> getPatientAppointments(int patientId) const;
     bool updateAppointmentStatus(int appointmentId, const QString &status) const;
     bool cancelAppointment(int appointmentId) const;
-    bool createAppointment(int patientId, const QString &doctorCode, int createdBy, const QString &date, const QString &startTime, const QString &reason) const;
+    bool createAppointment(const AppointmentInputDTO &input) const;
 
 private:
     std::shared_ptr<AppointmentRepository> m_appointmentRepository;

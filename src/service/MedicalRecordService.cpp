@@ -218,14 +218,18 @@ MedicalRecordService::getMedicalHistory(int patientId) {
   return m_recordRepository->getHistoryByPatientId(patientId);
 }
 
-QList<MedicalRecordSummaryDTO> MedicalRecordService::searchMedicalRecords(
-    MedicalRecordSearchCriteria criteria) {
+PagedResult<MedicalRecordSummaryDTO>
+MedicalRecordService::searchMedicalRecordsPaged(MedicalRecordSearchCriteria criteria) const {
   normalizeSearchCriteria(criteria);
-  return m_recordRepository->searchMedicalRecords(criteria);
+  criteria.searchKey = criteria.searchKey.simplified();
+  criteria.page = qMax(1, criteria.page);
+  criteria.pageSize = qBound(0, criteria.pageSize, 200);
+
+  return m_recordRepository->searchMedicalRecordsPaged(criteria);
 }
 
-int MedicalRecordService::countSearchResults(
-    MedicalRecordSearchCriteria criteria) {
-  normalizeSearchCriteria(criteria);
-  return m_recordRepository->countSearchResults(criteria);
-}
+/*
+QList<MedicalRecordSummaryDTO> MedicalRecordService::searchMedicalRecords(MedicalRecordSearchCriteria criteria) { ... }
+int MedicalRecordService::countSearchResults(MedicalRecordSearchCriteria criteria) { ... }
+*/
+

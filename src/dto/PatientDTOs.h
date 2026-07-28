@@ -370,6 +370,8 @@ struct PatientDetailDTO {
  *  trường đó". Service sẽ validate (vd. fromDate <= toDate) trước khi
  *  truyền xuống Repository.
  */
+#include "Pagination.h"
+
 struct PatientSearchCriteria {
   // ── TEXT search ───────────────────────────────────────
   // So khớp (LIKE) với: full_name, patient_code, citizen_id, phone
@@ -388,10 +390,11 @@ struct PatientSearchCriteria {
   std::optional<QDate> fromDate;
   std::optional<QDate> toDate;
 
-  // ── Phân trang ────────────────────────────────────────
-  int limit = 50;
-  int offset = 0;
+  // ── Phân trang (1-indexed) ───────────────────────────
+  int page = 1;       ///< Trang hiện tại (1-indexed)
+  int pageSize = 20;  ///< Số bản ghi / trang. 0 = không phân trang (trả về tất cả)
 };
+
 
 /**
  * @brief Một dòng kết quả tìm kiếm bệnh nhân.

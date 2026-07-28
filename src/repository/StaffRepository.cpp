@@ -469,59 +469,113 @@ static const QString SELECT_STAFF_PROFILE_SQL = R"(
 
 )";
 
+static QString buildStaffWhereClause(const StaffSearchCriteria& criteria, QVariantList& outParams) {
+    QString where = " WHERE 1=1";
+
+    if (!criteria.searchKey.trimmed().isEmpty()) {
+        where += " AND (LOWER(s.staff_code) LIKE ? OR LOWER(s.full_name) LIKE ?)";
+        QString pattern = "%" + criteria.searchKey.trimmed().toLower() + "%";
+        outParams.append(pattern);
+        outParams.append(pattern);
+    }
+
+    if (criteria.role.has_value()) {
+        where += " AND s.role = ?";
+        outParams.append(roleToString(criteria.role.value()));
+    }
+
+    if (auto docCriteria = dynamic_cast<const DoctorSearchCriteria*>(&criteria)) {
+        if (!docCriteria->specialty.trimmed().isEmpty()) {
+            where += " AND LOWER(dp.specialty) LIKE ?";
+            outParams.append("%" + docCriteria->specialty.trimmed().toLower() + "%");
+        }
+    }
+
+    if (auto nurseCriteria = dynamic_cast<const NurseSearchCriteria*>(&criteria)) {
+        if (!nurseCriteria->nurseLevel.trimmed().isEmpty()) {
+            where += " AND np.nurse_level = ?";
+            outParams.append(nurseCriteria->nurseLevel.trimmed());
+        }
+    }
+
+    if (auto pharmCriteria = dynamic_cast<const PharmacistSearchCriteria*>(&criteria)) {
+        if (!pharmCriteria->pharmacySection.trimmed().isEmpty()) {
+            where += " AND pp.pharmacy_section = ?";
+            outParams.append(pharmCriteria->pharmacySection.trimmed());
+        }
+    }
+
+    if (criteria.departmentId != -1) {
+        where += " AND s.department_id = ?";
+        outParams.append(criteria.departmentId);
+    }
+
+    if (!criteria.shift.trimmed().isEmpty()) {
+        where += " AND s.shift = ?";
+        outParams.append(criteria.shift.trimmed());
+    }
+
+    if (criteria.onlyActive) { where += " AND s.is_active = 1"; }
+
+    if (!criteria.includeDeleted) { where += " AND s.is_deleted = 0"; }
+
+    return where;
+}
+
+PagedResult<std::shared_ptr<SystemUser>> StaffRepository::searchStaffPaged(
+        const StaffSearchCriteria& criteria) const {
+    PagedResult<std::shared_ptr<SystemUser>> result;
+    result.page = qMax(1, criteria.page);
+    result.pageSize = criteria.pageSize;
+
+    const QString fromClause = R"(
+        FROM staff s
+        LEFT JOIN doctor_profiles     dp ON s.staff_id = dp.staff_id
+        LEFT JOIN nurse_profiles      np ON s.staff_id = np.staff_id
+        LEFT JOIN pharmacist_profiles pp ON s.staff_id = pp.staff_id
+    )";
+
+    // Bước 1: Đếm tổng bản ghi khớp
+    QVariantList countParams;
+    QString whereClause = buildStaffWhereClause(criteria, countParams);
+    QString countSql = "SELECT COUNT(DISTINCT s.staff_id)" + fromClause + whereClause;
+
+    QSqlQuery countQuery = DatabaseManager::getInstance().selectQuery(countSql, countParams);
+    if (!countQuery.next()) {
+        qWarning() << "StaffRepository::searchStaffPaged - Lỗi đếm tổng bản ghi";
+        result.totalCount = 0;
+        return result;
+    }
+    result.totalCount = countQuery.value(0).toInt();
+
+    // Bước 2: Lấy dữ liệu trang hiện tại
+    QVariantList dataParams;
+    whereClause = buildStaffWhereClause(criteria, dataParams);
+
+    QString dataSql = SELECT_STAFF_SQL + whereClause + " ORDER BY s.full_name ASC";
+
+    if (criteria.pageSize > 0) {
+        int offset = (result.page - 1) * criteria.pageSize;
+        dataSql += " LIMIT ? OFFSET ?";
+        dataParams.append(criteria.pageSize);
+        dataParams.append(offset);
+    }
+
+    QSqlQuery dataQuery = DatabaseManager::getInstance().selectQuery(dataSql, dataParams);
+    while (dataQuery.next()) {
+        if (auto user = mapRowToUser(dataQuery)) { result.items.append(user); }
+    }
+
+    return result;
+}
+
+/*
 QList<std::shared_ptr<SystemUser>>
 StaffRepository::search(const StaffSearchCriteria &criteria) const {
-  QString search = SELECT_STAFF_SQL + " WHERE 1=1";
-
-  QVariantList params;
-
-  // Chỉ thêm điều kiện khi field thực sự có giá trị
-  if (!criteria.searchKey.trimmed().isEmpty()) {
-    search += " AND (s.staff_code LIKE ? OR s.full_name LIKE ?)";
-    QString keyword = "%" + criteria.searchKey + "%";
-    params << keyword << keyword;
-  }
-
-  if (criteria.role.has_value()) {
-    search += " AND s.role = ?";
-    params << roleToString(criteria.role.value());
-  }
-
-  if (!criteria.specialty.trimmed().isEmpty()) {
-    search += " AND dp.specialty LIKE ?";
-    params << "%" + criteria.specialty.trimmed() + "%";
-  }
-
-  if (criteria.departmentId != -1) {
-    search += " AND s.department_id = ?";
-    params << criteria.departmentId;
-  }
-
-  if (!criteria.shift.trimmed().isEmpty()) {
-    search += " AND s.shift = ?";
-    params << criteria.shift.trimmed();
-  }
-
-  if (criteria.onlyActive) {
-    search += " AND s.is_active = 1";
-  }
-
-  if (!criteria.includeDeleted) {
-    search += " AND s.is_deleted = 0";
-  }
-
-  search += " ORDER BY s.full_name ASC";
-
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(search, params);
-
-  QList<std::shared_ptr<SystemUser>> result;
-  while (query.next()) {
-    if (auto user = mapRowToUser(query)) {
-      result.append(user);
-    }
-  }
-  return result;
+  ...
 }
+*/
+
 
 std::shared_ptr<SystemUser>
 StaffRepository::findByStaffCode(const QString &staffCode) const {
