@@ -828,7 +828,7 @@ bool PatientRepository::insertAllergies(int patientId,
         item.ingredientId.has_value() ? QVariant(item.ingredientId.value())
                                       : QVariant(),
         item.allergenName,
-        item.severity,
+        severityToEn(item.severity),
         item.notes.isEmpty() ? QVariant() : item.notes,
     };
     if (!db.executeQuery(sql, params).isActive()) {
@@ -871,7 +871,7 @@ PatientRepository::getAllergiesByPatientId(int patientId) {
             ? std::optional<int>{}
             : std::optional<int>{query.value("ingredient_id").toInt()};
     dto.allergenName = query.value("allergen_name").toString();
-    dto.severity = query.value("severity").toString();
+    dto.severity = severityFromEn(query.value("severity").toString());
     dto.notes = query.value("notes").toString();
     dto.isActive = query.value("is_active").toInt() == 1;
     dto.recordedAt = query.value("recorded_at").toString();

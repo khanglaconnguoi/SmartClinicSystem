@@ -90,7 +90,6 @@ void PatientService::normalizeSearchCriteria(PatientSearchCriteria &criteria) {
 
 void PatientService::normalizeAllergyInput(AllergyInputDTO &dto) {
   dto.allergenName = dto.allergenName.simplified();
-  dto.severity = dto.severity.trimmed().toUpper();
   dto.notes = dto.notes.trimmed();
 }
 
@@ -251,13 +250,6 @@ QString PatientService::validateAllergyInput(const AllergyInputDTO &dto) {
   // allergenName: bắt buộc
   if (dto.allergenName.isEmpty())
     return "Tên chất gây dị ứng không được để trống.";
-
-  // severity: phải là một trong ba giá trị cố định
-
-  if (dto.severity.isEmpty())
-    return "Mức độ dị ứng (severity) không được để trống.";
-  if (!SeverityText::isValid(dto.severity))
-    return "Mức độ dị ứng không hợp lệ.";
 
   return "";
 }

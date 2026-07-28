@@ -1,7 +1,5 @@
 #include "MedicalRecordService.h"
-
 #include <QDebug>
-
 #include "Validation.h"
 #include "model/MedicalRecord.h"
 #include "repository/MedicalRecordRepository.h"
@@ -88,7 +86,6 @@ QString MedicalRecordService::validateAllergyList(
   if (allergies.isEmpty())
     return ""; // optional — cho phép rỗng
 
-  const QStringList validSeverities = {"MILD", "MODERATE", "SEVERE"};
   for (int i = 0; i < allergies.size(); ++i) {
     const AllergyInputDTO &a = allergies.at(i);
     if (a.allergenName.isEmpty())
@@ -96,10 +93,6 @@ QString MedicalRecordService::validateAllergyList(
           .arg(i + 1);
     if (a.allergenName.length() > 200)
       return QString("Dị ứng #%1: Tên quá dài (tối đa 200 ký tự).").arg(i + 1);
-    if (!validSeverities.contains(a.severity))
-      return QString("Dị ứng #%1: Mức độ không hợp lệ (phải là "
-                     "MILD/MODERATE/SEVERE).")
-          .arg(i + 1);
   }
   return "";
 }
@@ -123,7 +116,6 @@ void MedicalRecordService::normalizeMedicalRecordInput(
   // Normalize allergy list
   for (AllergyInputDTO &a : dto.newAllergies) {
     a.allergenName = a.allergenName.trimmed();
-    a.severity = a.severity.trimmed().toUpper();
     a.notes = a.notes.trimmed();
   }
 }

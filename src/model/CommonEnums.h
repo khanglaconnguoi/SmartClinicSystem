@@ -16,254 +16,260 @@ template <typename T> struct EnumInfo {
 // =====================================================================
 
 namespace GenderText {
-    // Sử dụng QList<QPair> kết hợp inline (C++17) để giữ nguyên thứ tự hiển thị và
-    // tối ưu bộ nhớ
-    inline const QList<QPair<QString, QString>> gender = {
-        {"MALE", "Nam"}, {"FEMALE", "Nữ"}, {"OTHER", "Khác"}};
+  // Sử dụng QList<QPair> kết hợp inline (C++17) để giữ nguyên thứ tự hiển thị và
+  // tối ưu bộ nhớ
+  inline const QList<QPair<QString, QString>> gender = {
+      {"MALE", "Nam"}, {"FEMALE", "Nữ"}, {"OTHER", "Khác"}};
 
-    // Hàm lấy danh sách hỗ trợ nạp thẳng QComboBox tại UI
-    inline const QList<QPair<QString, QString>> &getList() { return gender; }
+  // Hàm lấy danh sách hỗ trợ nạp thẳng QComboBox tại UI
+  inline const QList<QPair<QString, QString>> &getList() { return gender; }
 
-    inline bool isValid(const QString &inputText) {
+  inline bool isValid(const QString &inputText) {
     QString cleanInput = inputText.toUpper().trimmed();
     for (const auto &pair : gender) {
-        if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
         return true;
-        }
+      }
     }
     return false;
-    }
+  }
 
-    inline QString toVi(const QString &en) {
+  inline QString toVi(const QString &en) {
     QString cleanEn = en.toUpper().trimmed();
     for (const auto &pair : gender) {
-        if (pair.first == cleanEn) {
+      if (pair.first == cleanEn) {
         return pair.second;
-        }
+      }
     }
     return "Khác";
-    }
+  }
 
-    inline QString toEn(const QString &vi) {
+  inline QString toEn(const QString &vi) {
     QString cleanVi = vi.trimmed();
     for (const auto &pair : gender) {
-        if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
+      if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
         return pair.first;
-        }
+      }
     }
     return "OTHER"; // Giá trị mặc định an toàn
-    }
+  }
 } // namespace GenderText
 
-namespace SeverityText {
-    inline const QList<QPair<QString, QString>> severities = {
-        {"MILD", "Nhẹ"}, {"MODERATE", "Trung bình"}, {"SEVERE", "Nặng"}};
 
-    inline const QList<QPair<QString, QString>> &getList() { return severities; }
-
-    inline bool isValid(const QString &inputText) {
-    QString cleanInput = inputText.toUpper().trimmed();
-    for (const auto &pair : severities) {
-        if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
-        return true;
-        }
-    }
-    return false;
-    }
-
-    inline QString toVi(const QString &en) {
-    QString cleanEn = en.toUpper().trimmed();
-    for (const auto &pair : severities) {
-        if (pair.first == cleanEn) {
-        return pair.second;
-        }
-    }
-    return "Khác";
-    }
-
-    inline QString toEn(const QString &vi) {
-    QString cleanVi = vi.trimmed();
-    for (const auto &pair : severities) {
-        if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
-        return pair.first;
-        }
-    }
-    return "MILD"; // Giá trị mặc định an toàn
-    }
-
-} // namespace SeverityText
 namespace InsuraceTypeText {
-    inline const QList<QPair<QString, QString>> insuraceTypes = {
-        {"NATIONAL", "Bảo hiểm y tế xã hội"},
-        {"COMMERCIAL", "Bảo hiểm y tế tư nhân"},
-        {"OTHER", "Khác"}};
+inline const QList<QPair<QString, QString>> insuraceTypes = {
+    {"NATIONAL", "Bảo hiểm y tế xã hội"},
+    {"COMMERCIAL", "Bảo hiểm y tế tư nhân"},
+    {"OTHER", "Khác"}};
 
-    inline const QList<QPair<QString, QString>> &getList() { return insuraceTypes; }
+inline const QList<QPair<QString, QString>> &getList() { return insuraceTypes; }
 
-    inline bool isValid(const QString &inputText) {
-    QString cleanInput = inputText.toUpper().trimmed();
-    for (const auto &pair : insuraceTypes) {
-        if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
-        return true;
-        }
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : insuraceTypes) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
     }
-    return false;
-    }
+  }
+  return false;
+}
 
-    inline QString toVi(const QString &en) {
-    QString cleanEn = en.toUpper().trimmed();
-    for (const auto &pair : insuraceTypes) {
-        if (pair.first == cleanEn) {
-        return pair.second;
-        }
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : insuraceTypes) {
+    if (pair.first == cleanEn) {
+      return pair.second;
     }
-    return "Khác";
-    }
+  }
+  return "Khác";
+}
 
-    inline QString toEn(const QString &vi) {
-    QString cleanVi = vi.trimmed();
-    for (const auto &pair : insuraceTypes) {
-        if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
-        return pair.first;
-        }
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : insuraceTypes) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
+      return pair.first;
     }
-    return "Bảo hiểm y tế xã hội"; // Giá trị mặc định an toàn
-    }
+  }
+  return "Bảo hiểm y tế xã hội"; // Giá trị mặc định an toàn
+}
 } // namespace InsuraceTypeText
 
 namespace MedicationCategoryText {
-    inline const QList<QPair<QString, QString>> medicationCategories = {
-        {"ANTIBIOTICS", "Kháng sinh"},
-        {"ANALGESICS", "Giảm đau"},
-        {"ANTIPYRETICS", "Hạ sốt"},
-        {"CARDIOVASCULAR", "Tim mạch"},
-        {"ANTIDIABETICS", "Trị tiểu đường"},
-        {"VITAMINS", "Vitamin & thực phẩm chức năng"},
-        {"RESPIRATORY", "Hô hấp"},
-        {"GASTROINTESTINAL", "Tiêu hóa"},
-        {"DERMATOLOGICAL", "Thuốc bôi da liễu"}};
+inline const QList<QPair<QString, QString>> medicationCategories = {
+    {"ANTIBIOTICS", "Kháng sinh"},
+    {"ANALGESICS", "Giảm đau"},
+    {"ANTIPYRETICS", "Hạ sốt"},
+    {"CARDIOVASCULAR", "Tim mạch"},
+    {"ANTIDIABETICS", "Trị tiểu đường"},
+    {"VITAMINS", "Vitamin & thực phẩm chức năng"},
+    {"RESPIRATORY", "Hô hấp"},
+    {"GASTROINTESTINAL", "Tiêu hóa"},
+    {"DERMATOLOGICAL", "Thuốc bôi da liễu"}};
 
-    inline const QList<QPair<QString, QString>> &getList() {
-    return medicationCategories;
-    }
+inline const QList<QPair<QString, QString>> &getList() {
+  return medicationCategories;
+}
 
-    inline bool isValid(const QString &inputText) {
-    QString cleanInput = inputText.toUpper().trimmed();
-    for (const auto &pair : medicationCategories) {
-        if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
-        return true;
-        }
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : medicationCategories) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
     }
-    return false;
-    }
+  }
+  return false;
+}
 
-    inline QString toVi(const QString &en) {
-    QString cleanEn = en.toUpper().trimmed();
-    for (const auto &pair : medicationCategories) {
-        if (pair.first == cleanEn)
-        return pair.second;
-    }
-    return "Khác";
-    }
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : medicationCategories) {
+    if (pair.first == cleanEn)
+      return pair.second;
+  }
+  return "Khác";
+}
 
-    inline QString toEn(const QString &vi) {
-    QString cleanVi = vi.trimmed();
-    for (const auto &pair : medicationCategories) {
-        if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
-        return pair.first;
-    }
-    return "VITAMINS";
-    }
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : medicationCategories) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
+      return pair.first;
+  }
+  return "VITAMINS";
+}
 } // namespace MedicationCategoryText
 
 namespace MedicationUnitText {
-    // Sử dụng QList<QPair> kết hợp inline (C++17) giúp giữ nguyên thứ tự hiển thị
-    // và tối ưu bộ nhớ
-    inline const QList<QPair<QString, QString>> medicationUnits = {
-        {"TABLET", "Viên"}, {"PACKET", "Gói"}, {"BOTTLE", "Chai"}, {"VIAL", "Lọ"},
-        {"AMPOULE", "Ống"}, {"TUBE", "Tuýp"},  {"BLISTER", "Vỉ"},  {"BOX", "Hộp"}};
+// Sử dụng QList<QPair> kết hợp inline (C++17) giúp giữ nguyên thứ tự hiển thị
+// và tối ưu bộ nhớ
+inline const QList<QPair<QString, QString>> medicationUnits = {
+    {"TABLET", "Viên"}, {"PACKET", "Gói"}, {"BOTTLE", "Chai"}, {"VIAL", "Lọ"},
+    {"AMPOULE", "Ống"}, {"TUBE", "Tuýp"},  {"BLISTER", "Vỉ"},  {"BOX", "Hộp"}};
 
-    // Hàm lấy danh sách hỗ trợ nạp thẳng QComboBox tại UI
-    inline const QList<QPair<QString, QString>> &getList() {
-    return medicationUnits;
-    }
+// Hàm lấy danh sách hỗ trợ nạp thẳng QComboBox tại UI
+inline const QList<QPair<QString, QString>> &getList() {
+  return medicationUnits;
+}
 
-    inline bool isValid(const QString &inputText) {
-    QString cleanInput = inputText.toUpper().trimmed();
-    for (const auto &pair : medicationUnits) {
-        if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
-        return true;
-        }
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : medicationUnits) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
     }
-    return false;
-    }
+  }
+  return false;
+}
 
-    inline QString toVi(const QString &en) {
-    QString cleanEn = en.toUpper().trimmed();
-    for (const auto &pair : medicationUnits) {
-        if (pair.first == cleanEn) {
-        return pair.second;
-        }
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : medicationUnits) {
+    if (pair.first == cleanEn) {
+      return pair.second;
     }
-    return "Khác";
-    }
+  }
+  return "Khác";
+}
 
-    inline QString toEn(const QString &vi) {
-    QString cleanVi = vi.trimmed();
-    for (const auto &pair : medicationUnits) {
-        if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
-        return pair.first;
-        }
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : medicationUnits) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
+      return pair.first;
     }
-    return "TABLET"; // Giá trị mặc định an toàn
-    }
+  }
+  return "TABLET"; // Giá trị mặc định an toàn
+}
 
 } // namespace MedicationUnitText
 
 namespace InvoiceStatusText {
-    inline const QString UNPAID = "UNPAID";
-    inline const QString PAID = "PAID";
-    inline const QString CANCELLED = "CANCELLED";
+inline const QString UNPAID = "UNPAID";
+inline const QString PAID = "PAID";
+inline const QString CANCELLED = "CANCELLED";
 
-    inline const QList<QPair<QString, QString>> statuses = {
-        {UNPAID, "Chưa thanh toán"},
-        {PAID, "Đã thanh toán"},
-        {CANCELLED, "Đã hủy"}};
+inline const QList<QPair<QString, QString>> statuses = {
+    {UNPAID, "Chưa thanh toán"},
+    {PAID, "Đã thanh toán"},
+    {CANCELLED, "Đã hủy"}};
 
-    inline const QList<QPair<QString, QString>> &getList() { return statuses; }
+inline const QList<QPair<QString, QString>> &getList() { return statuses; }
 
-    inline bool isValid(const QString &inputText) {
-    QString cleanInput = inputText.toUpper().trimmed();
-    for (const auto &pair : statuses) {
-        if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
-        return true;
-        }
+inline bool isValid(const QString &inputText) {
+  QString cleanInput = inputText.toUpper().trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
+      return true;
     }
-    return false;
-    }
+  }
+  return false;
+}
 
-    inline QString toVi(const QString &en) {
-    QString cleanEn = en.toUpper().trimmed();
-    for (const auto &pair : statuses) {
-        if (pair.first == cleanEn)
-        return pair.second;
-    }
-    return "Chưa thanh toán";
-    }
+inline QString toVi(const QString &en) {
+  QString cleanEn = en.toUpper().trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.first == cleanEn)
+      return pair.second;
+  }
+  return "Chưa thanh toán";
+}
 
-    inline QString toEn(const QString &vi) {
-    QString cleanVi = vi.trimmed();
-    for (const auto &pair : statuses) {
-        if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
-        return pair.first;
-    }
-    return UNPAID;
-    }
+inline QString toEn(const QString &vi) {
+  QString cleanVi = vi.trimmed();
+  for (const auto &pair : statuses) {
+    if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
+      return pair.first;
+  }
+  return UNPAID;
+}
 } // namespace InvoiceStatusText
 
 // =====================================================================
 // SECTION 2: KEPT ENUMS (PATTERN CŨ)
 // =====================================================================
+
+// Severity
+enum class Severity { Mild, Moderate, Severe };
+
+static const QList<EnumInfo<Severity>> severityList = {
+    {Severity::Mild, "Nhẹ", "MILD"},
+    {Severity::Moderate, "Trung bình", "MODERATE"},
+    {Severity::Severe, "Nặng", "SEVERE"},
+};
+
+inline QString severityToVi(Severity value) {
+  for (const auto &item : severityList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Nhẹ";
+}
+
+inline Severity severityFromVi(const QString &text) {
+  for (const auto &item : severityList) {
+    if (item.viText.compare(text, Qt::CaseInsensitive) == 0)
+      return item.value;
+  }
+  return Severity::Mild;
+}
+
+inline QString severityToEn(Severity value) {
+  for (const auto &item : severityList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "MILD";
+}
+
+inline Severity severityFromEn(const QString &text) {
+  QString cleanText = text.trimmed().toUpper();
+  for (const auto &item : severityList) {
+    if (item.enText == cleanText || item.viText.toUpper() == cleanText)
+      return item.value;
+  }
+  return Severity::Mild;
+}
 
 // PatientType
 enum class PatientType { Outpatient, Inpatient, Emergency };
@@ -478,8 +484,6 @@ inline EmergencyPatientState emergencyPatientStateFromEn(const QString &text) {
   }
   return EmergencyPatientState::Emergency;
 }
-
-
 
 // UserRole
 enum class UserRole { Admin, Doctor, Nurse, Receptionist, Pharmacist };

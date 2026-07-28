@@ -1,58 +1,63 @@
 #pragma once
 
-#include <QString>
+#include "model/CommonEnums.h"
 #include <QDateTime>
 #include <QList>
 #include <QPair>
+#include <QString>
 #include <optional>
 
 struct AllergyResultDTO;
 
 struct IngredientDuplicationWarning {
-    int     ingredientId;
-    QString ingredientName;
-    QList<QPair<int, QString>> conflictingMedications; // {medicationId, brandName}
+  int ingredientId;
+  QString ingredientName;
+  QList<QPair<int, QString>>
+      conflictingMedications; // {medicationId, brandName}
 };
 
 struct AllergyConflictWarning {
-    int     ingredientId;
-    QString ingredientName;
-    QString severity;      // "MILD" | "MODERATE" | "SEVERE"
-    QString allergyNotes;  // ghi chú dị ứng từ patient_allergies.notes
-    QList<QPair<int, QString>> conflictingMedications; // {medicationId, brandName}
+  int ingredientId;
+  QString ingredientName;
+  Severity severity;// Severity::Mild | Severity::Moderate | Severity::Severe
+  QString allergyNotes;               // ghi chú dị ứng từ patient_allergies.notes
+  QList<QPair<int, QString>>
+      conflictingMedications; // {medicationId, brandName}
 };
 
 struct PrescriptionSafetyReport {
-    QList<IngredientDuplicationWarning> duplications;
-    QList<AllergyConflictWarning>       allergyConflicts;
+  QList<IngredientDuplicationWarning> duplications;
+  QList<AllergyConflictWarning> allergyConflicts;
 
-    bool isSafe()             const { return duplications.isEmpty() && allergyConflicts.isEmpty(); }
-    bool hasDuplication()     const { return !duplications.isEmpty(); }
-    bool hasAllergyConflict() const { return !allergyConflicts.isEmpty(); }
-    bool hasSevereConflict()  const {
-        for (const auto& c : allergyConflicts)
-            if (c.severity == "SEVERE") return true;
-        return false;
-    }
+  bool isSafe() const {
+    return duplications.isEmpty() && allergyConflicts.isEmpty();
+  }
+  bool hasDuplication() const { return !duplications.isEmpty(); }
+  bool hasAllergyConflict() const { return !allergyConflicts.isEmpty(); }
+  bool hasSevereConflict() const {
+    for (const auto &c : allergyConflicts)
+      if (c.severity == Severity::Severe)
+        return true;
+    return false;
+  }
 };
 
-
 struct PrescriptionActionInfoDTO {
-    int       staffId = 0;
-    QString   staffCode;
-    QString   staffName;
-    QDateTime actionAt;
-    QString   reason;
+  int staffId = 0;
+  QString staffCode;
+  QString staffName;
+  QDateTime actionAt;
+  QString reason;
 };
 
 struct PrescriptionItemDTO {
-  int     medicationId;
+  int medicationId;
   QString brandName; // snapshot tên thuốc tại thời điểm kê
-  double  unitPrice; // snapshot giá tại thời điểm kê — KHÔNG lấy giá live từ kho
-  int     quantity;
-  QString dosage;   // "1 viên/lần"
+  double unitPrice; // snapshot giá tại thời điểm kê — KHÔNG lấy giá live từ kho
+  int quantity;
+  QString dosage;    // "1 viên/lần"
   QString frequency; // "2 lần/ngày"
-  int     durationDays;
+  int durationDays;
   QString note;
 };
 
@@ -60,53 +65,50 @@ struct PrescriptionItemDTO {
 // UI chỉ truyền medicationId, quantity, dosage, frequency, durationDays, note
 // PharmacyService tự điền brandNamevà unitPrice (snapshot) từ Medication
 struct PrescriptionInputDTO {
-    int     recordId;   // Lấy từ kết quả MedicalRecordService::createMedicalRecord()
-    int     doctorId;
-    QString notes;      // Ghi chú cho dược sĩ
-    QList<PrescriptionItemDTO> items;
+  int recordId; // Lấy từ kết quả MedicalRecordService::createMedicalRecord()
+  int doctorId;
+  QString notes; // Ghi chú cho dược sĩ
+  QList<PrescriptionItemDTO> items;
 };
 
-
 struct PrescriptionSearchCriteria {
-    QString patientName;  // Tìm kiếm gần đúng (LIKE) tên bệnh nhân
-    QString doctorName;   // Tìm kiếm gần đúng (LIKE) tên bác sĩ kê đơn
-    QString keyword;// Ô tìm kiếm nhanh chung (Mã đơn, chẩn đoán, ghi chú...)
+  QString patientName; // Tìm kiếm gần đúng (LIKE) tên bệnh nhân
+  QString doctorName;  // Tìm kiếm gần đúng (LIKE) tên bác sĩ kê đơn
+  QString keyword;     // Ô tìm kiếm nhanh chung (Mã đơn, chẩn đoán, ghi chú...)
 
-    int recordId = 0;     // Lọc chính xác theo Mã đơn thuốc (hoặc Mã bệnh án)
-    int doctorId = 0;     // Lọc tất cả đơn thuốc do 1 bác sĩ cụ thể kê
+  int recordId = 0; // Lọc chính xác theo Mã đơn thuốc (hoặc Mã bệnh án)
+  int doctorId = 0; // Lọc tất cả đơn thuốc do 1 bác sĩ cụ thể kê
 
+  QDateTime fromDate; // Lọc đơn từ ngày...
+  QDateTime toDate;   // ...đến ngày
 
-    QDateTime fromDate;   // Lọc đơn từ ngày...
-    QDateTime toDate;     // ...đến ngày
-
-    QString status;       
+  QString status;
 };
 
 // ── RESULT DTO — đọc từ DB để hiển thị ──────────────────────────────
 struct PrescriptionResultDTO {
-    int       prescriptionId;
-    int       recordId;
+  int prescriptionId;
+  int recordId;
 
-    QString   patientName;      
-    int       patientAge;       
-    QString   patientGender;    
-    QString   diagnosis;
+  QString patientName;
+  int patientAge;
+  QString patientGender;
+  QString diagnosis;
 
-    int       doctorId;
-    QString   doctorCode;
-    QString   doctorName;
-    
-    QString   status;
-    QString   notes;
-    QDateTime prescribedAt;
-    
-    QList<PrescriptionItemDTO> items;
-    double    totalAmount;
+  int doctorId;
+  QString doctorCode;
+  QString doctorName;
 
-    std::optional<PrescriptionActionInfoDTO> dispensedInfo; // Có giá trị nếu status == "DISPENSED"
-    std::optional<PrescriptionActionInfoDTO> cancelledInfo; // Có giá trị nếu status == "CANCELLED" (đã gồm lý do hủy bên trong)
+  QString status;
+  QString notes;
+  QDateTime prescribedAt;
+
+  QList<PrescriptionItemDTO> items;
+  double totalAmount;
+
+  std::optional<PrescriptionActionInfoDTO>
+      dispensedInfo; // Có giá trị nếu status == "DISPENSED"
+  std::optional<PrescriptionActionInfoDTO>
+      cancelledInfo; // Có giá trị nếu status == "CANCELLED" (đã gồm lý do hủy
+                     // bên trong)
 };
-
-
-
-
