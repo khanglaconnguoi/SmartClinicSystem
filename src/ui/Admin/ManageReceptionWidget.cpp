@@ -78,7 +78,13 @@ void ManageReceptionWidget::loadReceptionList() {
     if (!m_tblReception || !m_staffService) return;
     m_tblReception->setRowCount(0);
 
-    auto receptionists = m_staffService->searchReceptionists("");
+    ReceptionistSearchCriteria criteria;
+    criteria.onlyActive = true;
+    criteria.includeDeleted = false;
+    criteria.pageSize = 0; // Load all for UI table display
+
+    auto receptionists = m_staffService->searchReceptionistsPaged(criteria).items;
+
     
     for (int i = 0; i < receptionists.size(); ++i) {
         auto receptionist = receptionists[i];

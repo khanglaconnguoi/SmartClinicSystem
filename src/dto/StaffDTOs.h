@@ -140,21 +140,49 @@ struct PharmacistUpdateDTO : public StaffUpdateDTO {
 // ── SEARCH CRITERIA ───────────────────────────────────────────────────
 #include <optional>
 
+#include "Pagination.h"
+
 struct StaffSearchCriteria {
     // Nhóm 1: Text search (LIKE trên staff_code hoặc full_name)
     QString searchKey;
 
     // Nhóm 2: Dropdown filter
     std::optional<UserRole> role;
-    QString  specialty;
-    int      departmentId = -1;   // -1 = tất cả
-    QString  shift;               // rỗng = tất cả
+    int departmentId = -1;  // -1 = tất cả
+    QString shift;          // rỗng = tất cả
 
     // Nhóm 3: Status filter
-    bool onlyActive     = true;
+    bool onlyActive = true;
     bool includeDeleted = false;
+
+    // Nhóm 4: Phân trang (1-indexed)
+    int page = 1;       ///< Trang hiện tại (1-indexed)
+    int pageSize = 20;  ///< Số bản ghi / trang. 0 = không phân trang (trả về tất cả)
+
+    virtual ~StaffSearchCriteria() = default;
 };
 
+struct DoctorSearchCriteria : public StaffSearchCriteria {
+    QString specialty;
+
+    DoctorSearchCriteria() { role = UserRole::Doctor; }
+};
+
+struct NurseSearchCriteria : public StaffSearchCriteria {
+    QString nurseLevel;
+
+    NurseSearchCriteria() { role = UserRole::Nurse; }
+};
+
+struct ReceptionistSearchCriteria : public StaffSearchCriteria {
+    ReceptionistSearchCriteria() { role = UserRole::Receptionist; }
+};
+
+struct PharmacistSearchCriteria : public StaffSearchCriteria {
+    QString pharmacySection;
+
+    PharmacistSearchCriteria() { role = UserRole::Pharmacist; }
+};
 
 // =====================================================================
 // PROFILE DTOs — Repository -> Service -> View (READ ONLY)

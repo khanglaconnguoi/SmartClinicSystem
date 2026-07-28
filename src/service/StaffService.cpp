@@ -494,6 +494,43 @@ QString StaffService::editPharmacistInformation(PharmacistInputDTO pharmacistInf
     return "";
 }
 
+PagedResult<std::shared_ptr<SystemUser>> StaffService::searchStaffPaged(
+        const StaffSearchCriteria& criteria) const {
+    return m_staffRepository->searchStaffPaged(criteria);
+}
+
+PagedResult<std::shared_ptr<SystemUser>> StaffService::searchDoctorsPaged(
+        DoctorSearchCriteria criteria) const {
+    criteria.searchKey = criteria.searchKey.simplified();
+    criteria.specialty = criteria.specialty.simplified();
+    criteria.shift = criteria.shift.simplified();
+    return searchStaffPaged(criteria);
+}
+
+PagedResult<std::shared_ptr<SystemUser>> StaffService::searchNursesPaged(
+        NurseSearchCriteria criteria) const {
+    criteria.searchKey = criteria.searchKey.simplified();
+    criteria.nurseLevel = criteria.nurseLevel.trimmed();
+    criteria.shift = criteria.shift.simplified();
+    return searchStaffPaged(criteria);
+}
+
+PagedResult<std::shared_ptr<SystemUser>> StaffService::searchReceptionistsPaged(
+        ReceptionistSearchCriteria criteria) const {
+    criteria.searchKey = criteria.searchKey.simplified();
+    criteria.shift = criteria.shift.simplified();
+    return searchStaffPaged(criteria);
+}
+
+PagedResult<std::shared_ptr<SystemUser>> StaffService::searchPharmacistsPaged(
+        PharmacistSearchCriteria criteria) const {
+    criteria.searchKey = criteria.searchKey.simplified();
+    criteria.pharmacySection = criteria.pharmacySection.trimmed();
+    criteria.shift = criteria.shift.simplified();
+    return searchStaffPaged(criteria);
+}
+
+/*
 QList<std::shared_ptr<SystemUser>> StaffService::searchDoctors(
     QString searchKey,    
     QString specialty,                  
@@ -543,6 +580,8 @@ QList<std::shared_ptr<SystemUser>> StaffService::searchReceptionists(
 
     return m_staffRepository->search(criteria);
 }
+*/
+
 
 bool StaffService::changePassword(int staffId, const QString& plainPassword) {
     if (staffId <= 0) return false;

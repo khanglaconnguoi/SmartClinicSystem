@@ -189,7 +189,14 @@ void ReceptionDashboardWidget::buildOverviewPage() {
 
 void ReceptionDashboardWidget::loadDoctorsBySpecialty(const QString& specialty) {
     m_comboDoctor->clear();
-    auto doctors = m_staffService->searchDoctors("", specialty, -1, "", true, false);
+    DoctorSearchCriteria criteria;
+    criteria.specialty = specialty;
+    criteria.onlyActive = true;
+    criteria.includeDeleted = false;
+    criteria.pageSize = 0; // Load all for dropdown
+
+    auto doctors = m_staffService->searchDoctorsPaged(criteria).items;
+
     for (const auto& doc : doctors) {
         auto docModel = std::dynamic_pointer_cast<Doctor>(doc);
         if (docModel) {

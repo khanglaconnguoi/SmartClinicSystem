@@ -164,6 +164,15 @@ private:
     }
 
     
+    PagedResult<std::shared_ptr<SystemUser>> searchStaffPaged(const StaffSearchCriteria& criteria) const;
+    PagedResult<std::shared_ptr<SystemUser>> searchDoctorsPaged(DoctorSearchCriteria criteria) const;
+    PagedResult<std::shared_ptr<SystemUser>> searchNursesPaged(NurseSearchCriteria criteria) const;
+    PagedResult<std::shared_ptr<SystemUser>> searchReceptionistsPaged(ReceptionistSearchCriteria criteria) const;
+    PagedResult<std::shared_ptr<SystemUser>> searchPharmacistsPaged(PharmacistSearchCriteria criteria) const;
+
+
+
+    /*
     QList<std::shared_ptr<SystemUser>> searchDoctors(
         QString searchKey,    
         QString specialty,                  
@@ -185,6 +194,8 @@ private:
         bool onlyActive = true,
         bool includeDeleted = false
     ) const;
+    */
+
 
     bool changePassword(int staffId, const QString& plainPassword);
     ResetPasswordResult resetPassword(int staffId);
