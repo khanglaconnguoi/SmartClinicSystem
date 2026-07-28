@@ -26,6 +26,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QDebug>
+#include <QTextCharFormat>
 
 ReceptionDashboardWidget::ReceptionDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
@@ -367,14 +368,11 @@ void ReceptionDashboardWidget::buildRegisterPage() {
 
   QString inputStyle =
       "QLineEdit, QComboBox, QDateEdit { "
-      "min-height: 36px; padding-left: 10px; border: 1px solid #BDBDBD; "
+      "padding: 8px 10px; border: 1px solid #BDBDBD; "
       "border-radius: 6px; background-color: #FFFFFF; "
       "color: #333333; font-size: 14px; } "
       "QLineEdit:focus, QComboBox:focus, QDateEdit:focus { "
       "border: 1px solid #4B94F2; } "
-      "QComboBox::drop-down, QDateEdit::drop-down { "
-      "subcontrol-origin: padding; subcontrol-position: top right; "
-      "width: 30px; border-left: 1px solid #EAEAEA; }"
       "QComboBox QAbstractItemView { "
       "background-color: white; color: #333333; "
       "selection-background-color: #4B94F2; selection-color: white; outline: "
@@ -451,17 +449,22 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   QLabel *lblDate = new QLabel("Ngày khám:", m_apptCard);
   lblDate->setStyleSheet("font-weight: bold; color: #555;");
   m_dateEdit = new QDateEdit(QDate::currentDate(), m_apptCard);
+  m_dateEdit->setDisplayFormat("dd/MM/yyyy");
+  m_dateEdit->setMinimumWidth(150);
+  QCalendarWidget* apptCalendar = new QCalendarWidget();
+  apptCalendar->setMinimumSize(350, 250);
+  m_dateEdit->setCalendarWidget(apptCalendar);
   m_dateEdit->setCalendarPopup(true);
   m_dateEdit->setStyleSheet(inputStyle);
   
   // Custom calendar theme
   m_dateEdit->calendarWidget()->setStyleSheet(
-      "QCalendarWidget QWidget { alternate-background-color: #F8F9FA; background-color: #FFFFFF; color: #333333; }"
+      "QCalendarWidget { background-color: #FFFFFF; color: #333333; }"
+      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; }"
       "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; margin: 5px; }"
       "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; border-radius: 4px; }"
-      "QCalendarWidget QMenu { width: 150px; left: 20px; color: white; font-size: 14px; background-color: white; }"
-      "QCalendarWidget QSpinBox { width: 50px; font-size: 14px; color: #333333; background-color: white; selection-background-color: #4B94F2; selection-color: white; }"
-      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; }"
+      "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
+      "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; }"
       "QCalendarWidget QAbstractItemView:enabled { font-size: 14px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; selection-border-radius: 12px; }"
       "QCalendarWidget QAbstractItemView:disabled { color: #CCCCCC; }"
   );
@@ -706,19 +709,24 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
   lblFilter->setStyleSheet("font-size: 16px; font-weight: bold; color: #555;");
   
   m_apptDateEdit = new QDateEdit(QDate::currentDate(), m_appointmentsPage);
+  m_apptDateEdit->setDisplayFormat("dd/MM/yyyy");
+  m_apptDateEdit->setMinimumWidth(150);
+  QCalendarWidget* manageCalendar = new QCalendarWidget();
+  manageCalendar->setMinimumSize(350, 250);
+  m_apptDateEdit->setCalendarWidget(manageCalendar);
   m_apptDateEdit->setCalendarPopup(true);
   m_apptDateEdit->setStyleSheet(
-      "QDateEdit { min-height: 36px; padding-left: 10px; border: 1px solid #BDBDBD; border-radius: 6px; background-color: #FFFFFF; color: #333333; font-size: 14px; } "
-      "QDateEdit::drop-down { subcontrol-origin: padding; subcontrol-position: top right; width: 30px; border-left: 1px solid #EAEAEA; }"
+      "QDateEdit { padding: 8px 10px; border: 1px solid #BDBDBD; border-radius: 6px; background-color: #FFFFFF; color: #333333; font-size: 14px; } "
+      "QDateEdit:focus { border: 1px solid #4B94F2; } "
   );
   
   m_apptDateEdit->calendarWidget()->setStyleSheet(
-      "QCalendarWidget QWidget { alternate-background-color: #F8F9FA; background-color: #FFFFFF; color: #333333; }"
+      "QCalendarWidget { background-color: #FFFFFF; color: #333333; }"
+      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; }"
       "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; margin: 5px; }"
       "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; border-radius: 4px; }"
-      "QCalendarWidget QMenu { width: 150px; left: 20px; color: white; font-size: 14px; background-color: white; }"
-      "QCalendarWidget QSpinBox { width: 50px; font-size: 14px; color: #333333; background-color: white; selection-background-color: #4B94F2; selection-color: white; }"
-      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; }"
+      "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
+      "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; }"
       "QCalendarWidget QAbstractItemView:enabled { font-size: 14px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; selection-border-radius: 12px; }"
       "QCalendarWidget QAbstractItemView:disabled { color: #CCCCCC; }"
   );
