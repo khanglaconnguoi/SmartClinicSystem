@@ -59,11 +59,9 @@ public:
    * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.
    *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
    */
-  QList<MedicalRecordSummaryDTO>
-  searchMedicalRecords(MedicalRecordSearchCriteria criteria);
+  // QList<MedicalRecordSummaryDTO> searchMedicalRecords(MedicalRecordSearchCriteria criteria);
+  // int countSearchResults(MedicalRecordSearchCriteria criteria);
 
-  /**
-   * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
-   */
-  int countSearchResults(MedicalRecordSearchCriteria criteria);
+  PagedResult<MedicalRecordSummaryDTO> searchMedicalRecordsPaged(MedicalRecordSearchCriteria criteria) const;
+
 };

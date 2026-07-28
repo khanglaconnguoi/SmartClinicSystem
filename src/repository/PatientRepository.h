@@ -101,14 +101,11 @@ public:
    * @return Danh sách kết quả đã làm phẳng, sắp xếp theo full_name,
    *         áp dụng limit/offset để phân trang.
    */
-  QList<PatientSearchResultDTO>
-  searchPatients(const PatientSearchCriteria &criteria);
+  // QList<PatientSearchResultDTO> searchPatients(const PatientSearchCriteria &criteria);
+  // int countSearchResults(const PatientSearchCriteria &criteria);
 
-  /**
-   * @brief Đếm tổng số kết quả khớp tiêu chí (không áp dụng limit/offset).
-   *        Dùng để tính số trang cho UI phân trang.
-   */
-  int countSearchResults(const PatientSearchCriteria &criteria);
+  PagedResult<PatientSearchResultDTO> searchPatientsPaged(const PatientSearchCriteria& criteria) const;
+
 
   /**
    * @brief Build mệnh đề WHERE dùng chung cho searchPatients / countSearchResults.

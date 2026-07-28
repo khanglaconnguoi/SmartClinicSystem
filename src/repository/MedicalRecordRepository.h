@@ -49,12 +49,11 @@ public:
    * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.
    *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
    */
-  QList<MedicalRecordSummaryDTO> searchMedicalRecords(const MedicalRecordSearchCriteria &criteria);
+  // QList<MedicalRecordSummaryDTO> searchMedicalRecords(const MedicalRecordSearchCriteria &criteria);
+  // int countSearchResults(const MedicalRecordSearchCriteria &criteria);
 
-  /**
-   * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
-   */
-  int countSearchResults(const MedicalRecordSearchCriteria &criteria);
+  PagedResult<MedicalRecordSummaryDTO> searchMedicalRecordsPaged(const MedicalRecordSearchCriteria& criteria) const;
+
 
   // ── Phần đồng đội — CHỈ khai báo, KHÔNG cài đặt, để trống cho họ ──
   bool insertPrescription(int recordId, const QList<PrescriptionItemDTO> &items);

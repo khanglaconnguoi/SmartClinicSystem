@@ -189,22 +189,14 @@ public:
    * @param criteria Tiêu chí tìm kiếm (từ UI).
    * @return Danh sách kết quả (đã limit/offset). Rỗng nếu lỗi validation.
    */
-  QList<PatientSearchResultDTO> searchPatients(PatientSearchCriteria criteria);
+  // QList<PatientSearchResultDTO> searchPatients(PatientSearchCriteria criteria);
+  // int countSearchResults(PatientSearchCriteria criteria);
 
-  /**
-   * @brief Lấy thông tin chi tiết một bệnh nhân.
-   * @param patientId ID bệnh nhân cần lấy
-   * @return std::optional<PatientDetailDTO> chứa dữ liệu nếu tìm thấy,
-   * std::nullopt nếu không.
-   */
+  PagedResult<PatientSearchResultDTO> searchPatientsPaged(PatientSearchCriteria criteria) const;
+
   std::optional<PatientDetailDTO> getPatientById(int patientId);
 
-  /**
-   * @brief Đếm tổng số lượng kết quả thỏa tiêu chí tìm kiếm.
-   * @param criteria Tiêu chí tìm kiếm (từ UI).
-   * @return Tổng số lượng. 0 nếu có lỗi validation.
-   */
-  int countSearchResults(PatientSearchCriteria criteria);
+
 
   bool softDeletePatient(int patientId);
   bool restorePatient(int patientId);

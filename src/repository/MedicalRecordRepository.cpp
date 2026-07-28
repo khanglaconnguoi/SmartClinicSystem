@@ -274,13 +274,10 @@ QString MedicalRecordRepository::buildSearchWhereClause(
   }
 
   // searchKey: LIKE trên chief_complaint và clinical_notes.
-  // Escape ký tự đặc biệt '%' và '_' để tránh LIKE sai kết quả.
   if (!criteria.searchKey.trimmed().isEmpty()) {
-    conditions << "(mr.chief_complaint LIKE ? OR mr.clinical_notes LIKE ?)";
-    QString escaped = criteria.searchKey.trimmed();
-    escaped.replace('%', "\\%").replace('_', "\\_");
-    const QString likeValue = "%" + escaped + "%";
-    outParams << likeValue << likeValue;
+    conditions << "(LOWER(mr.chief_complaint) LIKE ? OR LOWER(mr.clinical_notes) LIKE ?)";
+    QString pattern = "%" + criteria.searchKey.trimmed().toLower() + "%";
+    outParams << pattern << pattern;
   }
 
   if (criteria.patientId != -1) {
@@ -309,60 +306,72 @@ QString MedicalRecordRepository::buildSearchWhereClause(
   return conditions.join(" AND ");
 }
 
-QList<MedicalRecordSummaryDTO> MedicalRecordRepository::searchMedicalRecords(
-    const MedicalRecordSearchCriteria &criteria) {
-  QVariantList params;
-  QString whereClause = buildSearchWhereClause(criteria, params);
+PagedResult<MedicalRecordSummaryDTO>
+MedicalRecordRepository::searchMedicalRecordsPaged(const MedicalRecordSearchCriteria &criteria) const {
+  PagedResult<MedicalRecordSummaryDTO> result;
+  result.page = qMax(1, criteria.page);
+  result.pageSize = criteria.pageSize;
 
-  const QString sql = QString(R"(
+  // Bước 1: Đếm tổng số bản ghi khớp tiêu chí
+  QVariantList countParams;
+  QString whereClause = buildSearchWhereClause(criteria, countParams);
+
+  const QString countSql = QString(R"(
+    SELECT COUNT(*)
+    FROM   medical_records mr
+    WHERE  %1
+  )").arg(whereClause);
+
+  QSqlQuery countQuery = DatabaseManager::getInstance().selectQuery(countSql, countParams);
+  if (!countQuery.isActive() || !countQuery.next()) {
+    qWarning() << "MedicalRecordRepository::searchMedicalRecordsPaged - Lỗi đếm tổng bản ghi";
+    result.totalCount = 0;
+    return result;
+  }
+  result.totalCount = countQuery.value(0).toInt();
+
+  // Bước 2: Lấy dữ liệu trang hiện tại
+  QVariantList dataParams;
+  whereClause = buildSearchWhereClause(criteria, dataParams);
+
+  QString dataSql = QString(R"(
     SELECT mr.record_id, mr.patient_id, mr.doctor_id,
            mr.visit_datetime, mr.chief_complaint, mr.is_deleted
     FROM   medical_records mr
     WHERE  %1
     ORDER  BY mr.visit_datetime DESC
-    LIMIT  ? OFFSET ?
-  )")
-                          .arg(whereClause);
+  )").arg(whereClause);
 
-  params << criteria.limit << criteria.offset;
-
-  QList<MedicalRecordSummaryDTO> results;
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-
-  if (!query.isActive()) {
-    qWarning()
-        << "MedicalRecordRepository::searchMedicalRecords - Query thất bại";
-    return results;
+  if (criteria.pageSize > 0) {
+    int offset = (result.page - 1) * criteria.pageSize;
+    dataSql += " LIMIT ? OFFSET ?";
+    dataParams.append(criteria.pageSize);
+    dataParams.append(offset);
   }
 
-  while (query.next()) {
+  QSqlQuery dataQuery = DatabaseManager::getInstance().selectQuery(dataSql, dataParams);
+  if (!dataQuery.isActive()) {
+    qWarning() << "MedicalRecordRepository::searchMedicalRecordsPaged - Query thất bại";
+    return result;
+  }
+
+  while (dataQuery.next()) {
     MedicalRecordSummaryDTO dto;
-    dto.recordId = query.value("record_id").toInt();
-    dto.patientId = query.value("patient_id").toInt();
-    dto.doctorId = query.value("doctor_id").toInt();
+    dto.recordId = dataQuery.value("record_id").toInt();
+    dto.patientId = dataQuery.value("patient_id").toInt();
+    dto.doctorId = dataQuery.value("doctor_id").toInt();
     dto.visitDateTime = QDateTime::fromString(
-        query.value("visit_datetime").toString(), Qt::ISODate);
-    dto.chiefComplaint = query.value("chief_complaint").toString();
-    dto.isDeleted = query.value("is_deleted").toInt() == 1;
-    results.append(dto);
+        dataQuery.value("visit_datetime").toString(), Qt::ISODate);
+    dto.chiefComplaint = dataQuery.value("chief_complaint").toString();
+    dto.isDeleted = dataQuery.value("is_deleted").toInt() == 1;
+    result.items.append(dto);
   }
-  return results;
+
+  return result;
 }
 
-int MedicalRecordRepository::countSearchResults(
-    const MedicalRecordSearchCriteria &criteria) {
-  QVariantList params;
-  QString whereClause = buildSearchWhereClause(criteria, params);
+/*
+QList<MedicalRecordSummaryDTO> MedicalRecordRepository::searchMedicalRecords(const MedicalRecordSearchCriteria &criteria) { ... }
+int MedicalRecordRepository::countSearchResults(const MedicalRecordSearchCriteria &criteria) { ... }
+*/
 
-  const QString sql = QString(R"(
-    SELECT COUNT(*)
-    FROM   medical_records mr
-    WHERE  %1
-  )")
-                          .arg(whereClause);
-
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-  if (query.next())
-    return query.value(0).toInt();
-  return 0;
-}
