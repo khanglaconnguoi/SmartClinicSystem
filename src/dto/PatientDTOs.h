@@ -37,9 +37,9 @@
  */
 struct AllergyInputDTO {
   std::optional<int> ingredientId;
-  QString allergenName; // tên chất gây dị ứng
-  QString severity;     // 'MILD' | 'MODERATE' | 'SEVERE'
-  QString notes;        // ghi chú thêm (tùy chọn)
+  QString allergenName;            // tên chất gây dị ứng
+  Severity severity = Severity::Mild; // Severity::Mild | Severity::Moderate | Severity::Severe
+  QString notes;                   // ghi chú thêm (tùy chọn)
 };
 
 /**
@@ -49,7 +49,7 @@ struct AllergyResultDTO {
   int allergyId;
   std::optional<int> ingredientId;
   QString allergenName;
-  QString severity;
+  Severity severity = Severity::Mild;
   QString notes;
   bool isActive;
   QString recordedAt;
