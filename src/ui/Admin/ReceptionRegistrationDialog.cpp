@@ -112,7 +112,7 @@ void ReceptionRegistrationDialog::setupUi() {
   form1->addRow("CCCD (*):", m_txtCitizenId);
 
   m_cbGender = new QComboBox(gbPersonalInfo);
-  m_cbGender->addItems({"Nam", "Nữ", "Khác"});
+  for (const auto& pair : GenderText::getList()) m_cbGender->addItem(pair.second, pair.first);
   m_cbGender->setStyleSheet(extraInputStyle);
   form1->addRow("Giới tính:", m_cbGender);
 
@@ -154,7 +154,7 @@ void ReceptionRegistrationDialog::setupUi() {
   form3->setSpacing(12);
 
   m_cbShift = new QComboBox(gbJobInfo);
-  m_cbShift->addItems({"Sáng", "Chiều", "Tối", "Cả ngày"});
+  for (const auto& pair : ShiftText::getList()) m_cbShift->addItem(pair.second, pair.first);
   m_cbShift->setStyleSheet(extraInputStyle);
   form3->addRow("Ca làm việc:", m_cbShift);
 

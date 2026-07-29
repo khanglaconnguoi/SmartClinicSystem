@@ -28,6 +28,13 @@
 #include <qcoreapplication.h>
 #include <qhashfunctions.h>
 
+struct PatientShortDTO {
+    int patientId;
+    QString patientCode;
+    QString fullName;
+    QString phone;
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // ALLERGY DTOs  (map với bảng `patient_allergies`)
 // ═══════════════════════════════════════════════════════════════════════════

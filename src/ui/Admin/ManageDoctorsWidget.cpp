@@ -60,6 +60,8 @@ void ManageDoctorsWidget::buildUI() {
   m_tblDoctors->horizontalHeader()->setStretchLastSection(true);
   m_tblDoctors->horizontalHeader()->setSectionResizeMode(1,
                                                          QHeaderView::Stretch);
+  m_tblDoctors->verticalHeader()->setDefaultSectionSize(50);
+  m_tblDoctors->verticalHeader()->setVisible(false);
   m_tblDoctors->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_tblDoctors->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_tblDoctors->setStyleSheet(

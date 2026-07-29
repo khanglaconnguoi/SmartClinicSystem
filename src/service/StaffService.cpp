@@ -8,6 +8,9 @@
 #include "Validation.h"
 #include "ext/bcrypt.h"
 #include "model/SystemUser.h"
+#include "AppointmentService.h"
+
+#include <QSqlError>
 
 static constexpr qsizetype NUMBER_BASE = 10;
 static constexpr qsizetype LAST_TWO_DIGITS_FACTOR = 100;
@@ -345,6 +348,7 @@ StaffService::mapDoctorToInsertDTO(const DoctorInputDTO &input,
   dto.experienceYears = input.experienceYears;
   dto.consultationFee = input.consultationFee;
   dto.bio = input.bio;
+  dto.roomId = input.roomId;
   return dto;
 }
 
@@ -402,6 +406,7 @@ DoctorUpdateDTO StaffService::mapDoctorToUpdateDTO(const DoctorInputDTO &dto,
   updateDto.experienceYears = dto.experienceYears;
   updateDto.consultationFee = dto.consultationFee;
   updateDto.bio = dto.bio;
+  updateDto.roomId = dto.roomId;
   return updateDto;
 }
 
@@ -699,4 +704,99 @@ ResetPasswordResult StaffService::resetPassword(int staffId) {
   if (!result)
     return ResetPasswordResult{false, ""};
   return ResetPasswordResult{true, password};
+}
+
+bool StaffService::deactivateStaff(int staffId) {
+    return m_staffRepository->deactivate(staffId);
+}
+
+bool StaffService::reactivateStaff(int staffId) {
+    return m_staffRepository->reactivate(staffId);
+}
+
+LeaveBalanceDTO StaffService::getLeaveBalance(int staffId, int year) const {
+    if (year == 0) {
+        year = QDate::currentDate().year();
+    }
+    return m_staffRepository->getLeaveBalance(staffId, year);
+}
+
+QString StaffService::registerLeave(int staffId, const QDate& startDate, const QDate& endDate, const QString& reason) const {
+    if (staffId <= 0) return "Vui lòng chọn nhân viên.";
+    if (!startDate.isValid() || !endDate.isValid()) return "Ngày không hợp lệ.";
+    if (startDate > endDate) return "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.";
+    if (startDate < QDate::currentDate()) return "Không thể đăng ký nghỉ phép trong quá khứ.";
+    
+    // Check overlapping leaves
+    // For simplicity, we just check if they are already on leave during these dates
+    for (QDate d = startDate; d <= endDate; d = d.addDays(1)) {
+        if (m_staffRepository->isStaffOnLeave(staffId, d)) {
+            return QString("Nhân viên đã có lịch nghỉ phép vào ngày %1.").arg(d.toString("dd/MM/yyyy"));
+        }
+    }
+
+    int days = startDate.daysTo(endDate) + 1;
+    LeaveBalanceDTO balance = getLeaveBalance(staffId, startDate.year());
+    
+    if (balance.usedDays + days > balance.totalDays) {
+        return QString("Không đủ quỹ phép. Đang cần %1 ngày, nhưng chỉ còn %2 ngày.")
+               .arg(days)
+               .arg(balance.totalDays - balance.usedDays);
+    }
+
+    bool success = m_staffRepository->createLeaveRequest(staffId, startDate, endDate, reason);
+    if (!success) {
+        return "Lỗi CSDL khi đăng ký nghỉ phép.";
+    }
+
+    return "";
+}
+
+QList<std::shared_ptr<SystemUser>> StaffService::searchStaff(const StaffSearchCriteria& criteria) const {
+    return m_staffRepository->search(criteria);
+}
+
+QList<LeaveRequestDTO> StaffService::getPendingLeaveRequests() const {
+    return m_staffRepository->getPendingLeaveRequests();
+}
+
+QList<LeaveRequestDTO> StaffService::getOwnLeaveHistory(int staffId) const {
+    return m_staffRepository->getLeaveHistory(staffId);
+}
+
+QString StaffService::processLeaveRequest(int requestId, bool isApproved, std::shared_ptr<AppointmentService> appointmentService) const {
+    auto optRequest = m_staffRepository->getLeaveRequestById(requestId);
+    if (!optRequest.has_value()) {
+        return "Không tìm thấy đơn xin phép này.";
+    }
+
+    LeaveRequestDTO req = optRequest.value();
+    if (req.status != "PENDING") {
+        return "Đơn này đã được xử lý rồi.";
+    }
+
+    int days = req.startDate.daysTo(req.endDate) + 1;
+    int year = req.startDate.year();
+    
+    if (!isApproved) {
+        bool success = m_staffRepository->rejectLeaveRequest(requestId, req.staffId, year, days);
+        if (!success) {
+            return "Lỗi CSDL khi từ chối đơn phép hoặc hoàn quỹ phép.";
+        }
+        return "";
+    }
+
+    // Approve the leave
+    bool success = m_staffRepository->approveLeaveRequest(requestId);
+    if (!success) {
+        return "Lỗi CSDL khi duyệt đơn phép.";
+    }
+
+    // Cancel appointments if doctor
+    auto profile = getOwnProfile(req.staffId);
+    if (profile && profile->role == UserRole::Doctor && appointmentService) {
+        appointmentService->cancelAppointmentsForDoctor(req.staffId, req.startDate, req.endDate);
+    }
+
+    return "";
 }

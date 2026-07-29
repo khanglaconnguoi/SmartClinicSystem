@@ -23,7 +23,7 @@
 #include <memory>
 
 #include "repository/StaffRepository.h"
-#include "repository/DatabaseManager.h"
+
 
 struct ResetPasswordResult {
     bool result;
@@ -152,17 +152,19 @@ private:
     QString editNurseInformation(NurseInputDTO nurseInformation, int staffId);
     QString editPharmacistInformation(PharmacistInputDTO pharmacistInformation, int staffId);
 
+    bool deactivateStaff(int staffId);
+    bool reactivateStaff(int staffId);
 
-
-
-    bool deactivateStaff(int staffId) {
-        return m_staffRepository->deactivate(staffId);
-    }
+    // =================================================================
+    // LEAVE MANAGEMENT
+    // =================================================================
+    LeaveBalanceDTO getLeaveBalance(int staffId, int year = 0) const;
+    QString registerLeave(int staffId, const QDate& startDate, const QDate& endDate, const QString& reason) const;
+    QList<LeaveRequestDTO> getPendingLeaveRequests() const;
+    QList<LeaveRequestDTO> getOwnLeaveHistory(int staffId) const;
+    QString processLeaveRequest(int requestId, bool isApproved, std::shared_ptr<class AppointmentService> appointmentService) const;
     
-    bool reactivateStaff(int staffId) {
-        return m_staffRepository->reactivate(staffId);
-    }
-
+    QList<std::shared_ptr<SystemUser>> searchStaff(const StaffSearchCriteria& criteria) const;
     
     QList<std::shared_ptr<SystemUser>> searchDoctors(
         QString searchKey,    

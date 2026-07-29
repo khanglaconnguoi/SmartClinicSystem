@@ -59,6 +59,8 @@ void ManageNursesWidget::buildUI() {
         {"Mã YT", "Họ Tên", "Cấp bậc", "Chứng chỉ", "SĐT", "Thao tác"});
     m_tblNurses->horizontalHeader()->setStretchLastSection(true);
     m_tblNurses->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    m_tblNurses->verticalHeader()->setDefaultSectionSize(50);
+    m_tblNurses->verticalHeader()->setVisible(false);
     m_tblNurses->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblNurses->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblNurses->setStyleSheet("QTableWidget { border: none; background-color: white; alternate-background-color: #F9FAFB; color: #111827; } QHeaderView::section { background-color: #F3F4F6; padding: 12px; font-weight: bold; border: none; border-bottom: 1px solid #E5E7EB; color: #111827; } QTableWidget::item { padding: 12px; border-bottom: 1px solid #E5E7EB; color: #111827; }");

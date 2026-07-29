@@ -501,7 +501,9 @@ bool DatabaseManager::createTables() {
           experience_years INTEGER NOT NULL DEFAULT 0 CHECK (experience_years >= 0),
           consultation_fee REAL    NOT NULL DEFAULT 0 CHECK (consultation_fee >= 0),
           bio              TEXT,
-          FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
+          room_id          INTEGER,
+          FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE,
+          FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE SET NULL
       );
   )";
   if (!query.exec(createDoctorProfiles)) {
@@ -581,6 +583,42 @@ bool DatabaseManager::createTables() {
   )";
   if (!query.exec(createAppointments)) {
     qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
+    m_db.rollback();
+  }
+
+  // Bảng Leave Balances
+  QString createLeaveBalances = R"(
+      CREATE TABLE IF NOT EXISTS leave_balances (
+          staff_id   INTEGER NOT NULL,
+          year       INTEGER NOT NULL,
+          total_days INTEGER NOT NULL DEFAULT 12,
+          used_days  INTEGER NOT NULL DEFAULT 0,
+          PRIMARY KEY (staff_id, year),
+          FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
+      )
+  )";
+  if (!query.exec(createLeaveBalances)) {
+    qDebug() << "Lỗi bảng Leave Balances:" << query.lastError().text();
+    m_db.rollback();
+    return false;
+  }
+
+  // Bảng Leave Requests
+  QString createLeaveRequests = R"(
+      CREATE TABLE IF NOT EXISTS leave_requests (
+          request_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          staff_id   INTEGER NOT NULL,
+          start_date TEXT    NOT NULL,
+          end_date   TEXT    NOT NULL,
+          reason     TEXT,
+          status     TEXT    NOT NULL DEFAULT 'APPROVED',
+          created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT    NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
+      )
+  )";
+  if (!query.exec(createLeaveRequests)) {
+    qDebug() << "Lỗi bảng Leave Requests:" << query.lastError().text();
     m_db.rollback();
     return false;
   }
@@ -721,35 +759,4 @@ QSqlQuery DatabaseManager::selectQuery(const QString &sql,
 
   return query;
 }
-
-
-std::optional<DatabaseManager::PatientRecord>
-DatabaseManager::getPatientByPhoneOrCitizenId(const QString &phone,
-                                              const QString &citizenId) {
-  QString sql = "SELECT patient_id, patient_code, full_name, phone_number FROM "
-                "patients WHERE is_deleted = 0 AND (";
-  QVariantList params;
-  QStringList conditions;
-  if (!phone.isEmpty()) {
-    conditions << "phone_number = ?";
-    params << phone;
-  }
-  if (!citizenId.isEmpty()) {
-    conditions << "citizen_id = ?";
-    params << citizenId;
-  }
-  if (conditions.isEmpty())
-    return std::nullopt;
-  sql += conditions.join(" OR ") + ")";
-
-  QSqlQuery query = selectQuery(sql, params);
-  if (query.next()) {
-    PatientRecord rec;
-    rec.patientId = query.value(0).toInt();
-    rec.patientCode = query.value(1).toString();
-    rec.fullName = query.value(2).toString();
-    rec.phone = query.value(3).toString();
-    return rec;
-  }
-  return std::nullopt;
-}
+

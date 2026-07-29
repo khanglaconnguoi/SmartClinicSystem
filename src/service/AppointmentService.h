@@ -59,6 +59,14 @@ public:
                                   const QString &status) const;
   QPair<QString, int> checkInPatient(int appointmentId) const;
   QString cancelAppointment(int appointmentId) const;
+  int cancelAppointmentsForDoctor(int doctorId, const QDate& startDate, const QDate& endDate) const;
+
+  // Queue management
+  QList<RoomQueueStatusDTO> getRoomQueueStatuses(const QDate &date) const;
+  QList<RoomQueueItemDTO> getDoctorQueue(int doctorId, const QDate &date) const;
+
+  
+  QPair<int, QString> callSpecificPatient(int appointmentId) const;
 
   QString createAppointment(AppointmentInputDTO input) const;
 };

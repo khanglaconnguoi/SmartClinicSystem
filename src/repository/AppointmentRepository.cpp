@@ -5,7 +5,18 @@
 #include <QSqlQuery>
 #include <QVariantList>
 
+void AppointmentRepository::autoMarkNoShowAppointments() const {
+  QString sql = R"(
+        UPDATE appointments
+        SET status = 'NO_SHOW',
+            updated_at = datetime('now')
+        WHERE status = 'SCHEDULED' AND appointment_date < date('now', 'localtime')
+    )";
+  DatabaseManager::getInstance().executeQuery(sql);
+}
+
 QList<AppointmentRecordDTO> AppointmentRepository::getDoctorAppointments(int doctorId, const QString &date) const {
+  autoMarkNoShowAppointments();
   QList<AppointmentRecordDTO> list;
 
   QString sql = R"(
@@ -20,7 +31,17 @@ QList<AppointmentRecordDTO> AppointmentRepository::getDoctorAppointments(int doc
     sql += " AND a.appointment_date = ?";
     params << date;
   }
-  sql += " ORDER BY a.appointment_date DESC, a.start_time ASC";
+  sql += R"(
+    ORDER BY 
+        CASE a.status 
+            WHEN 'STARTED' THEN 1 
+            WHEN 'CHECKED_IN' THEN 2 
+            WHEN 'SCHEDULED' THEN 3 
+            ELSE 4 
+        END ASC,
+        a.appointment_date ASC, 
+        a.start_time ASC
+  )";
 
   qDebug() << "getDoctorAppointments - Executing query for doctorId:"
            << doctorId << "| Date:" << (date.isEmpty() ? "All" : date);
@@ -108,6 +129,7 @@ QList<AppointmentRecordDTO> AppointmentRepository::getDoctorAppointments(int doc
 // }
 
 QList<AppointmentRecordDTO> AppointmentRepository::getAppointmentsByDate(const QString &date) const {
+  autoMarkNoShowAppointments();
   QList<AppointmentRecordDTO> list;
 
   QString sql = R"(
@@ -154,6 +176,7 @@ QList<AppointmentRecordDTO> AppointmentRepository::getAppointmentsByDate(const Q
 }
 
 QList<AppointmentRecordDTO> AppointmentRepository::getPatientAppointments(int patientId) const {
+  autoMarkNoShowAppointments();
   QList<AppointmentRecordDTO> list;
 
   QString sql = R"(
@@ -227,6 +250,16 @@ QPair<QString, int> AppointmentRepository::checkInPatient(int appointmentId) con
   int doctorId = findQuery.value(0).toInt();
   QString appointmentDate = findQuery.value(1).toString();
 
+  QString todayStr = QDate::currentDate().toString("yyyy-MM-dd");
+  if (appointmentDate != todayStr) {
+    DatabaseManager::getInstance().rollbackTransaction();
+    if (appointmentDate < todayStr) {
+      return qMakePair(QString("Không thể check-in lịch hẹn trong quá khứ."), -1);
+    } else {
+      return qMakePair(QString("Chưa đến ngày hẹn, không thể check-in."), -1);
+    }
+  }
+
   // 2. Compute MAX(ticket_number) + 1 for this doctor on this date
   QString ticketSql = R"(
         SELECT COALESCE(MAX(ticket_number), 0) + 1
@@ -263,19 +296,39 @@ QPair<QString, int> AppointmentRepository::checkInPatient(int appointmentId) con
 }
 
 bool AppointmentRepository::createAppointment(const AppointmentInputDTO &input) const {
-  QString sql = R"(
-        INSERT INTO appointments (ticket_number, patient_id, doctor_id, created_by, appointment_date, start_time, end_time, status, reason)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'SCHEDULED', ?)
-    )";
-  int ticketNum = (input.ticketNumber > 0) ? input.ticketNumber : 1;
-  QVariant createdByVar = (input.createdBy > 0) ? QVariant(input.createdBy) : QVariant();
-
   QString dateStr = input.date.isValid() ? input.date.toString("yyyy-MM-dd") : QDate::currentDate().toString("yyyy-MM-dd");
+  bool isToday = (dateStr == QDate::currentDate().toString("yyyy-MM-dd"));
+  int ticketNum = input.ticketNumber;
+  QString initialStatus = "SCHEDULED";
+  
+  if (ticketNum <= 0 && isToday) {
+      // Calculate next ticket number for today
+      QString getNextTicketSql = R"(
+          SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_ticket
+          FROM appointments
+          WHERE doctor_id = ? AND appointment_date = ? AND status != 'CANCELLED'
+      )";
+      QSqlQuery nextQuery = DatabaseManager::getInstance().selectQuery(getNextTicketSql, {input.doctorId, dateStr});
+      if (nextQuery.next()) {
+          ticketNum = nextQuery.value("next_ticket").toInt();
+      } else {
+          ticketNum = 1;
+      }
+  } else if (ticketNum <= 0) {
+      ticketNum = 1; // Default for future dates
+  }
+
+  QString sql = R"(
+        INSERT INTO appointments (ticket_number, patient_id, doctor_id, room_id, created_by, appointment_date, start_time, end_time, status, reason)
+        VALUES (?, ?, ?, (SELECT room_id FROM doctor_profiles WHERE staff_id = ?), ?, ?, ?, ?, ?, ?)
+    )";
+    
+  QVariant createdByVar = (input.createdBy > 0) ? QVariant(input.createdBy) : QVariant();
   QString startStr = input.startTime.isValid() ? input.startTime.toString("HH:mm") : "";
   QVariant endVar = input.endTime.isValid() ? QVariant(input.endTime.toString("HH:mm")) : QVariant();
 
   QSqlQuery query = DatabaseManager::getInstance().executeQuery(
-      sql, {ticketNum, input.patientId, input.doctorId, createdByVar, dateStr, startStr, endVar, input.reason});
+      sql, {ticketNum, input.patientId, input.doctorId, input.doctorId, createdByVar, dateStr, startStr, endVar, initialStatus, input.reason});
 
   if (!query.isActive()) {
     qWarning() << "AppointmentRepository::createAppointment - Lỗi:"
@@ -292,6 +345,23 @@ bool AppointmentRepository::cancelAppointment(int appointmentId) const {
   return !query.lastError().isValid();
 }
 
+int AppointmentRepository::cancelAppointmentsForDoctor(int doctorId, const QString& startDate, const QString& endDate) const {
+    QString sql = R"(
+        UPDATE appointments 
+        SET status = 'CANCELLED', updated_at = datetime('now') 
+        WHERE doctor_id = ? 
+          AND appointment_date >= ? AND appointment_date <= ?
+          AND status NOT IN ('CANCELLED', 'COMPLETED')
+    )";
+    QSqlQuery query = DatabaseManager::getInstance().executeQuery(sql, {doctorId, startDate, endDate});
+    
+    if (query.lastError().isValid()) {
+        qWarning() << "Failed to cancel appointments for doctor:" << query.lastError().text();
+        return 0;
+    }
+    return query.numRowsAffected();
+}
+
 bool AppointmentRepository::existsById(int appointmentId) const {
   QSqlQuery query = DatabaseManager::getInstance().selectQuery(
       "SELECT 1 FROM appointments WHERE appointment_id = ?", {appointmentId});
@@ -299,6 +369,13 @@ bool AppointmentRepository::existsById(int appointmentId) const {
 }
 
 bool AppointmentRepository::hasDoctorScheduleConflict(int doctorId, const QString &date, const QString &startTime, const QString &endTime, int excludeAppointmentId) const {
+  // First, check if doctor is on leave
+  QString leaveSql = "SELECT 1 FROM leave_requests WHERE staff_id = ? AND status = 'APPROVED' AND start_date <= ? AND end_date >= ?";
+  QSqlQuery leaveQuery = DatabaseManager::getInstance().selectQuery(leaveSql, {doctorId, date, date});
+  if (leaveQuery.next()) {
+      return true; // Conflict because doctor is on leave
+  }
+
   QString sql;
   QVariantList params;
   if (!endTime.isEmpty()) {
@@ -346,4 +423,140 @@ bool AppointmentRepository::hasPatientScheduleConflict(int patientId, const QStr
   }
   QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
   return query.next();
+}
+
+QList<RoomQueueStatusDTO> AppointmentRepository::getRoomQueueStatuses(const QString& date) const {
+    QList<RoomQueueStatusDTO> statuses;
+    DatabaseManager& db = DatabaseManager::getInstance();
+    
+    QString sql = R"(
+        SELECT r.room_id, r.room_number, d.staff_id AS doctor_id, s.full_name AS doctor_name
+        FROM rooms r
+        LEFT JOIN doctor_profiles d ON r.room_id = d.room_id
+        LEFT JOIN staff s ON d.staff_id = s.staff_id
+        WHERE r.room_type = 'EXAM'
+        ORDER BY r.room_id ASC
+    )";
+
+    QSqlQuery query = db.selectQuery(sql);
+    while (query.next()) {
+        RoomQueueStatusDTO dto;
+        dto.roomId = query.value("room_id").toInt();
+        dto.roomNumber = query.value("room_number").toString();
+        dto.doctorId = query.value("doctor_id").toInt();
+        dto.doctorName = query.value("doctor_name").toString();
+
+        if (dto.doctorId > 0) {
+            // Get currently STARTED ticket
+            QString currentSql = R"(
+                SELECT ticket_number FROM appointments
+                WHERE doctor_id = ? AND appointment_date = ? AND status = 'STARTED'
+                ORDER BY ticket_number ASC LIMIT 1
+            )";
+            QSqlQuery currentQ = db.selectQuery(currentSql, {dto.doctorId, date});
+            if (currentQ.next()) {
+                dto.currentTicketNumber = currentQ.value("ticket_number").toInt();
+            }
+
+            // Get next CHECKED_IN ticket
+            QString nextSql = R"(
+                SELECT ticket_number FROM appointments
+                WHERE doctor_id = ? AND appointment_date = ? AND status = 'CHECKED_IN'
+                ORDER BY ticket_number ASC LIMIT 1
+            )";
+            QSqlQuery nextQ = db.selectQuery(nextSql, {dto.doctorId, date});
+            if (nextQ.next()) {
+                dto.nextTicketNumber = nextQ.value("ticket_number").toInt();
+            }
+        }
+        statuses.append(dto);
+    }
+    return statuses;
+}
+
+QList<RoomQueueItemDTO> AppointmentRepository::getDoctorQueue(int doctorId, const QString& date) const {
+    QList<RoomQueueItemDTO> queue;
+    if (doctorId <= 0) return queue;
+
+    QString sql = R"(
+        SELECT a.ticket_number, p.full_name, a.start_time, a.status 
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.patient_id
+        WHERE a.doctor_id = ? AND a.appointment_date = ? 
+          AND a.status IN ('CHECKED_IN', 'STARTED', 'COMPLETED')
+        ORDER BY a.ticket_number ASC
+    )";
+
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {doctorId, date});
+    while (query.next()) {
+        RoomQueueItemDTO dto;
+        dto.ticketNumber = query.value("ticket_number").toInt();
+        dto.patientName = query.value("full_name").toString();
+        dto.startTime = query.value("start_time").toString();
+        
+        QString status = query.value("status").toString();
+        if (status == "STARTED") dto.status = "Đang khám";
+        else if (status == "CHECKED_IN") dto.status = "Đang chờ";
+        else if (status == "COMPLETED") dto.status = "Đã khám xong";
+        else dto.status = status;
+        
+        queue.append(dto);
+    }
+    return queue;
+}
+
+QPair<int, QString> AppointmentRepository::callSpecificPatient(int appointmentId) const {
+    DatabaseManager& db = DatabaseManager::getInstance();
+    
+    if (!db.beginTransaction()) {
+        return {0, ""};
+    }
+
+    // 1. Lấy thông tin lịch khám hiện tại (doctorId, date, ticket_number, tên)
+    QString getInfoSql = R"(
+        SELECT a.doctor_id, a.appointment_date, a.ticket_number, p.full_name 
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.patient_id
+        WHERE a.appointment_id = ?
+    )";
+    QSqlQuery infoQuery = db.selectQuery(getInfoSql, {appointmentId});
+    if (!infoQuery.next()) {
+        db.rollbackTransaction();
+        return {0, ""};
+    }
+
+    int doctorId = infoQuery.value("doctor_id").toInt();
+    QString date = infoQuery.value("appointment_date").toString();
+    int nextTicket = infoQuery.value("ticket_number").toInt();
+    QString patientName = infoQuery.value("full_name").toString();
+
+    // 2. Mark current STARTED as COMPLETED cho bác sĩ này trong ngày hôm nay
+    QString completeSql = R"(
+        UPDATE appointments 
+        SET status = 'COMPLETED', updated_at = CURRENT_TIMESTAMP
+        WHERE doctor_id = ? AND appointment_date = ? AND status = 'STARTED'
+    )";
+    QSqlQuery completeQuery = db.executeQuery(completeSql, {doctorId, date});
+    if (completeQuery.lastError().isValid()) {
+        db.rollbackTransaction();
+        return {0, ""};
+    }
+
+    // 3. Mark lịch hẹn được chọn là STARTED
+    QString startSql = R"(
+        UPDATE appointments 
+        SET status = 'STARTED', updated_at = CURRENT_TIMESTAMP
+        WHERE appointment_id = ?
+    )";
+    QSqlQuery startQuery = db.executeQuery(startSql, {appointmentId});
+    if (startQuery.lastError().isValid()) {
+        db.rollbackTransaction();
+        return {0, ""};
+    }
+
+    if (!db.commitTransaction()) {
+        return {0, ""};
+    }
+
+    return {nextTicket, patientName};
 }

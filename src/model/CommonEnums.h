@@ -92,17 +92,17 @@ namespace SeverityText {
     }
 
 } // namespace SeverityText
-namespace InsuraceTypeText {
-    inline const QList<QPair<QString, QString>> insuraceTypes = {
+namespace InsuranceTypeText {
+    inline const QList<QPair<QString, QString>> insuranceTypes = {
         {"NATIONAL", "Bảo hiểm y tế xã hội"},
         {"COMMERCIAL", "Bảo hiểm y tế tư nhân"},
         {"OTHER", "Khác"}};
 
-    inline const QList<QPair<QString, QString>> &getList() { return insuraceTypes; }
+    inline const QList<QPair<QString, QString>> &getList() { return insuranceTypes; }
 
     inline bool isValid(const QString &inputText) {
     QString cleanInput = inputText.toUpper().trimmed();
-    for (const auto &pair : insuraceTypes) {
+    for (const auto &pair : insuranceTypes) {
         if (pair.first == cleanInput || pair.second.toUpper() == cleanInput) {
         return true;
         }
@@ -112,7 +112,7 @@ namespace InsuraceTypeText {
 
     inline QString toVi(const QString &en) {
     QString cleanEn = en.toUpper().trimmed();
-    for (const auto &pair : insuraceTypes) {
+    for (const auto &pair : insuranceTypes) {
         if (pair.first == cleanEn) {
         return pair.second;
         }
@@ -122,14 +122,14 @@ namespace InsuraceTypeText {
 
     inline QString toEn(const QString &vi) {
     QString cleanVi = vi.trimmed();
-    for (const auto &pair : insuraceTypes) {
+    for (const auto &pair : insuranceTypes) {
         if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) {
         return pair.first;
         }
     }
-    return "Bảo hiểm y tế xã hội"; // Giá trị mặc định an toàn
+    return "NATIONAL"; // Giá trị mặc định an toàn
     }
-} // namespace InsuraceTypeText
+} // namespace InsuranceTypeText
 
 namespace MedicationCategoryText {
     inline const QList<QPair<QString, QString>> medicationCategories = {
@@ -307,6 +307,131 @@ namespace AppointmentStatusText {
     return SCHEDULED;
     }
 } // namespace AppointmentStatusText
+
+namespace ShiftText {
+    inline const QList<QPair<QString, QString>> shifts = {
+        {"MORNING", "Sáng"},
+        {"AFTERNOON", "Chiều"},
+        {"NIGHT", "Tối"},
+        {"FULL_DAY", "Cả ngày"}};
+
+    inline const QList<QPair<QString, QString>> &getList() { return shifts; }
+
+    inline QString toVi(const QString &en) {
+        QString cleanEn = en.toUpper().trimmed();
+        for (const auto &pair : shifts) {
+            if (pair.first == cleanEn) return pair.second;
+        }
+        return "Cả ngày";
+    }
+
+    inline QString toEn(const QString &vi) {
+        QString cleanVi = vi.trimmed();
+        for (const auto &pair : shifts) {
+            if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) return pair.first;
+        }
+        return "FULL_DAY";
+    }
+} // namespace ShiftText
+
+namespace BloodTypeText {
+    inline const QList<QPair<QString, QString>> bloodTypes = {
+        {"A+", "A+"}, {"A-", "A-"}, {"B+", "B+"}, {"B-", "B-"},
+        {"AB+", "AB+"}, {"AB-", "AB-"}, {"O+", "O+"}, {"O-", "O-"}};
+    inline const QList<QPair<QString, QString>> &getList() { return bloodTypes; }
+    inline QString toVi(const QString &en) { return en.toUpper().trimmed(); }
+    inline QString toEn(const QString &vi) { return vi.toUpper().trimmed(); }
+} // namespace BloodTypeText
+
+namespace DepartmentText {
+    inline const QList<QPair<QString, QString>> departments = {
+        {"DEPT_1", "1 - Khoa Khám bệnh"},
+        {"DEPT_2", "2 - Khoa Nội"},
+        {"DEPT_3", "3 - Khoa Ngoại"},
+        {"DEPT_4", "4 - Khoa Sản"},
+        {"DEPT_5", "5 - Khoa Nhi"},
+        {"DEPT_6", "6 - Khoa Cấp cứu"}};
+    inline const QList<QPair<QString, QString>> &getList() { return departments; }
+    inline QString toVi(const QString &en) {
+        QString cleanEn = en.toUpper().trimmed();
+        for (const auto &pair : departments) {
+            if (pair.first == cleanEn) return pair.second;
+        }
+        return "1 - Khoa Khám bệnh";
+    }
+    inline QString toEn(const QString &vi) {
+        QString cleanVi = vi.trimmed();
+        for (const auto &pair : departments) {
+            if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) return pair.first;
+        }
+        return "DEPT_1";
+    }
+} // namespace DepartmentText
+
+namespace ClinicalTemplateText {
+    inline const QList<QPair<QString, QString>> templates = {
+        {"NONE", "--- Chọn mẫu khám ---"},
+        {"TEMP_1", "Khám Nội nhi chuẩn"},
+        {"TEMP_2", "Khám Tai Mũi Họng nhanh"},
+        {"TEMP_3", "Kiểm tra sức khỏe định kỳ"}};
+    inline const QList<QPair<QString, QString>> &getList() { return templates; }
+    inline QString toVi(const QString &en) {
+        for (const auto &pair : templates) if (pair.first == en) return pair.second;
+        return "--- Chọn mẫu khám ---";
+    }
+    inline QString toEn(const QString &vi) {
+        for (const auto &pair : templates) if (pair.second == vi) return pair.first;
+        return "NONE";
+    }
+} // namespace ClinicalTemplateText
+
+namespace DiagnosisText {
+    inline const QList<QPair<QString, QString>> diagnoses = {
+        {"NONE", "--- Chọn chẩn đoán ---"},
+        {"DIAG_1", "Viêm dạ dày cấp tính"},
+        {"DIAG_2", "Viêm họng hạt"},
+        {"DIAG_3", "Suy nhược cơ thể nhẹ"}};
+    inline const QList<QPair<QString, QString>> &getList() { return diagnoses; }
+    inline QString toVi(const QString &en) {
+        for (const auto &pair : diagnoses) if (pair.first == en) return pair.second;
+        return "--- Chọn chẩn đoán ---";
+    }
+    inline QString toEn(const QString &vi) {
+        for (const auto &pair : diagnoses) if (pair.second == vi) return pair.first;
+        return "NONE";
+    }
+} // namespace DiagnosisText
+
+namespace DirectionText {
+    inline const QList<QPair<QString, QString>> directions = {
+        {"DIR_1", "Cho về nhà, cấp toa thuốc"},
+        {"DIR_2", "Nhập viện điều trị"},
+        {"DIR_3", "Chuyển tuyến điều trị"}};
+    inline const QList<QPair<QString, QString>> &getList() { return directions; }
+    inline QString toVi(const QString &en) {
+        for (const auto &pair : directions) if (pair.first == en) return pair.second;
+        return "Cho về nhà, cấp toa thuốc";
+    }
+    inline QString toEn(const QString &vi) {
+        for (const auto &pair : directions) if (pair.second == vi) return pair.first;
+        return "DIR_1";
+    }
+} // namespace DirectionText
+
+namespace ActionText {
+    inline const QList<QPair<QString, QString>> actions = {
+        {"ACT_1", "Nghỉ ngơi tại chỗ, uống thuốc theo đơn"},
+        {"ACT_2", "Thực hiện xét nghiệm bổ sung"}};
+    inline const QList<QPair<QString, QString>> &getList() { return actions; }
+    inline QString toVi(const QString &en) {
+        for (const auto &pair : actions) if (pair.first == en) return pair.second;
+        return "Nghỉ ngơi tại chỗ, uống thuốc theo đơn";
+    }
+    inline QString toEn(const QString &vi) {
+        for (const auto &pair : actions) if (pair.second == vi) return pair.first;
+        return "ACT_1";
+    }
+} // namespace ActionText
 
 // =====================================================================
 // SECTION 2: KEPT ENUMS (PATTERN CŨ)

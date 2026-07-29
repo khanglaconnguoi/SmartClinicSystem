@@ -120,7 +120,7 @@ void DoctorRegistrationDialog::setupUi() {
 
   m_cbGender = new QComboBox(gbPersonalInfo);
   m_cbGender->setStyleSheet(extraInputStyle);
-  m_cbGender->addItems({"Nam", "Nữ", "Khác"});
+  for (const auto& pair : GenderText::getList()) m_cbGender->addItem(pair.second, pair.first);
   form1->addRow("Giới tính (*):", m_cbGender);
 
   m_txtCitizenId = new QLineEdit(gbPersonalInfo);
@@ -156,13 +156,23 @@ void DoctorRegistrationDialog::setupUi() {
 
   m_cbDepartment = new QComboBox(gbWorkInfo);
   m_cbDepartment->setStyleSheet(extraInputStyle);
-  m_cbDepartment->addItems({"1 - Khoa Khám Bệnh", "2 - Khoa Nội",
-                            "3 - Khoa Ngoại", "4 - Khoa Sản", "5 - Khoa Nhi"});
+  for (const auto& pair : DepartmentText::getList()) m_cbDepartment->addItem(pair.second, pair.first);
   form2->addRow("Phòng ban:", m_cbDepartment);
+
+  m_cbRoom = new QComboBox(gbWorkInfo);
+  m_cbRoom->setStyleSheet(extraInputStyle);
+  m_cbRoom->addItem("Chưa xếp phòng", 0);
+  {
+      QSqlQuery query = DatabaseManager::getInstance().selectQuery("SELECT room_id, room_number FROM rooms WHERE room_type = 'EXAM' ORDER BY room_id");
+      while (query.next()) {
+          m_cbRoom->addItem(query.value("room_number").toString(), query.value("room_id").toInt());
+      }
+  }
+  form2->addRow("Phòng khám:", m_cbRoom);
 
   m_cbShift = new QComboBox(gbWorkInfo);
   m_cbShift->setStyleSheet(extraInputStyle);
-  m_cbShift->addItems({"Sáng", "Chiều", "Tối"});
+  for (const auto& pair : ShiftText::getList()) m_cbShift->addItem(pair.second, pair.first);
   form2->addRow("Ca làm việc:", m_cbShift);
 
   m_dtHireDate = new QDateEdit(QDate::currentDate(), gbWorkInfo);
@@ -251,15 +261,24 @@ void DoctorRegistrationDialog::loadDoctorData(DoctorProfileDTO *doctor) {
   if (!doctor)
     return;
   m_editStaffId = doctor->staffId;
-
   m_txtFullName->setText(doctor->fullName);
   m_txtCitizenId->setText(doctor->citizenId);
   m_txtPhone->setText(doctor->phoneNumber);
   m_txtEmail->setText(doctor->email);
   m_txtAddress->setText(doctor->address);
+  m_dtDateOfBirth->setDate(doctor->dateOfBirth);
 
-  QString genderText = GenderText::toVi(doctor->gender);
-  m_cbGender->setCurrentText(genderText);
+  if (doctor->gender == "Nam")
+    m_cbGender->setCurrentIndex(0);
+  else if (doctor->gender == "Nữ")
+    m_cbGender->setCurrentIndex(1);
+  else
+    m_cbGender->setCurrentIndex(2);
+
+  m_cbDepartment->setCurrentIndex(qMax(0, doctor->departmentId - 1));
+
+  int roomIdx = m_cbRoom->findData(doctor->roomId);
+  if (roomIdx >= 0) m_cbRoom->setCurrentIndex(roomIdx);
 
   m_dtDateOfBirth->setDate(doctor->dateOfBirth);
 
@@ -316,6 +335,7 @@ void DoctorRegistrationDialog::handleSave() {
                                            : "FULL_DAY";
   QString specialty = m_cbSpecialty->currentText();
   int departmentId = m_cbDepartment->currentText().split(" - ").first().toInt();
+  int roomId = m_cbRoom->currentData().toInt();
 
   QString licenseNumber = m_txtLicenseNumber->text().trimmed();
   int experienceYears = m_sbExperienceYears->value();
@@ -340,6 +360,7 @@ void DoctorRegistrationDialog::handleSave() {
   dto.experienceYears = experienceYears;
   dto.consultationFee = consultationFee;
   dto.bio = bio;
+  dto.roomId = roomId;
 
   QString errorMsg;
   if (m_editStaffId == -1) {

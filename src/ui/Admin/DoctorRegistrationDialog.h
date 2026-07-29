@@ -42,6 +42,7 @@ private:
   QLineEdit *m_txtEmail;
   QLineEdit *m_txtAddress;
   QComboBox *m_cbDepartment;
+  QComboBox *m_cbRoom;
   QDateEdit *m_dtHireDate;
   QComboBox *m_cbShift;
   QLineEdit *m_txtLicenseNumber;

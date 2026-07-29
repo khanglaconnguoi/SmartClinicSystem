@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <QHeaderView>
 #include <QMessageBox>
-#include "AdminPatientRegistrationDialog.h"
+#include "../Patient/PatientRegistrationDialog.h"
 
 ManagePatientsWidget::ManagePatientsWidget(std::shared_ptr<PatientService> patientService, QWidget* parent)
     : QWidget(parent), m_patientService(patientService), m_tblPatients(nullptr) {
@@ -62,7 +62,7 @@ void ManagePatientsWidget::buildUI() {
 }
 
 void ManagePatientsWidget::showAddPatientDialog() {
-    AdminPatientRegistrationDialog dialog(m_patientService, this);
+    PatientRegistrationDialog dialog(m_patientService, this);
     if (dialog.exec() == QDialog::Accepted) {
         loadPatientsList();
     }

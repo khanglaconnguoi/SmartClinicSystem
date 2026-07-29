@@ -17,7 +17,7 @@
 
 class PatientRepository;
 
-#include "repository/DatabaseManager.h"
+
 
 class PatientService {
 private:
@@ -238,6 +238,6 @@ public:
    */
   std::optional<InsuranceResultDTO> getInsurance(int patientId) const;
 
-  std::optional<DatabaseManager::PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
+  std::optional<PatientShortDTO> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
 
 };

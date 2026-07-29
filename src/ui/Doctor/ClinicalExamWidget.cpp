@@ -1,6 +1,7 @@
 #include "ClinicalExamWidget.h"
 #include <QDoubleValidator>
 #include <QDebug>
+#include "../../model/CommonEnums.h"
 
 ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
     : QWidget(parent)
@@ -9,8 +10,13 @@ ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
 
     // Kết nối các tín hiệu chuyển hướng về Dashboard
     connect(m_tabDanhSach, &QPushButton::clicked, this, &ClinicalExamWidget::viewAppointmentsListRequested);
+    
     connect(m_btnCancel, &QPushButton::clicked, this, &ClinicalExamWidget::backToDashboardRequested);
     connect(m_btnFinish, &QPushButton::clicked, this, &ClinicalExamWidget::finishExamRequested);
+
+    connect(m_btnCallPatient, &QPushButton::clicked, this, [this]() {
+        emit callPatientRequested();
+    });
 
     // Tính toán BMI tự động
     auto onBmiInputChanged = [this]() {
@@ -235,10 +241,7 @@ void ClinicalExamWidget::setupUi() {
     QHBoxLayout* templateRow = new QHBoxLayout();
     QLabel* lblTemplate = new QLabel("Chọn mẫu:", mainForm);
     m_cbTemplate = new QComboBox(mainForm);
-    m_cbTemplate->addItem("--- Chọn mẫu khám ---");
-    m_cbTemplate->addItem("Khám Nội nhi chuẩn");
-    m_cbTemplate->addItem("Khám Tai Mũi Họng nhanh");
-    m_cbTemplate->addItem("Kiểm tra sức khỏe định kỳ");
+    for (const auto& pair : ClinicalTemplateText::getList()) m_cbTemplate->addItem(pair.second, pair.first);
     m_cbTemplate->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     templateRow->addWidget(lblTemplate);
     templateRow->addWidget(m_cbTemplate);
@@ -306,10 +309,7 @@ void ClinicalExamWidget::setupUi() {
 
     formGrid->addWidget(new QLabel("Chẩn đoán ban đầu:", mainForm), 0, 0);
     m_cbDiagnosis = new QComboBox(mainForm);
-    m_cbDiagnosis->addItem("--- Chọn chẩn đoán ---");
-    m_cbDiagnosis->addItem("Viêm dạ dày cấp tính");
-    m_cbDiagnosis->addItem("Viêm họng hạt");
-    m_cbDiagnosis->addItem("Suy nhược cơ thể nhẹ");
+    for (const auto& pair : DiagnosisText::getList()) m_cbDiagnosis->addItem(pair.second, pair.first);
     formGrid->addWidget(m_cbDiagnosis, 1, 0);
 
     formGrid->addWidget(new QLabel("Bệnh chính (ICD10):", mainForm), 0, 1);
@@ -319,15 +319,12 @@ void ClinicalExamWidget::setupUi() {
 
     formGrid->addWidget(new QLabel("Hướng xử lý:", mainForm), 2, 0);
     m_cbDirection = new QComboBox(mainForm);
-    m_cbDirection->addItem("Cho về nhà, cấp toa thuốc");
-    m_cbDirection->addItem("Nhập viện điều trị");
-    m_cbDirection->addItem("Chuyển tuyến điều trị");
+    for (const auto& pair : DirectionText::getList()) m_cbDirection->addItem(pair.second, pair.first);
     formGrid->addWidget(m_cbDirection, 3, 0);
 
     formGrid->addWidget(new QLabel("Xử trí cụ thể:", mainForm), 2, 1);
     m_cbAction = new QComboBox(mainForm);
-    m_cbAction->addItem("Nghỉ ngơi tại chỗ, uống thuốc theo đơn");
-    m_cbAction->addItem("Thực hiện xét nghiệm bổ sung");
+    for (const auto& pair : ActionText::getList()) m_cbAction->addItem(pair.second, pair.first);
     formGrid->addWidget(m_cbAction, 3, 1);
 
     fieldsLayout->addLayout(formGrid);

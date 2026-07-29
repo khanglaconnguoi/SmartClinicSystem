@@ -4,6 +4,7 @@
 #include "../../service/AuthService.h"
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
+#include "../../model/CommonEnums.h"
 #include <QDate>
 #include <QGraphicsDropShadowEffect>
 #include <QMessageBox>
@@ -22,8 +23,7 @@ PatientDashboardWidget::PatientDashboardWidget(
     std::shared_ptr<PatientService> patientService,
     std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
     : BaseDashboardWidget(user, staffService, patientService,
-                          appointmentService, parent),
-      m_currentUser(user) {
+                          appointmentService, parent) {
   initializeDashboard();
 }
 
@@ -401,7 +401,7 @@ void PatientDashboardWidget::createUpcomingAppointments() {
         statusBg = "#FEE2E2";
       }
 
-      QLabel *statusLbl = new QLabel(a.status, item);
+      QLabel *statusLbl = new QLabel(AppointmentStatusText::toVi(a.status), item);
       statusLbl->setAlignment(Qt::AlignCenter);
       statusLbl->setFixedHeight(26);
       statusLbl->setContentsMargins(10, 0, 10, 0);

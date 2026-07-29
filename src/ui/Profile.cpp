@@ -152,10 +152,7 @@ QWidget* ProfileWidget::createLeftPanel() {
     lblShiftTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #172B4D; border: none;");
 
     cmbShift = new QComboBox(shiftCard);
-    cmbShift->addItem("Ca Sáng", "MORNING");
-    cmbShift->addItem("Ca Chiều", "AFTERNOON");
-    cmbShift->addItem("Ca Tối", "NIGHT");
-    cmbShift->addItem("Cả Ngày", "FULL_DAY");
+    for (const auto& pair : ShiftText::getList()) cmbShift->addItem(pair.second, pair.first);
     cmbShift->setEnabled(false);
     cmbShift->setFixedHeight(40);
     cmbShift->setStyleSheet(

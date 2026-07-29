@@ -1,12 +1,14 @@
 #include "ReceptionDashboard.h"
 #include "../../model/Doctor.h"
 #include "../../model/IAuthenticatable.h"
-#include "../../repository/DatabaseManager.h"
+
 #include "../../service/AppointmentService.h"
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
-#include "PatientRegistrationDialog.h"
+#include "../Patient/PatientRegistrationDialog.h"
 #include "../Profile.h"
+#include "RoomQueueWidget.h"
+#include "RoomQueueDialog.h"
 #include <QComboBox>
 #include <QDateEdit>
 #include <QCalendarWidget>
@@ -27,6 +29,7 @@
 #include <QPainterPath>
 #include <QDebug>
 #include <QTextCharFormat>
+#include "../../model/CommonEnums.h"
 
 ReceptionDashboardWidget::ReceptionDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
@@ -35,7 +38,7 @@ ReceptionDashboardWidget::ReceptionDashboardWidget(
     std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
     : BaseDashboardWidget(user, staffService, patientService,
                           appointmentService, parent),
-      m_currentUser(user), m_staffService(staffService) {
+      m_staffService(staffService) {
 
   initializeDashboard();
 
@@ -48,11 +51,12 @@ ReceptionDashboardWidget::ReceptionDashboardWidget(
   buildRegisterPage();
   buildPatientsPage();
   buildAppointmentsPage();
-
+  buildRoomQueuePage();
   m_stackedWidget->addWidget(m_overviewPage);
   m_stackedWidget->addWidget(m_registerPage);
   m_stackedWidget->addWidget(m_patientsPage);
   m_stackedWidget->addWidget(m_appointmentsPage);
+  m_stackedWidget->addWidget(m_roomQueuePage);
 
   // Default to Overview
   switchPage(0, m_btnOverview);
@@ -116,10 +120,16 @@ void ReceptionDashboardWidget::buildSidebar() {
   m_btnManageAppts->setCheckable(true);
   m_btnManageAppts->setCursor(Qt::PointingHandCursor);
 
+  m_btnRoomQueue = new QPushButton("Hàng đợi Phòng khám", sidebar);
+  m_btnRoomQueue->setCheckable(true);
+  m_btnRoomQueue->setCursor(Qt::PointingHandCursor);
+
+
   layout->addWidget(m_btnOverview);
   layout->addWidget(m_btnRegister);
   layout->addWidget(m_btnPatients);
   layout->addWidget(m_btnManageAppts);
+  layout->addWidget(m_btnRoomQueue);
   layout->addStretch();
 
   m_btnLogout = new QPushButton("Đăng xuất", sidebar);
@@ -140,7 +150,16 @@ void ReceptionDashboardWidget::buildSidebar() {
   connect(m_btnPatients, &QPushButton::clicked, this,
           [this]() { switchPage(2, m_btnPatients); });
   connect(m_btnManageAppts, &QPushButton::clicked, this,
-          [this]() { switchPage(3, m_btnManageAppts); });
+          [this]() { 
+              updateAppointmentsTable();
+              switchPage(3, m_btnManageAppts); 
+          });
+  connect(m_btnRoomQueue, &QPushButton::clicked, this,
+          [this]() { 
+              onRefreshRoomQueue();
+              switchPage(4, m_btnRoomQueue); 
+          });
+
   connect(m_btnLogout, &QPushButton::clicked, this,
           &BaseDashboardWidget::logoutRequested);
 }
@@ -151,6 +170,7 @@ void ReceptionDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
   m_btnRegister->setChecked(false);
   m_btnPatients->setChecked(false);
   m_btnManageAppts->setChecked(false);
+  if (m_btnRoomQueue) m_btnRoomQueue->setChecked(false);
   activeBtn->setChecked(true);
 }
 
@@ -452,7 +472,7 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   m_dateEdit->setDisplayFormat("dd/MM/yyyy");
   m_dateEdit->setMinimumWidth(150);
   QCalendarWidget* apptCalendar = new QCalendarWidget();
-  apptCalendar->setMinimumSize(350, 250);
+  apptCalendar->setLocale(QLocale(QLocale::Vietnamese, QLocale::Vietnam));
   m_dateEdit->setCalendarWidget(apptCalendar);
   m_dateEdit->setCalendarPopup(true);
   m_dateEdit->setStyleSheet(inputStyle);
@@ -460,12 +480,12 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   // Custom calendar theme
   m_dateEdit->calendarWidget()->setStyleSheet(
       "QCalendarWidget { background-color: #FFFFFF; color: #333333; }"
-      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; }"
-      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; margin: 5px; }"
+      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 32px; }"
+      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; padding: 2px 4px; margin: 1px; font-size: 12px; }"
       "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; border-radius: 4px; }"
       "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
       "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; }"
-      "QCalendarWidget QAbstractItemView:enabled { font-size: 14px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; selection-border-radius: 12px; }"
+      "QCalendarWidget QAbstractItemView:enabled { font-size: 12px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; }"
       "QCalendarWidget QAbstractItemView:disabled { color: #CCCCCC; }"
   );
   
@@ -669,14 +689,16 @@ void ReceptionDashboardWidget::buildPatientsPage() {
   lblTitle->setStyleSheet("font-size: 24px; font-weight: bold; color: #202124;");
   layout->addWidget(lblTitle);
 
-  QTableWidget* table = new QTableWidget(0, 5, m_patientsPage);
-  table->setHorizontalHeaderLabels({"Mã BN", "Họ Tên", "Giới Tính", "Điện Thoại", "Ngày Sinh"});
+  QTableWidget* table = new QTableWidget(0, 6, m_patientsPage);
+  table->setHorizontalHeaderLabels({"Mã BN", "Họ Tên", "Giới Tính", "Điện Thoại", "Ngày Sinh", "Lịch sử khám"});
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
   table->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
                        "QHeaderView::section { background-color: #F1F3F4; font-weight: bold; border: none; padding: 10px; color: #5F6368; }"
                        "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; }");
   table->setEditTriggers(QAbstractItemView::NoEditTriggers);
   table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  table->verticalHeader()->setDefaultSectionSize(45); // Tăng chiều cao hàng để nút bấm hiển thị rõ chữ
   layout->addWidget(table);
 
   PatientSearchCriteria criteria;
@@ -686,9 +708,27 @@ void ReceptionDashboardWidget::buildPatientsPage() {
       const auto& p = patients[i];
       table->setItem(i, 0, new QTableWidgetItem(p.patientCode));
       table->setItem(i, 1, new QTableWidgetItem(p.fullName));
-      table->setItem(i, 2, new QTableWidgetItem(p.gender));
+      table->setItem(i, 2, new QTableWidgetItem(GenderText::toVi(p.gender)));
       table->setItem(i, 3, new QTableWidgetItem(p.phone));
       table->setItem(i, 4, new QTableWidgetItem(p.dateOfBirth.toString("dd/MM/yyyy")));
+
+      QWidget* actionWidget = new QWidget();
+      QHBoxLayout* actionLayout = new QHBoxLayout(actionWidget);
+      actionLayout->setContentsMargins(4, 4, 4, 4);
+      actionLayout->setSpacing(8);
+      
+      QPushButton* btnHistory = new QPushButton("Lịch sử khám");
+      btnHistory->setCursor(Qt::PointingHandCursor);
+      btnHistory->setStyleSheet("QPushButton { background-color: #1A73E8; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; min-width: 95px; }"
+                                "QPushButton:hover { background-color: #1557B0; }");
+                                
+      connect(btnHistory, &QPushButton::clicked, this, [this, patientId = p.patientId, patientName = p.fullName]() {
+          showPatientHistoryDialog(patientId, patientName);
+      });
+      
+      actionLayout->addWidget(btnHistory);
+      actionLayout->setAlignment(Qt::AlignCenter);
+      table->setCellWidget(i, 5, actionWidget);
   }
   layout->addStretch();
 }
@@ -712,7 +752,7 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
   m_apptDateEdit->setDisplayFormat("dd/MM/yyyy");
   m_apptDateEdit->setMinimumWidth(150);
   QCalendarWidget* manageCalendar = new QCalendarWidget();
-  manageCalendar->setMinimumSize(350, 250);
+  manageCalendar->setLocale(QLocale(QLocale::Vietnamese, QLocale::Vietnam));
   m_apptDateEdit->setCalendarWidget(manageCalendar);
   m_apptDateEdit->setCalendarPopup(true);
   m_apptDateEdit->setStyleSheet(
@@ -722,12 +762,12 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
   
   m_apptDateEdit->calendarWidget()->setStyleSheet(
       "QCalendarWidget { background-color: #FFFFFF; color: #333333; }"
-      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; }"
-      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; margin: 5px; }"
+      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 32px; }"
+      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; padding: 2px 4px; margin: 1px; font-size: 12px; }"
       "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; border-radius: 4px; }"
       "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
       "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; }"
-      "QCalendarWidget QAbstractItemView:enabled { font-size: 14px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; selection-border-radius: 12px; }"
+      "QCalendarWidget QAbstractItemView:enabled { font-size: 12px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; }"
       "QCalendarWidget QAbstractItemView:disabled { color: #CCCCCC; }"
   );
 
@@ -769,37 +809,381 @@ void ReceptionDashboardWidget::updateAppointmentsTable() {
         m_appointmentsTable->setItem(i, 2, new QTableWidgetItem(a.doctorName));
         m_appointmentsTable->setItem(i, 3, new QTableWidgetItem(a.roomNumber));
         
-        QString statusText = a.status;
-        if (statusText == "SCHEDULED") statusText = "Đã đặt lịch";
-        else if (statusText == "CANCELLED") statusText = "Đã hủy";
-        else if (statusText == "COMPLETED") statusText = "Đã xong";
+        QString statusText = AppointmentStatusText::toVi(a.status);
         m_appointmentsTable->setItem(i, 4, new QTableWidgetItem(statusText));
         
-        if (a.status == "SCHEDULED") {
+        QDate apptDate = QDate::fromString(a.appointmentDate, "yyyy-MM-dd");
+        QDate todayDate = QDate::currentDate();
+
+        if (a.status == "SCHEDULED" && apptDate >= todayDate) {
+            QWidget* widget = new QWidget();
+            QHBoxLayout* l = new QHBoxLayout(widget);
+            l->setContentsMargins(4, 4, 4, 4);
+            l->setSpacing(8);
+
+            QPushButton* btnCheckIn = nullptr;
+            if (apptDate == todayDate) {
+                btnCheckIn = new QPushButton("Check-in");
+                btnCheckIn->setStyleSheet("background-color: #34A853; color: white; border-radius: 4px; padding: 5px 10px; font-weight: bold;");
+                btnCheckIn->setCursor(Qt::PointingHandCursor);
+            }
+
             QPushButton* btnCancel = new QPushButton("Hủy lịch");
             btnCancel->setStyleSheet("background-color: #F44336; color: white; border-radius: 4px; padding: 5px 10px; font-weight: bold;");
             btnCancel->setCursor(Qt::PointingHandCursor);
+
+            QString pName = a.patientName;
+            QString dName = a.doctorName;
+            QString rName = a.roomNumber;
+            QString aDate = a.appointmentDate;
+            QString tStr = timeStr;
             int apptId = a.appointmentId;
+
+            if (btnCheckIn) {
+                connect(btnCheckIn, &QPushButton::clicked, this, [this, apptId, pName, dName, rName, aDate, tStr]() {
+                    QMessageBox confirmBox(this);
+                    confirmBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                    confirmBox.setWindowTitle("Xác nhận");
+                    confirmBox.setText("Tiến hành Check-in và phát số thứ tự cho bệnh nhân?");
+                    confirmBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    confirmBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #4B94F2; border-radius: 8px; }"
+                                             "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                             "QPushButton { background-color: #4B94F2; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                             "QPushButton:hover { background-color: #3b82f6; }");
+                    if (confirmBox.exec() == QMessageBox::Yes) {
+                        auto result = m_baseAppointmentService->checkInPatient(apptId);
+                        if (result.second > 0) {
+                            QMessageBox msgBox(this);
+                            msgBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                            msgBox.setIcon(QMessageBox::Information);
+                            msgBox.setWindowTitle("Check-in Thành công");
+                            
+                            QString info = QString("Bệnh nhân: %1\nNgày: %2  -  Giờ: %3\nBác sĩ: %4\nPhòng: %5\nSỐ THỨ TỰ: %6")
+                                           .arg(pName).arg(aDate).arg(tStr).arg(dName).arg(rName).arg(result.second);
+                                           
+                            msgBox.setText("ĐÃ PHÁT SỐ THỨ TỰ THÀNH CÔNG\n\n" + info);
+                            msgBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #059669; border-radius: 8px; }"
+                                                 "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                                 "QPushButton { background-color: #059669; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                                 "QPushButton:hover { background-color: #047857; }");
+                            msgBox.exec();
+                            updateAppointmentsTable();
+                        } else {
+                            QMessageBox errBox(this);
+                            errBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                            errBox.setIcon(QMessageBox::Warning);
+                            errBox.setWindowTitle("Lỗi");
+                            errBox.setText(result.first.isEmpty() ? "Không thể Check-in bệnh nhân." : result.first);
+                            errBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #F44336; border-radius: 8px; }"
+                                                 "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                                 "QPushButton { background-color: #F44336; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                                 "QPushButton:hover { background-color: #D32F2F; }");
+                            errBox.exec();
+                        }
+                    }
+                });
+            }
+
             connect(btnCancel, &QPushButton::clicked, this, [this, apptId]() {
-                auto reply = QMessageBox::question(this, "Xác nhận", "Bạn có chắc chắn muốn hủy lịch hẹn này?", QMessageBox::Yes | QMessageBox::No);
-                if (reply == QMessageBox::Yes) {
+                QMessageBox confirmBox(this);
+                confirmBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                confirmBox.setWindowTitle("Xác nhận");
+                confirmBox.setText("Bạn có chắc chắn muốn hủy lịch hẹn này?");
+                confirmBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                confirmBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #F59E0B; border-radius: 8px; }"
+                                         "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                         "QPushButton { background-color: #F59E0B; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                         "QPushButton:hover { background-color: #D97706; }");
+                if (confirmBox.exec() == QMessageBox::Yes) {
                     QString err = m_baseAppointmentService->cancelAppointment(apptId);
                     if (err.isEmpty()) {
-                        QMessageBox::information(this, "Thành công", "Hủy lịch hẹn thành công.");
+                        QMessageBox okBox(this);
+                        okBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                        okBox.setIcon(QMessageBox::Information);
+                        okBox.setWindowTitle("Thành công");
+                        okBox.setText("Hủy lịch hẹn thành công.");
+                        okBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #059669; border-radius: 8px; }"
+                                            "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                            "QPushButton { background-color: #059669; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                            "QPushButton:hover { background-color: #047857; }");
+                        okBox.exec();
                         updateAppointmentsTable();
                     } else {
-                        QMessageBox::warning(this, "Lỗi", err);
+                        QMessageBox errBox(this);
+                        errBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                        errBox.setIcon(QMessageBox::Warning);
+                        errBox.setWindowTitle("Lỗi");
+                        errBox.setText(err);
+                        errBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #F44336; border-radius: 8px; }"
+                                             "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                             "QPushButton { background-color: #F44336; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                             "QPushButton:hover { background-color: #D32F2F; }");
+                        errBox.exec();
                     }
                 }
             });
-            QWidget* widget = new QWidget();
-            QHBoxLayout* l = new QHBoxLayout(widget);
-            l->setContentsMargins(0,0,0,0);
+
+            if (btnCheckIn) l->addWidget(btnCheckIn);
             l->addWidget(btnCancel);
             l->setAlignment(Qt::AlignCenter);
             m_appointmentsTable->setCellWidget(i, 5, widget);
         } else {
-            m_appointmentsTable->setItem(i, 5, new QTableWidgetItem(""));
+            m_appointmentsTable->removeCellWidget(i, 5);
+            QTableWidgetItem* emptyItem = new QTableWidgetItem("-");
+            emptyItem->setTextAlignment(Qt::AlignCenter);
+            m_appointmentsTable->setItem(i, 5, emptyItem);
         }
     }
+}
+
+void ReceptionDashboardWidget::buildRoomQueuePage() {
+    m_roomQueuePage = new QWidget();
+    m_roomQueuePage->setStyleSheet("background-color: #F8F9FA;");
+
+    QVBoxLayout *layout = new QVBoxLayout(m_roomQueuePage);
+    layout->setContentsMargins(30, 30, 30, 30);
+    layout->setSpacing(20);
+
+    QLabel *lblTitle = new QLabel("Quản lý Hàng đợi Phòng khám", m_roomQueuePage);
+    lblTitle->setStyleSheet("font-size: 24px; font-weight: bold; color: #202124;");
+    layout->addWidget(lblTitle);
+
+    QScrollArea *scrollArea = new QScrollArea(m_roomQueuePage);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setStyleSheet("background-color: transparent;");
+
+    QWidget *scrollContent = new QWidget(scrollArea);
+    scrollContent->setStyleSheet("background-color: transparent;");
+
+    m_roomQueueLayout = new QGridLayout(scrollContent);
+    m_roomQueueLayout->setSpacing(20);
+    m_roomQueueLayout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+    scrollArea->setWidget(scrollContent);
+    layout->addWidget(scrollArea);
+}
+
+void ReceptionDashboardWidget::onRefreshRoomQueue() {
+    if (!m_roomQueueLayout || !m_baseAppointmentService) return;
+
+    // Clear existing items
+    QLayoutItem *child;
+    while ((child = m_roomQueueLayout->takeAt(0)) != nullptr) {
+        if (child->widget()) {
+            child->widget()->deleteLater();
+        }
+        delete child;
+    }
+
+    QDate today = QDate::currentDate();
+    auto statuses = m_baseAppointmentService->getRoomQueueStatuses(today);
+
+    int row = 0;
+    int col = 0;
+    int maxCols = 4; // 4 cards per row
+
+    for (const auto& st : statuses) {
+        auto *card = new RoomQueueWidget(st.roomId, st.roomNumber, st.doctorId, st.doctorName, st.currentTicketNumber, st.nextTicketNumber, this);
+        connect(card, &RoomQueueWidget::clicked, this, [this](int rId, int dId) {
+            auto items = m_baseAppointmentService->getDoctorQueue(dId, QDate::currentDate());
+            auto *dialog = new RoomQueueDialog(rId, "Phòng khám", items, this);
+            dialog->exec();
+            dialog->deleteLater();
+            onRefreshRoomQueue(); // Refresh after closing
+        });
+
+        m_roomQueueLayout->addWidget(card, row, col);
+        col++;
+        if (col >= maxCols) {
+            col = 0;
+            row++;
+        }
+    }
+}
+
+void ReceptionDashboardWidget::showPatientHistoryDialog(int patientId, const QString& patientName) {
+    QDialog dialog(this);
+    dialog.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    dialog.setStyleSheet("QDialog { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 12px; }");
+    dialog.setMinimumSize(900, 500);
+
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(15);
+
+    QHBoxLayout* headerLayout = new QHBoxLayout();
+    QLabel* lblTitle = new QLabel(QString("Lịch sử khám - %1").arg(patientName));
+    lblTitle->setStyleSheet("font-size: 20px; font-weight: bold; color: #202124;");
+    
+    QPushButton* btnClose = new QPushButton("✕");
+    btnClose->setFixedSize(30, 30);
+    btnClose->setCursor(Qt::PointingHandCursor);
+    btnClose->setStyleSheet("QPushButton { border: none; font-size: 18px; font-weight: bold; color: #5F6368; }"
+                            "QPushButton:hover { color: #D32F2F; background-color: #FEE2E2; border-radius: 15px; }");
+    connect(btnClose, &QPushButton::clicked, &dialog, &QDialog::accept);
+    
+    headerLayout->addWidget(lblTitle);
+    headerLayout->addStretch();
+    headerLayout->addWidget(btnClose);
+    layout->addLayout(headerLayout);
+
+    QTableWidget* table = new QTableWidget(0, 6, &dialog);
+    table->setHorizontalHeaderLabels({"Ngày khám", "Giờ khám", "Bác sĩ", "Phòng", "Trạng thái", "Thao tác"});
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    table->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    table->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
+                         "QHeaderView::section { background-color: #F1F3F4; font-weight: bold; border: none; padding: 10px; color: #5F6368; }"
+                         "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; }");
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    
+    auto appts = m_baseAppointmentService->getPatientAppointments(patientId);
+    table->setRowCount(appts.size());
+    
+    for (int i = 0; i < appts.size(); ++i) {
+        const auto& a = appts[i];
+        QString timeStr = a.startTime;
+        if (!a.endTime.isEmpty()) timeStr += " - " + a.endTime;
+        
+        table->setItem(i, 0, new QTableWidgetItem(a.appointmentDate));
+        table->setItem(i, 1, new QTableWidgetItem(timeStr));
+        table->setItem(i, 2, new QTableWidgetItem(a.doctorName));
+        table->setItem(i, 3, new QTableWidgetItem(a.roomNumber));
+        
+        QString statusText = AppointmentStatusText::toVi(a.status);
+        table->setItem(i, 4, new QTableWidgetItem(statusText));
+        
+        QDate apptDate = QDate::fromString(a.appointmentDate, "yyyy-MM-dd");
+        QDate todayDate = QDate::currentDate();
+
+        if (a.status == "SCHEDULED" && apptDate >= todayDate) {
+            QWidget* widget = new QWidget();
+            QHBoxLayout* l = new QHBoxLayout(widget);
+            l->setContentsMargins(4, 4, 4, 4);
+            l->setSpacing(8);
+
+            QPushButton* btnCheckIn = nullptr;
+            if (apptDate == todayDate) {
+                btnCheckIn = new QPushButton("Check-in");
+                btnCheckIn->setStyleSheet("background-color: #34A853; color: white; border-radius: 4px; padding: 5px 10px; font-weight: bold;");
+                btnCheckIn->setCursor(Qt::PointingHandCursor);
+            }
+
+            QPushButton* btnCancel = new QPushButton("Hủy");
+            btnCancel->setStyleSheet("background-color: #F44336; color: white; border-radius: 4px; padding: 5px 10px; font-weight: bold;");
+            btnCancel->setCursor(Qt::PointingHandCursor);
+
+            QString pName = patientName;
+            QString dName = a.doctorName;
+            QString rName = a.roomNumber;
+            QString aDate = a.appointmentDate;
+            QString tStr = timeStr;
+            int apptId = a.appointmentId;
+            QDialog* dlgPtr = &dialog;
+
+            if (btnCheckIn) {
+                connect(btnCheckIn, &QPushButton::clicked, &dialog, [this, dlgPtr, apptId, pName, dName, rName, aDate, tStr]() {
+                    QMessageBox confirmBox(dlgPtr);
+                    confirmBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                    confirmBox.setWindowTitle("Xác nhận");
+                    confirmBox.setText("Tiến hành Check-in và phát số thứ tự cho bệnh nhân?");
+                    confirmBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    confirmBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #4B94F2; border-radius: 8px; }"
+                                             "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                             "QPushButton { background-color: #4B94F2; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                             "QPushButton:hover { background-color: #3b82f6; }");
+                    if (confirmBox.exec() == QMessageBox::Yes) {
+                        auto result = m_baseAppointmentService->checkInPatient(apptId);
+                        if (result.second > 0) {
+                            QMessageBox msgBox(dlgPtr);
+                            msgBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                            msgBox.setIcon(QMessageBox::Information);
+                            msgBox.setWindowTitle("Check-in Thành công");
+                            
+                            QString info = QString("Bệnh nhân: %1\nNgày: %2  -  Giờ: %3\nBác sĩ: %4\nPhòng: %5\nSỐ THỨ TỰ: %6")
+                                           .arg(pName).arg(aDate).arg(tStr).arg(dName).arg(rName).arg(result.second);
+                                           
+                            msgBox.setText("ĐÃ PHÁT SỐ THỨ TỰ THÀNH CÔNG\n\n" + info);
+                            msgBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #059669; border-radius: 8px; }"
+                                                 "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                                 "QPushButton { background-color: #059669; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                                 "QPushButton:hover { background-color: #047857; }");
+                            msgBox.exec();
+                            dlgPtr->accept();
+                            if (m_appointmentsTable) {
+                                updateAppointmentsTable();
+                            }
+                        } else {
+                            QMessageBox errBox(dlgPtr);
+                            errBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                            errBox.setIcon(QMessageBox::Warning);
+                            errBox.setWindowTitle("Lỗi");
+                            errBox.setText(result.first.isEmpty() ? "Không thể Check-in bệnh nhân." : result.first);
+                            errBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #F44336; border-radius: 8px; }"
+                                                 "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                                 "QPushButton { background-color: #F44336; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                                 "QPushButton:hover { background-color: #D32F2F; }");
+                            errBox.exec();
+                        }
+                    }
+                });
+            }
+
+            connect(btnCancel, &QPushButton::clicked, &dialog, [this, dlgPtr, apptId]() {
+                QMessageBox confirmBox(dlgPtr);
+                confirmBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                confirmBox.setWindowTitle("Xác nhận");
+                confirmBox.setText("Bạn có chắc chắn muốn hủy lịch hẹn này?");
+                confirmBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                confirmBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #F59E0B; border-radius: 8px; }"
+                                         "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                         "QPushButton { background-color: #F59E0B; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                         "QPushButton:hover { background-color: #D97706; }");
+                if (confirmBox.exec() == QMessageBox::Yes) {
+                    QString err = m_baseAppointmentService->cancelAppointment(apptId);
+                    if (err.isEmpty()) {
+                        QMessageBox okBox(dlgPtr);
+                        okBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                        okBox.setIcon(QMessageBox::Information);
+                        okBox.setWindowTitle("Thành công");
+                        okBox.setText("Đã hủy lịch hẹn.");
+                        okBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #059669; border-radius: 8px; }"
+                                            "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                            "QPushButton { background-color: #059669; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                            "QPushButton:hover { background-color: #047857; }");
+                        okBox.exec();
+                        dlgPtr->accept();
+                        if (m_appointmentsTable) {
+                            updateAppointmentsTable();
+                        }
+                    } else {
+                        QMessageBox errBox(dlgPtr);
+                        errBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                        errBox.setIcon(QMessageBox::Warning);
+                        errBox.setWindowTitle("Lỗi");
+                        errBox.setText(err);
+                        errBox.setStyleSheet("QMessageBox { background-color: #FFFFFF; border: 2px solid #F44336; border-radius: 8px; }"
+                                             "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+                                             "QPushButton { background-color: #F44336; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
+                                             "QPushButton:hover { background-color: #D32F2F; }");
+                        errBox.exec();
+                    }
+                }
+            });
+
+            if (btnCheckIn) l->addWidget(btnCheckIn);
+            l->addWidget(btnCancel);
+            l->setAlignment(Qt::AlignCenter);
+            table->setCellWidget(i, 5, widget);
+        } else {
+            table->removeCellWidget(i, 5);
+            QTableWidgetItem* emptyItem = new QTableWidgetItem("-");
+            emptyItem->setTextAlignment(Qt::AlignCenter);
+            table->setItem(i, 5, emptyItem);
+        }
+    }
+    
+    layout->addWidget(table);
+    dialog.exec();
 }

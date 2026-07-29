@@ -1,4 +1,4 @@
-#include "AdminPatientRegistrationDialog.h"
+#include "PatientRegistrationDialog.h"
 #include "../../dto/PatientDTOs.h"
 #include "../../model/CommonEnums.h"
 #include <QComboBox>
@@ -16,7 +16,7 @@
 #include <QVBoxLayout>
 #include <QDoubleSpinBox>
 
-AdminPatientRegistrationDialog::AdminPatientRegistrationDialog(
+PatientRegistrationDialog::PatientRegistrationDialog(
     std::shared_ptr<PatientService> patientService, QWidget *parent)
     : QDialog(parent), m_patientService(patientService) {
   setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
@@ -26,7 +26,7 @@ AdminPatientRegistrationDialog::AdminPatientRegistrationDialog(
   setupUi();
 }
 
-void AdminPatientRegistrationDialog::setupUi() {
+void PatientRegistrationDialog::setupUi() {
   this->setAttribute(Qt::WA_TranslucentBackground);
   this->setStyleSheet("QDialog { background-color: transparent; } "
                       "QLabel { color: #333333; }");
@@ -99,7 +99,7 @@ void AdminPatientRegistrationDialog::setupUi() {
 
   // --- Loại Bệnh nhân ---
   m_cbPatientType = new QComboBox(formCard);
-  m_cbPatientType->addItems({"Ngoại trú", "Nội trú", "Cấp cứu"});
+  for (const auto& item : patientTypeList) m_cbPatientType->addItem(item.viText, item.enText);
   m_cbPatientType->setStyleSheet(extraInputStyle);
 
   QHBoxLayout *typeLayout = new QHBoxLayout();
@@ -124,7 +124,7 @@ void AdminPatientRegistrationDialog::setupUi() {
   form1->addRow("CCCD (*):", m_txtCitizenId);
 
   m_cbGender = new QComboBox(gbPersonalInfo);
-  m_cbGender->addItems({"Nam", "Nữ", "Khác"});
+  for (const auto& pair : GenderText::getList()) m_cbGender->addItem(pair.second, pair.first);
   m_cbGender->setStyleSheet(extraInputStyle);
   form1->addRow("Giới tính:", m_cbGender);
 
@@ -174,8 +174,7 @@ void AdminPatientRegistrationDialog::setupUi() {
   form3->setSpacing(12);
 
   m_cbBloodType = new QComboBox(gbMedicalInfo);
-  m_cbBloodType->addItems(
-      {"Chưa rõ", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"});
+  for (const auto& pair : BloodTypeText::getList()) m_cbBloodType->addItem(pair.second, pair.first);
   m_cbBloodType->setStyleSheet(extraInputStyle);
   form3->addRow("Nhóm máu:", m_cbBloodType);
 
@@ -193,7 +192,8 @@ void AdminPatientRegistrationDialog::setupUi() {
   form4->setSpacing(12);
 
   m_cbInsuranceType = new QComboBox(gbInsuranceInfo);
-  m_cbInsuranceType->addItems({"Không có", "Bảo hiểm y tế xã hội", "Bảo hiểm y tế tư nhân", "Khác"});
+  m_cbInsuranceType->addItem("Không có", "NONE");
+  for (const auto& pair : InsuranceTypeText::getList()) m_cbInsuranceType->addItem(pair.second, pair.first);
   m_cbInsuranceType->setStyleSheet(extraInputStyle);
   form4->addRow("Loại bảo hiểm:", m_cbInsuranceType);
 
@@ -263,11 +263,14 @@ void AdminPatientRegistrationDialog::setupUi() {
   mainLayout->addWidget(container);
 
   connect(m_btnSave, &QPushButton::clicked, this,
-          &AdminPatientRegistrationDialog::handleSave);
-  connect(m_btnCancel, &QPushButton::clicked, this, &QDialog::reject);
+          &PatientRegistrationDialog::handleSave);
+  connect(m_btnCancel, &QPushButton::clicked, this, [this]() {
+    emit cancelled();
+    reject();
+  });
 }
 
-void AdminPatientRegistrationDialog::handleSave() {
+void PatientRegistrationDialog::handleSave() {
   if (!m_patientService) {
     QMessageBox::critical(this, "Lỗi", "Service không khả dụng.");
     return;
@@ -303,7 +306,7 @@ void AdminPatientRegistrationDialog::handleSave() {
   
   QString insuranceTypeStr = m_cbInsuranceType->currentText();
   bool hasInsurance = (insuranceTypeStr != "Không có");
-  QString insuranceTypeEn = InsuraceTypeText::toEn(insuranceTypeStr);
+  QString insuranceTypeEn = InsuranceTypeText::toEn(insuranceTypeStr);
   QString insuranceProvider = m_txtInsuranceProvider->text().trimmed();
   QString insurancePolicy = m_txtInsurancePolicy->text().trimmed();
   double insuranceCoverage = m_spinInsuranceCoverage->value();
@@ -337,7 +340,6 @@ void AdminPatientRegistrationDialog::handleSave() {
     dto.type = type;
     dto.emergencyContactName = emerName;
     dto.emergencyContactPhone = emerPhone;
-    //    dto.doctorId = std::nullopt;
 
     errorMsg = m_patientService->addOutPatient(dto);
   } else if (type == PatientType::Inpatient) {
@@ -363,8 +365,6 @@ void AdminPatientRegistrationDialog::handleSave() {
     dto.type = type;
     dto.emergencyContactName = emerName;
     dto.emergencyContactPhone = emerPhone;
-    // dto.roomId = std::nullopt;
-    // dto.doctorId = std::nullopt;
     dto.admissionDate = QDate::currentDate();
     dto.dischargeDate = std::nullopt;
     dto.reason = "Chưa xác định";
@@ -393,8 +393,6 @@ void AdminPatientRegistrationDialog::handleSave() {
     dto.type = type;
     dto.emergencyContactName = emerName;
     dto.emergencyContactPhone = emerPhone;
-    //   dto.roomId = std::nullopt;
-    //   dto.doctorId = std::nullopt;
     dto.injuryCause = "Chưa xác định";
     dto.injuryDescription = "Chưa xác định";
     dto.admissionDate = QDate::currentDate();
@@ -409,5 +407,6 @@ void AdminPatientRegistrationDialog::handleSave() {
   }
 
   QMessageBox::information(this, "Thành công", "Đăng ký bệnh nhân thành công!");
+  emit saved(phone, fullName);
   accept();
 }

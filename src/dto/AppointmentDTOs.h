@@ -35,3 +35,19 @@ struct AppointmentInputDTO {
     QTime endTime;
     QString reason;
 };
+
+struct RoomQueueItemDTO {
+    int ticketNumber = 0;
+    QString patientName;
+    QString startTime;
+    QString status;
+};
+
+struct RoomQueueStatusDTO {
+    int roomId = 0;
+    QString roomNumber;
+    int doctorId = 0;
+    QString doctorName;
+    int currentTicketNumber = 0; // The one currently STARTED
+    int nextTicketNumber = 0;    // The next one CHECKED_IN
+};

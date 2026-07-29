@@ -1003,9 +1003,33 @@ PatientRepository::getInsuranceByPatientId(int patientId) {
   return result;
 }
 
-std::optional<DatabaseManager::PatientRecord>
+std::optional<PatientShortDTO>
 PatientRepository::getPatientByPhoneOrCitizenId(
     const QString &phone, const QString &citizenId) const {
-  return DatabaseManager::getInstance().getPatientByPhoneOrCitizenId(phone,
-                                                                     citizenId);
+  QString sql = "SELECT patient_id, patient_code, full_name, phone_number FROM "
+                "patients WHERE is_deleted = 0 AND (";
+  QVariantList params;
+  QStringList conditions;
+  if (!phone.isEmpty()) {
+    conditions << "phone_number = ?";
+    params << phone;
+  }
+  if (!citizenId.isEmpty()) {
+    conditions << "citizen_id = ?";
+    params << citizenId;
+  }
+  if (conditions.isEmpty())
+    return std::nullopt;
+  sql += conditions.join(" OR ") + ")";
+
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+  if (query.next()) {
+    PatientShortDTO rec;
+    rec.patientId = query.value(0).toInt();
+    rec.patientCode = query.value(1).toString();
+    rec.fullName = query.value(2).toString();
+    rec.phone = query.value(3).toString();
+    return rec;
+  }
+  return std::nullopt;
 }

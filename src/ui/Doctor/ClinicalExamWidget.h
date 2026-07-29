@@ -25,6 +25,7 @@ signals:
     void backToDashboardRequested();
     void finishExamRequested();
     void viewAppointmentsListRequested();
+    void callPatientRequested();
 
 private:
     // --- TOP TABS BAR ---

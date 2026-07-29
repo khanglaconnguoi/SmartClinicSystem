@@ -32,14 +32,6 @@ public:
   DatabaseManager &operator=(const DatabaseManager &) = delete;
 
 
-    struct PatientRecord {
-        int patientId;
-        QString patientCode;
-        QString fullName;
-        QString phone;
-    };
-
-    std::optional<PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId);
 
 
   QSqlQuery executeQuery(const QString &sql, const QVariantList &params = {});

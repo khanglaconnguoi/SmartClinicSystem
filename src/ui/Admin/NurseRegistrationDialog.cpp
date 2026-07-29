@@ -112,7 +112,7 @@ void NurseRegistrationDialog::setupUi() {
   form1->addRow("CCCD (*):", m_txtCitizenId);
 
   m_cbGender = new QComboBox(gbPersonalInfo);
-  m_cbGender->addItems({"Nam", "Nữ", "Khác"});
+  for (const auto& pair : GenderText::getList()) m_cbGender->addItem(pair.second, pair.first);
   m_cbGender->setStyleSheet(extraInputStyle);
   form1->addRow("Giới tính:", m_cbGender);
 
@@ -153,7 +153,7 @@ void NurseRegistrationDialog::setupUi() {
   form3->setSpacing(12);
 
   m_cbDepartment = new QComboBox(gbJobInfo);
-  m_cbDepartment->addItems({"1 - Khoa Khám bệnh", "2 - Khoa Nội", "3 - Khoa Ngoại", "4 - Khoa Sản", "5 - Khoa Nhi", "6 - Khoa Cấp cứu"});
+  for (const auto& pair : DepartmentText::getList()) m_cbDepartment->addItem(pair.second, pair.first);
   m_cbDepartment->setStyleSheet(extraInputStyle);
   form3->addRow("Phòng ban:", m_cbDepartment);
 
@@ -164,7 +164,7 @@ void NurseRegistrationDialog::setupUi() {
   form3->addRow("Ngày vào làm:", m_dtHireDate);
 
   m_cbShift = new QComboBox(gbJobInfo);
-  m_cbShift->addItems({"Sáng", "Chiều", "Tối", "Cả ngày"});
+  for (const auto& pair : ShiftText::getList()) m_cbShift->addItem(pair.second, pair.first);
   m_cbShift->setStyleSheet(extraInputStyle);
   form3->addRow("Ca làm việc:", m_cbShift);
 

@@ -10,7 +10,6 @@
 #include "service/StaffService.h"
 #include "service/PatientService.h"
 #include "service/AppointmentService.h"
-#include "repository/AppointmentRepository.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT

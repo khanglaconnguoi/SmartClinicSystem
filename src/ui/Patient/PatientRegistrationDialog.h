@@ -9,13 +9,17 @@ class QComboBox;
 class QDateEdit;
 class QPushButton;
 
-class AdminPatientRegistrationDialog : public QDialog {
+class PatientRegistrationDialog : public QDialog {
   Q_OBJECT
 public:
-  explicit AdminPatientRegistrationDialog(
+  explicit PatientRegistrationDialog(
       std::shared_ptr<PatientService> patientService,
       QWidget *parent = nullptr);
-  ~AdminPatientRegistrationDialog() override = default;
+  ~PatientRegistrationDialog() override = default;
+
+signals:
+  void cancelled();
+  void saved(QString phone, QString name);
 
 private slots:
   void handleSave();

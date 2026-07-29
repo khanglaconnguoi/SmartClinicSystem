@@ -64,7 +64,7 @@ public:
    */
   bool updatePatient(const PatientUpdateDTO &dto);
 
-  std::optional<DatabaseManager::PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
+  std::optional<PatientShortDTO> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
 
   /**
    * @brief Cập nhật thông tin bệnh nhân ngoại trú (bảng `out_patients`).
