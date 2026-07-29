@@ -6,7 +6,33 @@
 #include <QVariant>
 #include <QtDebug>
 
-int MedicalRecordRepository::insertMedicalRecord(const MedicalRecordInsertDTO &dto) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Constructor
+// ─────────────────────────────────────────────────────────────────────────────
+
+MedicalRecordRepository::MedicalRecordRepository(
+    std::shared_ptr<PatientRepository> patientRepo)
+    : m_patientRepository(patientRepo) {}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Private helper: insert allergies
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @brief Gán patientId vào từng item rồi ủy qua
+ * PatientRepository::insertAllergies(). Nếu m_patientRepository == nullptr hoặc
+ * items rỗng, trả true ngay.
+ */
+bool MedicalRecordRepository::insertNewAllergies(
+    int patientId, const QList<AllergyInputDTO> &items) {
+  if (!m_patientRepository || items.isEmpty())
+    return true;
+
+  return m_patientRepository->insertAllergies(patientId, items);
+}
+
+int MedicalRecordRepository::insertMedicalRecord(
+    const MedicalRecordInsertDTO &dto) {
   DatabaseManager &db = DatabaseManager::getInstance();
   if (!db.beginTransaction()) {
     return -1;
@@ -21,20 +47,20 @@ int MedicalRecordRepository::insertMedicalRecord(const MedicalRecordInsertDTO &d
   )";
 
   QVariantList params = {
-    dto.patientId,
-    dto.doctorId,
-    dto.appointmentId.has_value() ? QVariant(dto.appointmentId.value()) : QVariant(QVariant::Int),
-    dto.visitDateTime,
-    dto.vitals.temperature,
-    dto.vitals.bloodPressure,
-    dto.vitals.heartRate,
-    dto.vitals.weight,
-    dto.vitals.height,
-    dto.chiefComplaint,
-    dto.clinicalNotes,
-    dto.treatment,
-    dto.nextVisitDate.has_value() ? QVariant(dto.nextVisitDate.value()) : QVariant(QVariant::Date)
-  };
+      dto.patientId,
+      dto.doctorId,
+      dto.appointmentId,
+      dto.visitDateTime,
+      dto.vitals.temperature,
+      dto.vitals.bloodPressure,
+      dto.vitals.heartRate,
+      dto.vitals.weight,
+      dto.vitals.height,
+      dto.chiefComplaint,
+      dto.clinicalNotes,
+      dto.treatment,
+      dto.nextVisitDate.has_value() ? QVariant(dto.nextVisitDate.value())
+                                    : QVariant(QVariant::Date)};
 
   QSqlQuery query(db.database());
   if (!query.prepare(sql)) {
@@ -60,6 +86,7 @@ int MedicalRecordRepository::insertMedicalRecord(const MedicalRecordInsertDTO &d
     return -1;
   }
 
+  // Commit hồ sơ bệnh án + chẩn đoán trước
   if (!db.commitTransaction()) {
     return -1;
   }
@@ -67,63 +94,66 @@ int MedicalRecordRepository::insertMedicalRecord(const MedicalRecordInsertDTO &d
   return recordId;
 }
 
-bool MedicalRecordRepository::updateMedicalRecord(const MedicalRecordUpdateDTO &dto) {
-  DatabaseManager &db = DatabaseManager::getInstance();
-  if (!db.beginTransaction()) {
-    return false;
-  }
+// bool MedicalRecordRepository::updateMedicalRecord(
+//     const MedicalRecordUpdateDTO &dto) {
+//   DatabaseManager &db = DatabaseManager::getInstance();
+//   if (!db.beginTransaction()) {
+//     return false;
+//   }
 
-  const QString sql = R"(
-    UPDATE medical_records
-    SET doctor_id = ?, appointment_id = ?, visit_datetime = ?,
-        temperature = ?, blood_pressure = ?, heart_rate = ?, weight = ?, height = ?,
-        chief_complaint = ?, clinical_notes = ?, treatment = ?, next_visit_date = ?
-    WHERE record_id = ?
-  )";
+//   const QString sql = R"(
+//     UPDATE medical_records
+//     SET doctor_id = ?, appointment_id = ?, visit_datetime = ?,
+//         temperature = ?, blood_pressure = ?, heart_rate = ?, weight = ?, height = ?,
+//         chief_complaint = ?, clinical_notes = ?, treatment = ?, next_visit_date = ?
+//     WHERE record_id = ?
+//   )";
 
-  QVariantList params = {
-    dto.doctorId,
-    dto.appointmentId.has_value() ? QVariant(dto.appointmentId.value()) : QVariant(QVariant::Int),
-    dto.visitDateTime,
-    dto.vitals.temperature,
-    dto.vitals.bloodPressure,
-    dto.vitals.heartRate,
-    dto.vitals.weight,
-    dto.vitals.height,
-    dto.chiefComplaint,
-    dto.clinicalNotes,
-    dto.treatment,
-    dto.nextVisitDate.has_value() ? QVariant(dto.nextVisitDate.value()) : QVariant(QVariant::Date),
-    dto.recordId
-  };
+//   QVariantList params = {
+//       dto.doctorId,
+//       dto.appointmentId,
+//       dto.visitDateTime,
+//       dto.vitals.temperature,
+//       dto.vitals.bloodPressure,
+//       dto.vitals.heartRate,
+//       dto.vitals.weight,
+//       dto.vitals.height,
+//       dto.chiefComplaint,
+//       dto.clinicalNotes,
+//       dto.treatment,
+//       dto.nextVisitDate.has_value() ? QVariant(dto.nextVisitDate.value())
+//                                     : QVariant(QVariant::Date),
+//       dto.recordId};
 
-  if (!db.executeQuery(sql, params).isActive()) {
-    db.rollbackTransaction();
-    return false;
-  }
+//   if (!db.executeQuery(sql, params).isActive()) {
+//     db.rollbackTransaction();
+//     return false;
+//   }
 
-  // Delete old diagnoses and insert new ones
-  const QString delDiagSql = "DELETE FROM diagnoses WHERE record_id = ?";
-  if (!db.executeQuery(delDiagSql, {dto.recordId}).isActive()) {
-    db.rollbackTransaction();
-    return false;
-  }
+//   // Delete old diagnoses and insert new ones
+//   const QString delDiagSql = "DELETE FROM diagnoses WHERE record_id = ?";
+//   if (!db.executeQuery(delDiagSql, {dto.recordId}).isActive()) {
+//     db.rollbackTransaction();
+//     return false;
+//   }
 
-  if (!insertDiagnoses(dto.recordId, dto.diagnoses)) {
-    db.rollbackTransaction();
-    return false;
-  }
+//   if (!insertDiagnoses(dto.recordId, dto.diagnoses)) {
+//     db.rollbackTransaction();
+//     return false;
+//   }
 
-  return db.commitTransaction();
-}
+//   return db.commitTransaction();
+// }
 
 bool MedicalRecordRepository::softDeleteMedicalRecord(int recordId) {
   DatabaseManager &db = DatabaseManager::getInstance();
-  const QString sql = "UPDATE medical_records SET is_deleted = 1 WHERE record_id = ?";
+  const QString sql =
+      "UPDATE medical_records SET is_deleted = 1 WHERE record_id = ?";
   return db.executeQuery(sql, {recordId}).isActive();
 }
 
-bool MedicalRecordRepository::insertDiagnoses(int recordId, const QList<Diagnosis> &diagnoses) {
+bool MedicalRecordRepository::insertDiagnoses(
+    int recordId, const QList<Diagnosis> &diagnoses) {
   DatabaseManager &db = DatabaseManager::getInstance();
   const QString sql = R"(
     INSERT INTO diagnoses (record_id, icd_code, description, severity)
@@ -131,12 +161,8 @@ bool MedicalRecordRepository::insertDiagnoses(int recordId, const QList<Diagnosi
   )";
 
   for (const Diagnosis &d : diagnoses) {
-    QVariantList params = {
-      recordId,
-      d.icdCode,
-      d.description,
-      d.severity.toUpper()
-    };
+    QVariantList params = {recordId, d.icdCode, d.description,
+                           d.severity};
     if (!db.executeQuery(sql, params).isActive()) {
       return false;
     }
@@ -144,9 +170,11 @@ bool MedicalRecordRepository::insertDiagnoses(int recordId, const QList<Diagnosi
   return true;
 }
 
-std::optional<MedicalRecordResultDTO> MedicalRecordRepository::findById(int recordId) {
+std::optional<MedicalRecordResultDTO>
+MedicalRecordRepository::findById(int recordId) {
   DatabaseManager &db = DatabaseManager::getInstance();
-  const QString sql = "SELECT * FROM medical_records WHERE record_id = ? AND is_deleted = 0";
+  const QString sql =
+      "SELECT * FROM medical_records WHERE record_id = ? AND is_deleted = 0";
   QSqlQuery query = db.selectQuery(sql, {recordId});
 
   if (!query.next()) {
@@ -157,9 +185,7 @@ std::optional<MedicalRecordResultDTO> MedicalRecordRepository::findById(int reco
   dto.recordId = query.value("record_id").toInt();
   dto.patientId = query.value("patient_id").toInt();
   dto.doctorId = query.value("doctor_id").toInt();
-
-  QVariant appt = query.value("appointment_id");
-  dto.appointmentId = appt.isNull() ? std::nullopt : std::make_optional(appt.toInt());
+  dto.appointmentId = query.value("appointment_id").toInt();
 
   dto.visitDateTime = query.value("visit_datetime").toDateTime();
   dto.vitals.temperature = query.value("temperature").toDouble();
@@ -172,7 +198,9 @@ std::optional<MedicalRecordResultDTO> MedicalRecordRepository::findById(int reco
   dto.treatment = query.value("treatment").toString();
 
   QVariant nextVisit = query.value("next_visit_date");
-  dto.nextVisitDate = nextVisit.isNull() ? std::nullopt : std::make_optional(nextVisit.toDate());
+  dto.nextVisitDate = nextVisit.isNull()
+                          ? std::nullopt
+                          : std::make_optional(nextVisit.toDate());
 
   const QString diagSql = "SELECT * FROM diagnoses WHERE record_id = ?";
   QSqlQuery diagQuery = db.selectQuery(diagSql, {recordId});
@@ -187,9 +215,11 @@ std::optional<MedicalRecordResultDTO> MedicalRecordRepository::findById(int reco
   return dto;
 }
 
-QList<MedicalRecordResultDTO> MedicalRecordRepository::getHistoryByPatientId(int patientId) {
+QList<MedicalRecordResultDTO>
+MedicalRecordRepository::getHistoryByPatientId(int patientId) {
   DatabaseManager &db = DatabaseManager::getInstance();
-  const QString sql = "SELECT * FROM medical_records WHERE patient_id = ? AND is_deleted = 0 ORDER BY visit_datetime DESC";
+  const QString sql = "SELECT * FROM medical_records WHERE patient_id = ? AND "
+                      "is_deleted = 0 ORDER BY visit_datetime DESC";
   QSqlQuery query = db.selectQuery(sql, {patientId});
 
   QList<MedicalRecordResultDTO> results;
@@ -198,10 +228,7 @@ QList<MedicalRecordResultDTO> MedicalRecordRepository::getHistoryByPatientId(int
     dto.recordId = query.value("record_id").toInt();
     dto.patientId = query.value("patient_id").toInt();
     dto.doctorId = query.value("doctor_id").toInt();
-
-    QVariant appt = query.value("appointment_id");
-    dto.appointmentId = appt.isNull() ? std::nullopt : std::make_optional(appt.toInt());
-
+    dto.appointmentId = query.value("appointment_id").toInt();
     dto.visitDateTime = query.value("visit_datetime").toDateTime();
     dto.vitals.temperature = query.value("temperature").toDouble();
     dto.vitals.bloodPressure = query.value("blood_pressure").toString();
@@ -213,7 +240,9 @@ QList<MedicalRecordResultDTO> MedicalRecordRepository::getHistoryByPatientId(int
     dto.treatment = query.value("treatment").toString();
 
     QVariant nextVisit = query.value("next_visit_date");
-    dto.nextVisitDate = nextVisit.isNull() ? std::nullopt : std::make_optional(nextVisit.toDate());
+    dto.nextVisitDate = nextVisit.isNull()
+                            ? std::nullopt
+                            : std::make_optional(nextVisit.toDate());
 
     const QString diagSql = "SELECT * FROM diagnoses WHERE record_id = ?";
     QSqlQuery diagQuery = db.selectQuery(diagSql, {dto.recordId});
@@ -245,13 +274,10 @@ QString MedicalRecordRepository::buildSearchWhereClause(
   }
 
   // searchKey: LIKE trên chief_complaint và clinical_notes.
-  // Escape ký tự đặc biệt '%' và '_' để tránh LIKE sai kết quả.
   if (!criteria.searchKey.trimmed().isEmpty()) {
-    conditions << "(mr.chief_complaint LIKE ? OR mr.clinical_notes LIKE ?)";
-    QString escaped = criteria.searchKey.trimmed();
-    escaped.replace('%', "\\%").replace('_', "\\_");
-    const QString likeValue = "%" + escaped + "%";
-    outParams << likeValue << likeValue;
+    conditions << "(LOWER(mr.chief_complaint) LIKE ? OR LOWER(mr.clinical_notes) LIKE ?)";
+    QString pattern = "%" + criteria.searchKey.trimmed().toLower() + "%";
+    outParams << pattern << pattern;
   }
 
   if (criteria.patientId != -1) {
@@ -280,57 +306,72 @@ QString MedicalRecordRepository::buildSearchWhereClause(
   return conditions.join(" AND ");
 }
 
-QList<MedicalRecordSummaryDTO> MedicalRecordRepository::searchMedicalRecords(
-    const MedicalRecordSearchCriteria &criteria) {
-  QVariantList params;
-  QString whereClause = buildSearchWhereClause(criteria, params);
+PagedResult<MedicalRecordSummaryDTO>
+MedicalRecordRepository::searchMedicalRecordsPaged(const MedicalRecordSearchCriteria &criteria) const {
+  PagedResult<MedicalRecordSummaryDTO> result;
+  result.page = qMax(1, criteria.page);
+  result.pageSize = criteria.pageSize;
 
-  const QString sql = QString(R"(
-    SELECT mr.record_id, mr.patient_id, mr.doctor_id,
-           mr.visit_datetime, mr.chief_complaint, mr.is_deleted
-    FROM   medical_records mr
-    WHERE  %1
-    ORDER  BY mr.visit_datetime DESC
-    LIMIT  ? OFFSET ?
-  )").arg(whereClause);
+  // Bước 1: Đếm tổng số bản ghi khớp tiêu chí
+  QVariantList countParams;
+  QString whereClause = buildSearchWhereClause(criteria, countParams);
 
-  params << criteria.limit << criteria.offset;
-
-  QList<MedicalRecordSummaryDTO> results;
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-
-  if (!query.isActive()) {
-    qWarning() << "MedicalRecordRepository::searchMedicalRecords - Query thất bại";
-    return results;
-  }
-
-  while (query.next()) {
-    MedicalRecordSummaryDTO dto;
-    dto.recordId       = query.value("record_id").toInt();
-    dto.patientId      = query.value("patient_id").toInt();
-    dto.doctorId       = query.value("doctor_id").toInt();
-    dto.visitDateTime  = QDateTime::fromString(
-        query.value("visit_datetime").toString(), Qt::ISODate);
-    dto.chiefComplaint = query.value("chief_complaint").toString();
-    dto.isDeleted      = query.value("is_deleted").toInt() == 1;
-    results.append(dto);
-  }
-  return results;
-}
-
-int MedicalRecordRepository::countSearchResults(
-    const MedicalRecordSearchCriteria &criteria) {
-  QVariantList params;
-  QString whereClause = buildSearchWhereClause(criteria, params);
-
-  const QString sql = QString(R"(
+  const QString countSql = QString(R"(
     SELECT COUNT(*)
     FROM   medical_records mr
     WHERE  %1
   )").arg(whereClause);
 
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-  if (query.next())
-    return query.value(0).toInt();
-  return 0;
+  QSqlQuery countQuery = DatabaseManager::getInstance().selectQuery(countSql, countParams);
+  if (!countQuery.isActive() || !countQuery.next()) {
+    qWarning() << "MedicalRecordRepository::searchMedicalRecordsPaged - Lỗi đếm tổng bản ghi";
+    result.totalCount = 0;
+    return result;
+  }
+  result.totalCount = countQuery.value(0).toInt();
+
+  // Bước 2: Lấy dữ liệu trang hiện tại
+  QVariantList dataParams;
+  whereClause = buildSearchWhereClause(criteria, dataParams);
+
+  QString dataSql = QString(R"(
+    SELECT mr.record_id, mr.patient_id, mr.doctor_id,
+           mr.visit_datetime, mr.chief_complaint, mr.is_deleted
+    FROM   medical_records mr
+    WHERE  %1
+    ORDER  BY mr.visit_datetime DESC
+  )").arg(whereClause);
+
+  if (criteria.pageSize > 0) {
+    int offset = (result.page - 1) * criteria.pageSize;
+    dataSql += " LIMIT ? OFFSET ?";
+    dataParams.append(criteria.pageSize);
+    dataParams.append(offset);
+  }
+
+  QSqlQuery dataQuery = DatabaseManager::getInstance().selectQuery(dataSql, dataParams);
+  if (!dataQuery.isActive()) {
+    qWarning() << "MedicalRecordRepository::searchMedicalRecordsPaged - Query thất bại";
+    return result;
+  }
+
+  while (dataQuery.next()) {
+    MedicalRecordSummaryDTO dto;
+    dto.recordId = dataQuery.value("record_id").toInt();
+    dto.patientId = dataQuery.value("patient_id").toInt();
+    dto.doctorId = dataQuery.value("doctor_id").toInt();
+    dto.visitDateTime = QDateTime::fromString(
+        dataQuery.value("visit_datetime").toString(), Qt::ISODate);
+    dto.chiefComplaint = dataQuery.value("chief_complaint").toString();
+    dto.isDeleted = dataQuery.value("is_deleted").toInt() == 1;
+    result.items.append(dto);
+  }
+
+  return result;
 }
+
+/*
+QList<MedicalRecordSummaryDTO> MedicalRecordRepository::searchMedicalRecords(const MedicalRecordSearchCriteria &criteria) { ... }
+int MedicalRecordRepository::countSearchResults(const MedicalRecordSearchCriteria &criteria) { ... }
+*/
+

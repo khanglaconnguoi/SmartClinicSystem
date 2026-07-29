@@ -101,7 +101,7 @@ public:
     bool isExpiringSoon(int daysThreshold = 30) const;
 
     /**
-     * @brief ✅ Kiểm tra kết hợp: có thể kê đơn ngay bây giờ không?
+     * @brief Kiểm tra kết hợp: có thể kê đơn ngay bây giờ không?
      *        = isActive + không hết hạn + còn đủ số lượng
      *        Doctor::prescribeMedication() và PharmacyService đều dùng hàm này
      *        để guard trước khi cho phép kê đơn.

@@ -1,13 +1,12 @@
 /**
  * @file    PatientRepository.h
- * @brief   Repository chỉ chứa các hàm INSERT bệnh nhân.
+ * @brief   Repository layer cho Patient module.
  *
  *  Luồng ghi dữ liệu:
- *    Service  →  (InsertDTO)  →  PatientRepository  →  DB
+ *    Service  →  (InsertDTO / UpdateDTO)  →  PatientRepository  →  DB
+ *    DB       →  (ResultDTO)              →  PatientRepository  →  Service
  *
- *  Mỗi hàm insert chạy trong một transaction:
- *    1. insertBasePatient()  → INSERT INTO patients
- *    2. INSERT INTO out_patients / in_patients / emergency_patients_admissions
+ *  Mỗi hàm insert/update chạy trong một transaction hoàn chỉnh.
  */
 
 #pragma once
@@ -29,32 +28,38 @@ private:
    */
   bool insertBasePatient(const PatientInsertDTO &dto, int &patientId);
 
+
 public:
+  // ─── Insert ──────────────────────────────────────────────────────────────
+
   /**
    * @brief Đăng ký bệnh nhân ngoại trú.
-   *        Ghi vào `patients` + `out_patients` trong cùng 1 transaction.
-   * @return true nếu cả hai INSERT thành công và transaction được commit.
+   *        Ghi vào `patients` + `out_patients` + dị ứng + bảo hiểm (nếu có)
+   *        trong cùng 1 transaction.
+   * @return true nếu tất cả INSERT thành công và transaction được commit.
    */
   bool insertOutPatient(const OutPatientInsertDTO &dto);
 
   /**
    * @brief Nhập viện bệnh nhân nội trú.
-   *        Ghi vào `patients` + `in_patients` trong cùng 1 transaction.
-   * @return true nếu cả hai INSERT thành công và transaction được commit.
+   *        Ghi vào `patients` + `in_patients` + dị ứng + bảo hiểm (nếu có)
+   *        trong cùng 1 transaction.
+   * @return true nếu tất cả INSERT thành công và transaction được commit.
    */
   bool insertInPatient(const InPatientInsertDTO &dto);
 
   /**
    * @brief Tiếp nhận bệnh nhân cấp cứu.
-   *        Ghi vào `patients` + `emergency_patients_admissions` trong cùng 1
-   * transaction.
-   * @return true nếu cả hai INSERT thành công và transaction được commit.
+   *        Ghi vào `patients` + `emergency_patients` + dị ứng + bảo hiểm
+   *        (nếu có) trong cùng 1 transaction.
+   * @return true nếu tất cả INSERT thành công và transaction được commit.
    */
   bool insertEmergencyPatient(const EmergencyPatientInsertDTO &dto);
 
+  // ─── Update ──────────────────────────────────────────────────────────────
+
   /**
-   * @brief Cập nhật thông tin cơ bản của bệnh nhân.
-   *        Chỉ ghi đè dữ liệu vào bảng `patients`.
+   * @brief Cập nhật thông tin cơ bản của bệnh nhân (bảng `patients`).
    * @return true nếu UPDATE thành công.
    */
   bool updatePatient(const PatientUpdateDTO &dto);
@@ -62,88 +67,84 @@ public:
   std::optional<DatabaseManager::PatientRecord> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
 
   /**
-   * @brief Cập nhật thông tin của bệnh nhân ngoại trú.
-   *        Chỉ ghi đè dữ liệu vào bảng `out_patients`.
+   * @brief Cập nhật thông tin bệnh nhân ngoại trú (bảng `out_patients`).
    * @return true nếu UPDATE thành công.
    */
   bool updateOutPatient(const OutPatientUpdateDTO &dto);
 
   /**
-   * @brief Cập nhật thông tin nhập viện của bệnh nhân nội trú.
-   *        Chỉ ghi đè dữ liệu vào bảng `in_patients`.
+   * @brief Cập nhật thông tin nhập viện bệnh nhân nội trú (bảng `in_patients`).
    * @return true nếu UPDATE thành công.
    */
   bool updateInPatient(const InPatientUpdateDTO &dto);
 
   /**
-   * @brief Cập nhật thông tin tiếp nhận của bệnh nhân cấp cứu.
-   *        Chỉ ghi đè dữ liệu vào bảng `emergency_patients`.
+   * @brief Cập nhật thông tin tiếp nhận bệnh nhân cấp cứu
+   *        (bảng `emergency_patients`).
    * @return true nếu UPDATE thành công.
    */
   bool updateEmergencyPatient(const EmergencyPatientUpdateDTO &dto);
+
+  // ─── Read ────────────────────────────────────────────────────────────────
+
   /**
-   * @brief Lấy thông tin chi tiết một bệnh nhân.
-   * @param patientId ID bệnh nhân cần lấy
-   * @return std::optional<PatientDetailDTO> chứa dữ liệu nếu tìm thấy, std::nullopt nếu không.
+   * @brief Lấy thông tin chi tiết một bệnh nhân (flatten tất cả bảng con).
+   * @param patientId ID bệnh nhân cần lấy.
+   * @return std::optional<PatientDetailDTO> chứa dữ liệu nếu tìm thấy,
+   *         std::nullopt nếu không tồn tại.
    */
   std::optional<PatientDetailDTO> getPatientById(int patientId);
 
   /**
-   * @brief Tìm kiếm bệnh nhân theo tiêu chí, gộp cả 3 loại
-   *        (OutPatient/InPatient/Emergency) bằng UNION ALL.
-   *
-   *  Nếu criteria.type được set, chỉ nhánh UNION tương ứng được build
-   *  (tránh quét cả 3 bảng khi không cần thiết).
-   *
-   * @return Danh sách kết quả đã được làm phẳng thành PatientSearchResultDTO,
-   *         sắp xếp theo full_name, áp dụng limit/offset để phân trang.
+   * @brief Tìm kiếm bệnh nhân theo tiêu chí, gộp cả 3 loại bằng UNION ALL.
+   *        Nếu criteria.type được set, chỉ nhánh tương ứng được build.
+   * @return Danh sách kết quả đã làm phẳng, sắp xếp theo full_name,
+   *         áp dụng limit/offset để phân trang.
    */
-  QList<PatientSearchResultDTO>
-  searchPatients(const PatientSearchCriteria &criteria);
+  // QList<PatientSearchResultDTO> searchPatients(const PatientSearchCriteria &criteria);
+  // int countSearchResults(const PatientSearchCriteria &criteria);
+
+  PagedResult<PatientSearchResultDTO> searchPatientsPaged(const PatientSearchCriteria& criteria) const;
+
 
   /**
-   * @brief Đếm tổng số kết quả khớp tiêu chí (không áp dụng limit/offset).
-   *        Dùng để tính số trang cho UI phân trang.
+   * @brief Build mệnh đề WHERE dùng chung cho searchPatients / countSearchResults.
+   * @param hasRoomColumn true nếu bảng con có cột room_id (in_patients /
+   *        emergency_patients), false với out_patients.
+   * @param[out] outParams Danh sách bind values được nối thêm vào.
    */
-  int countSearchResults(const PatientSearchCriteria &criteria);
-
   QString buildSearchWhereClause(const PatientSearchCriteria &criteria,
                                  bool hasRoomColumn,
                                  QVariantList &outParams) const;
 
+  // ─── Soft delete / Restore ────────────────────────────────────────────────
+
   /**
-   * @brief Soft delete bệnh nhân.
-   *        .
-   * @return true nếu xoá mềm thành công.
+   * @brief Đánh dấu bệnh nhân là đã xoá (is_deleted = 1).
+   * @return true nếu UPDATE thành công.
    */
   bool softDeletePatient(int patientId);
+
   /**
-   * @brief Khôi phục bệnh nhân.
-   *        .
-   * @return true nếu khôi phục thành công.
+   * @brief Khôi phục bệnh nhân đã bị xoá mềm (is_deleted = 0).
+   * @return true nếu UPDATE thành công.
    */
   bool restorePatient(int patientId);
 
   /**
    * @brief Kiểm tra xem bệnh nhân đã bị xoá mềm chưa.
-   *        .
-   * @return true nếu bệnh nhân đã bị xoá mềm.
+   * @return true nếu is_deleted = 1.
    */
   bool isPatientSoftDeleted(int patientId);
 
   // ─── Allergies ────────────────────────────────────────────────────────────
 
   /**
-   * @brief Lấy chuỗi dị ứng dạng text thô (chữa lỗi overload tên hàm).
-   */
-  QString getAllergiesStringByPatientId(int patientId);
-
-  /**
    * @brief Ghi nhiều dị ứng vào `patient_allergies`.
-   *        Được gọi bên trong transaction của insertXxxPatient / updatePatient.
+   *        Dùng INSERT OR IGNORE để không ghi trùng (patient_id, allergen_name).
    * @return true nếu tất cả INSERT thành công.
    */
-  bool insertAllergies(const QList<AllergyInsertDTO> &items);
+  bool insertAllergies(int patientId, const QList<AllergyInputDTO> &items);
 
   /**
    * @brief Xóa toàn bộ dị ứng (is_active = 0) của một bệnh nhân.
@@ -159,11 +160,20 @@ public:
   // ─── Insurance ────────────────────────────────────────────────────────────
 
   /**
-   * @brief Ghi / cập nhật bản ghi bảo hiểm (UPSERT).
-   *        Nếu patient_id đã tồn tại → UPDATE; nếu chưa → INSERT.
-   * @return true nếu thành công.
+   * @brief Ghi bản ghi bảo hiểm mới vào `patient_insurance`.
+   *        Dùng khi bệnh nhân chưa có bảo hiểm (lần đầu tạo).
+   * @param patientId ID bệnh nhân chủ sở hữu bảo hiểm.
+   * @return true nếu INSERT thành công.
    */
-  bool upsertInsurance(const InsuranceInsertDTO &dto);
+  bool insertInsurance(int patientId, const InsuranceInsertDTO &dto);
+
+  /**
+   * @brief Cập nhật bản ghi bảo hiểm hiện có của bệnh nhân.
+   *        Dùng khi bệnh nhân đã có bảo hiểm và muốn thay đổi thông tin.
+   * @param patientId ID bệnh nhân cần cập nhật bảo hiểm.
+   * @return true nếu UPDATE thành công.
+   */
+  bool updateInsurance(int patientId, const InsuranceInsertDTO &dto);
 
   /**
    * @brief Lấy thông tin bảo hiểm của bệnh nhân.

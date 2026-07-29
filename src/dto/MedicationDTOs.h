@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Pagination.h"
 #include <QDate>
 #include <QList>
 #include <QString>
@@ -50,6 +51,20 @@ struct MedicationSearchCriteria {
   bool criticalStockOnly = false;
   QVariant maxUnitPrice;
   QString manufacturer = "";
+  // ── Phân trang ─────────────────────────────────────────────────────
+  int page     = 1;  ///< Trang hiện tại (1-indexed). UI set trước khi gọi Service.
+  int pageSize = 20; ///< Số kết quả mỗi trang. 0 = không phân trang (trả về tất cả).
+};
+
+// ── INGREDIENT SEARCH ─────────────────────────────────────────────────
+/**
+ * @brief Tiêu chí tìm kiếm hoạt chất (active_ingredients).
+ *        Dùng khi Admin thêm thuốc và cần autocomplete hoạt chất.
+ */
+struct IngredientSearchCriteria {
+  QString keyword;   ///< Tìm theo tên hoạt chất (LIKE %keyword%)
+  int page     = 1;  ///< Trang hiện tại (1-indexed)
+  int pageSize = 20; ///< Số kết quả mỗi trang. 0 = không phân trang.
 };
 
 // ── MEDICATION SUMMARY — bác sĩ chọn thuốc khi lập đơn ──────────────

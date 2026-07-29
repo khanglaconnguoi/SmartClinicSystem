@@ -18,7 +18,7 @@
 struct StaffInputDTO {
     QString     fullName;
     QPixmap     avatar;
-    Gender      gender;
+    QString     gender;
     QDate       dateOfBirth;
     QString     citizenId;
     QString     phoneNumber;
@@ -48,6 +48,12 @@ struct ReceptionistInputDTO : public StaffInputDTO {
     QString shift;
 };
 
+struct PharmacistInputDTO : public StaffInputDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
+};
+
 // ── INSERT DTOs ───────────────────────────────────────────────────────
 // Dùng khi TẠO MỚI nhân viên (Service → Repository)
 // Service chịu trách nhiệm:
@@ -70,33 +76,6 @@ struct StaffInsertDTO {
     int         departmentId;
     QString     hireDate;       // "yyyy-MM-dd"
     QString     shift;
-
-    StaffInsertDTO() = default;
-    virtual ~StaffInsertDTO() = default;
-    StaffInsertDTO(const StaffInputDTO& inputInformation, 
-                   const QString& generatedStaffCode, 
-                   const QString& generatedPasswordHash,
-                   UserRole inputRole)
-      : staffCode(generatedStaffCode.trimmed()),
-        passwordHash(generatedPasswordHash),
-        fullName(inputInformation.fullName.trimmed()),
-        role(roleToString(inputRole).trimmed()),
-        gender(genderToString(inputInformation.gender).trimmed()),
-        dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
-        citizenId(inputInformation.citizenId.trimmed()),
-        phoneNumber(inputInformation.phoneNumber.trimmed()),
-        email(inputInformation.email.trimmed()), // Làm sạch & Chuẩn hóa email
-        address(inputInformation.address.trimmed()),
-        departmentId(inputInformation.departmentId),
-        hireDate(QDate::currentDate().toString("yyyy-MM-dd")), 
-        shift(inputInformation.shift.trimmed()) {
-
-        if (!inputInformation.avatar.isNull()) {
-            QBuffer buffer(&avatarBytes);
-            buffer.open(QIODevice::WriteOnly);
-            inputInformation.avatar.save(&buffer, "PNG"); // Chuẩn hóa ảnh về dạng định dạng PNG thô
-        }
-    }
 };
 
 struct DoctorInsertDTO : public StaffInsertDTO {
@@ -105,32 +84,18 @@ struct DoctorInsertDTO : public StaffInsertDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
-
-    DoctorInsertDTO() = default;
-    ~DoctorInsertDTO() override = default;
-    DoctorInsertDTO(const DoctorInputDTO& inputInformation,
-                    const QString& generatedStaffCode,
-                    const QString& generatedPasswordHash)
-      : StaffInsertDTO(inputInformation, generatedStaffCode, generatedPasswordHash, UserRole::Doctor),
-        specialty(inputInformation.specialty.trimmed()),
-        licenseNumber(inputInformation.licenseNumber.trimmed()),
-        experienceYears(inputInformation.experienceYears),
-        consultationFee(inputInformation.consultationFee),
-        bio(inputInformation.bio.trimmed()) {}
 };
 
 struct NurseInsertDTO : public StaffInsertDTO {
     QString nurseLevel;
     QString certification;
+};
 
-    NurseInsertDTO() = default;
-    ~NurseInsertDTO() override = default;
-    NurseInsertDTO(const NurseInputDTO& inputInformation,
-                   const QString& generatedStaffCode,
-                   const QString& generatedPasswordHash)
-      : StaffInsertDTO(inputInformation, generatedStaffCode, generatedPasswordHash, UserRole::Nurse),
-        nurseLevel(inputInformation.nurseLevel.trimmed()),
-        certification(inputInformation.certification.trimmed()) {}
+
+struct PharmacistInsertDTO : public StaffInsertDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears = 0;
 };
 
 // ── UPDATE DTO ────────────────────────────────────────────────────────
@@ -151,27 +116,6 @@ struct StaffUpdateDTO {
     QString     address;            // ADMIN & DOCTOR
     int         departmentId;       // ADMIN   
     QString     shift;              // ADMIN
-
-    StaffUpdateDTO() = default;
-    virtual ~StaffUpdateDTO() = default;
-    StaffUpdateDTO(const StaffInputDTO& inputInformation, int inputId)
-      : staffId(inputId),
-        fullName(inputInformation.fullName.trimmed()),
-        gender(genderToString(inputInformation.gender).trimmed()),
-        dateOfBirth(inputInformation.dateOfBirth.toString("yyyy-MM-dd")),
-        citizenId(inputInformation.citizenId.trimmed()),
-        phoneNumber(inputInformation.phoneNumber.trimmed()),
-        email(inputInformation.email.trimmed()),
-        address(inputInformation.address.trimmed()),
-        departmentId(inputInformation.departmentId),
-        shift(inputInformation.shift) {
-            
-        if (!inputInformation.avatar.isNull()) {
-            QBuffer buffer(&avatarBytes);
-            buffer.open(QIODevice::WriteOnly);
-            inputInformation.avatar.save(&buffer, "PNG"); // Chuẩn hóa ảnh về dạng định dạng PNG thô
-        }
-    }
 };
 
 struct DoctorUpdateDTO : public StaffUpdateDTO {
@@ -180,32 +124,23 @@ struct DoctorUpdateDTO : public StaffUpdateDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
-
-    DoctorUpdateDTO() = default;
-    ~DoctorUpdateDTO() override = default;
-    DoctorUpdateDTO(const DoctorInputDTO& inputInformation, int inputId)
-      : StaffUpdateDTO(inputInformation, inputId),
-        specialty(inputInformation.specialty.trimmed()),
-        licenseNumber(inputInformation.licenseNumber.trimmed()),
-        experienceYears(inputInformation.experienceYears),
-        consultationFee(inputInformation.consultationFee),
-        bio(inputInformation.bio.trimmed()) {}
 };
 
 struct NurseUpdateDTO : public StaffUpdateDTO {
     QString nurseLevel;
     QString certification;
+};
 
-    NurseUpdateDTO() = default;
-    ~NurseUpdateDTO() override = default;
-    NurseUpdateDTO(const NurseInputDTO& inputInformation, int inputId)
-      : StaffUpdateDTO(inputInformation, inputId),
-        nurseLevel(inputInformation.nurseLevel.trimmed()),
-        certification(inputInformation.certification.trimmed()) {}
+struct PharmacistUpdateDTO : public StaffUpdateDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
 };
 
 // ── SEARCH CRITERIA ───────────────────────────────────────────────────
 #include <optional>
+
+#include "Pagination.h"
 
 struct StaffSearchCriteria {
     // Nhóm 1: Text search (LIKE trên staff_code hoặc full_name)
@@ -213,15 +148,41 @@ struct StaffSearchCriteria {
 
     // Nhóm 2: Dropdown filter
     std::optional<UserRole> role;
-    QString  specialty;
-    int      departmentId = -1;   // -1 = tất cả
-    QString  shift;               // rỗng = tất cả
+    int departmentId = -1;  // -1 = tất cả
+    QString shift;          // rỗng = tất cả
 
     // Nhóm 3: Status filter
-    bool onlyActive     = true;
+    bool onlyActive = true;
     bool includeDeleted = false;
+
+    // Nhóm 4: Phân trang (1-indexed)
+    int page = 1;       ///< Trang hiện tại (1-indexed)
+    int pageSize = 20;  ///< Số bản ghi / trang. 0 = không phân trang (trả về tất cả)
+
+    virtual ~StaffSearchCriteria() = default;
 };
 
+struct DoctorSearchCriteria : public StaffSearchCriteria {
+    QString specialty;
+
+    DoctorSearchCriteria() { role = UserRole::Doctor; }
+};
+
+struct NurseSearchCriteria : public StaffSearchCriteria {
+    QString nurseLevel;
+
+    NurseSearchCriteria() { role = UserRole::Nurse; }
+};
+
+struct ReceptionistSearchCriteria : public StaffSearchCriteria {
+    ReceptionistSearchCriteria() { role = UserRole::Receptionist; }
+};
+
+struct PharmacistSearchCriteria : public StaffSearchCriteria {
+    QString pharmacySection;
+
+    PharmacistSearchCriteria() { role = UserRole::Pharmacist; }
+};
 
 // =====================================================================
 // PROFILE DTOs — Repository -> Service -> View (READ ONLY)
@@ -245,7 +206,7 @@ struct StaffProfileDTO {
     // ── Editable fields (map 1-1 voi StaffInputDTO) ────────────
     QString  fullName;
     QPixmap  avatar;
-    Gender   gender;
+    QString  gender;
     QDate    dateOfBirth;
     QString  citizenId;
     QString  phoneNumber;
@@ -332,6 +293,34 @@ struct NurseProfileDTO : public StaffProfileDTO {
     }
 };
 
+struct PharmacistProfileDTO : public StaffProfileDTO {
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
+
+    ~PharmacistProfileDTO() override = default;
+
+
+    std::unique_ptr<StaffInputDTO> toInputDTO() const override {
+        auto dto = std::make_unique<PharmacistInputDTO>();
+        dto->fullName     = fullName;
+        dto->avatar       = avatar;
+        dto->gender       = gender;
+        dto->dateOfBirth  = dateOfBirth;
+        dto->citizenId    = citizenId;
+        dto->phoneNumber  = phoneNumber;
+        dto->email        = email;
+        dto->address      = address;
+        dto->departmentId = departmentId;
+        dto->shift        = shift;
+        // Pharmacist-specific
+        dto->licenseNumber   = licenseNumber;
+        dto->pharmacySection = pharmacySection;
+        dto->experienceYears = experienceYears;
+        return dto;
+    }
+};
+
 /**
  * @brief Public profile — xem thong tin cua nguoi khac
  *        Khong chua thong tin ca nhan nhay cam (CCCD, email, dien thoai, dia chi...)
@@ -357,4 +346,11 @@ struct DoctorPublicProfileDTO : public StaffPublicProfileDTO {
 struct NursePublicProfileDTO : public StaffPublicProfileDTO {
     // Nurse public
     QString nurseLevel;     // "JUNIOR" | "SENIOR" | "HEAD"
+};
+
+struct PharmacistPublicProfileDTO : public StaffPublicProfileDTO {
+    // Pharmacist public
+    QString licenseNumber;
+    QString pharmacySection;
+    int     experienceYears;
 };

@@ -1,7 +1,8 @@
 #pragma once
 #include "dto/MedicalRecordDTOs.h"
-#include <memory>
 #include <QList>
+#include <memory>
+
 
 class MedicalRecordRepository;
 class PatientService;
@@ -22,7 +23,7 @@ public:
   /**
    * @brief Chuẩn hóa dữ liệu hồ sơ khám trước khi UPDATE.
    */
-  static void normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto);
+//   static void normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto);
 
   /**
    * @brief Chuẩn hóa tiêu chí tìm kiếm.
@@ -35,17 +36,22 @@ public:
   static QString validateWeight(double weight);
   static QString validateHeight(double height);
 
-  static QString validateChiefComplaint(const QString &complaint);
   static QString validateDiagnosisList(const QList<Diagnosis> &diagnoses);
-  static QString validateDiagnosisDescription(const QString &desc);
   static QString validateDiagnosisSeverity(const QString &severity);
+
+  /**
+   * @brief Validate danh sách dị ứng mới gửi kèm hồ sơ khám.
+   *        Cho phép danh sách rỗng (dị ứng là optional).
+   *        Kiểm tra từng item: allergenName không rỗng, severity hợp lệ.
+   */
+  static QString validateAllergyList(const QList<AllergyInputDTO> &allergies);
 
   explicit MedicalRecordService(
       std::shared_ptr<MedicalRecordRepository> recordRepo,
       std::shared_ptr<PatientService> patientService);
 
-  int  createMedicalRecord(MedicalRecordInsertDTO &dto);
-  bool updateMedicalRecord(MedicalRecordUpdateDTO &dto);
+  QString createMedicalRecord(MedicalRecordInsertDTO &dto);
+//   bool updateMedicalRecord(MedicalRecordUpdateDTO &dto);
   bool softDeleteMedicalRecord(int recordId);
   QList<MedicalRecordResultDTO> getMedicalHistory(int patientId);
 
@@ -53,10 +59,9 @@ public:
    * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.
    *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
    */
-  QList<MedicalRecordSummaryDTO> searchMedicalRecords(MedicalRecordSearchCriteria criteria);
+  // QList<MedicalRecordSummaryDTO> searchMedicalRecords(MedicalRecordSearchCriteria criteria);
+  // int countSearchResults(MedicalRecordSearchCriteria criteria);
 
-  /**
-   * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
-   */
-  int countSearchResults(MedicalRecordSearchCriteria criteria);
+  PagedResult<MedicalRecordSummaryDTO> searchMedicalRecordsPaged(MedicalRecordSearchCriteria criteria) const;
+
 };

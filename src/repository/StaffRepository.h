@@ -11,7 +11,7 @@
 class StaffRepository {
 private:
     std::shared_ptr<SystemUser> mapRowToUser(const QSqlQuery& query) const;
-
+    std::unique_ptr<StaffProfileDTO> queryProfile(const QString& whereClause, const QVariantList& params) const;
     bool insertStaffBase(const StaffInsertDTO& staff, int& staffId);
 public:
     StaffRepository() = default;
@@ -20,10 +20,14 @@ public:
     bool insertStaff(const StaffInsertDTO& staff);
     bool insertDoctor(const DoctorInsertDTO& doctor);
     bool insertNurse(const NurseInsertDTO& nurse);
+    bool insertPharmacist(const PharmacistInsertDTO& pharmacist);
+
 
     bool updateStaff(const StaffUpdateDTO& staff);
     bool updateDoctor(const DoctorUpdateDTO& doctor);
     bool updateNurse(const NurseUpdateDTO& nurse);
+    bool updatePharmacist(const PharmacistUpdateDTO& pharmacist);
+
 
     bool deactivate(int staffId);
     bool reactivate(int staffId);
@@ -31,8 +35,9 @@ public:
 
     static std::optional<QString> getLatestStaffCodeByYear(int year);
 
-    // // --- Danh sách & Tìm kiếm ---
-    QList<std::shared_ptr<SystemUser>> search(const StaffSearchCriteria& criteria) const;
+    // --- Danh sách & Tìm kiếm ---
+    // QList<std::shared_ptr<SystemUser>> search(const StaffSearchCriteria& criteria) const;
+    PagedResult<std::shared_ptr<SystemUser>> searchStaffPaged(const StaffSearchCriteria& criteria) const;
 
     // Tìm kiếm profile theo ID / staff code phục vụ Auth Service
     std::shared_ptr<SystemUser> findById(int staffId) const;

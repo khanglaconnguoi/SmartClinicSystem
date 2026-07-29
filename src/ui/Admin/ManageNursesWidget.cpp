@@ -88,7 +88,13 @@ void ManageNursesWidget::loadNursesList() {
     if (!m_tblNurses || !m_staffService) return;
     m_tblNurses->setRowCount(0);
 
-    auto nurses = m_staffService->searchNurses("");
+    NurseSearchCriteria criteria;
+    criteria.onlyActive = true;
+    criteria.includeDeleted = false;
+    criteria.pageSize = 0; // Load all for UI table display
+
+    auto nurses = m_staffService->searchNursesPaged(criteria).items;
+
     
     for (int i = 0; i < nurses.size(); ++i) {
         auto nurse = nurses[i];

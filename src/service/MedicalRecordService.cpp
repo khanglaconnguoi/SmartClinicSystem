@@ -1,7 +1,10 @@
 #include "MedicalRecordService.h"
+#include <QDebug>
+#include "Validation.h"
 #include "model/MedicalRecord.h"
 #include "repository/MedicalRecordRepository.h"
-#include <QDebug>
+#include "service/PatientService.h"
+
 
 MedicalRecordService::MedicalRecordService(
     std::shared_ptr<MedicalRecordRepository> recordRepo,
@@ -34,28 +37,22 @@ QString MedicalRecordService::validateHeight(double height) {
 
 QString MedicalRecordService::validateVitalSigns(const VitalSigns &vitals) {
   QString err;
-  if (!(err = validateTemperature(vitals.temperature)).isEmpty()) return err;
-  if (!(err = validateHeartRate(vitals.heartRate)).isEmpty()) return err;
-  if (!(err = validateWeight(vitals.weight)).isEmpty()) return err;
-  if (!(err = validateHeight(vitals.height)).isEmpty()) return err;
+  if (!(err = validateTemperature(vitals.temperature)).isEmpty())
+    return err;
+  if (!(err = validateHeartRate(vitals.heartRate)).isEmpty())
+    return err;
+  if (!(err = validateWeight(vitals.weight)).isEmpty())
+    return err;
+  if (!(err = validateHeight(vitals.height)).isEmpty())
+    return err;
   return "";
 }
 
-QString MedicalRecordService::validateChiefComplaint(const QString &complaint) {
-  if (complaint.trimmed().isEmpty())
-    return "Lý do khám không được để trống.";
-  return "";
-}
 
-QString MedicalRecordService::validateDiagnosisDescription(const QString &desc) {
-  if (desc.trimmed().isEmpty())
-    return "Mô tả chẩn đoán không được để trống.";
-  return "";
-}
 
-QString MedicalRecordService::validateDiagnosisSeverity(const QString &severity) {
-  QString upperSev = severity.toUpper();
-  if (upperSev != "MILD" && upperSev != "MODERATE" && upperSev != "SEVERE")
+QString
+MedicalRecordService::validateDiagnosisSeverity(const QString &severity) {
+  if (severity != "MILD" && severity != "MODERATE" && severity != "SEVERE")
     return "Mức độ chẩn đoán không hợp lệ.";
   return "";
 }
@@ -66,8 +63,36 @@ MedicalRecordService::validateDiagnosisList(const QList<Diagnosis> &diagnoses) {
     return "Phải có ít nhất một chẩn đoán.";
   for (const Diagnosis &d : diagnoses) {
     QString err;
-    if (!(err = validateDiagnosisDescription(d.description)).isEmpty()) return err;
-    if (!(err = validateDiagnosisSeverity(d.severity)).isEmpty()) return err;
+    if (!(err = Validation::validateTrimmedNotEmpty(d.description, "Mô tả chẩn đoán không được để trống.")).isEmpty())
+      return err;
+    if (!(err = validateDiagnosisSeverity(d.severity)).isEmpty())
+      return err;
+  }
+  return "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Validate: Allergy list
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @brief Kiểm tra từng dị ứng trong danh sách.
+ *        Danh sách rỗng là hợp lệ (dị ứng là optional).
+ *        Mỗi item phải có: allergenName không rỗng, severity
+ * âm2MILD/MODERATE/SEVERE.
+ */
+QString MedicalRecordService::validateAllergyList(
+    const QList<AllergyInputDTO> &allergies) {
+  if (allergies.isEmpty())
+    return ""; // optional — cho phép rỗng
+
+  for (int i = 0; i < allergies.size(); ++i) {
+    const AllergyInputDTO &a = allergies.at(i);
+    if (a.allergenName.isEmpty())
+      return QString("Dị ứng #%1: Tên chất gây dị ứng không được để trống.")
+          .arg(i + 1);
+    if (a.allergenName.length() > 200)
+      return QString("Dị ứng #%1: Tên quá dài (tối đa 200 ký tự).").arg(i + 1);
   }
   return "";
 }
@@ -87,73 +112,94 @@ void MedicalRecordService::normalizeMedicalRecordInput(
     d.severity = d.severity.trimmed().toUpper();
     d.icdCode = d.icdCode.trimmed().toUpper();
   }
-}
 
-void MedicalRecordService::normalizeMedicalRecordUpdate(
-    MedicalRecordUpdateDTO &dto) {
-  dto.chiefComplaint = dto.chiefComplaint.trimmed();
-  dto.clinicalNotes = dto.clinicalNotes.trimmed();
-  dto.treatment = dto.treatment.trimmed();
-
-  for (Diagnosis &d : dto.diagnoses) {
-    d.description = d.description.simplified();
-    d.severity = d.severity.trimmed().toUpper();
-    d.icdCode = d.icdCode.trimmed().toUpper();
+  // Normalize allergy list
+  for (AllergyInputDTO &a : dto.newAllergies) {
+    a.allergenName = a.allergenName.trimmed();
+    a.notes = a.notes.trimmed();
   }
 }
+
+// void MedicalRecordService::normalizeMedicalRecordUpdate(
+//     MedicalRecordUpdateDTO &dto) {
+//   dto.chiefComplaint = dto.chiefComplaint.trimmed();
+//   dto.clinicalNotes = dto.clinicalNotes.trimmed();
+//   dto.treatment = dto.treatment.trimmed();
+
+//   for (Diagnosis &d : dto.diagnoses) {
+//     d.description = d.description.simplified();
+//     d.severity = d.severity.trimmed().toUpper();
+//     d.icdCode = d.icdCode.trimmed().toUpper();
+//   }
+// }
 
 void MedicalRecordService::normalizeSearchCriteria(
     MedicalRecordSearchCriteria &criteria) {
   criteria.searchKey = criteria.searchKey.simplified();
 }
 
-int MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
+QString MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
   normalizeMedicalRecordInput(dto);
 
-  QString errVitals = validateVitalSigns(dto.vitals);
-  if (!errVitals.isEmpty()) {
-    qDebug() << "Validation failed (vitals):" << errVitals;
-    return -1;
+  QString err;
+
+  if (!(err = validateVitalSigns(dto.vitals)).isEmpty()) {
+    qDebug() << "Validation failed (vitals):" << err;
+    return err;
   }
 
-  QString errChief = validateChiefComplaint(dto.chiefComplaint);
-  if (!errChief.isEmpty()) {
-    qDebug() << "Validation failed (chief complaint):" << errChief;
-    return -1;
+  if (!(err = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.")).isEmpty()) {
+    qDebug() << "Validation failed (chief complaint):" << err;
+    return err;
   }
 
-  QString errDiag = validateDiagnosisList(dto.diagnoses);
-  if (!errDiag.isEmpty()) {
-    qDebug() << "Validation failed (diagnoses):" << errDiag;
-    return -1;
+  if (!(err = validateDiagnosisList(dto.diagnoses)).isEmpty()) {
+    qDebug() << "Validation failed (diagnoses):" << err;
+    return err;
   }
 
-  return m_recordRepository->insertMedicalRecord(dto);
+  if (!(err = validateAllergyList(dto.newAllergies)).isEmpty()) {
+    qDebug() << "Validation failed (allergies):" << err;
+    return err;
+  }
+
+  if (m_recordRepository->insertMedicalRecord(dto) <= 0) {
+    return "Lỗi hệ thống khi lưu hồ sơ khám. Vui lòng thử lại.";
+  }
+
+  if (!dto.newAllergies.isEmpty()) {
+    if (!(err = m_patientService->addAllergiesToPatient(dto.patientId, dto.newAllergies)).isEmpty()) {
+      qDebug() << "Add allergies failed:" << err;
+      return err;
+    }
+  }
+
+  return "";
 }
 
-bool MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
-  normalizeMedicalRecordUpdate(dto);
+// bool MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
+//   normalizeMedicalRecordUpdate(dto);
 
-  QString errVitals = validateVitalSigns(dto.vitals);
-  if (!errVitals.isEmpty()) {
-    qDebug() << "Validation failed (vitals):" << errVitals;
-    return false;
-  }
+//   QString errVitals = validateVitalSigns(dto.vitals);
+//   if (!errVitals.isEmpty()) {
+//     qDebug() << "Validation failed (vitals):" << errVitals;
+//     return false;
+//   }
 
-  QString errChief = validateChiefComplaint(dto.chiefComplaint);
-  if (!errChief.isEmpty()) {
-    qDebug() << "Validation failed (chief complaint):" << errChief;
-    return false;
-  }
+//   QString errChief = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.");
+//   if (!errChief.isEmpty()) {
+//     qDebug() << "Validation failed (chief complaint):" << errChief;
+//     return false;
+//   }
 
-  QString errDiag = validateDiagnosisList(dto.diagnoses);
-  if (!errDiag.isEmpty()) {
-    qDebug() << "Validation failed (diagnoses):" << errDiag;
-    return false;
-  }
+//   QString errDiag = validateDiagnosisList(dto.diagnoses);
+//   if (!errDiag.isEmpty()) {
+//     qDebug() << "Validation failed (diagnoses):" << errDiag;
+//     return false;
+//   }
 
-  return m_recordRepository->updateMedicalRecord(dto);
-}
+//   return m_recordRepository->updateMedicalRecord(dto);
+// }
 
 bool MedicalRecordService::softDeleteMedicalRecord(int recordId) {
   return m_recordRepository->softDeleteMedicalRecord(recordId);
@@ -164,14 +210,18 @@ MedicalRecordService::getMedicalHistory(int patientId) {
   return m_recordRepository->getHistoryByPatientId(patientId);
 }
 
-QList<MedicalRecordSummaryDTO> MedicalRecordService::searchMedicalRecords(
-    MedicalRecordSearchCriteria criteria) {
+PagedResult<MedicalRecordSummaryDTO>
+MedicalRecordService::searchMedicalRecordsPaged(MedicalRecordSearchCriteria criteria) const {
   normalizeSearchCriteria(criteria);
-  return m_recordRepository->searchMedicalRecords(criteria);
+  criteria.searchKey = criteria.searchKey.simplified();
+  criteria.page = qMax(1, criteria.page);
+  criteria.pageSize = qBound(0, criteria.pageSize, 200);
+
+  return m_recordRepository->searchMedicalRecordsPaged(criteria);
 }
 
-int MedicalRecordService::countSearchResults(
-    MedicalRecordSearchCriteria criteria) {
-  normalizeSearchCriteria(criteria);
-  return m_recordRepository->countSearchResults(criteria);
-}
+/*
+QList<MedicalRecordSummaryDTO> MedicalRecordService::searchMedicalRecords(MedicalRecordSearchCriteria criteria) { ... }
+int MedicalRecordService::countSearchResults(MedicalRecordSearchCriteria criteria) { ... }
+*/
+

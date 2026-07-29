@@ -302,12 +302,15 @@ void NurseRegistrationDialog::handleSave() {
       dto.nurseLevel = nurseLevel;
       dto.certification = certification;
 
-      QString errorMsg = m_staffService->hireNewNurse(dto);
-      if (!errorMsg.isEmpty()) {
-          QMessageBox::critical(this, "Lỗi", errorMsg);
+      StaffHireResult result = m_staffService->hireNewNurse(dto);
+      if (!result.errorMessage.isEmpty()) {
+          QMessageBox::critical(this, "Lỗi", result.errorMessage);
           return;
       }
-      QMessageBox::information(this, "Thành công", "Tạo tài khoản Y tá thành công!");
+      QMessageBox::information(this, "Thành công", 
+                               QString("Tạo tài khoản Y tá thành công!\nMã nhân viên: %1\nMật khẩu: %2")
+                               .arg(result.staffCode)
+                               .arg(result.plainPassword));
   } else {
       NurseUpdateDTO updateDto;
       updateDto.staffId = m_editStaffId;

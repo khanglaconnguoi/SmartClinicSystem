@@ -1,28 +1,35 @@
 #include "BillingService.h"
-#include "repository/BillingRepository.h"
-#include "factory/OutPatientInvoiceFactory.h"
-#include "factory/InPatientInvoiceFactory.h"
-#include "factory/EmergencyInvoiceFactory.h"
-#include "dto/PrescriptionDTOs.h"
+
 #include <QDate>
 #include <QDebug>
+
+#include "Validation.h"
+#include "dto/PrescriptionDTOs.h"
+#include "factory/EmergencyInvoiceFactory.h"
+#include "factory/InPatientInvoiceFactory.h"
+#include "factory/OutPatientInvoiceFactory.h"
+#include "repository/BillingRepository.h"
+
 
 BillingService::BillingService(std::shared_ptr<BillingRepository> repo)
     : m_billingRepository(repo) {}
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Code Generation
+// ─────────────────────────────────────────────────────────────────────────────
+
+QString BillingService::generateInvoiceCode() {
+    QString todayStr = QDate::currentDate().toString("yyyyMMdd");
+    QString prefix = "INV" + todayStr;
+    int count = m_billingRepository->countInvoicesByPrefix(prefix);
+    return prefix + QString("%1").arg(count + 1, 4, 10, QLatin1Char('0'));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Validate
 // ─────────────────────────────────────────────────────────────────────────────
 
-QString BillingService::validatePatientId(int patientId) {
-  if (patientId <= 0) return "Định danh bệnh nhân không hợp lệ.";
-  return "";
-}
 
-QString BillingService::validateRecordId(int recordId) {
-  if (recordId <= 0) return "Định danh hồ sơ khám không hợp lệ.";
-  return "";
-}
 
 QString BillingService::validateConsultationFee(double consultationFee) {
   if (consultationFee < 0) return "Phí khám không được âm.";
@@ -49,8 +56,8 @@ QString BillingService::validateInvoiceInput(int patientId, int recordId,
                                              double consultationFee,
                                              const QList<PrescriptionItemDTO> &items) {
   QString err;
-  if (!(err = validatePatientId(patientId)).isEmpty()) return err;
-  if (!(err = validateRecordId(recordId)).isEmpty()) return err;
+  if (!(err = Validation::validateValidId(patientId, "Định danh bệnh nhân không hợp lệ.")).isEmpty()) return err;
+  if (!(err = Validation::validateValidId(recordId, "Định danh hồ sơ khám không hợp lệ.")).isEmpty()) return err;
   if (!(err = validateConsultationFee(consultationFee)).isEmpty()) return err;
   if (!(err = validatePrescriptionItems(items)).isEmpty()) return err;
   return "";
@@ -74,12 +81,12 @@ double BillingService::calculateMedicationTotal(const QList<PrescriptionItemDTO>
     return total;
 }
 
-bool BillingService::generateInvoice(int patientId, int recordId, PatientType type,
+bool BillingService::createInvoice(int patientId, int recordId, PatientType type,
                                      double consultationFee,
                                      const QList<PrescriptionItemDTO> &prescriptionItems) {
     QString err = validateInvoiceInput(patientId, recordId, consultationFee, prescriptionItems);
     if (!err.isEmpty()) {
-        qDebug() << "BillingService::generateInvoice validation failed:" << err;
+        qDebug() << "BillingService::createInvoice validation failed:" << err;
         return false;
     }
 
@@ -90,13 +97,19 @@ bool BillingService::generateInvoice(int patientId, int recordId, PatientType ty
     auto invoiceModel = factory->createInvoice(patientId, consultationFee, medicationFee, QDate::currentDate());
 
     InvoiceInsertDTO dto;
+    dto.invoiceCode = generateInvoiceCode();
     dto.patientId = patientId;
     dto.recordId = recordId;
-    dto.patientType = type;
+    
+    if (type == PatientType::Inpatient) dto.patientType = "INPATIENT";
+    else if (type == PatientType::Emergency) dto.patientType = "EMERGENCY";
+    else dto.patientType = "OUTPATIENT";
+    
     dto.consultationFee = consultationFee;
     dto.medicationFee = medicationFee;
     dto.totalAmount = invoiceModel->calculate(); // tổng tiền được tính từ model
-    dto.issuedDate = QDate::currentDate();
+    dto.status = InvoiceStatusText::UNPAID;
+    dto.issuedDate = QDate::currentDate().toString("yyyy-MM-dd");
 
     // Build items
     InvoiceItemDTO consultationItem;

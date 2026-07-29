@@ -6,7 +6,7 @@ bool PrescriptionRepository::insertHeader(const PrescriptionInputDTO& prescripti
 
     QString insert = R"(
         INSERT INTO prescriptions (
-            record_id.
+            record_id,
             doctor_id
             notes
         )

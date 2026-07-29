@@ -12,8 +12,8 @@ bool AppointmentService::updateAppointmentStatus(int appointmentId, const QStrin
     return m_appointmentRepository->updateAppointmentStatus(appointmentId, status);
 }
 
-bool AppointmentService::createAppointment(int patientId, const QString &doctorCode, int createdBy, const QString &date, const QString &startTime, const QString &reason) const {
-    return m_appointmentRepository->createAppointment(patientId, doctorCode, createdBy, date, startTime, reason);
+bool AppointmentService::createAppointment(const AppointmentInputDTO &input) const {
+    return m_appointmentRepository->createAppointment(input);
 }
 
 bool AppointmentService::cancelAppointment(int appointmentId) const {

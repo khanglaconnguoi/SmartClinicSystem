@@ -77,7 +77,9 @@ void ManagePatientsWidget::loadPatientsList() {
     m_tblPatients->setRowCount(0);
 
     PatientSearchCriteria criteria;
-    auto patients = m_patientService->searchPatients(criteria);
+    criteria.pageSize = 0; // Load all for UI table display
+    auto patients = m_patientService->searchPatientsPaged(criteria).items;
+
     
     for (int i = 0; i < patients.size(); ++i) {
         auto patient = patients[i];

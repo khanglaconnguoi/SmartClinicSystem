@@ -63,6 +63,14 @@ private:
      */
     QString validatePrescriptionInput(const PrescriptionInputDTO& input) const;
 
+    /**
+     * @brief Load và cache tất cả MedicationSummaryDTO từ danh sách items theo medicationId.
+     */
+    QMap<int, MedicationSummaryDTO> buildMedicationMap(
+        const QList<PrescriptionItemDTO>& items) const;
+
+
+
 public:
     explicit PharmacyService(
         std::shared_ptr<MedicationRepository>   medicationRepo,
@@ -80,8 +88,6 @@ public:
     // ════════════════════════════════════════════════════════════════
 
     // -- Field thông tin cơ bản thuốc ─────────────────────────────────
-    static QString validateBrandName(const QString& brandName);
-    static QString validateUnit(const QString& unit);
     static QString validateUnitPrice(double unitPrice);
     static QString validateStockQuantity(int stockQuantity);
     static QString validateMinimumStock(int minimumStock);
@@ -91,8 +97,6 @@ public:
     // -- Field danh mục thuốc ────────────────────────────────────────
     /** @brief Kiểm tra danh sách danh mục: không rỗng, mỗi danh mục không được là chuỗi trống */
     static QString validateCategories(const QList<QString>& categories);
-    /** @brief Kiểm tra 1 danh mục đơn lẻ — UI gọi real-time khi người dùng nhập tên danh mục */
-    static QString validateCategoryEntry(const QString& category);
 
     // -- Field thành phần hoạt chất ───────────────────────────────────
     /** @brief Kiểm tra danh sách hoạt chất: ít nhất 1, ingredientId > 0, strength không rỗng */
@@ -106,23 +110,41 @@ public:
     // ════════════════════════════════════════════════════════════════
 
     static QString validatePrescriptionItemQuantity(int quantity);
-    static QString validatePrescriptionItemDosage(const QString& dosage);
-    static QString validatePrescriptionItemFrequency(const QString& frequency);
     static QString validatePrescriptionItemDuration(int durationDays);
 
     // ════════════════════════════════════════════════════════════════
     // KHO THUỐC — Medication Inventory
     // ════════════════════════════════════════════════════════════════
 
-    QString addMedication(MedicationInputDTO& dto);
-    QString updateMedication(int medicationId, MedicationInputDTO& dto);
+    QString addMedication(MedicationInputDTO dto);
+    QString updateMedication(int medicationId, MedicationInputDTO dto);
 
 
     /**
      * @brief Tìm kiếm thuốc — bác sĩ gọi khi đang lập đơn.
      *        Mặc định chỉ trả về thuốc còn hàng và chưa hết hạn.
+     *
+     * @note  Không phân trang — trả về toàn bộ kết quả.
+     *        Dùng cho các luồng nội bộ không cần phân trang
+     *        (VD: load danh sách thả xuống nhỏ).
      */
-    QList<MedicationSummaryDTO> searchMedications(MedicationSearchCriteria& criteria) const;
+    // QList<MedicationSummaryDTO> searchMedications(MedicationSearchCriteria& criteria) const;
+
+    /**
+     * @brief Tìm kiếm thuốc có phân trang — UI chính (bảng danh sánh thuốc, trang Admin).
+     *
+     * Các bước xử lý bên trong:
+     *   1. Normalize criteria (trim, simplified)
+     *   2. Guard: cưỡng chế page >= 1, pageSize trong [1, 200]
+     *   3. Delegate xuống MedicationRepository::searchMedicationsPaged()
+     *   4. Map domain object sang MedicationSummaryDTO
+     *   5. Trả về PagedResult<MedicationSummaryDTO> có đủ totalCount để UI vẽ pagination bar
+     *
+     * @param criteria  UI set page (>= 1), pageSize (> 0) trước khi gọi.
+     * @return          PagedResult có items, totalCount, page, pageSize.
+     */
+    PagedResult<MedicationSummaryDTO> searchMedicationsPaged(
+        MedicationSearchCriteria criteria) const;
 
     /**
      * @brief Lấy chi tiết 1 thuốc theo ID — dùng khi bác sĩ xem thông tin
@@ -144,14 +166,47 @@ public:
     QList<MedicationSummaryDTO> getExpiringMedications(int withinDays = 30) const;
 
 
-    QList<ActiveIngredientDTO> searchIngredients(const QString& keyword) const;
+    // QList<ActiveIngredientDTO> searchIngredients(const QString& keyword) const;
+
+    /**
+     * @brief Tìm kiếm hoạt chất có phân trang.
+     *
+     * Dùng khi Admin cần chọn hoạt chất để thêm vào thuốc:
+     *   • Gõi ý autocomplete với danh sách có phân trang (không load hết 1 lần)
+     *   • Trang phân trang trong màn hình quản lý hoạt chất
+     *
+     * Các bước xử lý bên trong:
+     *   1. Normalize keyword (trim, toLower)
+     *   2. Guard: page >= 1, pageSize trong [1, 200]
+     *   3. Delegate xuống MedicationRepository::searchIngredientsPaged()
+     *
+     * @param criteria  keyword, page (>= 1), pageSize (> 0).
+     * @return          PagedResult có items, totalCount, page, pageSize.
+     */
+    PagedResult<ActiveIngredientDTO> searchIngredientsPaged(
+        IngredientSearchCriteria criteria) const;
 
     // ════════════════════════════════════════════════════════════════
     // KÊ ĐƠN — Prescription Creation
     // ════════════════════════════════════════════════════════════════
 
     /**
+     * @brief Kiểm tra an toàn đơn thuốc TRƯỚC khi gọi createPrescription().
+     *        Hàm này chỉ ĐỌC, không có side effect.
+     *        UI gọi khi bác sĩ nhấn "Kiểm tra & Lưu đơn".
+     *
+     * @param items     Danh sách thuốc trong đơn (chỉ cần medicationId để load)
+     * @param allergies Danh sách dị ứng của bệnh nhân (PatientService::getAllergies())
+     * @return          PrescriptionSafetyReport (rỗng = an toàn)
+     */
+    PrescriptionSafetyReport checkPrescriptionSafety(
+        const QList<PrescriptionItemDTO>& items,
+        const QList<AllergyResultDTO>&    allergies
+    ) const;
+
+    /**
      * @brief Tạo đơn thuốc mới sau khi bác sĩ hoàn thành khám.
+
      *
      * Các bước xử lý bên trong:
      *   1. Validate input (recordId hợp lệ, items không rỗng)

@@ -189,7 +189,14 @@ void ReceptionDashboardWidget::buildOverviewPage() {
 
 void ReceptionDashboardWidget::loadDoctorsBySpecialty(const QString& specialty) {
     m_comboDoctor->clear();
-    auto doctors = m_staffService->searchDoctors("", specialty, -1, "", true, false);
+    DoctorSearchCriteria criteria;
+    criteria.specialty = specialty;
+    criteria.onlyActive = true;
+    criteria.includeDeleted = false;
+    criteria.pageSize = 0; // Load all for dropdown
+
+    auto doctors = m_staffService->searchDoctorsPaged(criteria).items;
+
     for (const auto& doc : doctors) {
         auto docModel = std::dynamic_pointer_cast<Doctor>(doc);
         if (docModel) {
@@ -248,7 +255,16 @@ void ReceptionDashboardWidget::onConfirmClicked() {
     QString startTime = timeSlot.split(" - ").first();
     int createdBy = m_currentUser->getAccountId();
     
-    bool success = m_baseAppointmentService->createAppointment(m_currentPatientId, doctorCode, createdBy, date, startTime, "Khám bệnh");
+    AppointmentInputDTO input = {
+        m_currentPatientId,
+        doctorCode,
+        createdBy,
+        date,
+        startTime,
+        "Khám bệnh"
+    };
+    
+    bool success = m_baseAppointmentService->createAppointment(input);
     if (success) {
         QMessageBox::information(this, "Thành công", "Đăng ký lịch khám thành công!");
         

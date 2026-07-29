@@ -84,8 +84,14 @@ void ManageDoctorsWidget::loadDoctorsList() {
     return;
   m_tblDoctors->setRowCount(0);
 
+  DoctorSearchCriteria criteria;
+  criteria.onlyActive = true;
+  criteria.includeDeleted = false;
+  criteria.pageSize = 0; // Load all for UI table display
+
   QList<std::shared_ptr<SystemUser>> doctors =
-      m_staffService->searchDoctors("", "", -1, "", true, false);
+      m_staffService->searchDoctorsPaged(criteria).items;
+
 
   for (int i = 0; i < doctors.size(); ++i) {
     auto doc = std::dynamic_pointer_cast<Doctor>(doctors[i]);

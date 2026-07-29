@@ -1,18 +1,26 @@
 /**
  * @file    PatientRepository.cpp
- * @brief   Implementación của PatientRepository – chỉ INSERT.
+ * @brief   Implementación của PatientRepository.
  *
  *  Lưu ý về cột DB:
  *    patients                       patient_code, full_name, date_of_birth,
  *                                   gender, citizen_id, phone, email, address,
  *                                   blood_type, default_patient_type,
  *                                   emergency_contact_name,
- * emergency_contact_phone out_patients                   patient_id (FK),
- * doctor_id, status in_patients                    patient_id (FK),
- * admitting_doctor_id, room_id, admission_date, discharge_date, reason, status
- *    emergency_patients_admissions  patient_id (FK), room_id, doctor_id,
+ *                                   emergency_contact_phone
+ *    out_patients                   patient_id (FK), doctor_id, status
+ *    in_patients                    patient_id (FK), admitting_doctor_id,
+ *                                   room_id, admission_date, discharge_date,
+ *                                   reason, status
+ *    emergency_patients             patient_id (FK), room_id, doctor_id,
  *                                   injury_cause, injury_description,
  *                                   admission_date, discharge_date, status
+ *    patient_allergies              patient_id (FK), ingredient_id,
+ *                                   allergen_name, severity, notes, is_active
+ *    patient_insurance              patient_id (FK), provider_name,
+ *                                   policy_number, insurance_type,
+ *                                   coverage_percent, valid_from, valid_to,
+ *                                   notes, is_active
  */
 
 #include "PatientRepository.h"
@@ -23,7 +31,7 @@
 #include <QtDebug>
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Private helper
+// Private helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
@@ -75,8 +83,9 @@ bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
     query.addBindValue(param);
   }
   if (!query.exec()) {
-    qWarning() << "PatientRepository::insertBasePatient - INSERT patients thất bại:"
-               << query.lastError().text();
+    qWarning()
+        << "PatientRepository::insertBasePatient - INSERT patients thất bại:"
+        << query.lastError().text();
     return false;
   }
   patientId = query.lastInsertId().toInt();
@@ -87,6 +96,8 @@ bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
   }
   return true;
 }
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public – insert out patient
@@ -118,7 +129,7 @@ bool PatientRepository::insertOutPatient(const OutPatientInsertDTO &dto) {
 
   const QVariantList params = {
       patientId,
-      dto.doctorId.has_value() ? QVariant(dto.doctorId.value()) : QVariant(),
+      dto.doctorId,
       dto.status,
   };
 
@@ -129,24 +140,14 @@ bool PatientRepository::insertOutPatient(const OutPatientInsertDTO &dto) {
     return false;
   }
 
-  // Ghi dị ứng (nếu có) – cập nhật patientId thực tế vừa được tạo
-  if (!dto.allergies.isEmpty()) {
-    QList<AllergyInsertDTO> items = dto.allergies;
-    for (auto &item : items) item.patientId = patientId;
-    if (!insertAllergies(items)) {
-      db.rollbackTransaction();
-      return false;
-    }
+  if (!insertAllergies(patientId, dto.allergies)) {
+    db.rollbackTransaction();
+    return false;
   }
 
-  // Ghi bảo hiểm (nếu có)
-  if (dto.insurance.has_value()) {
-    InsuranceInsertDTO ins = dto.insurance.value();
-    ins.patientId = patientId;
-    if (!upsertInsurance(ins)) {
-      db.rollbackTransaction();
-      return false;
-    }
+  if (!insertInsurance(patientId, dto.insurance)) {
+    db.rollbackTransaction();
+    return false;
   }
 
   if (!db.commitTransaction()) {
@@ -190,8 +191,8 @@ bool PatientRepository::insertInPatient(const InPatientInsertDTO &dto) {
 
   const QVariantList params = {
       patientId,
-      dto.roomId.has_value() ? QVariant(dto.roomId.value()) : QVariant(),
-      dto.doctorId.has_value() ? QVariant(dto.doctorId.value()) : QVariant(),
+      dto.roomId,
+      dto.doctorId,
       dto.admissionDate,
       dto.dischargeDate.isEmpty() ? QVariant() : dto.dischargeDate,
       dto.reason.isEmpty() ? QVariant() : dto.reason,
@@ -205,24 +206,14 @@ bool PatientRepository::insertInPatient(const InPatientInsertDTO &dto) {
     return false;
   }
 
-  // Ghi dị ứng (nếu có) – cập nhật patientId thực tế
-  if (!dto.allergies.isEmpty()) {
-    QList<AllergyInsertDTO> items = dto.allergies;
-    for (auto &item : items) item.patientId = patientId;
-    if (!insertAllergies(items)) {
-      db.rollbackTransaction();
-      return false;
-    }
+  if (!insertAllergies(patientId, dto.allergies)) {
+    db.rollbackTransaction();
+    return false;
   }
 
-  // Ghi bảo hiểm (nếu có)
-  if (dto.insurance.has_value()) {
-    InsuranceInsertDTO ins = dto.insurance.value();
-    ins.patientId = patientId;
-    if (!upsertInsurance(ins)) {
-      db.rollbackTransaction();
-      return false;
-    }
+  if (!insertInsurance(patientId, dto.insurance)) {
+    db.rollbackTransaction();
+    return false;
   }
 
   if (!db.commitTransaction()) {
@@ -280,28 +271,18 @@ bool PatientRepository::insertEmergencyPatient(
   if (!db.executeQuery(sql, params).isActive()) {
     db.rollbackTransaction();
     qWarning() << "PatientRepository::insertEmergencyPatient - INSERT "
-                  "emergency_patients_admissions thất bại";
+                  "emergency_patients thất bại";
     return false;
   }
 
-  // Ghi dị ứng (nếu có) – cập nhật patientId thực tế
-  if (!dto.allergies.isEmpty()) {
-    QList<AllergyInsertDTO> items = dto.allergies;
-    for (auto &item : items) item.patientId = patientId;
-    if (!insertAllergies(items)) {
-      db.rollbackTransaction();
-      return false;
-    }
+  if (!insertAllergies(patientId, dto.allergies)) {
+    db.rollbackTransaction();
+    return false;
   }
 
-  // Ghi bảo hiểm (nếu có)
-  if (dto.insurance.has_value()) {
-    InsuranceInsertDTO ins = dto.insurance.value();
-    ins.patientId = patientId;
-    if (!upsertInsurance(ins)) {
-      db.rollbackTransaction();
-      return false;
-    }
+  if (!insertInsurance(patientId, dto.insurance)) {
+    db.rollbackTransaction();
+    return false;
   }
 
   if (!db.commitTransaction()) {
@@ -311,9 +292,12 @@ bool PatientRepository::insertEmergencyPatient(
   return true;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Update
+// ─────────────────────────────────────────────────────────────────────────────
+
 bool PatientRepository::updatePatient(const PatientUpdateDTO &dto) {
-  QString sql = R"(
+  const QString sql = R"(
     UPDATE patients
     SET
         full_name = ?,
@@ -329,7 +313,7 @@ bool PatientRepository::updatePatient(const PatientUpdateDTO &dto) {
     WHERE patient_id = ?
   )";
 
-  QVariantList params = {
+  const QVariantList params = {
       dto.fullName,
       dto.dateOfBirth,
       dto.gender,
@@ -345,8 +329,18 @@ bool PatientRepository::updatePatient(const PatientUpdateDTO &dto) {
 
   return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
 }
+
 bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
-  QString sql = R"(
+  DatabaseManager &db = DatabaseManager::getInstance();
+  if (!db.beginTransaction())
+    return false;
+
+  if (!updatePatient(dto)) {
+    db.rollbackTransaction();
+    return false;
+  }
+
+  const QString sql = R"(
     UPDATE out_patients
     SET
         doctor_id = ?,
@@ -354,16 +348,33 @@ bool PatientRepository::updateOutPatient(const OutPatientUpdateDTO &dto) {
     WHERE patient_id = ?
   )";
 
-  QVariantList params = {
+  const QVariantList params = {
       dto.doctorId.has_value() ? QVariant(dto.doctorId.value()) : QVariant(),
       dto.status,
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  QSqlQuery query = db.executeQuery(sql, params);
+  if (query.lastError().isValid()) {
+    db.rollbackTransaction();
+    qWarning() << "UPDATE OUT_PATIENT ERROR:" << query.lastError().text();
+    return false;
+  }
+
+  return db.commitTransaction();
 }
+
 bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
-  QString sql = R"(
+  DatabaseManager &db = DatabaseManager::getInstance();
+  if (!db.beginTransaction())
+    return false;
+
+  if (!updatePatient(dto)) {
+    db.rollbackTransaction();
+    return false;
+  }
+
+  const QString sql = R"(
     UPDATE in_patients
     SET
         room_id = ?,
@@ -375,7 +386,7 @@ bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
     WHERE patient_id = ?
   )";
 
-  QVariantList params = {
+  const QVariantList params = {
       dto.roomId.has_value() ? QVariant(dto.roomId.value()) : QVariant(),
       dto.doctorId.has_value() ? QVariant(dto.doctorId.value()) : QVariant(),
       dto.admissionDate,
@@ -385,11 +396,28 @@ bool PatientRepository::updateInPatient(const InPatientUpdateDTO &dto) {
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  QSqlQuery query = db.executeQuery(sql, params);
+  if (query.lastError().isValid()) {
+    db.rollbackTransaction();
+    qWarning() << "UPDATE IN_PATIENT ERROR:" << query.lastError().text();
+    return false;
+  }
+
+  return db.commitTransaction();
 }
+
 bool PatientRepository::updateEmergencyPatient(
     const EmergencyPatientUpdateDTO &dto) {
-  QString sql = R"(
+  DatabaseManager &db = DatabaseManager::getInstance();
+  if (!db.beginTransaction())
+    return false;
+
+  if (!updatePatient(dto)) {
+    db.rollbackTransaction();
+    return false;
+  }
+
+  const QString sql = R"(
     UPDATE emergency_patients
     SET
         room_id = ?,
@@ -402,7 +430,7 @@ bool PatientRepository::updateEmergencyPatient(
     WHERE patient_id = ?
   )";
 
-  QVariantList params = {
+  const QVariantList params = {
       dto.roomId.has_value() ? QVariant(dto.roomId.value()) : QVariant(),
       dto.doctorId.has_value() ? QVariant(dto.doctorId.value()) : QVariant(),
       dto.injuryCause.isEmpty() ? QVariant() : dto.injuryCause,
@@ -413,10 +441,18 @@ bool PatientRepository::updateEmergencyPatient(
       dto.patientId,
   };
 
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  QSqlQuery query = db.executeQuery(sql, params);
+  if (query.lastError().isValid()) {
+    db.rollbackTransaction();
+    qWarning() << "UPDATE EMERGENCY_PATIENT ERROR:" << query.lastError().text();
+    return false;
+  }
+
+  return db.commitTransaction();
 }
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Search
+// Search helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 QString
@@ -432,19 +468,15 @@ PatientRepository::buildSearchWhereClause(const PatientSearchCriteria &criteria,
 
   // searchKey: so khớp LIKE trên full_name / patient_code / citizen_id / phone
   if (!criteria.searchKey.trimmed().isEmpty()) {
-    conditions << "(p.full_name LIKE ? OR p.patient_code LIKE ? OR "
-                  "p.citizen_id LIKE ? OR p.phone LIKE ?)";
-    // Escape ký tự đặc biệt của LIKE ('%', '_') trước khi thêm wildcard,
-    // tránh user nhập "%" hoặc "_" làm sai kết quả tìm kiếm.
-    QString escaped = criteria.searchKey.trimmed();
-    escaped.replace('%', "\\%").replace('_', "\\_");
-    const QString likeValue = "%" + escaped + "%";
-    outParams << likeValue << likeValue << likeValue << likeValue;
+    conditions << "(LOWER(p.full_name) LIKE ? OR LOWER(p.patient_code) LIKE ? OR "
+                  "LOWER(p.citizen_id) LIKE ? OR LOWER(p.phone) LIKE ?)";
+    QString pattern = "%" + criteria.searchKey.trimmed().toLower() + "%";
+    outParams << pattern << pattern << pattern << pattern;
   }
 
+
   // roomId: chỉ áp dụng được với bảng có cột room_id (in_patients /
-  // emergency_patients). Nếu bảng không có cột này (out_patients) mà
-  // roomId được chỉ định, coi như KHÔNG có kết quả khớp.
+  // emergency_patients).
   if (criteria.roomId != -1) {
     if (!hasRoomColumn) {
       conditions << "1 = 0"; // out_patients không có room_id → loại trừ
@@ -461,7 +493,6 @@ PatientRepository::buildSearchWhereClause(const PatientSearchCriteria &criteria,
   }
 
   // Khoảng ngày: lọc theo admission_date (in_patients / emergency_patients).
-  // out_patients không có admission_date nên bỏ qua điều kiện này.
   if (hasRoomColumn) {
     if (criteria.fromDate.has_value() && criteria.fromDate->isValid()) {
       conditions << "admission_date >= ?";
@@ -479,42 +510,48 @@ PatientRepository::buildSearchWhereClause(const PatientSearchCriteria &criteria,
   return conditions.join(" AND ");
 }
 
-std::optional<PatientDetailDTO> PatientRepository::getPatientById(int patientId) {
-  QString sql = R"(
-    SELECT 
+// ─────────────────────────────────────────────────────────────────────────────
+// getPatientById
+// ─────────────────────────────────────────────────────────────────────────────
+
+std::optional<PatientDetailDTO>
+PatientRepository::getPatientById(int patientId) {
+  const QString sql = R"(
+    SELECT
       p.patient_id, p.patient_code, p.full_name, p.date_of_birth, p.gender,
-      p.citizen_id, p.phone, p.email, p.address, p.blood_type, p.default_patient_type,
-      p.emergency_contact_name, p.emergency_contact_phone, p.is_deleted,
-      p.created_at, p.updated_at,
-      
+      p.citizen_id, p.phone, p.email, p.address, p.blood_type,
+      p.default_patient_type, p.emergency_contact_name,
+      p.emergency_contact_phone, p.is_deleted, p.created_at, p.updated_at,
+
       'OUTPATIENT' AS current_type, o.status,
-      NULL AS room_id, o.doctor_id, NULL AS admission_date, NULL AS discharge_date,
+      NULL AS room_id, o.doctor_id,
+      NULL AS admission_date, NULL AS discharge_date,
       NULL AS reason, NULL AS injury_cause, NULL AS injury_description
     FROM patients p JOIN out_patients o ON p.patient_id = o.patient_id
     WHERE p.patient_id = ?
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
       p.patient_id, p.patient_code, p.full_name, p.date_of_birth, p.gender,
-      p.citizen_id, p.phone, p.email, p.address, p.blood_type, p.default_patient_type,
-      p.emergency_contact_name, p.emergency_contact_phone, p.is_deleted,
-      p.created_at, p.updated_at,
-      
+      p.citizen_id, p.phone, p.email, p.address, p.blood_type,
+      p.default_patient_type, p.emergency_contact_name,
+      p.emergency_contact_phone, p.is_deleted, p.created_at, p.updated_at,
+
       'INPATIENT' AS current_type, i.status,
       i.room_id, i.doctor_id, i.admission_date, i.discharge_date,
       i.reason, NULL AS injury_cause, NULL AS injury_description
     FROM patients p JOIN in_patients i ON p.patient_id = i.patient_id
     WHERE p.patient_id = ?
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
       p.patient_id, p.patient_code, p.full_name, p.date_of_birth, p.gender,
-      p.citizen_id, p.phone, p.email, p.address, p.blood_type, p.default_patient_type,
-      p.emergency_contact_name, p.emergency_contact_phone, p.is_deleted,
-      p.created_at, p.updated_at,
-      
+      p.citizen_id, p.phone, p.email, p.address, p.blood_type,
+      p.default_patient_type, p.emergency_contact_name,
+      p.emergency_contact_phone, p.is_deleted, p.created_at, p.updated_at,
+
       'EMERGENCY' AS current_type, e.status,
       e.room_id, e.doctor_id, e.admission_date, e.discharge_date,
       NULL AS reason, e.injury_cause, e.injury_description
@@ -522,56 +559,69 @@ std::optional<PatientDetailDTO> PatientRepository::getPatientById(int patientId)
     WHERE p.patient_id = ?
   )";
 
-  QVariantList params = {patientId, patientId, patientId};
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(
+      sql, {patientId, patientId, patientId});
 
-  if (query.next()) {
-    PatientDetailDTO dto;
-    dto.patientId = query.value("patient_id").toInt();
-    dto.patientCode = query.value("patient_code").toString();
-    dto.fullName = query.value("full_name").toString();
-    dto.dateOfBirth = QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
-    dto.gender = genderFromString(query.value("gender").toString());
-    dto.citizenId = query.value("citizen_id").toString();
-    dto.phone = query.value("phone").toString();
-    dto.email = query.value("email").toString();
-    dto.address = query.value("address").toString();
-    dto.bloodType = query.value("blood_type").toString();
-    dto.defaultPatientType = patientTypeFromString(query.value("default_patient_type").toString());
-    dto.emergencyContactName = query.value("emergency_contact_name").toString();
-    dto.emergencyContactPhone = query.value("emergency_contact_phone").toString();
-    dto.isDeleted = query.value("is_deleted").toBool();
-    dto.createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
-    dto.updatedAt = QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
+  if (!query.next())
+    return std::nullopt;
 
-    dto.currentType = patientTypeFromString(query.value("current_type").toString());
-    dto.status = query.value("status").toString();
+  PatientDetailDTO dto;
+  dto.patientId = query.value("patient_id").toInt();
+  dto.patientCode = query.value("patient_code").toString();
+  dto.fullName = query.value("full_name").toString();
+  dto.dateOfBirth =
+      QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
+  dto.gender = query.value("gender").toString();
+  dto.citizenId = query.value("citizen_id").toString();
+  dto.phone = query.value("phone").toString();
+  dto.email = query.value("email").toString();
+  dto.address = query.value("address").toString();
+  dto.bloodType = query.value("blood_type").toString();
+  dto.defaultPatientType =
+      patientTypeFromEn(query.value("default_patient_type").toString());
+  dto.emergencyContactName = query.value("emergency_contact_name").toString();
+  dto.emergencyContactPhone = query.value("emergency_contact_phone").toString();
+  dto.isDeleted = query.value("is_deleted").toBool();
+  dto.createdAt =
+      QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
+  dto.updatedAt =
+      QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
 
-    if (!query.isNull("room_id")) dto.roomId = query.value("room_id").toInt();
-    if (!query.isNull("doctor_id")) dto.doctorId = query.value("doctor_id").toInt();
-    if (!query.isNull("admission_date")) dto.admissionDate = QDate::fromString(query.value("admission_date").toString(), "yyyy-MM-dd");
-    if (!query.isNull("discharge_date")) dto.dischargeDate = QDate::fromString(query.value("discharge_date").toString(), "yyyy-MM-dd");
+  dto.currentType = patientTypeFromEn(query.value("current_type").toString());
+  dto.status = query.value("status").toString();
 
-    dto.reason = query.value("reason").toString();
-    dto.injuryCause = query.value("injury_cause").toString();
-    dto.injuryDescription = query.value("injury_description").toString();
+  if (!query.isNull("room_id"))
+    dto.roomId = query.value("room_id").toInt();
+  if (!query.isNull("doctor_id"))
+    dto.doctorId = query.value("doctor_id").toInt();
+  if (!query.isNull("admission_date"))
+    dto.admissionDate = QDate::fromString(
+        query.value("admission_date").toString(), "yyyy-MM-dd");
+  if (!query.isNull("discharge_date"))
+    dto.dischargeDate = QDate::fromString(
+        query.value("discharge_date").toString(), "yyyy-MM-dd");
 
-    // Load dị ứng & bảo hiểm
-    dto.allergies = getAllergiesByPatientId(dto.patientId);
-    dto.insurance = getInsuranceByPatientId(dto.patientId);
+  dto.reason = query.value("reason").toString();
+  dto.injuryCause = query.value("injury_cause").toString();
+  dto.injuryDescription = query.value("injury_description").toString();
 
-    return dto;
-  }
+  // Load dị ứng & bảo hiểm
+  dto.allergies = getAllergiesByPatientId(dto.patientId);
+  dto.insurance = getInsuranceByPatientId(dto.patientId);
 
-  return std::nullopt;
+  return dto;
 }
 
-QList<PatientSearchResultDTO>
-PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
-  QList<PatientSearchResultDTO> results;
+// ─────────────────────────────────────────────────────────────────────────────
+// searchPatients
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // Mỗi nhánh UNION ALL ứng với 1 loại bệnh nhân. Nếu criteria.type được
-  // set, chỉ build nhánh tương ứng để tránh quét thừa 2 bảng còn lại.
+PagedResult<PatientSearchResultDTO>
+PatientRepository::searchPatientsPaged(const PatientSearchCriteria &criteria) const {
+  PagedResult<PatientSearchResultDTO> result;
+  result.page = qMax(1, criteria.page);
+  result.pageSize = criteria.pageSize;
+
   const bool wantOut =
       !criteria.type.has_value() || criteria.type == PatientType::Outpatient;
   const bool wantIn =
@@ -579,188 +629,176 @@ PatientRepository::searchPatients(const PatientSearchCriteria &criteria) {
   const bool wantEmergency =
       !criteria.type.has_value() || criteria.type == PatientType::Emergency;
 
-  QStringList branches;
-  QVariantList params;
+  // Bước 1: Đếm tổng số bản ghi khớp tiêu chí
+  QStringList countBranches;
+  QVariantList countParams;
 
   if (wantOut) {
     QVariantList branchParams;
     const QString where =
         buildSearchWhereClause(criteria, /*hasRoomColumn=*/false, branchParams);
-    branches << QString(R"(
+    countBranches << QString(R"(
+      SELECT p.patient_id FROM patients p
+      JOIN out_patients o ON p.patient_id = o.patient_id
+      WHERE %1
+    )").arg(where);
+    countParams << branchParams;
+  }
+
+  if (wantIn) {
+    QVariantList branchParams;
+    const QString where =
+        buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
+    countBranches << QString(R"(
+      SELECT p.patient_id FROM patients p
+      JOIN in_patients i ON p.patient_id = i.patient_id
+      WHERE %1
+    )").arg(where);
+    countParams << branchParams;
+  }
+
+  if (wantEmergency) {
+    QVariantList branchParams;
+    const QString where =
+        buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
+    countBranches << QString(R"(
+      SELECT p.patient_id FROM patients p
+      JOIN emergency_patients e ON p.patient_id = e.patient_id
+      WHERE %1
+    )").arg(where);
+    countParams << branchParams;
+  }
+
+  if (countBranches.isEmpty()) {
+    result.totalCount = 0;
+    return result;
+  }
+
+  const QString countSql =
+      "SELECT COUNT(*) FROM (" + countBranches.join(" UNION ALL ") + ")";
+  QSqlQuery countQuery = DatabaseManager::getInstance().selectQuery(countSql, countParams);
+  if (!countQuery.isActive() || !countQuery.next()) {
+    qWarning() << "PatientRepository::searchPatientsPaged - Lỗi đếm tổng bản ghi";
+    result.totalCount = 0;
+    return result;
+  }
+  result.totalCount = countQuery.value(0).toInt();
+
+  // Bước 2: Lấy dữ liệu trang hiện tại
+  QStringList dataBranches;
+  QVariantList dataParams;
+
+  if (wantOut) {
+    QVariantList branchParams;
+    const QString where =
+        buildSearchWhereClause(criteria, /*hasRoomColumn=*/false, branchParams);
+    dataBranches << QString(R"(
       SELECT p.patient_id, p.patient_code, p.full_name, p.date_of_birth,
              p.gender, p.phone, 'OUTPATIENT' AS type, o.status AS status_label,
              NULL AS room_id
       FROM patients p
       JOIN out_patients o ON p.patient_id = o.patient_id
       WHERE %1
-    )")
-                    .arg(where);
-    params << branchParams;
+    )").arg(where);
+    dataParams << branchParams;
   }
 
   if (wantIn) {
     QVariantList branchParams;
     const QString where =
         buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
-    branches << QString(R"(
+    dataBranches << QString(R"(
       SELECT p.patient_id, p.patient_code, p.full_name, p.date_of_birth,
              p.gender, p.phone, 'INPATIENT' AS type, i.status AS status_label,
              i.room_id AS room_id
       FROM patients p
       JOIN in_patients i ON p.patient_id = i.patient_id
       WHERE %1
-    )")
-                    .arg(where);
-    params << branchParams;
+    )").arg(where);
+    dataParams << branchParams;
   }
 
   if (wantEmergency) {
     QVariantList branchParams;
     const QString where =
         buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
-    branches << QString(R"(
+    dataBranches << QString(R"(
       SELECT p.patient_id, p.patient_code, p.full_name, p.date_of_birth,
              p.gender, p.phone, 'EMERGENCY' AS type, e.status AS status_label,
              e.room_id AS room_id
       FROM patients p
       JOIN emergency_patients e ON p.patient_id = e.patient_id
       WHERE %1
-    )")
-                    .arg(where);
-    params << branchParams;
+    )").arg(where);
+    dataParams << branchParams;
   }
 
-  if (branches.isEmpty())
-    return results; // không có nhánh nào để query (không nên xảy ra)
-
-  QString sql =
-      branches.join(" UNION ALL ") + " ORDER BY full_name LIMIT ? OFFSET ?";
-  params << criteria.limit << criteria.offset;
-
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-
-  if (!query.isActive()) {
-    qWarning() << "PatientRepository::searchPatients - Query thất bại";
-    return results;
+  QString dataSql = dataBranches.join(" UNION ALL ") + " ORDER BY full_name ASC";
+  if (criteria.pageSize > 0) {
+    int offset = (result.page - 1) * criteria.pageSize;
+    dataSql += " LIMIT ? OFFSET ?";
+    dataParams.append(criteria.pageSize);
+    dataParams.append(offset);
   }
 
-  while (query.next()) {
+  QSqlQuery dataQuery = DatabaseManager::getInstance().selectQuery(dataSql, dataParams);
+  if (!dataQuery.isActive()) {
+    qWarning() << "PatientRepository::searchPatientsPaged - Data query thất bại";
+    return result;
+  }
+
+  while (dataQuery.next()) {
     PatientSearchResultDTO row;
-    row.patientId = query.value("patient_id").toInt();
-    row.patientCode = query.value("patient_code").toString();
-    row.fullName = query.value("full_name").toString();
-    row.dateOfBirth = QDate::fromString(query.value("date_of_birth").toString(),
-                                        "yyyy-MM-dd");
-    row.gender = genderFromString(query.value("gender").toString());
-    row.phone = query.value("phone").toString();
-    row.type = patientTypeFromString(query.value("type").toString());
-    row.statusLabel = query.value("status_label").toString();
-    row.roomId = query.value("room_id").isNull()
-                     ? QString()
-                     : query.value("room_id").toString();
-    results.append(row);
+    row.patientId = dataQuery.value("patient_id").toInt();
+    row.patientCode = dataQuery.value("patient_code").toString();
+    row.fullName = dataQuery.value("full_name").toString();
+    row.dateOfBirth = QDate::fromString(dataQuery.value("date_of_birth").toString(), "yyyy-MM-dd");
+    row.gender = dataQuery.value("gender").toString();
+    row.phone = dataQuery.value("phone").toString();
+    row.type = patientTypeFromEn(dataQuery.value("type").toString());
+    row.statusLabel = dataQuery.value("status_label").toString();
+    row.roomId = dataQuery.isNull("room_id") ? QString() : dataQuery.value("room_id").toString();
+    result.items.append(row);
   }
 
-  return results;
+  return result;
 }
 
-int PatientRepository::countSearchResults(
-    const PatientSearchCriteria &criteria) {
-  const bool wantOut =
-      !criteria.type.has_value() || criteria.type == PatientType::Outpatient;
-  const bool wantIn =
-      !criteria.type.has_value() || criteria.type == PatientType::Inpatient;
-  const bool wantEmergency =
-      !criteria.type.has_value() || criteria.type == PatientType::Emergency;
+/*
+QList<PatientSearchResultDTO>
+PatientRepository::searchPatients(const PatientSearchCriteria &criteria) { ... }
+int PatientRepository::countSearchResults(const PatientSearchCriteria &criteria) { ... }
+*/
 
-  QStringList branches;
-  QVariantList params;
 
-  if (wantOut) {
-    QVariantList branchParams;
-    const QString where =
-        buildSearchWhereClause(criteria, /*hasRoomColumn=*/false, branchParams);
-    branches << QString(R"(
-      SELECT p.patient_id FROM patients p
-      JOIN out_patients o ON p.patient_id = o.patient_id
-      WHERE %1
-    )")
-                    .arg(where);
-    params << branchParams;
-  }
-
-  if (wantIn) {
-    QVariantList branchParams;
-    const QString where =
-        buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
-    branches << QString(R"(
-      SELECT p.patient_id FROM patients p
-      JOIN in_patients i ON p.patient_id = i.patient_id
-      WHERE %1
-    )")
-                    .arg(where);
-    params << branchParams;
-  }
-
-  if (wantEmergency) {
-    QVariantList branchParams;
-    const QString where =
-        buildSearchWhereClause(criteria, /*hasRoomColumn=*/true, branchParams);
-    branches << QString(R"(
-      SELECT p.patient_id FROM patients p
-      JOIN emergency_patients e ON p.patient_id = e.patient_id
-      WHERE %1
-    )")
-                    .arg(where);
-    params << branchParams;
-  }
-
-  if (branches.isEmpty())
-    return 0;
-
-  const QString sql =
-      "SELECT COUNT(*) FROM (" + branches.join(" UNION ALL ") + ")";
-
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-  if (!query.isActive() || !query.next()) {
-    qWarning() << "PatientRepository::countSearchResults - Query thất bại";
-    return 0;
-  }
-  return query.value(0).toInt();
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Soft delete / Restore
+// ─────────────────────────────────────────────────────────────────────────────
 
 bool PatientRepository::softDeletePatient(int patientId) {
-  QString sql = R"(
-    UPDATE patients
-    SET
-        is_deleted = 1
-    WHERE patient_id = ?
+  const QString sql = R"(
+    UPDATE patients SET is_deleted = 1 WHERE patient_id = ?
   )";
-
-  QVariantList params = {patientId};
-
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  return DatabaseManager::getInstance()
+      .executeQuery(sql, {patientId})
+      .isActive();
 }
+
 bool PatientRepository::restorePatient(int patientId) {
-  QString sql = R"(
-    UPDATE patients
-    SET
-        is_deleted = 0
-    WHERE patient_id = ?
+  const QString sql = R"(
+    UPDATE patients SET is_deleted = 0 WHERE patient_id = ?
   )";
-
-  QVariantList params = {patientId};
-
-  return DatabaseManager::getInstance().executeQuery(sql, params).isActive();
+  return DatabaseManager::getInstance()
+      .executeQuery(sql, {patientId})
+      .isActive();
 }
+
 bool PatientRepository::isPatientSoftDeleted(int patientId) {
-  QString sql = R"(
+  const QString sql = R"(
     SELECT is_deleted FROM patients WHERE patient_id = ?
   )";
-
-  QVariantList params = {patientId};
-
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+  QSqlQuery query =
+      DatabaseManager::getInstance().selectQuery(sql, {patientId});
   if (!query.isActive() || !query.next()) {
     qWarning() << "PatientRepository::isPatientSoftDeleted - Query thất bại";
     return false;
@@ -772,20 +810,25 @@ bool PatientRepository::isPatientSoftDeleted(int patientId) {
 // Allergies
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool PatientRepository::insertAllergies(const QList<AllergyInsertDTO> &items) {
-  if (items.isEmpty()) return true; // không có dị ứng → bỏ qua, không lỗi
+bool PatientRepository::insertAllergies(int patientId,
+                                        const QList<AllergyInputDTO> &items) {
+  if (items.isEmpty())
+    return true;
 
   const QString sql = R"(
-    INSERT OR IGNORE INTO patient_allergies (patient_id, allergen_name, severity, notes)
-    VALUES (?, ?, ?, ?)
+    INSERT OR IGNORE INTO patient_allergies
+        (patient_id, ingredient_id, allergen_name, severity, notes)
+    VALUES (?, ?, ?, ?, ?)
   )";
 
   DatabaseManager &db = DatabaseManager::getInstance();
-  for (const AllergyInsertDTO &item : items) {
+  for (const AllergyInputDTO &item : items) {
     const QVariantList params = {
-        item.patientId,
-        item.allergenName.trimmed(),
-        item.severity.isEmpty() ? "MODERATE" : item.severity,
+        patientId,
+        item.ingredientId.has_value() ? QVariant(item.ingredientId.value())
+                                      : QVariant(),
+        item.allergenName,
+        severityToEn(item.severity),
         item.notes.isEmpty() ? QVariant() : item.notes,
     };
     if (!db.executeQuery(sql, params).isActive()) {
@@ -801,29 +844,38 @@ bool PatientRepository::deactivateAllergies(int patientId) {
   const QString sql = R"(
     UPDATE patient_allergies SET is_active = 0 WHERE patient_id = ?
   )";
-  return DatabaseManager::getInstance().executeQuery(sql, {patientId}).isActive();
+  return DatabaseManager::getInstance()
+      .executeQuery(sql, {patientId})
+      .isActive();
 }
 
-QList<AllergyResultDTO> PatientRepository::getAllergiesByPatientId(int patientId) {
+QList<AllergyResultDTO>
+PatientRepository::getAllergiesByPatientId(int patientId) {
   QList<AllergyResultDTO> results;
 
   const QString sql = R"(
-    SELECT allergy_id, allergen_name, severity, notes, is_active, recorded_at, updated_at
+    SELECT allergy_id, ingredient_id, allergen_name, severity, notes,
+           is_active, recorded_at, updated_at
     FROM patient_allergies
     WHERE patient_id = ? AND is_active = 1
     ORDER BY recorded_at ASC
   )";
 
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
+  QSqlQuery query =
+      DatabaseManager::getInstance().selectQuery(sql, {patientId});
   while (query.next()) {
     AllergyResultDTO dto;
-    dto.allergyId    = query.value("allergy_id").toInt();
+    dto.allergyId = query.value("allergy_id").toInt();
+    dto.ingredientId =
+        query.isNull("ingredient_id")
+            ? std::optional<int>{}
+            : std::optional<int>{query.value("ingredient_id").toInt()};
     dto.allergenName = query.value("allergen_name").toString();
-    dto.severity     = query.value("severity").toString();
-    dto.notes        = query.value("notes").toString();
-    dto.isActive     = query.value("is_active").toInt() == 1;
-    dto.recordedAt   = query.value("recorded_at").toString();
-    dto.updatedAt    = query.value("updated_at").toString();
+    dto.severity = severityFromEn(query.value("severity").toString());
+    dto.notes = query.value("notes").toString();
+    dto.isActive = query.value("is_active").toInt() == 1;
+    dto.recordedAt = query.value("recorded_at").toString();
+    dto.updatedAt = query.value("updated_at").toString();
     results.append(dto);
   }
   return results;
@@ -833,40 +885,79 @@ QList<AllergyResultDTO> PatientRepository::getAllergiesByPatientId(int patientId
 // Insurance
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool PatientRepository::upsertInsurance(const InsuranceInsertDTO &dto) {
-  // INSERT OR REPLACE dựa trên UNIQUE(patient_id)
+bool PatientRepository::insertInsurance(int patientId,
+                                        const InsuranceInsertDTO &dto) {
+  // Return early if no insurance data is provided
+  if (dto.providerName.isEmpty() && dto.policyNumber.isEmpty() &&
+      dto.insuranceType.isEmpty()) {
+    return true;
+  }
+
   const QString sql = R"(
     INSERT INTO patient_insurance (
         patient_id, provider_name, policy_number, insurance_type,
         coverage_percent, valid_from, valid_to, notes, is_active
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    ON CONFLICT(patient_id) DO UPDATE SET
-        provider_name    = excluded.provider_name,
-        policy_number    = excluded.policy_number,
-        insurance_type   = excluded.insurance_type,
-        coverage_percent = excluded.coverage_percent,
-        valid_from       = excluded.valid_from,
-        valid_to         = excluded.valid_to,
-        notes            = excluded.notes,
-        is_active        = 1,
-        updated_at       = datetime('now')
   )";
 
   const QVariantList params = {
-      dto.patientId,
-      dto.providerName.trimmed(),
-      dto.policyNumber.trimmed(),
-      dto.insuranceType.isEmpty() ? "BHYT" : dto.insuranceType,
+      patientId,
+      dto.providerName,
+      dto.policyNumber,
+      dto.insuranceType,
       dto.coveragePercent,
-      dto.validFrom.isEmpty()  ? QVariant() : dto.validFrom,
-      dto.validTo.isEmpty()    ? QVariant() : dto.validTo,
-      dto.notes.isEmpty()      ? QVariant() : dto.notes,
+      dto.validFrom.isEmpty() ? QVariant() : dto.validFrom,
+      dto.validTo.isEmpty() ? QVariant() : dto.validTo,
+      dto.notes.isEmpty() ? QVariant() : dto.notes,
   };
 
   if (!DatabaseManager::getInstance().executeQuery(sql, params).isActive()) {
-    qWarning() << "PatientRepository::upsertInsurance - UPSERT thất bại cho patient_id:"
-               << dto.patientId;
+    qWarning() << "PatientRepository::insertInsurance - INSERT thất bại cho "
+                  "patient_id:"
+               << patientId;
+    return false;
+  }
+  return true;
+}
+
+bool PatientRepository::updateInsurance(int patientId,
+                                        const InsuranceInsertDTO &dto) {
+  // Return early if no insurance data is provided
+  if (dto.providerName.isEmpty() && dto.policyNumber.isEmpty() &&
+      dto.insuranceType.isEmpty()) {
+    return true;
+  }
+
+  const QString sql = R"(
+    UPDATE patient_insurance SET
+        provider_name    = ?,
+        policy_number    = ?,
+        insurance_type   = ?,
+        coverage_percent = ?,
+        valid_from       = ?,
+        valid_to         = ?,
+        notes            = ?,
+        is_active        = 1,
+        updated_at       = datetime('now')
+    WHERE patient_id = ?
+  )";
+
+  const QVariantList params = {
+      dto.providerName,
+      dto.policyNumber,
+      dto.insuranceType,
+      dto.coveragePercent,
+      dto.validFrom.isEmpty() ? QVariant() : dto.validFrom,
+      dto.validTo.isEmpty() ? QVariant() : dto.validTo,
+      dto.notes.isEmpty() ? QVariant() : dto.notes,
+      patientId,
+  };
+
+  if (!DatabaseManager::getInstance().executeQuery(sql, params).isActive()) {
+    qWarning() << "PatientRepository::updateInsurance - UPDATE thất bại cho "
+                  "patient_id:"
+               << patientId;
     return false;
   }
   return true;
@@ -883,31 +974,24 @@ PatientRepository::getInsuranceByPatientId(int patientId) {
     LIMIT 1
   )";
 
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
-  if (!query.next()) return std::nullopt;
+  QSqlQuery query =
+      DatabaseManager::getInstance().selectQuery(sql, {patientId});
+  if (!query.next())
+    return std::nullopt;
 
-  InsuranceResultDTO dto;
-  dto.insuranceId      = query.value("insurance_id").toInt();
-  dto.providerName     = query.value("provider_name").toString();
-  dto.policyNumber     = query.value("policy_number").toString();
-  dto.insuranceType    = query.value("insurance_type").toString();
-  dto.coveragePercent  = query.value("coverage_percent").toDouble();
-  dto.validFrom        = query.value("valid_from").toString();
-  dto.validTo          = query.value("valid_to").toString();
-  dto.notes            = query.value("notes").toString();
-  dto.isActive         = query.value("is_active").toInt() == 1;
-  dto.createdAt        = query.value("created_at").toString();
-  dto.updatedAt        = query.value("updated_at").toString();
-  return dto;
-}
-
-QString PatientRepository::getAllergiesStringByPatientId(int patientId) {
-  QString sql = "SELECT allergies FROM patients WHERE patient_id = ? AND is_deleted = 0";
-  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
-  if (query.next()) {
-    return query.value(0).toString();
-  }
-  return "";
+  InsuranceResultDTO result;
+  result.insuranceId = query.value("insurance_id").toInt();
+  result.providerName = query.value("provider_name").toString();
+  result.policyNumber = query.value("policy_number").toString();
+  result.insuranceType = query.value("insurance_type").toString();
+  result.coveragePercent = query.value("coverage_percent").toDouble();
+  result.validFrom = query.value("valid_from").toString();
+  result.validTo = query.value("valid_to").toString();
+  result.notes = query.value("notes").toString();
+  result.isActive = query.value("is_active").toInt() == 1;
+  result.createdAt = query.value("created_at").toString();
+  result.updatedAt = query.value("updated_at").toString();
+  return result;
 }
 
 std::optional<DatabaseManager::PatientRecord> PatientRepository::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
