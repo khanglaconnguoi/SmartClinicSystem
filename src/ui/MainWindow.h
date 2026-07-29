@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <memory>
-#include "LoginDialog.h"
+#include "view/LoginDialog.h"
 #include "BaseDashboard.h"
 #include "service/AuthService.h" 
 #include "service/StaffService.h"

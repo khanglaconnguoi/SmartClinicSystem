@@ -507,9 +507,9 @@ QString PharmacyService::cancelPrescription(int prescriptionId, int cancelledBy,
     return "Không tìm thấy đơn thuốc.";
 
   PrescriptionResultDTO prescription = prescriptionOpt.value();
-  if (prescription.status != "PENDING")
+  if (prescription.status != PrescriptionStatus::Pending)
     return QString("Không thể hủy đơn thuốc có trạng thái \"%1\".")
-        .arg(prescription.status);
+        .arg(prescriptionStatusToVi(prescription.status));
 
   if (!m_prescriptionRepo->cancel(prescriptionId, cancelledBy, reason))
     return "Lỗi hệ thống khi hủy đơn thuốc.";
@@ -529,9 +529,9 @@ QString PharmacyService::dispensePrescription(int prescriptionId,
 
   PrescriptionResultDTO prescription = prescriptionOpt.value();
 
-  if (prescription.status != "PENDING")
+  if (prescription.status != PrescriptionStatus::Pending)
     return QString("Đơn thuốc có trạng thái \"%1\" — không thể cấp phát.")
-        .arg(prescription.status);
+        .arg(prescriptionStatusToVi(prescription.status));
 
   if (!m_prescriptionRepo->dispense(prescriptionId, dispensedBy))
     return "Lỗi hệ thống khi cập nhật trạng thái đơn thuốc.";
@@ -565,3 +565,4 @@ QList<PrescriptionResultDTO>
 PharmacyService::getPrescriptionsByPatient(int patientId) const {
   return m_prescriptionRepo->findByPatientId(patientId);
 }
+

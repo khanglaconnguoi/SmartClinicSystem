@@ -21,7 +21,6 @@ protected:
     virtual void fillDashboardData() override;
 
 private:
-    std::shared_ptr<IAuthenticatable> m_currentUser;
     int m_currentExaminingRow = -1;
 
     QStackedWidget* m_stackedWidget   = nullptr;

@@ -1,10 +1,9 @@
+#pragma once
 #include "dto/PrescriptionDTOs.h"
 #include "DatabaseManager.h"
 #include <QString>
 #include <QList>
 #include <optional>
-
-
 
 class PrescriptionRepository {
 private:
@@ -28,5 +27,5 @@ public:
     std::optional<PrescriptionResultDTO> findByRecordId(int recordId) const;
     QList<PrescriptionResultDTO> findByPatientId(int patientId) const;
 
-    std::optional<QString> getStatus(int prescriptionId) const;
+    std::optional<PrescriptionStatus> getStatus(int prescriptionId) const;
 };

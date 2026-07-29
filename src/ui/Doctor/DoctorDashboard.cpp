@@ -4,8 +4,11 @@
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
 #include "../../service/AppointmentService.h"
+#include "../../service/PharmacyService.h"
+#include "../../repository/MedicationRepository.h"
+#include "../../repository/PrescriptionRepository.h"
 #include "ClinicalExamWidget.h"
-#include "../PatientWidget.h"
+#include "../Patient/PatientWidget.h"
 #include <QCalendarWidget>
 #include <QDate>
 #include <QDebug>
@@ -489,6 +492,10 @@ void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
 
 void DoctorDashboardWidget::buildClinicalExamPage() {
   m_clinicalExamPage = new ClinicalExamWidget(this);
+  auto pharmacyService = std::make_shared<PharmacyService>(
+      std::make_shared<MedicationRepository>(),
+      std::make_shared<PrescriptionRepository>());
+  m_clinicalExamPage->setServices(pharmacyService, m_basePatientService, m_baseAppointmentService);
   m_stackedWidget->addWidget(m_clinicalExamPage);
 
   connect(m_clinicalExamPage, &ClinicalExamWidget::backToDashboardRequested,
@@ -575,10 +582,7 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
 }
 
 void DoctorDashboardWidget::refreshAppointmentsTables() {
-  QString docId = "BS01";
-  if (auto sysUser = std::dynamic_pointer_cast<SystemUser>(m_currentUser)) {
-    docId = sysUser->getStaffCode();
-  }
+  QString docId = m_currentUser ? m_currentUser->getStaffCode() : "";
   QString todayStr = QDate::currentDate().toString("yyyy-MM-dd");
 
   if (m_patientTable) {

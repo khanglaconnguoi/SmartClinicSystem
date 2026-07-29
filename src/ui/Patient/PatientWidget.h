@@ -45,10 +45,8 @@ private:
     QWidget* m_detailViewWidget;
     QStackedWidget* m_detailStackedWidget;
     QWidget* m_infoSubPage;
-    QWidget* m_recordSubPage;
     
     QPushButton* m_btnInfo;
-    QPushButton* m_btnMedicalRecord;
     QPushButton* m_btnBack;
     
     QLineEdit* txtPatientID;
@@ -69,46 +67,4 @@ private:
     QCheckBox* radMale;
     QCheckBox* radFemale;
     QButtonGroup* m_genderGroup;
-
-    QScrollArea* m_recordScrollArea;
-    QLineEdit* txtRecordID;
-    QLineEdit* txtRecordDate;
-    QLineEdit* txtRecordDoctor;
-    QLineEdit* txtRecordDept;
-    QLineEdit* txtRecordType;
-    QLineEdit* txtRecordStatus;
-    QLineEdit* txtRecordCount;
-
-    QTextEdit* txtReason;
-    QTextEdit* txtHistory;
-    QTextEdit* txtPastHistory;
-    QTextEdit* txtAllergyRecord;
-    QTextEdit* txtClinicalExam;
-    
-    QTableWidget* m_diagnosticTable;
-    QPushButton* m_btnAddDiagnostic;
-    
-    QTextEdit* txtTreatment;
-    
-    QTableWidget* m_prescriptionTable;
-    QPushButton* m_btnAddPrescription;
-    
-    QCheckBox* chkBloodCount;
-    QCheckBox* chkGlucose;
-    QCheckBox* chkLiver;
-    QCheckBox* chkEcg;
-    QTextEdit* txtSubClinicalNotes;
-
-    QLineEdit* txtPulse;
-    QLineEdit* txtBloodPressure;
-    QLineEdit* txtRespiratoryRate;
-    QLineEdit* txtSpO2;
-    QLineEdit* txtWeight;
-    QLineEdit* txtHeight;
-    QLineEdit* txtBMI;
-    QLineEdit* txtTemperature;
-
-    QTextEdit* txtSubClinicalResult;
-    QTextEdit* txtAdvice;
-    QDateEdit* dateRecall;
 };

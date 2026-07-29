@@ -10,6 +10,13 @@
 #include <QGridLayout>
 #include <QFrame>
 
+#include <memory>
+class PharmacyService;
+class PatientService;
+class AppointmentService;
+
+#include "dto/PatientDTOs.h"
+
 class ClinicalExamWidget : public QWidget {
     Q_OBJECT
 
@@ -17,8 +24,11 @@ public:
     explicit ClinicalExamWidget(QWidget* parent = nullptr);
     virtual ~ClinicalExamWidget() override = default;
 
+    void setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService);
+
     // Hàm load thông tin bệnh nhân khi bác sĩ chọn khám
     void loadPatientInfo(const QString& name, const QString& id, const QString& time, const QString& specialty);
+    void loadPatientInfo(const PatientDetailDTO& patient, const QString& time = "", const QString& specialty = "");
 
 signals:
     // Tín hiệu yêu cầu quay lại màn hình Dashboard chính
@@ -27,11 +37,15 @@ signals:
     void viewAppointmentsListRequested();
 
 private:
+    std::shared_ptr<PharmacyService> m_pharmacyService;
+    std::shared_ptr<PatientService> m_patientService;
+    std::shared_ptr<AppointmentService> m_appointmentService;
+
     // --- TOP TABS BAR ---
-    QPushButton* m_tabDanhSach;
-    QPushButton* m_tabKhamLamSang;
-    QPushButton* m_tabDangKyKham;
-    QPushButton* m_tabThuTien;
+    QPushButton* m_tabAppointmentsList;
+    QPushButton* m_tabClinicalExam;
+    QPushButton* m_tabRegistration;
+    QPushButton* m_tabBilling;
 
     // --- PATIENT INFO AREA ---
     QLabel* m_lblPatientCodeVal;
@@ -50,12 +64,12 @@ private:
     QPushButton* m_btnPrint;
 
     // --- SUB-SIDEBAR (KHÁM BỆNH MENU) ---
-    QPushButton* m_subKhamLamSang;
-    QPushButton* m_subChiDinhDichVu;
-    QPushButton* m_subDonThuoc;
-    QPushButton* m_subKetQuaTongHop;
-    QPushButton* m_subBhxh;
-    QPushButton* m_subChuyenVien;
+    QPushButton* m_subClinicalExam;
+    QPushButton* m_subServiceOrder;
+    QPushButton* m_subPrescription;
+    QPushButton* m_subSummaryResults;
+    QPushButton* m_subSocialInsurance;
+    QPushButton* m_subHospitalTransfer;
 
     // --- MAIN FORM INPUTS ---
     QComboBox* m_cbTemplate;
@@ -84,8 +98,28 @@ private:
     QTextEdit* m_txtExamGeneral;
     QTextEdit* m_txtClsSummary;
 
-    // --- UI Setup ---
+    // --- UI Setup & Helpers ---
+    /** @brief Khởi tạo và kết nối toàn bộ layout giao diện màn hình khám lâm sàng */
     void setupUi();
+
+    /** @brief Tạo thanh Tab điều hướng chính trên cùng (Danh sách, Khám lâm sàng, Đăng ký khám, Thu tiền) */
+    QHBoxLayout* setupTopTabBar();
+
+    /** @brief Tạo Thẻ thông tin bệnh nhân & Thanh nút thao tác nhanh (Lưu, Kết thúc khám, Gọi khám...) */
+    QFrame* setupPatientInfoCard();
+
+    /** @brief Tạo Thanh menu chức năng con bên trái (Khám lâm sàng, Chỉ định dịch vụ, Đơn thuốc...) */
+    QFrame* setupSubSidebar();
+
+    /** @brief Tạo Form nhập liệu chính ở giữa (Nhập mẫu, Sinh hiệu, BMI, Lý do khám, Chẩn đoán, Lời dặn) */
+    QWidget* setupMainExamForm();
+
+    /** @brief Tạo Panel ghi chú chuyên môn bên phải (Tiền sử bệnh, Bệnh sử lâm sàng, Khám toàn thân, Kết quả CLS) */
+    QFrame* setupMedicalHistoryPanel();
+
+    /** @brief Khởi tạo đường kẻ phân cách giao diện */
     QFrame* createSeparator();
+
+    /** @brief Tự động tính toán chỉ số BMI dựa theo cân nặng và chiều cao nhập vào */
     void updateBmi();
 };

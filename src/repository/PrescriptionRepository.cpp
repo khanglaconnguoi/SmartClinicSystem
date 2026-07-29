@@ -7,7 +7,7 @@ bool PrescriptionRepository::insertHeader(const PrescriptionInputDTO& prescripti
     QString insert = R"(
         INSERT INTO prescriptions (
             record_id,
-            doctor_id
+            doctor_id,
             notes
         )
         VALUES (?, ?, ?)
@@ -159,7 +159,7 @@ PrescriptionResultDTO PrescriptionRepository::mapRowToPrescriptionHeader(const Q
     dto.doctorId       = query.value("doctor_id").toInt();
     dto.doctorCode     = query.value("doctor_code").toString();
     dto.doctorName     = query.value("doctor_name").toString();
-    dto.status         = query.value("status").toString();
+    dto.status         = prescriptionStatusFromEn(query.value("status").toString());
     dto.notes          = query.value("notes").toString();
     dto.prescribedAt   = query.value("prescribed_at").toDateTime();
     dto.totalAmount    = 0.0; // Khởi tạo để tính toán sau
@@ -285,7 +285,7 @@ QList<PrescriptionResultDTO> PrescriptionRepository::search(const PrescriptionSe
             dto.doctorId         = query.value("doctor_id").toInt();
             dto.doctorCode       = query.value("doctor_code").toString();
             dto.doctorName       = query.value("doctor_name").toString();
-            dto.status           = query.value("status").toString();
+            dto.status           = prescriptionStatusFromEn(query.value("status").toString());
             dto.notes            = query.value("notes").toString();
             dto.prescribedAt     = query.value("prescribed_at").toDateTime();
             dto.totalAmount      = 0.0;
@@ -429,10 +429,10 @@ QList<PrescriptionResultDTO> PrescriptionRepository::findByPatientId(int patient
     return results;
 }
 
-std::optional<QString> PrescriptionRepository::getStatus(int prescriptionId) const {
+std::optional<PrescriptionStatus> PrescriptionRepository::getStatus(int prescriptionId) const {
     QString sql = "SELECT status FROM prescriptions WHERE prescription_id = ?";
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, { prescriptionId });
 
     if (!query.next()) return std::nullopt;
-    return query.value("status").toString();
+    return prescriptionStatusFromEn(query.value("status").toString());
 }

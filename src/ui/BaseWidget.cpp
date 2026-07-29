@@ -1,11 +1,12 @@
 #include "BaseDashboard.h"
-#include "Profile.h"
+#include "view/Profile.h"
 #include "repository/StaffRepository.h"
 #include "service/StaffService.h"
+#include "service/UserSession.h"
 #include <QDebug>
 
 BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user, std::shared_ptr<StaffService> staffService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : QWidget(parent), m_sidebarFrame(nullptr), m_mainContentWidget(nullptr), m_currentUser(user), m_baseStaffService(std::move(staffService)), m_basePatientService(std::move(patientService)), m_baseAppointmentService(std::move(appointmentService))
+    : QWidget(parent), m_sidebarFrame(nullptr), m_mainContentWidget(nullptr), m_currentUser(user ? user : UserSession::getInstance().getCurrentAccount()), m_baseStaffService(std::move(staffService)), m_basePatientService(std::move(patientService)), m_baseAppointmentService(std::move(appointmentService))
 {
     m_globalLayout = new QHBoxLayout(this);
     m_globalLayout->setContentsMargins(0, 0, 0, 0);

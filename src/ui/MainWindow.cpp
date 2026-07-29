@@ -1,4 +1,3 @@
-// MainWindow.cpp
 #include "MainWindow.h"
 #include "Admin/AdminDashboard.h"
 #include "Doctor/DoctorDashboard.h"
@@ -7,6 +6,7 @@
 #include "model/IAuthenticatable.h"
 #include "model/SystemUser.h"
 #include "model/CommonEnums.h"
+#include "service/UserSession.h"
 #include <QDialog>
 #include <QFrame>
 #include <QGuiApplication>
@@ -189,6 +189,7 @@ void MainWindow::handleGlobalLogout() {
   connect(btnConfirm, &QPushButton::clicked, &dialog, &QDialog::accept);
 
   if (dialog.exec() == QDialog::Accepted) {
+    UserSession::getInstance().clear();
     m_stackedWidget->setCurrentIndex(0);
 
     this->showNormal();

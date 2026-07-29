@@ -1,6 +1,12 @@
 #include "ClinicalExamWidget.h"
+#include "CreatePrescriptionDialog.h"
+#include "PatientRecordHistoryDialog.h"
+#include "../../service/PharmacyService.h"
+#include "../../service/PatientService.h"
+#include "../../service/AppointmentService.h"
 #include <QDoubleValidator>
 #include <QDebug>
+#include <QMessageBox>
 
 ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
     : QWidget(parent)
@@ -8,9 +14,33 @@ ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
     setupUi();
 
     // Kết nối các tín hiệu chuyển hướng về Dashboard
-    connect(m_tabDanhSach, &QPushButton::clicked, this, &ClinicalExamWidget::viewAppointmentsListRequested);
+    connect(m_tabAppointmentsList, &QPushButton::clicked, this, &ClinicalExamWidget::viewAppointmentsListRequested);
     connect(m_btnCancel, &QPushButton::clicked, this, &ClinicalExamWidget::backToDashboardRequested);
     connect(m_btnFinish, &QPushButton::clicked, this, &ClinicalExamWidget::finishExamRequested);
+
+    if (m_subPrescription) {
+        connect(m_subPrescription, &QPushButton::clicked, this, [this]() {
+            CreatePrescriptionDialog dialog(m_pharmacyService, this);
+            dialog.setRecordId(m_lblPatientCodeVal ? m_lblPatientCodeVal->text() : "");
+            dialog.exec();
+        });
+    }
+
+    auto openHistoryAction = [this]() {
+        PatientRecordHistoryDialog dialog(m_pharmacyService, this);
+        QString patCode = m_lblPatientCodeVal ? m_lblPatientCodeVal->text() : "";
+        QString patName = m_lblPatientNameVal ? m_lblPatientNameVal->text() : "";
+        int patId = patCode.startsWith("BN") ? patCode.mid(2).toInt() : 0;
+        dialog.loadPatientHistory(patId, patName, patCode);
+        dialog.exec();
+    };
+
+    if (m_btnHistory) {
+        connect(m_btnHistory, &QPushButton::clicked, this, openHistoryAction);
+    }
+    if (m_subSummaryResults) {
+        connect(m_subSummaryResults, &QPushButton::clicked, this, openHistoryAction);
+    }
 
     // Tính toán BMI tự động
     auto onBmiInputChanged = [this]() {
@@ -20,6 +50,15 @@ ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
     connect(m_txtHeight, &QLineEdit::textChanged, this, onBmiInputChanged);
 }
 
+void ClinicalExamWidget::setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService) {
+    m_pharmacyService = pharmacyService;
+    m_patientService = patientService;
+    m_appointmentService = appointmentService;
+}
+
+/**
+ * @brief Hàm điều phối chính: Khởi tạo các vùng giao diện của màn hình Khám lâm sàng.
+ */
 void ClinicalExamWidget::setupUi() {
     this->setStyleSheet("background-color: #F3F4F6; font-family: 'Segoe UI';");
 
@@ -27,22 +66,40 @@ void ClinicalExamWidget::setupUi() {
     mainLayout->setContentsMargins(16, 12, 16, 16);
     mainLayout->setSpacing(12);
 
-    // =========================================================================
-    // 1. TOP TABS BAR (DANH SÁCH, KHÁM LÂM SÀNG, v.v.)
-    // =========================================================================
+    // 1. Thêm thanh Tab điều hướng phía trên
+    mainLayout->addLayout(setupTopTabBar());
+
+    // 2. Thêm thẻ thông tin bệnh nhân & các nút thao tác nhanh
+    mainLayout->addWidget(setupPatientInfoCard());
+
+    // 3. Khởi tạo Không gian làm việc chính (Workspace) gồm 3 cột
+    QHBoxLayout* workspaceLayout = new QHBoxLayout();
+    workspaceLayout->setSpacing(12);
+
+    workspaceLayout->addWidget(setupSubSidebar(), 2);          // Cột trái: Menu khám bệnh con
+    workspaceLayout->addWidget(setupMainExamForm(), 5);        // Cột giữa: Form nhập liệu khám chính
+    workspaceLayout->addWidget(setupMedicalHistoryPanel(), 3); // Cột phải: Panel ghi chú chuyên môn & tiền sử
+
+    mainLayout->addLayout(workspaceLayout, 1);
+}
+
+/**
+ * @brief Khởi tạo Thanh Tab chuyển đổi các phân phân hệ (Danh sách, Khám lâm sàng, Đăng ký, Thu tiền).
+ */
+QHBoxLayout* ClinicalExamWidget::setupTopTabBar() {
     QHBoxLayout* topTabsLayout = new QHBoxLayout();
     topTabsLayout->setSpacing(4);
 
-    m_tabDanhSach = new QPushButton("DANH SÁCH", this);
-    m_tabKhamLamSang = new QPushButton("KHÁM LÂM SÀNG", this);
-    m_tabDangKyKham = new QPushButton("ĐĂNG KÝ KHÁM", this);
-    m_tabThuTien = new QPushButton("THU TIỀN", this);
+    m_tabAppointmentsList = new QPushButton("DANH SÁCH", this);
+    m_tabClinicalExam = new QPushButton("KHÁM LÂM SÀNG", this);
+    m_tabRegistration = new QPushButton("ĐĂNG KÝ KHÁM", this);
+    m_tabBilling = new QPushButton("THU TIỀN", this);
 
-    QPushButton* tabs[] = { m_tabDanhSach, m_tabKhamLamSang, m_tabDangKyKham, m_tabThuTien };
+    QPushButton* tabs[] = { m_tabAppointmentsList, m_tabClinicalExam, m_tabRegistration, m_tabBilling };
     for (auto* tab : tabs) {
         tab->setCursor(Qt::PointingHandCursor);
         tab->setFixedHeight(36);
-        if (tab == m_tabKhamLamSang) {
+        if (tab == m_tabClinicalExam) {
             tab->setStyleSheet(
                 "QPushButton { background-color: #007A7E; color: white; border: none; "
                 "font-size: 13px; font-weight: bold; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 0 20px; }"
@@ -57,11 +114,13 @@ void ClinicalExamWidget::setupUi() {
         topTabsLayout->addWidget(tab);
     }
     topTabsLayout->addStretch();
-    mainLayout->addLayout(topTabsLayout);
+    return topTabsLayout;
+}
 
-    // =========================================================================
-    // 2. PATIENT INFO & QUICK ACTIONS PANEL
-    // =========================================================================
+/**
+ * @brief Khởi tạo Thẻ Thông tin Bệnh nhân (Tên, Mã, Tuổi, Giới tính) và Thanh Nút thao tác nhanh của Bác sĩ.
+ */
+QFrame* ClinicalExamWidget::setupPatientInfoCard() {
     QFrame* infoCard = new QFrame(this);
     infoCard->setObjectName("InfoCard");
     infoCard->setStyleSheet("QFrame#InfoCard { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }");
@@ -71,7 +130,7 @@ void ClinicalExamWidget::setupUi() {
 
     QHBoxLayout* topInfoRow = new QHBoxLayout();
 
-    // Khối thông tin bệnh nhân bên trái
+    // -- Khối thông tin định danh bệnh nhân --
     QHBoxLayout* patDetailsLayout = new QHBoxLayout();
     patDetailsLayout->setSpacing(16);
 
@@ -129,7 +188,7 @@ void ClinicalExamWidget::setupUi() {
     detailsText->addLayout(detLine2);
     patDetailsLayout->addLayout(detailsText);
 
-    // Khối nút thao tác nhanh bên phải
+    // -- Khối nút thao tác nhanh bên phải --
     QHBoxLayout* actionButtonsLayout = new QHBoxLayout();
     actionButtonsLayout->setSpacing(6);
 
@@ -158,7 +217,7 @@ void ClinicalExamWidget::setupUi() {
     topInfoRow->addLayout(actionButtonsLayout, 6);
     infoCardLayout->addLayout(topInfoRow);
 
-    // Hàng Metadata nhỏ ở dưới
+    // -- Thống kê Metadata phụ phía dưới --
     infoCardLayout->addWidget(createSeparator());
     QHBoxLayout* metaRow = new QHBoxLayout();
     metaRow->setSpacing(24);
@@ -175,15 +234,13 @@ void ClinicalExamWidget::setupUi() {
     metaRow->addStretch();
     infoCardLayout->addLayout(metaRow);
 
-    mainLayout->addWidget(infoCard);
+    return infoCard;
+}
 
-    // =========================================================================
-    // 3. MAIN WORKSPACE (LEFT SUB-SIDEBAR + FORM + RIGHT TEXT FIELDS)
-    // =========================================================================
-    QHBoxLayout* workspaceLayout = new QHBoxLayout();
-    workspaceLayout->setSpacing(12);
-
-    // 3A. SUB-SIDEBAR TRÁI
+/**
+ * @brief Khởi tạo Thanh Menu con bên trái (Chuyển đổi giữa Khám lâm sàng, Đơn thuốc, Cận lâm sàng...).
+ */
+QFrame* ClinicalExamWidget::setupSubSidebar() {
     QFrame* subSidebar = new QFrame(this);
     subSidebar->setObjectName("SubSidebar");
     subSidebar->setFixedWidth(180);
@@ -201,22 +258,26 @@ void ClinicalExamWidget::setupUi() {
     subHdr->setStyleSheet("font-size: 11px; font-weight: bold; color: #9CA3AF; margin-bottom: 8px; background: transparent; padding-left: 10px;");
     subSidebarLayout->addWidget(subHdr);
 
-    m_subKhamLamSang = new QPushButton("Khám lâm sàng", subSidebar);
-    m_subKhamLamSang->setObjectName("activeSub");
-    m_subChiDinhDichVu = new QPushButton("Chỉ định dịch vụ", subSidebar);
-    m_subDonThuoc = new QPushButton("Đơn thuốc", subSidebar);
-    m_subKetQuaTongHop = new QPushButton("Kết quả khám tổng hợp", subSidebar);
-    m_subBhxh = new QPushButton("Thông tin nghỉ BHXH", subSidebar);
-    m_subChuyenVien = new QPushButton("Thông tin chuyển viện", subSidebar);
+    m_subClinicalExam = new QPushButton("Khám lâm sàng", subSidebar);
+    m_subClinicalExam->setObjectName("activeSub");
+    m_subServiceOrder = new QPushButton("Chỉ định dịch vụ", subSidebar);
+    m_subPrescription = new QPushButton("Đơn thuốc", subSidebar);
+    m_subSummaryResults = new QPushButton("Kết quả khám tổng hợp", subSidebar);
+    m_subSocialInsurance = new QPushButton("Thông tin nghỉ BHXH", subSidebar);
+    m_subHospitalTransfer = new QPushButton("Thông tin chuyển viện", subSidebar);
 
-    QPushButton* subs[] = { m_subKhamLamSang, m_subChiDinhDichVu, m_subDonThuoc, m_subKetQuaTongHop, m_subBhxh, m_subChuyenVien };
+    QPushButton* subs[] = { m_subClinicalExam, m_subServiceOrder, m_subPrescription, m_subSummaryResults, m_subSocialInsurance, m_subHospitalTransfer };
     for (auto* subBtn : subs) {
         subSidebarLayout->addWidget(subBtn);
     }
     subSidebarLayout->addStretch();
-    workspaceLayout->addWidget(subSidebar);
+    return subSidebar;
+}
 
-    // 3B. FORM NHẬP LIỆU CHÍNH (GIỮA)
+/**
+ * @brief Khởi tạo Form nhập liệu thông tin khám bệnh trung tâm (Sinh hiệu, Chỉ số BMI, Chẩn đoán, Hướng xử lý, Lời dặn).
+ */
+QWidget* ClinicalExamWidget::setupMainExamForm() {
     QFrame* mainForm = new QFrame(this);
     mainForm->setObjectName("MainForm");
     mainForm->setStyleSheet(
@@ -231,7 +292,7 @@ void ClinicalExamWidget::setupUi() {
     mainFormLayout->setContentsMargins(16, 16, 16, 16);
     mainFormLayout->setSpacing(14);
 
-    // Chọn mẫu
+    // -- Chọn mẫu khám --
     QHBoxLayout* templateRow = new QHBoxLayout();
     QLabel* lblTemplate = new QLabel("Chọn mẫu:", mainForm);
     m_cbTemplate = new QComboBox(mainForm);
@@ -244,7 +305,7 @@ void ClinicalExamWidget::setupUi() {
     templateRow->addWidget(m_cbTemplate);
     mainFormLayout->addLayout(templateRow);
 
-    // Khối các chỉ số sinh tồn (Chỉ số)
+    // -- Khối các chỉ số sinh tồn (Vital Signs) --
     QFrame* vitalBox = new QFrame(mainForm);
     vitalBox->setObjectName("VitalBox");
     vitalBox->setStyleSheet("QFrame#VitalBox { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; }"
@@ -287,7 +348,7 @@ void ClinicalExamWidget::setupUi() {
 
     mainFormLayout->addWidget(vitalBox);
 
-    // Lý do khám & chẩn đoán
+    // -- Lý do khám & Chẩn đoán bệnh --
     QVBoxLayout* fieldsLayout = new QVBoxLayout();
     fieldsLayout->setSpacing(10);
 
@@ -341,9 +402,13 @@ void ClinicalExamWidget::setupUi() {
 
     mainFormLayout->addLayout(fieldsLayout);
     mainFormLayout->addStretch();
-    workspaceLayout->addWidget(mainForm, 6);
+    return mainForm;
+}
 
-    // 3C. PANEL HỒ SƠ CHUYÊN MÔN (PHẢI)
+/**
+ * @brief Khởi tạo Panel Hồ sơ Chuyên môn bên phải (Tiền sử bệnh, Bệnh sử, Khám toàn thân, Tóm tắt CLS).
+ */
+QFrame* ClinicalExamWidget::setupMedicalHistoryPanel() {
     QFrame* rightPanel = new QFrame(this);
     rightPanel->setObjectName("RightPanel");
     rightPanel->setStyleSheet(
@@ -376,21 +441,27 @@ void ClinicalExamWidget::setupUi() {
     m_txtClsSummary->setPlaceholderText("Tóm tắt kết quả xét nghiệm máu, X-Quang, siêu âm...");
     rightLayout->addWidget(m_txtClsSummary);
 
-    workspaceLayout->addWidget(rightPanel, 4);
-
-    mainLayout->addLayout(workspaceLayout, 1);
+    return rightPanel;
 }
 
 void ClinicalExamWidget::loadPatientInfo(const QString& name, const QString& id, const QString& time, const QString& specialty) {
     if (m_lblPatientNameVal) m_lblPatientNameVal->setText(name.toUpper());
     if (m_lblPatientCodeVal) m_lblPatientCodeVal->setText(id);
     
-    // Tự động phân bổ tuổi/giới tính ngẫu nhiên để tăng tính sinh động của mockup
+    // LƯU Ý / CẢNH BÁO: Tính năng tuổi (age) hiện tại đang sử dụng công thức giả lập (mockup calculation) dựa theo độ dài ID.
+    // Giữ nguyên công thức tính theo yêu cầu, chỉ đặt comment lưu ý tại đây. Khi đưa vào sản xuất cần lấy chính xác từ dateOfBirth.
     int age = 30 + (id.length() % 25);
     if (m_lblPatientAgeVal) m_lblPatientAgeVal->setText(QString("%1 tuổi").arg(age));
     if (m_lblPatientGenderVal) m_lblPatientGenderVal->setText(age % 2 == 0 ? "Nam" : "Nữ");
     
     qDebug() << "Loaded patient info to clinical workspace:" << name << id << time << specialty;
+}
+
+void ClinicalExamWidget::loadPatientInfo(const PatientDetailDTO& patient, const QString& time, const QString& specialty) {
+    loadPatientInfo(patient.fullName, patient.patientCode, time, specialty);
+    if (!patient.gender.isEmpty() && m_lblPatientGenderVal) {
+        m_lblPatientGenderVal->setText(GenderText::toVi(patient.gender));
+    }
 }
 
 void ClinicalExamWidget::updateBmi() {

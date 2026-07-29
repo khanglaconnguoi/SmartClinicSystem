@@ -7,10 +7,10 @@
 #include <QPushButton>
 #include <QComboBox>
 #include <memory>
-#include "../service/StaffService.h"
-#include "../dto/StaffDTOs.h"
-#include "../model/CommonEnums.h"
-#include "../service/Validation.h"
+#include "../../service/StaffService.h"
+#include "../../dto/StaffDTOs.h"
+#include "../../model/CommonEnums.h"
+#include "../../service/Validation.h"
 #include <QTextEdit>
 class ProfileWidget : public QDialog {
     Q_OBJECT

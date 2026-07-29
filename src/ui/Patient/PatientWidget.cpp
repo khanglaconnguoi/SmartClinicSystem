@@ -1,6 +1,7 @@
 // PatientWidget.cpp
 #include "PatientWidget.h"
-#include "AddMedicationDialog.h"
+#include "../Pharmacy/AddMedicationDialog.h"
+#include "../Doctor/CreatePrescriptionDialog.h"
 
 PatientWidget::PatientWidget(QWidget *parent) : QWidget(parent) {
     setupUi();
@@ -401,263 +402,38 @@ void PatientWidget::createDetailView() {
         "QTextEdit:!read-only { border: 1px solid #0284C7; border-radius: 6px; background-color: #FFFFFF; padding: 12px; }"
     );
     cardNotesLayout->addWidget(txtNotes);
-    leftPartLayout->addWidget(cardNotes);
-    infoMainLayout->addLayout(leftPartLayout, 1);
-
-    m_recordSubPage = new QWidget(this);
-    QVBoxLayout* recordPageLayout = new QVBoxLayout(m_recordSubPage);
-    recordPageLayout->setContentsMargins(0, 0, 0, 0);
-    recordPageLayout->setSpacing(0);
-
-    QFrame* recordTopBar = new QFrame(m_recordSubPage);
-    recordTopBar->setStyleSheet("QFrame { background-color: #FFFFFF; border-bottom: 1px solid #E2E8F0; }");
-    QHBoxLayout* recordTopBarLayout = new QHBoxLayout(recordTopBar);
-    recordTopBarLayout->setContentsMargins(24, 14, 24, 14);
-    
-    QLabel* recordMainTitle = new QLabel("HỒ SƠ BỆNH ÁN ĐIỆN TỬ", recordTopBar);
-    recordMainTitle->setStyleSheet("font-size: 18px; font-weight: bold; color: #0F172A; font-family: 'Arial';");
-    recordTopBarLayout->addWidget(recordMainTitle);
-    recordTopBarLayout->addStretch();
-
-    QString btnHeaderStyle = "QPushButton { font-size: 13px; font-weight: 600; font-family: 'Arial'; border-radius: 6px; padding: 8px 16px; }";
-    QPushButton* btnDraft = new QPushButton("Lưu nháp", recordTopBar);
-    btnDraft->setStyleSheet(btnHeaderStyle + "QPushButton { background-color: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; } QPushButton:hover { background-color: #E2E8F0; }");
-    QPushButton* btnSaveRecord = new QPushButton("Lưu bệnh án", recordTopBar);
-    btnSaveRecord->setStyleSheet(btnHeaderStyle + "QPushButton { background-color: #0284C7; color: white; border: none; } QPushButton:hover { background-color: #0369A1; }");
-    QPushButton* btnPrint = new QPushButton("In bệnh án", recordTopBar);
-    btnPrint->setStyleSheet(btnHeaderStyle + "QPushButton { background-color: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; } QPushButton:hover { background-color: #F1F5F9; }");
-    QPushButton* btnExport = new QPushButton("Xuất PDF", recordTopBar);
-    btnExport->setStyleSheet(btnHeaderStyle + "QPushButton { background-color: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; } QPushButton:hover { background-color: #F1F5F9; }");
-
-    recordTopBarLayout->addWidget(btnDraft);
-    recordTopBarLayout->addWidget(btnSaveRecord);
-    recordTopBarLayout->addWidget(btnPrint);
-    recordTopBarLayout->addWidget(btnExport);
-    recordPageLayout->addWidget(recordTopBar);
-
-    QScrollArea* recordScroll = new QScrollArea(m_recordSubPage);
-    recordScroll->setFrameShape(QFrame::NoFrame);
-    recordScroll->setWidgetResizable(true);
-    recordScroll->setStyleSheet("QScrollArea { background-color: #F8FAFC; }");
-
-    QWidget* recordScrollContent = new QWidget();
-    recordScrollContent->setStyleSheet("background-color: #F8FAFC;");
-    QVBoxLayout* recordScrollLayout = new QVBoxLayout(recordScrollContent);
-    recordScrollLayout->setContentsMargins(24, 20, 24, 24);
-    recordScrollLayout->setSpacing(20);
-
-    QString fCardStyle = "QFrame#FormCard { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; }";
-    QString secTitleStyle = "QLabel { font-size: 13px; font-weight: bold; color: #0284C7; font-family: 'Arial'; text-transform: uppercase; border: none; }";
-    QString fInputStyle = "QTextEdit, QLineEdit, QComboBox, QDateEdit { border: 1px solid #CBD5E1; border-radius: 6px; padding: 8px; font-size: 13px; color: #0F172A; background-color: #FFFFFF; }"
-                          "QTextEdit:focus, QLineEdit:focus, QComboBox:focus, QDateEdit:focus { border: 1px solid #0284C7; background-color: #F8FAFC; }"
-                          "QTextEdit:read-only, QLineEdit:read-only, QComboBox:disabled, QDateEdit:disabled { border: 1px solid transparent; background-color: transparent; padding: 4px 0px; color: #000000; }";
-
-    QString tableStyle = "QTableWidget { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; font-size: 13px; color: #334155; }"
-                         "QHeaderView::section { background-color: #F8FAFC; color: #334155; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }";
-
-    QFrame* pBanner = new QFrame(recordScrollContent);
-    pBanner->setObjectName("FormCard"); pBanner->setStyleSheet(fCardStyle);
-    QGridLayout* pBannerLayout = new QGridLayout(pBanner);
-    pBannerLayout->setContentsMargins(24, 20, 24, 20);
-    pBannerLayout->setHorizontalSpacing(30); pBannerLayout->setVerticalSpacing(12);
-
-    QLabel* lblRecName = new QLabel("-", pBanner);
-    lblRecName->setStyleSheet("font-size: 16px; font-weight: bold; color: #0F172A; border: none;");
-    QLabel* lblRecMeta = new QLabel("-  |  - tuổi  |  --/--/----", pBanner);
-    lblRecMeta->setStyleSheet("font-size: 13px; color: #475569; border: none;");
-    QLabel* lblRecSub = new QLabel("Mã BN: -\nĐiện thoại: -\nĐịa chỉ: -", pBanner);
-    lblRecSub->setStyleSheet("font-size: 12px; color: #64748B; border: none; line-height: 1.4;");
-    pBannerLayout->addWidget(lblRecName, 0, 0, 1, 1);
-    pBannerLayout->addWidget(lblRecMeta, 1, 0, 1, 1);
-    pBannerLayout->addWidget(lblRecSub, 2, 0, 1, 1);
-
-    QFrame* pDivider = new QFrame(pBanner);
-    pDivider->setFrameShape(QFrame::VLine); pDivider->setStyleSheet("color: #E2E8F0; border: none; background-color: #E2E8F0; width: 1px;");
-    pBannerLayout->addWidget(pDivider, 0, 1, 3, 1);
-
-    QGridLayout* mGridL = new QGridLayout();
-    auto addMRow = [&](QString l, QString v, int r, QString c) {
-        QLabel* lbl = new QLabel(l, pBanner); lbl->setStyleSheet("font-size: 13px; color: #64748B; border: none;");
-        QLabel* val = new QLabel(v, pBanner); val->setStyleSheet(QString("font-size: 13px; font-weight: 600; color: %1; border: none;").arg(c));
-        mGridL->addWidget(lbl, r, 0); mGridL->addWidget(val, r, 1);
-    };
-    addMRow("Mã bệnh án:", "-", 0, "#0284C7");
-    addMRow("Ngày khám:", "--/--/---- --:--", 1, "#0F172A");
-    addMRow("Bác sĩ:", "-", 2, "#0F172A");
-    addMRow("Khoa:", "-", 3, "#0F172A");
-    pBannerLayout->addLayout(mGridL, 0, 2, 3, 1);
-
-    QGridLayout* mGridR = new QGridLayout();
-    QLabel* lblLt = new QLabel("Loại khám:", pBanner); lblLt->setStyleSheet("font-size: 13px; color: #64748B; border: none;");
-    QLabel* valLt = new QLabel("-", pBanner); valLt->setStyleSheet("font-size: 13px; font-weight: 600; color: #0F172A; border: none;");
-    mGridR->addWidget(lblLt, 0, 0); mGridR->addWidget(valLt, 0, 1);
-    QLabel* lblSt = new QLabel("Trạng thái:", pBanner); lblSt->setStyleSheet("font-size: 13px; color: #64748B; border: none;");
-    QLabel* valSt = new QLabel("-", pBanner); valSt->setStyleSheet("background-color: #FEF3C7; color: #D97706; font-size: 12px; font-weight: 600; border-radius: 4px; padding: 2px 8px; border: none;");
-    mGridR->addWidget(lblSt, 1, 0); mGridR->addWidget(valSt, 1, 1, Qt::AlignLeft);
-    QLabel* lblCc = new QLabel("Lần khám:", pBanner); lblCc->setStyleSheet("font-size: 13px; color: #64748B; border: none;");
-    QLabel* valCc = new QLabel("-", pBanner); valCc->setStyleSheet("font-size: 13px; font-weight: 600; color: #0F172A; border: none;");
-    mGridR->addWidget(lblCc, 2, 0); mGridR->addWidget(valCc, 2, 1);
-    pBannerLayout->addLayout(mGridR, 0, 3, 3, 1);
-
-    pBannerLayout->setColumnStretch(0, 2); pBannerLayout->setColumnStretch(2, 2); pBannerLayout->setColumnStretch(3, 2);
-    recordScrollLayout->addWidget(pBanner);
-
-    QHBoxLayout* bodyColumns = new QHBoxLayout(); bodyColumns->setSpacing(20);
-    QVBoxLayout* leftCol = new QVBoxLayout(); leftCol->setSpacing(20);
-    QVBoxLayout* rightCol = new QVBoxLayout(); rightCol->setSpacing(20);
-
-    QList<QWidget*> recordFields;
-
-    auto buildTextCard = [&](QString title, int height) {
-        QFrame* card = new QFrame(recordScrollContent); card->setObjectName("FormCard"); card->setStyleSheet(fCardStyle);
-        QVBoxLayout* lay = new QVBoxLayout(card); lay->setContentsMargins(20, 16, 20, 16); lay->setSpacing(10);
-        QLabel* lblT = new QLabel(title, card); lblT->setStyleSheet(secTitleStyle);
-        QTextEdit* text = new QTextEdit(card); text->setStyleSheet(fInputStyle); text->setMaximumHeight(height);
-        text->setReadOnly(true);
-        recordFields.append(text);
-        lay->addWidget(lblT); lay->addWidget(text);
-        return card;
-    };
-    leftCol->addWidget(buildTextCard("Lý do khám", 64));
-    leftCol->addWidget(buildTextCard("Bệnh sử", 80));
-
-    QHBoxLayout* preHistoryRow = new QHBoxLayout(); preHistoryRow->setSpacing(16);
-    preHistoryRow->addWidget(buildTextCard("Tiền sử bệnh", 64), 1);
-    preHistoryRow->addWidget(buildTextCard("Dị ứng", 64), 1);
-    leftCol->addLayout(preHistoryRow);
-
-    QFrame* cardDiag = new QFrame(recordScrollContent); cardDiag->setObjectName("FormCard"); cardDiag->setStyleSheet(fCardStyle);
-    QVBoxLayout* layDiag = new QVBoxLayout(cardDiag); layDiag->setContentsMargins(20, 16, 20, 16); layDiag->setSpacing(12);
-    QLabel* lblDiagT = new QLabel("Chẩn đoán", cardDiag); lblDiagT->setStyleSheet(secTitleStyle);
-    QTableWidget* tblDiag = new QTableWidget(0, 4, cardDiag);
-    tblDiag->setHorizontalHeaderLabels({"ICD-10", "Tên chẩn đoán", "Loại chẩn đoán", "Thao tác"});
-    tblDiag->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    tblDiag->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    tblDiag->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
-    tblDiag->setStyleSheet(tableStyle);
-    tblDiag->setMaximumHeight(130);
-    tblDiag->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    recordFields.append(tblDiag);
-
-    QPushButton* btnAddDiag = new QPushButton("+ Thêm chẩn đoán", cardDiag);
-    btnAddDiag->setStyleSheet("QPushButton { background-color: #F1F5F9; color: #0369A1; border: 1px solid #CBD5E1; font-weight: 600; font-size: 12px; border-radius: 4px; padding: 6px 12px; } QPushButton:hover { background-color: #E0F2FE; }");
-    btnAddDiag->setEnabled(false);
-    recordFields.append(btnAddDiag);
-    layDiag->addWidget(lblDiagT); layDiag->addWidget(tblDiag); layDiag->addWidget(btnAddDiag, 0, Qt::AlignLeft);
-    leftCol->addWidget(cardDiag);
-
-    leftCol->addWidget(buildTextCard("Điều trị / Hướng điều trị", 70));
-
-    QFrame* cardPresc = new QFrame(recordScrollContent); cardPresc->setObjectName("FormCard"); cardPresc->setStyleSheet(fCardStyle);
-    QVBoxLayout* layPresc = new QVBoxLayout(cardPresc); layPresc->setContentsMargins(20, 16, 20, 16); layPresc->setSpacing(12);
-    QLabel* lblPrescT = new QLabel("Toa thuốc", cardPresc); lblPrescT->setStyleSheet(secTitleStyle);
-    QTableWidget* tblPresc = new QTableWidget(0, 5, cardPresc);
-    tblPresc->setHorizontalHeaderLabels({"STT", "ID Thuốc", "Đơn vị", "Liều dùng", "Số lượng"});
-    tblPresc->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    tblPresc->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    tblPresc->setStyleSheet(tableStyle);
-    tblPresc->setMaximumHeight(150);
-    tblPresc->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    recordFields.append(tblPresc);
-
-    QPushButton* btnAddPresc = new QPushButton("+ Thêm thuốc", cardPresc);
-    btnAddPresc->setStyleSheet("QPushButton { background-color: #F1F5F9; color: #0369A1; border: 1px solid #CBD5E1; font-weight: 600; font-size: 12px; border-radius: 4px; padding: 6px 12px; } QPushButton:hover { background-color: #E0F2FE; }");
-    btnAddPresc->setEnabled(false);
-    recordFields.append(btnAddPresc);
-    layPresc->addWidget(lblPrescT); layPresc->addWidget(tblPresc); layPresc->addWidget(btnAddPresc, 0, Qt::AlignLeft);
-    leftCol->addWidget(cardPresc);
-
-    QFrame* cardVitals = new QFrame(recordScrollContent); cardVitals->setObjectName("FormCard"); cardVitals->setStyleSheet(fCardStyle);
-    QVBoxLayout* layVitals = new QVBoxLayout(cardVitals); layVitals->setContentsMargins(20, 16, 20, 16); layVitals->setSpacing(14);
-    QLabel* lblVitT = new QLabel("Sinh hiệu", cardVitals); lblVitT->setStyleSheet(secTitleStyle);
-    layVitals->addWidget(lblVitT);
-    QGridLayout* gridVit = new QGridLayout(); gridVit->setSpacing(12);
-    auto addVitRow = [&](QString name, QString unit, int r) {
-        QLabel* lN = new QLabel(name, cardVitals); lN->setStyleSheet("font-size: 13px; font-weight: 500; color: #334155; border: none;");
-        QLineEdit* le = new QLineEdit(cardVitals); le->setStyleSheet(fInputStyle); le->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        le->setReadOnly(true);
-        recordFields.append(le);
-        QLabel* lU = new QLabel(unit, cardVitals); lU->setStyleSheet("font-size: 13px; color: #64748B; border: none;"); lU->setFixedWidth(50);
-        gridVit->addWidget(lN, r, 0); gridVit->addWidget(le, r, 1); gridVit->addWidget(lU, r, 2);
-    };
-    addVitRow("Nhiệt độ", "°C", 0);
-    addVitRow("Mạch", "lần/phút", 1);
-    addVitRow("Huyết áp", "mmHg", 2);
-    addVitRow("Nhịp thở", "lần/phút", 3);
-    addVitRow("Cân nặng", "kg", 4);
-    addVitRow("Chiều cao", "cm", 5);
-    addVitRow("BMI", "Chỉ số", 6);
-    gridVit->setColumnStretch(1, 1); layVitals->addLayout(gridVit);
-    rightCol->addWidget(cardVitals);
-
-    rightCol->addWidget(buildTextCard("Kết quả cận lâm sàng", 100));
-    rightCol->addWidget(buildTextCard("Dặn dò", 100));
-
-    QFrame* cardRec = new QFrame(recordScrollContent); cardRec->setObjectName("FormCard"); cardRec->setStyleSheet(fCardStyle);
-    QVBoxLayout* layRec = new QVBoxLayout(cardRec); layRec->setContentsMargins(20, 16, 20, 16); layRec->setSpacing(10);
-    QLabel* lblRecT = new QLabel("Ngày tái khám", cardRec); lblRecT->setStyleSheet(secTitleStyle);
-    QDateEdit* deRec = new QDateEdit(QDate::currentDate(), cardRec); deRec->setStyleSheet(fInputStyle); deRec->setCalendarPopup(true);
-    deRec->setEnabled(false);
-    recordFields.append(deRec);
-    layRec->addWidget(lblRecT); layRec->addWidget(deRec);
-    rightCol->addWidget(cardRec);
-
-    QFrame* cardSign = new QFrame(recordScrollContent); cardSign->setObjectName("FormCard"); cardSign->setStyleSheet(fCardStyle);
-    QVBoxLayout* laySign = new QVBoxLayout(cardSign); laySign->setContentsMargins(20, 16, 20, 16); laySign->setSpacing(10);
-    QLabel* lblSignT = new QLabel("Chữ ký bác sĩ", cardSign); lblSignT->setStyleSheet(secTitleStyle);
-    QLabel* lblSignImg = new QLabel("", cardSign); lblSignImg->setAlignment(Qt::AlignCenter); lblSignImg->setMinimumHeight(60);
-    lblSignImg->setStyleSheet("border: none;");
-    QLabel* lblDocName = new QLabel("-\n--/--/---- --:--", cardSign); lblDocName->setAlignment(Qt::AlignCenter); lblDocName->setStyleSheet("font-size: 13px; font-weight: bold; color: #334155; line-height: 1.4; border: none;");
-    laySign->addWidget(lblSignT); laySign->addWidget(lblSignImg); laySign->addWidget(lblDocName);
-    rightCol->addWidget(cardSign);
-
-    bodyColumns->addLayout(leftCol, 65);
-    bodyColumns->addLayout(rightCol, 35);
-    recordScrollLayout->addLayout(bodyColumns);
-
-    QLabel* fText = new QLabel("🔒 Dữ liệu được bảo mật theo quy định của Bộ Y Tế", recordScrollContent);
-    fText->setAlignment(Qt::AlignCenter); fText->setStyleSheet("font-size: 12px; color: #94A3B8; font-family: 'Arial'; border: none; margin-top: 10px;");
-    recordScrollLayout->addWidget(fText);
-
-    recordScroll->setWidget(recordScrollContent);
-    recordPageLayout->addWidget(recordScroll, 1);
-
     m_detailStackedWidget->addWidget(m_infoSubPage);
-    m_detailStackedWidget->addWidget(m_recordSubPage);
     mainContentLayout->addWidget(m_detailStackedWidget, 1);
 
-    QWidget* rightMenuContainer = new QWidget(m_detailViewWidget);
-    rightMenuContainer->setFixedWidth(220);
+    QFrame* rightMenuContainer = new QFrame(m_detailViewWidget);
+    rightMenuContainer->setFixedWidth(240);
+    rightMenuContainer->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; }");
     QVBoxLayout* menuLayout = new QVBoxLayout(rightMenuContainer);
-    menuLayout->setContentsMargins(0, 0, 0, 0);
-    menuLayout->setSpacing(12);
+    menuLayout->setContentsMargins(15, 20, 15, 20);
+    menuLayout->setSpacing(10);
 
-    QString btnStyle = 
-        "QPushButton { background-color: #0284C7; color: #FFFFFF; font-family: 'Arial'; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; padding: 14px 15px 14px 22px; text-align: left; }"
-        "QPushButton:hover { background-color: #0369A1; }"
-        "QPushButton:pressed { background-color: #075985; }"
-        "QPushButton#activeMenuBtn { background-color: #075985; }";
+    QString menuBtnStyle = 
+        "QPushButton { font-size: 14px; font-weight: 500; font-family: 'Arial'; color: #475569; border: none; border-radius: 6px; padding: 12px 15px; text-align: left; background: transparent; }"
+        "QPushButton:hover { background-color: #F1F5F9; color: #0F172A; }"
+        "QPushButton#activeMenuBtn { background-color: #E0F2FE; color: #0284C7; font-weight: bold; }";
 
-    m_btnInfo = new QPushButton(" Informace o pacientovi", rightMenuContainer);
-    m_btnInfo->setText(" Thông tin cá nhân");
-    m_btnInfo->setCursor(Qt::PointingHandCursor);
-    m_btnInfo->setStyleSheet(btnStyle);
+    m_btnInfo = new QPushButton("📄 Thông tin cá nhân", rightMenuContainer);
     m_btnInfo->setObjectName("activeMenuBtn");
-    
-    m_btnEditInfo = new QPushButton("Chỉnh sửa thông tin", rightMenuContainer);
-    m_btnEditInfo->setCursor(Qt::PointingHandCursor);
-    m_btnEditInfo->setStyleSheet(btnStyle);
+    m_btnInfo->setStyleSheet(menuBtnStyle);
 
-    m_btnDeleteInfo = new QPushButton("Xóa bệnh nhân", rightMenuContainer);
-    m_btnDeleteInfo->setCursor(Qt::PointingHandCursor);
-    m_btnDeleteInfo->setStyleSheet(btnStyle + "QPushButton { background-color: #DC2626; } QPushButton:hover { background-color: #B91C1C; } QPushButton:pressed { background-color: #991B1B; }");
-    
-    m_btnMedicalRecord = new QPushButton("Bệnh án", rightMenuContainer);
-    m_btnMedicalRecord->setCursor(Qt::PointingHandCursor);
-    m_btnMedicalRecord->setStyleSheet(btnStyle);
+    m_btnEditInfo = new QPushButton("✏️ Chỉnh sửa thông tin", rightMenuContainer);
+    m_btnEditInfo->setStyleSheet(
+        "QPushButton { background-color: #0284C7; color: white; font-size: 13px; font-weight: bold; font-family: 'Arial'; border: none; border-radius: 6px; padding: 12px 15px; text-align: center; }"
+        "QPushButton:hover { background-color: #0369A1; }"
+    );
 
-    m_btnBack = new QPushButton("🔙  Quay lại", rightMenuContainer);
-    m_btnBack->setCursor(Qt::PointingHandCursor);
+    m_btnDeleteInfo = new QPushButton("🗑️ Xóa hồ sơ", rightMenuContainer);
+    m_btnDeleteInfo->setStyleSheet(
+        "QPushButton { background-color: #EF4444; color: white; font-size: 13px; font-weight: bold; font-family: 'Arial'; border: none; border-radius: 6px; padding: 12px 15px; text-align: center; }"
+        "QPushButton:hover { background-color: #DC2626; }"
+    );
+
+    m_btnBack = new QPushButton("⬅️ Quay lại", rightMenuContainer);
     m_btnBack->setStyleSheet(
         "QPushButton { background-color: #FFFFFF; color: #475569; font-family: 'Arial'; font-size: 14px; font-weight: bold; border: 1px solid #CBD5E1; border-radius: 6px; padding: 12px 15px 12px 22px; text-align: left; }"
         "QPushButton:hover { background-color: #F8FAFC; color: #0F172A; }"
@@ -666,33 +442,17 @@ void PatientWidget::createDetailView() {
     menuLayout->addWidget(m_btnInfo);
     menuLayout->addWidget(m_btnEditInfo);     
     menuLayout->addWidget(m_btnDeleteInfo);   
-    menuLayout->addWidget(m_btnMedicalRecord);
     menuLayout->addStretch(); 
     menuLayout->addWidget(m_btnBack);
 
     mainContentLayout->addWidget(rightMenuContainer);
     detailLayout->addLayout(mainContentLayout);
 
-    QPushButton* btnEditRecord = new QPushButton("Chỉnh sửa", recordTopBar);
-    btnEditRecord->setStyleSheet(btnHeaderStyle + "QPushButton { background-color: #0284C7; color: white; border: none; } QPushButton:hover { background-color: #0369A1; }");
-    recordTopBarLayout->insertWidget(2, btnEditRecord);
-
     connect(m_btnInfo, &QPushButton::clicked, this, [this]() {
         m_btnInfo->setObjectName("activeMenuBtn");
-        m_btnMedicalRecord->setObjectName("");
         m_btnInfo->setStyle(m_btnInfo->style());
-        m_btnMedicalRecord->setStyle(m_btnMedicalRecord->style());
         m_btnEditInfo->setVisible(true); 
         m_detailStackedWidget->setCurrentWidget(m_infoSubPage);
-    });
-
-    connect(m_btnMedicalRecord, &QPushButton::clicked, this, [this]() {
-        m_btnMedicalRecord->setObjectName("activeMenuBtn");
-        m_btnInfo->setObjectName("");
-        m_btnInfo->setStyle(m_btnInfo->style());
-        m_btnMedicalRecord->setStyle(m_btnMedicalRecord->style());
-        m_btnEditInfo->setVisible(false); 
-        m_detailStackedWidget->setCurrentWidget(m_recordSubPage);
     });
 
     connect(m_btnBack, &QPushButton::clicked, this, &PatientWidget::showPatientList);
@@ -740,34 +500,6 @@ void PatientWidget::createDetailView() {
             m_btnEditInfo->setText("Chỉnh sửa thông tin");
         }
     });
-
-    connect(btnEditRecord, &QPushButton::clicked, this, [=]() {
-        for (QWidget* widget : recordFields) {
-            if (QTextEdit* textEdit = qobject_cast<QTextEdit*>(widget)) {
-                textEdit->setReadOnly(false);
-            } else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-                lineEdit->setReadOnly(false);
-            } else if (QTableWidget* tableWidget = qobject_cast<QTableWidget*>(widget)) {
-                tableWidget->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked);
-            } else {
-                widget->setEnabled(true);
-            }
-        }
-    });
-
-    connect(btnSaveRecord, &QPushButton::clicked, this, [=]() {
-        for (QWidget* widget : recordFields) {
-            if (QTextEdit* textEdit = qobject_cast<QTextEdit*>(widget)) {
-                textEdit->setReadOnly(true);
-            } else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-                lineEdit->setReadOnly(true);
-            } else if (QTableWidget* tableWidget = qobject_cast<QTableWidget*>(widget)) {
-                tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
-            } else {
-                widget->setEnabled(false);
-            }
-        }
-    });
 }
 
 void PatientWidget::handlePatientSelected(int row, int column) {
@@ -775,9 +507,7 @@ void PatientWidget::handlePatientSelected(int row, int column) {
     Q_UNUSED(column);
     
     m_btnInfo->setObjectName("activeMenuBtn");
-    m_btnMedicalRecord->setObjectName("");
     m_btnInfo->setStyle(m_btnInfo->style());
-    m_btnMedicalRecord->setStyle(m_btnMedicalRecord->style());
     
     m_detailStackedWidget->setCurrentWidget(m_infoSubPage);
     m_mainStackedWidget->setCurrentWidget(m_detailViewWidget);

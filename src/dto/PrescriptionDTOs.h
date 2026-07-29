@@ -99,7 +99,7 @@ struct PrescriptionResultDTO {
   QString doctorCode;
   QString doctorName;
 
-  QString status;
+  PrescriptionStatus status;
   QString notes;
   QDateTime prescribedAt;
 

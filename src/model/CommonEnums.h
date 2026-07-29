@@ -238,6 +238,7 @@ static const QList<EnumInfo<Severity>> severityList = {
     {Severity::Severe, "Nặng", "SEVERE"},
 };
 
+
 inline QString severityToVi(Severity value) {
   for (const auto &item : severityList) {
     if (item.value == value)
@@ -533,4 +534,46 @@ inline UserRole userRoleFromEn(const QString &text) {
 inline QString roleToString(UserRole role) { return userRoleToEn(role); }
 inline UserRole roleFromString(const QString &roleStr) {
   return userRoleFromEn(roleStr);
+}
+
+// PrescriptionStatus
+enum class PrescriptionStatus { Pending, Dispensed, Cancelled };
+
+static const QList<EnumInfo<PrescriptionStatus>> prescriptionStatusList = {
+    {PrescriptionStatus::Pending, "Chờ phát", "PENDING"},
+    {PrescriptionStatus::Dispensed, "Đã phát", "DISPENSED"},
+    {PrescriptionStatus::Cancelled, "Đã hủy", "CANCELLED"},
+};
+
+inline QString prescriptionStatusToVi(PrescriptionStatus value) {
+  for (const auto &item : prescriptionStatusList) {
+    if (item.value == value)
+      return item.viText;
+  }
+  return "Chờ phát";
+}
+
+inline PrescriptionStatus prescriptionStatusFromVi(const QString &text) {
+  for (const auto &item : prescriptionStatusList) {
+    if (item.viText.compare(text, Qt::CaseInsensitive) == 0)
+      return item.value;
+  }
+  return PrescriptionStatus::Pending;
+}
+
+inline QString prescriptionStatusToEn(PrescriptionStatus value) {
+  for (const auto &item : prescriptionStatusList) {
+    if (item.value == value)
+      return item.enText;
+  }
+  return "PENDING";
+}
+
+inline PrescriptionStatus prescriptionStatusFromEn(const QString &text) {
+  QString cleanText = text.trimmed().toUpper();
+  for (const auto &item : prescriptionStatusList) {
+    if (item.enText == cleanText || item.viText.toUpper() == cleanText)
+      return item.value;
+  }
+  return PrescriptionStatus::Pending;
 }
