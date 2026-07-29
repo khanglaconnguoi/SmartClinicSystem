@@ -1,4 +1,5 @@
 #include "ManageLeaveWidget.h"
+#include <QCalendarWidget>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -93,14 +94,35 @@ void ManageLeaveWidget::setupUi() {
     m_lblLeaveBalance = new QLabel("Vui lòng chọn nhân viên.", formFrame);
     m_lblLeaveBalance->setStyleSheet("color: #5F6368; font-style: italic;");
 
+    auto createCustomCalendar = []() {
+        QCalendarWidget *cal = new QCalendarWidget();
+        cal->setLocale(QLocale(QLocale::Vietnamese, QLocale::Vietnam));
+        cal->setMinimumSize(330, 250);
+        cal->setStyleSheet(
+            "QCalendarWidget { background-color: #FFFFFF; color: #333333; }"
+            "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 36px; }"
+            "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; padding: 4px 6px; margin: 1px; font-size: 13px; }"
+            "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; border-radius: 4px; }"
+            "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
+            "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; font-size: 13px; }"
+            "QCalendarWidget QAbstractItemView:enabled { font-size: 13px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; }"
+            "QCalendarWidget QAbstractItemView:disabled { color: #CCCCCC; }"
+        );
+        return cal;
+    };
+
     m_leaveStartDate = new QDateEdit(QDate::currentDate(), formFrame);
+    m_leaveStartDate->setCalendarWidget(createCustomCalendar());
     m_leaveStartDate->setCalendarPopup(true);
     m_leaveStartDate->setMinimumDate(QDate::currentDate());
+    m_leaveStartDate->setDisplayFormat("dd/MM/yyyy");
     m_leaveStartDate->setStyleSheet("padding: 8px; border: 1px solid #DADCE0; border-radius: 4px;");
 
     m_leaveEndDate = new QDateEdit(QDate::currentDate(), formFrame);
+    m_leaveEndDate->setCalendarWidget(createCustomCalendar());
     m_leaveEndDate->setCalendarPopup(true);
     m_leaveEndDate->setMinimumDate(QDate::currentDate());
+    m_leaveEndDate->setDisplayFormat("dd/MM/yyyy");
     m_leaveEndDate->setStyleSheet("padding: 8px; border: 1px solid #DADCE0; border-radius: 4px;");
 
     m_txtLeaveReason = new QTextEdit(formFrame);

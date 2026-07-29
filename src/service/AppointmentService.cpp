@@ -12,10 +12,10 @@ void AppointmentService::normalizeAppointmentInput(AppointmentInputDTO &input) {
 
 QString AppointmentService::validateAppointmentDate(const QDate &date) {
   if (!date.isValid()) {
-    return "Appointment date is required and must be a valid date.";
+    return "Ngày khám bắt buộc và phải là ngày hợp lệ.";
   }
   if (date < QDate::currentDate()) {
-    return "Appointment date cannot be in the past.";
+    return "Ngày hẹn khám không thể nằm trong quá khứ (phải từ ngày hôm nay trở đi).";
   }
   return "";
 }

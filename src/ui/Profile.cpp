@@ -12,7 +12,7 @@
 
 ProfileWidget::ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget *parent) 
     : QDialog(parent), m_staffService(staffService) {
-    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setMinimumSize(1100, 700);
 
     setStyleSheet(

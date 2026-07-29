@@ -469,10 +469,12 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   QLabel *lblDate = new QLabel("Ngày khám:", m_apptCard);
   lblDate->setStyleSheet("font-weight: bold; color: #555;");
   m_dateEdit = new QDateEdit(QDate::currentDate(), m_apptCard);
+  m_dateEdit->setMinimumDate(QDate::currentDate());
   m_dateEdit->setDisplayFormat("dd/MM/yyyy");
   m_dateEdit->setMinimumWidth(150);
   QCalendarWidget* apptCalendar = new QCalendarWidget();
   apptCalendar->setLocale(QLocale(QLocale::Vietnamese, QLocale::Vietnam));
+  apptCalendar->setMinimumSize(330, 250);
   m_dateEdit->setCalendarWidget(apptCalendar);
   m_dateEdit->setCalendarPopup(true);
   m_dateEdit->setStyleSheet(inputStyle);
@@ -480,12 +482,12 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   // Custom calendar theme
   m_dateEdit->calendarWidget()->setStyleSheet(
       "QCalendarWidget { background-color: #FFFFFF; color: #333333; }"
-      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 32px; }"
-      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; padding: 2px 4px; margin: 1px; font-size: 12px; }"
+      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 36px; }"
+      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; padding: 4px 6px; margin: 1px; font-size: 13px; }"
       "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; border-radius: 4px; }"
       "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
-      "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; }"
-      "QCalendarWidget QAbstractItemView:enabled { font-size: 12px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; }"
+      "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; font-size: 13px; }"
+      "QCalendarWidget QAbstractItemView:enabled { font-size: 13px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; }"
       "QCalendarWidget QAbstractItemView:disabled { color: #CCCCCC; }"
   );
   
@@ -753,6 +755,7 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
   m_apptDateEdit->setMinimumWidth(150);
   QCalendarWidget* manageCalendar = new QCalendarWidget();
   manageCalendar->setLocale(QLocale(QLocale::Vietnamese, QLocale::Vietnam));
+  manageCalendar->setMinimumSize(330, 250);
   m_apptDateEdit->setCalendarWidget(manageCalendar);
   m_apptDateEdit->setCalendarPopup(true);
   m_apptDateEdit->setStyleSheet(
@@ -762,12 +765,12 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
   
   m_apptDateEdit->calendarWidget()->setStyleSheet(
       "QCalendarWidget { background-color: #FFFFFF; color: #333333; }"
-      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 32px; }"
-      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; padding: 2px 4px; margin: 1px; font-size: 12px; }"
+      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 36px; }"
+      "QCalendarWidget QToolButton { color: #333333; font-weight: bold; background-color: transparent; border: none; padding: 4px 6px; margin: 1px; font-size: 13px; }"
       "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; border-radius: 4px; }"
       "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
-      "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; }"
-      "QCalendarWidget QAbstractItemView:enabled { font-size: 12px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; }"
+      "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; selection-background-color: #4B94F2; selection-color: white; font-size: 13px; }"
+      "QCalendarWidget QAbstractItemView:enabled { font-size: 13px; color: #333333; background-color: #FFFFFF; selection-background-color: #4B94F2; selection-color: #FFFFFF; }"
       "QCalendarWidget QAbstractItemView:disabled { color: #CCCCCC; }"
   );
 
