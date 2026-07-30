@@ -3,7 +3,7 @@
 #include "model/SystemUser.h"
 #include <QObject>
 #include <memory>
-
+#include <optional>
 
 class UserSession : public QObject {
     Q_OBJECT
@@ -19,7 +19,6 @@ public:
     UserSession(const UserSession&) = delete;
     UserSession& operator=(const UserSession&) = delete;
 
-    
     // Nạp tài khoản khi đăng nhập thành công
     void setCurrentAccount(std::shared_ptr<IAuthenticatable> account) {
         if (m_currentAccount != account) {
@@ -28,7 +27,7 @@ public:
         }
     }
 
-    // Lấy con trỏ cha (Dùng chung cho mục đích định danh tổng quát)
+    // Lấy con trỏ tài khoản hiện tại
     std::shared_ptr<IAuthenticatable> getCurrentAccount() const {
         return m_currentAccount;
     }
@@ -46,17 +45,36 @@ public:
         return m_currentAccount != nullptr;
     }
 
-    // 3. Các hàm Tiện ích (Helper Functions) giúp tầng UI code cực nhanh
-    
-    // Lấy nhanh Role hiện tại (Nếu chưa đăng nhập mặc định trả về Guest hoặc lỗi)
-    UserRole getCurrentRole() const {
-        if (!isLoggedIn()) return UserRole::Nurse; // Hoặc một giá trị mặc định/Guest nào đó tùy hệ thống của bạn
+    // Lấy nhanh Role hiện tại an toàn (Nếu chưa đăng nhập trả về std::nullopt)
+    std::optional<UserRole> getCurrentRole() const {
+        if (!isLoggedIn() || !m_currentAccount) return std::nullopt;
         return m_currentAccount->getRole();
     }
 
-    // Kiểm tra nhanh xem người dùng hiện tại có phải Admin hay không
+    // Các hàm Tiện ích (Helper Functions) kiểm tra vai trò an toàn cho tầng UI & Service
     bool isAdmin() const {
-        return isLoggedIn() && (getCurrentRole() == UserRole::Admin);
+        auto r = getCurrentRole();
+        return r.has_value() && r.value() == UserRole::Admin;
+    }
+
+    bool isDoctor() const {
+        auto r = getCurrentRole();
+        return r.has_value() && r.value() == UserRole::Doctor;
+    }
+
+    bool isNurse() const {
+        auto r = getCurrentRole();
+        return r.has_value() && r.value() == UserRole::Nurse;
+    }
+
+    bool isReceptionist() const {
+        auto r = getCurrentRole();
+        return r.has_value() && r.value() == UserRole::Receptionist;
+    }
+
+    bool isPharmacist() const {
+        auto r = getCurrentRole();
+        return r.has_value() && r.value() == UserRole::Pharmacist;
     }
 
 signals:
@@ -64,7 +82,6 @@ signals:
     void sessionChanged(std::shared_ptr<IAuthenticatable> newAccount);
 
 private:
-    // Constructor private để ngăn chặn việc tự ý khởi tạo từ bên ngoài
     UserSession() = default;
     ~UserSession() override = default;
 

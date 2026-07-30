@@ -9,6 +9,8 @@ private:
     int     m_experienceYears;
     int     m_consultationFee;  // Phí khám mặc định
     QString m_bio;
+    int     m_roomId;           // ID phòng khám
+
 
 public:
     explicit Doctor(
@@ -24,7 +26,8 @@ public:
         const QString&  licenseNumber,
         int             experienceYears,
         int             consultationFee,
-        const QString&  bio
+        const QString&  bio,
+        int             roomId = 0
     ) : 
         SystemUser(
             staffId, 
@@ -40,7 +43,8 @@ public:
         m_licenseNumber(licenseNumber), 
         m_experienceYears(experienceYears), 
         m_consultationFee(consultationFee),
-        m_bio(bio)
+        m_bio(bio),
+        m_roomId(roomId)
     {}
 
     ~Doctor() override = default;
@@ -51,6 +55,7 @@ public:
     int     getExperienceYears()   const { return m_experienceYears; }
     double  getConsultationFee()   const { return m_consultationFee; }
     QString getBio()               const { return m_bio; }
+    int     getRoomId()            const { return m_roomId; }
     
     // ── Setters (Admin/Doctor cập nhật hồ sơ — qua StaffService) ─
     // void setSpecialty(const QString& specialty);

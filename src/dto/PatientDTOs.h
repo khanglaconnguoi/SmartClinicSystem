@@ -28,6 +28,13 @@
 #include <qcoreapplication.h>
 #include <qhashfunctions.h>
 
+struct PatientShortDTO {
+    int patientId;
+    QString patientCode;
+    QString fullName;
+    QString phone;
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // ALLERGY DTOs  (map với bảng `patient_allergies`)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -113,15 +120,15 @@ struct InsuranceResultDTO {
  */
 struct PatientInputDTO {
   // ── patients ──────────────────────────────────────────
-  QString fullName;  // full_name           NOT NULL
-  QDate dateOfBirth; // date_of_birth        NOT NULL
-  QString gender;    // gender               NOT NULL
-  QString citizenId; // citizen_id           UNIQUE (nullable)
-  QString phone;     // phone                (nullable)
-  QString email;     // email                (nullable)
-  QString address;   // address              (nullable)
-  QString bloodType; // blood_type           DEFAULT 'UNKNOWN'
-//   QList<AllergyInputDTO> allergies;
+  QString fullName;              // full_name           NOT NULL
+  QDate dateOfBirth;             // date_of_birth        NOT NULL
+  QString gender;                // gender               NOT NULL
+  QString citizenId;             // citizen_id           UNIQUE (nullable)
+  QString phone;                 // phone                (nullable)
+  QString email;                 // email                (nullable)
+  QString address;               // address              (nullable)
+  QString bloodType;             // blood_type           DEFAULT 'UNKNOWN'
+                                 //   QList<AllergyInputDTO> allergies;
   InsuranceInputDTO insurance;   // insurance            (nullable, future use)
   PatientType type;              // default_patient_type DEFAULT 'OUTPATIENT'
   QString emergencyContactName;  // emergency_contact_name  (nullable)
@@ -160,7 +167,7 @@ struct EmergencyPatientInputDTO : public PatientInputDTO {
  *        Map với bảng `out_patients`.
  */
 struct OutPatientInputDTO : public PatientInputDTO {
-  int doctorId;
+  std::optional<int> doctorId;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -201,16 +208,13 @@ struct PatientInsertDTO {
   virtual ~PatientInsertDTO() = default;
 };
 
-
 /**
  * @brief INSERT vào bảng `out_patients`.
  *        Repository tự gán status = 'REGISTERED'.
  */
 struct OutPatientInsertDTO : public PatientInsertDTO {
-  int doctorId;   // doctor_id            (nullable)
+  std::optional<int> doctorId;   // doctor_id            (nullable)
   QString status; // status  DEFAULT 'REGISTERED'
-
-
 };
 
 /**
@@ -224,7 +228,6 @@ struct InPatientInsertDTO : public PatientInsertDTO {
   QString dischargeDate; // discharge_date       (nullable)
   QString reason;        // reason               (nullable)
   QString status;        // status  DEFAULT 'ADMITTED'
-
 };
 
 /**
@@ -232,15 +235,13 @@ struct InPatientInsertDTO : public PatientInsertDTO {
  *        Repository tự gán status = 'EMERGENCY'.
  */
 struct EmergencyPatientInsertDTO : public PatientInsertDTO {
-  std::optional<int> roomId;   // room_id              (nullable)
-  std::optional<int> doctorId; // emergency_doctor_id  (nullable)
+  int roomId;   // room_id              (nullable)
+  int doctorId; // emergency_doctor_id  (nullable)
   QString injuryCause;         // injury_cause         (nullable)
   QString injuryDescription;   // injury_description   (nullable)
   QString admissionDate;       // admission_date       NOT NULL
   QString dischargeDate;       // discharge_date       (nullable)
   QString status;              // status  DEFAULT 'EMERGENCY'
-
-
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -275,7 +276,6 @@ struct PatientUpdateDTO {
 struct OutPatientUpdateDTO : public PatientUpdateDTO {
   QString status;
   std::optional<int> doctorId;
-
 };
 
 /**
@@ -288,7 +288,6 @@ struct InPatientUpdateDTO : public PatientUpdateDTO {
   QString dischargeDate;
   QString reason;
   QString status;
-
 };
 
 /**
@@ -302,7 +301,6 @@ struct EmergencyPatientUpdateDTO : public PatientUpdateDTO {
   QString admissionDate;
   QString dischargeDate;
   QString status;
-
 };
 
 // //

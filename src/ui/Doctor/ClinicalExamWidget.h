@@ -35,6 +35,7 @@ signals:
     void backToDashboardRequested();
     void finishExamRequested();
     void viewAppointmentsListRequested();
+    void callPatientRequested();
 
 private:
     std::shared_ptr<PharmacyService> m_pharmacyService;

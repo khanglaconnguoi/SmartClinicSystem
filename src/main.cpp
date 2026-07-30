@@ -1,3 +1,22 @@
+#include "dto/BillingDTOs.h"
+#include "dto/MedicalRecordDTOs.h"
+#include "dto/PatientDTOs.h"
+#include "dto/PrescriptionDTOs.h"
+#include "model/CommonEnums.h"
+#include "repository/AppointmentRepository.h"
+#include "repository/BillingRepository.h"
+#include "repository/DatabaseManager.h"
+#include "repository/MedicalRecordRepository.h"
+#include "repository/PatientRepository.h"
+#include "repository/StaffRepository.h"
+#include "service/AppointmentService.h"
+#include "service/AuthService.h"
+#include "service/BillingService.h"
+#include "service/MedicalRecordService.h"
+#include "service/PatientService.h"
+#include "service/StaffService.h"
+#include "service/Validation.h"
+#include "ui/MainWindow.h"
 #include <QApplication>
 #include <QSqlDatabase>
 #include <QSqlQuery>
@@ -23,14 +42,16 @@
 #include "model/doctor.h"
 #include "ui/Doctor/DoctorDashboard.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     QApplication app(argc, argv);
 
     qDebug() << "=== Starting Doctor Interface Test ===";
 
     // 1. Kết nối CSDL hospital.db
     DatabaseManager &dbManager = DatabaseManager::getInstance();
-    if (!dbManager.isOpen()) {
+    if (!dbManager.isOpen())
+    {
         QMessageBox::critical(nullptr, "Lỗi Cơ Sở Dữ Liệu", "Không thể kết nối đến CSDL hospital.db!");
         return -1;
     }
@@ -67,8 +88,7 @@ int main(int argc, char *argv[]) {
         "CCHN-12345",
         10,
         150000,
-        "Bác sĩ chuyên khoa Nội Nhi"
-    );
+        "Bác sĩ chuyên khoa Nội Nhi");
     UserSession::getInstance().setCurrentAccount(currentDoctor);
 
     // 4. Khởi tạo và hiển thị Giao diện DoctorDashboard

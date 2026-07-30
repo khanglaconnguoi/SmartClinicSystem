@@ -84,9 +84,10 @@ bool StaffRepository::insertDoctor(const DoctorInsertDTO &doctor) {
             license_number,
             experience_years,
             consultation_fee,
-            bio
+            bio,
+            room_id
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     )";
 
   QVariantList params = {staffId,
@@ -94,7 +95,8 @@ bool StaffRepository::insertDoctor(const DoctorInsertDTO &doctor) {
                          doctor.licenseNumber,
                          doctor.experienceYears,
                          doctor.consultationFee,
-                         doctor.bio};
+                         doctor.bio,
+                         doctor.roomId > 0 ? QVariant(doctor.roomId) : QVariant(QMetaType::fromType<int>())};
 
   if (db.executeQuery(insert, params).lastError().isValid()) {
     db.rollbackTransaction();
@@ -225,13 +227,14 @@ bool StaffRepository::updateDoctor(const DoctorUpdateDTO &doctor) {
             license_number = ?,
             experience_years = ?,
             consultation_fee = ?,
-            bio = ?
+            bio = ?,
+            room_id = ?
         WHERE staff_id = (SELECT staff_id FROM staff WHERE staff_id = ?);
     )";
 
   QVariantList params = {
       doctor.specialty,       doctor.licenseNumber, doctor.experienceYears,
-      doctor.consultationFee, doctor.bio,           doctor.staffId};
+      doctor.consultationFee, doctor.bio,           doctor.roomId > 0 ? QVariant(doctor.roomId) : QVariant(QMetaType::fromType<int>()), doctor.staffId};
 
   QSqlQuery query = db.executeQuery(sql, params);
   if (query.lastError().isValid()) {
@@ -455,6 +458,8 @@ static const QString SELECT_STAFF_PROFILE_SQL = R"(
         dp.experience_years     AS doctor_experience_years,
         dp.consultation_fee     AS doctor_consultation_fee,
         dp.bio                  AS doctor_bio,
+        dp.room_id              AS doctor_room_id,
+        r.room_number           AS doctor_room_number,
 
         np.nurse_level          AS nurse_level,
         np.certification        AS nurse_certification,
@@ -466,6 +471,7 @@ static const QString SELECT_STAFF_PROFILE_SQL = R"(
     LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
     LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
     LEFT JOIN pharmacist_profiles pp ON s.staff_id = pp.staff_id
+    LEFT JOIN rooms r ON dp.room_id = r.room_id
 
 )";
 
@@ -648,6 +654,8 @@ std::unique_ptr<StaffProfileDTO> StaffRepository::queryProfile(const QString& wh
         dto->experienceYears = query.value("doctor_experience_years").toInt();
         dto->consultationFee = query.value("doctor_consultation_fee").toDouble();
         dto->bio             = query.value("doctor_bio").toString();
+        dto->roomId          = query.value("doctor_room_id").toInt();
+        dto->roomNumber      = query.value("doctor_room_number").toString();
         return dto;
     }
     case UserRole::Nurse: {
@@ -846,4 +854,194 @@ bool StaffRepository::updatePasswordInformation(int userId,
   if (!db.commitTransaction())
     return false;
   return true;
+}
+
+// --- Leave Management ---
+
+LeaveBalanceDTO StaffRepository::getLeaveBalance(int staffId, int year) const {
+    LeaveBalanceDTO dto;
+    dto.staffId = staffId;
+    dto.year = year;
+    dto.totalDays = 12; // Default
+    dto.usedDays = 0;
+
+    QString sql = "SELECT total_days, used_days FROM leave_balances WHERE staff_id = ? AND year = ?";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {staffId, year});
+    
+    if (query.next()) {
+        dto.totalDays = query.value("total_days").toInt();
+        dto.usedDays = query.value("used_days").toInt();
+    } else {
+        // If not exists, insert default balance
+        QString insertSql = "INSERT INTO leave_balances (staff_id, year, total_days, used_days) VALUES (?, ?, 12, 0)";
+        DatabaseManager::getInstance().executeQuery(insertSql, {staffId, year});
+    }
+
+    return dto;
+}
+
+bool StaffRepository::createLeaveRequest(int staffId, const QDate& startDate, const QDate& endDate, const QString& reason) const {
+    DatabaseManager& db = DatabaseManager::getInstance();
+    if (!db.beginTransaction()) return false;
+
+    // 1. Insert leave_requests
+    QString insertSql = R"(
+        INSERT INTO leave_requests (staff_id, start_date, end_date, reason, status)
+        VALUES (?, ?, ?, ?, 'PENDING')
+    )";
+    QSqlQuery insertQuery = db.executeQuery(insertSql, {
+        staffId, 
+        startDate.toString("yyyy-MM-dd"), 
+        endDate.toString("yyyy-MM-dd"), 
+        reason
+    });
+
+    if (insertQuery.lastError().isValid()) {
+        qWarning() << "Failed to insert leave_requests:" << insertQuery.lastError().text();
+        db.rollbackTransaction();
+        return false;
+    }
+
+    // 2. Update leave_balances
+    int days = startDate.daysTo(endDate) + 1;
+    int year = startDate.year();
+    
+    QString updateSql = R"(
+        UPDATE leave_balances 
+        SET used_days = used_days + ?
+        WHERE staff_id = ? AND year = ?
+    )";
+    QSqlQuery updateQuery = db.executeQuery(updateSql, {days, staffId, year});
+    
+    if (updateQuery.lastError().isValid() || updateQuery.numRowsAffected() == 0) {
+        // Just in case it wasn't inserted yet
+        QString insertBalSql = "INSERT INTO leave_balances (staff_id, year, total_days, used_days) VALUES (?, ?, 12, ?)";
+        QSqlQuery insertBalQuery = db.executeQuery(insertBalSql, {staffId, year, days});
+        if (insertBalQuery.lastError().isValid()) {
+            qWarning() << "Failed to update/insert leave_balances:" << insertBalQuery.lastError().text();
+            db.rollbackTransaction();
+            return false;
+        }
+    }
+
+    if (!db.commitTransaction()) return false;
+    return true;
+}
+
+QList<LeaveRequestDTO> StaffRepository::getPendingLeaveRequests() const {
+    QList<LeaveRequestDTO> list;
+    QString sql = R"(
+        SELECT lr.request_id, lr.staff_id, s.staff_code, s.full_name, lr.start_date, lr.end_date, lr.reason, lr.status
+        FROM leave_requests lr
+        JOIN staff s ON lr.staff_id = s.staff_id
+        WHERE lr.status = 'PENDING'
+        ORDER BY lr.created_at DESC
+    )";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {});
+    while (query.next()) {
+        LeaveRequestDTO dto;
+        dto.requestId = query.value("request_id").toInt();
+        dto.staffId = query.value("staff_id").toInt();
+        dto.staffCode = query.value("staff_code").toString();
+        dto.fullName = query.value("full_name").toString();
+        dto.startDate = QDate::fromString(query.value("start_date").toString(), "yyyy-MM-dd");
+        dto.endDate = QDate::fromString(query.value("end_date").toString(), "yyyy-MM-dd");
+        dto.reason = query.value("reason").toString();
+        dto.status = query.value("status").toString();
+        list.append(dto);
+    }
+    return list;
+}
+
+QList<LeaveRequestDTO> StaffRepository::getLeaveHistory(int staffId) const {
+    QList<LeaveRequestDTO> list;
+    QString sql = R"(
+        SELECT lr.request_id, lr.staff_id, s.staff_code, s.full_name, lr.start_date, lr.end_date, lr.reason, lr.status
+        FROM leave_requests lr
+        JOIN staff s ON lr.staff_id = s.staff_id
+        WHERE lr.staff_id = ?
+        ORDER BY lr.created_at DESC
+    )";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {staffId});
+    while (query.next()) {
+        LeaveRequestDTO dto;
+        dto.requestId = query.value("request_id").toInt();
+        dto.staffId = query.value("staff_id").toInt();
+        dto.staffCode = query.value("staff_code").toString();
+        dto.fullName = query.value("full_name").toString();
+        dto.startDate = QDate::fromString(query.value("start_date").toString(), "yyyy-MM-dd");
+        dto.endDate = QDate::fromString(query.value("end_date").toString(), "yyyy-MM-dd");
+        dto.reason = query.value("reason").toString();
+        dto.status = query.value("status").toString();
+        list.append(dto);
+    }
+    return list;
+}
+
+bool StaffRepository::updateLeaveRequestStatus(int requestId, const QString& status) const {
+    QString sql = "UPDATE leave_requests SET status = ?, updated_at = datetime('now') WHERE request_id = ?";
+    QSqlQuery query = DatabaseManager::getInstance().executeQuery(sql, {status, requestId});
+    return !query.lastError().isValid();
+}
+
+bool StaffRepository::approveLeaveRequest(int requestId) const {
+    return updateLeaveRequestStatus(requestId, "APPROVED");
+}
+
+bool StaffRepository::rejectLeaveRequest(int requestId, int staffId, int year, int days) const {
+    DatabaseManager& db = DatabaseManager::getInstance();
+    if (!db.beginTransaction()) return false;
+
+    if (!updateLeaveRequestStatus(requestId, "REJECTED")) {
+        db.rollbackTransaction();
+        return false;
+    }
+
+    QString updateSql = R"(
+        UPDATE leave_balances 
+        SET used_days = used_days - ?
+        WHERE staff_id = ? AND year = ?
+    )";
+    QSqlQuery updateQuery = db.executeQuery(updateSql, {days, staffId, year});
+    if (updateQuery.lastError().isValid()) {
+        db.rollbackTransaction();
+        return false;
+    }
+
+    return db.commitTransaction();
+}
+
+std::optional<LeaveRequestDTO> StaffRepository::getLeaveRequestById(int requestId) const {
+    QString sql = R"(
+        SELECT lr.request_id, lr.staff_id, s.staff_code, s.full_name, lr.start_date, lr.end_date, lr.reason, lr.status
+        FROM leave_requests lr
+        JOIN staff s ON lr.staff_id = s.staff_id
+        WHERE lr.request_id = ?
+    )";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {requestId});
+    if (query.next()) {
+        LeaveRequestDTO dto;
+        dto.requestId = query.value("request_id").toInt();
+        dto.staffId = query.value("staff_id").toInt();
+        dto.staffCode = query.value("staff_code").toString();
+        dto.fullName = query.value("full_name").toString();
+        dto.startDate = QDate::fromString(query.value("start_date").toString(), "yyyy-MM-dd");
+        dto.endDate = QDate::fromString(query.value("end_date").toString(), "yyyy-MM-dd");
+        dto.reason = query.value("reason").toString();
+        dto.status = query.value("status").toString();
+        return dto;
+    }
+    return std::nullopt;
+}
+
+bool StaffRepository::isStaffOnLeave(int staffId, const QDate& date) const {
+    QString sql = R"(
+        SELECT 1 FROM leave_requests 
+        WHERE staff_id = ? AND status = 'APPROVED'
+          AND start_date <= ? AND end_date >= ?
+    )";
+    QString dateStr = date.toString("yyyy-MM-dd");
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {staffId, dateStr, dateStr});
+    
+    return query.next();
 }

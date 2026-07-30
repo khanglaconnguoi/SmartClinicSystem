@@ -4,21 +4,25 @@
 #include <QScrollArea>
 #include <memory>
 
-
 class IAuthenticatable;
 
 class PatientDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT
 
 public:
-    explicit PatientDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, std::shared_ptr<StaffService> staffService = nullptr, std::shared_ptr<PatientService> patientService = nullptr, std::shared_ptr<AppointmentService> appointmentService = nullptr, QWidget *parent = nullptr);
+  explicit PatientDashboardWidget(
+      std::shared_ptr<IAuthenticatable> user = nullptr,
+      std::shared_ptr<StaffService> staffService = nullptr,
+      std::shared_ptr<PatientService> patientService = nullptr,
+      std::shared_ptr<AppointmentService> appointmentService = nullptr,
+      QWidget *parent = nullptr);
   virtual ~PatientDashboardWidget() override = default;
 
 protected:
   virtual void fillDashboardData() override;
 
 private:
-  std::shared_ptr<IAuthenticatable> m_currentUser;
+
 
   // Sidebar buttons dành riêng cho bệnh nhân
   QPushButton *m_btnOverview = nullptr;  // Tổng quan

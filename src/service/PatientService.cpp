@@ -288,7 +288,7 @@ QString PatientService::validateInsuranceInput(const InsuranceInputDTO &dto) {
   // insuranceType: phải là NATIONAL / COMMERCIAL / OTHER
   if (!(err = Validation::validateTrimmedNotEmpty(dto.insuranceType, "Loại bảo hiểm không được để trống.")).isEmpty())
     return err;
-  if (!InsuraceTypeText::isValid(dto.insuranceType))
+  if (!InsuranceTypeText::isValid(dto.insuranceType))
     return "Loại bảo hiểm không hợp lệ.";
 
   // coveragePercent: [0.0, 100.0]
@@ -636,7 +636,7 @@ std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) co
     return m_patientRepository->getInsuranceByPatientId(patientId);
 }
 
-std::optional<DatabaseManager::PatientRecord> PatientService::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
+std::optional<PatientShortDTO> PatientService::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
     return m_patientRepository->getPatientByPhoneOrCitizenId(phone, citizenId);
 }
 

@@ -37,6 +37,7 @@ struct DoctorInputDTO : public StaffInputDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
+    int     roomId = 0;
 };
 
 struct NurseInputDTO : public StaffInputDTO {
@@ -84,6 +85,7 @@ struct DoctorInsertDTO : public StaffInsertDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
+    int     roomId = 0;
 };
 
 struct NurseInsertDTO : public StaffInsertDTO {
@@ -124,6 +126,7 @@ struct DoctorUpdateDTO : public StaffUpdateDTO {
     int     experienceYears;
     int     consultationFee;
     QString bio;
+    int     roomId = 0;
 };
 
 struct NurseUpdateDTO : public StaffUpdateDTO {
@@ -242,6 +245,8 @@ struct DoctorProfileDTO : public StaffProfileDTO {
     int      experienceYears;
     int      consultationFee;
     QString  bio;
+    int      roomId = 0;
+    QString  roomNumber; // Hiển thị tên phòng
 
     ~DoctorProfileDTO() override = default;
 
@@ -257,12 +262,14 @@ struct DoctorProfileDTO : public StaffProfileDTO {
         dto->address      = address;
         dto->departmentId = departmentId;
         dto->shift        = shift;
+        
         // Doctor-specific
         dto->specialty       = specialty;
         dto->licenseNumber   = licenseNumber;
         dto->experienceYears = experienceYears;
         dto->consultationFee = consultationFee;
         dto->bio             = bio;
+        dto->roomId          = roomId;
         return dto;
     }
 };
@@ -353,4 +360,24 @@ struct PharmacistPublicProfileDTO : public StaffPublicProfileDTO {
     QString licenseNumber;
     QString pharmacySection;
     int     experienceYears;
+};
+
+// ── LEAVE MANAGEMENT DTOs ──────────────────────────────────────────
+
+struct LeaveBalanceDTO {
+    int staffId = 0;
+    int year = 0;
+    int totalDays = 0;
+    int usedDays = 0;
+};
+
+struct LeaveRequestDTO {
+    int requestId = 0;
+    int staffId = 0;
+    QString staffCode;
+    QString fullName;
+    QDate startDate;
+    QDate endDate;
+    QString reason;
+    QString status;
 };

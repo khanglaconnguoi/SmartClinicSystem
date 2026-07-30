@@ -18,6 +18,7 @@ class ProfileWidget : public QDialog {
 public:
     ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget *parent = nullptr);
     void loadProfile(int staffId);
+    void setReadOnlyMode();
 
 private slots:
     void onEditClicked();

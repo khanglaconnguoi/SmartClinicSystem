@@ -59,6 +59,17 @@ public:
     // std::vector<std::shared_ptr<SystemUser>> findPaged(int offset, int limit) const;
     // int countTotal(bool includeInactive = false) const;
 
+    // --- Leave Management ---
+    LeaveBalanceDTO getLeaveBalance(int staffId, int year) const;
+    bool createLeaveRequest(int staffId, const QDate& startDate, const QDate& endDate, const QString& reason) const;
+    QList<LeaveRequestDTO> getPendingLeaveRequests() const;
+    QList<LeaveRequestDTO> getLeaveHistory(int staffId) const;
+    bool updateLeaveRequestStatus(int requestId, const QString& status) const;
+    bool approveLeaveRequest(int requestId) const;
+    bool rejectLeaveRequest(int requestId, int staffId, int year, int days) const;
+    std::optional<LeaveRequestDTO> getLeaveRequestById(int requestId) const;
+    bool isStaffOnLeave(int staffId, const QDate& date) const;
+
     // --- Mật khẩu ---
     bool updatePasswordInformation(
             int userId, const QString& newHash, bool mustChangePassword = false);

@@ -44,6 +44,8 @@ void ManageReceptionWidget::buildUI() {
     m_tblReception->setHorizontalHeaderLabels({"Mã NV", "Họ Tên", "Ca làm việc", "SĐT", "Trạng thái", "Thao tác"});
     m_tblReception->horizontalHeader()->setStretchLastSection(true);
     m_tblReception->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblReception->verticalHeader()->setDefaultSectionSize(50);
+    m_tblReception->verticalHeader()->setVisible(false);
     m_tblReception->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblReception->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblReception->setAlternatingRowColors(true);
