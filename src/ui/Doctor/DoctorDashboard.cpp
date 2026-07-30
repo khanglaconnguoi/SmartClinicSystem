@@ -6,9 +6,8 @@
 #include "../../service/StaffService.h"
 #include "../../service/AppointmentService.h"
 #include "../../service/PharmacyService.h"
-#include "../../repository/MedicationRepository.h"
-#include "../../repository/PrescriptionRepository.h"
 #include "ClinicalExamWidget.h"
+
 #include "../Patient/PatientWidget.h"
 #include <QCalendarWidget>
 #include <QDate>
@@ -34,14 +33,16 @@ DoctorDashboardWidget::DoctorDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
     std::shared_ptr<StaffService> staffService,
     std::shared_ptr<PatientService> patientService,
-    std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
+    std::shared_ptr<AppointmentService> appointmentService,
+    std::shared_ptr<PharmacyService> pharmacyService, QWidget *parent)
     : BaseDashboardWidget(user, staffService, patientService,
                           appointmentService, parent),
-      m_currentExaminingRow(-1), m_overviewPage(nullptr),
+      m_currentExaminingRow(-1), m_pharmacyService(pharmacyService), m_overviewPage(nullptr),
       m_patientsPage(nullptr), m_appointmentsPage(nullptr),
       m_settingsPage(nullptr), m_clinicalExamPage(nullptr) {
   initializeDashboard();
 }
+
 
 void DoctorDashboardWidget::fillDashboardData() {
   buildSidebar();
@@ -499,11 +500,9 @@ void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
 
 void DoctorDashboardWidget::buildClinicalExamPage() {
   m_clinicalExamPage = new ClinicalExamWidget(this);
-  auto pharmacyService = std::make_shared<PharmacyService>(
-      std::make_shared<MedicationRepository>(),
-      std::make_shared<PrescriptionRepository>());
-  m_clinicalExamPage->setServices(pharmacyService, m_basePatientService, m_baseAppointmentService);
+  m_clinicalExamPage->setServices(m_pharmacyService, m_basePatientService, m_baseAppointmentService);
   m_stackedWidget->addWidget(m_clinicalExamPage);
+
 
   connect(m_clinicalExamPage, &ClinicalExamWidget::backToDashboardRequested,
           this, [this]() { switchPage(0, m_btnDash); });

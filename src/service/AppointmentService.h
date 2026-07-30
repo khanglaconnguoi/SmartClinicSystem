@@ -69,4 +69,7 @@ public:
   QPair<int, QString> callSpecificPatient(int appointmentId) const;
 
   QString createAppointment(AppointmentInputDTO input) const;
+
+  QList<QPair<int, QString>> getExaminationRooms() const;
 };
+

@@ -8,6 +8,9 @@
 #include "model/SystemUser.h"
 #include "model/CommonEnums.h"
 #include "service/UserSession.h"
+#include "service/PharmacyService.h"
+#include "repository/MedicationRepository.h"
+#include "repository/PrescriptionRepository.h"
 #include <QDialog>
 #include <QFrame>
 #include <QGuiApplication>
@@ -27,7 +30,10 @@ MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
     : QMainWindow(parent), m_authService(std::move(authService)),
       m_staffService(std::move(staffService)),
       m_patientService(std::move(patientService)),
-      m_appointmentService(std::move(appointmentService)) {
+      m_appointmentService(std::move(appointmentService)),
+      m_pharmacyService(std::make_shared<PharmacyService>(
+          std::make_shared<MedicationRepository>(),
+          std::make_shared<PrescriptionRepository>())) {
   setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
   setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
   this->setMinimumSize(800, 500);
@@ -113,7 +119,7 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget *page) {
 void MainWindow::switchToDoctorDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   auto dashboard = new DoctorDashboardWidget(
-      user, m_staffService, m_patientService, m_appointmentService, this);
+      user, m_staffService, m_patientService, m_appointmentService, m_pharmacyService, this);
   registerDashboardPage(dashboard);
 }
 

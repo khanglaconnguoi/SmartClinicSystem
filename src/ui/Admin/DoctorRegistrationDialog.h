@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../service/StaffService.h"
+#include "../../service/AppointmentService.h"
 #include <QDialog>
 #include <memory>
 
@@ -17,6 +18,7 @@ class DoctorRegistrationDialog : public QDialog {
   Q_OBJECT
 public:
   explicit DoctorRegistrationDialog(std::shared_ptr<StaffService> staffService,
+                                    std::shared_ptr<AppointmentService> appointmentService = nullptr,
                                     QWidget *parent = nullptr);
   ~DoctorRegistrationDialog() override = default;
 
@@ -29,7 +31,9 @@ private:
   void setupUi();
 
   std::shared_ptr<StaffService> m_staffService;
+  std::shared_ptr<AppointmentService> m_appointmentService;
   int m_editStaffId = -1;
+
 
   // Các trường form tạo bác sĩ
   QLineEdit *m_txtFullName;

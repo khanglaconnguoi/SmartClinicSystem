@@ -10,6 +10,7 @@
 #include "service/StaffService.h"
 #include "service/PatientService.h"
 #include "service/AppointmentService.h"
+#include "service/PharmacyService.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -38,4 +39,5 @@ private:
     std::shared_ptr<StaffService> m_staffService;
     std::shared_ptr<PatientService> m_patientService;
     std::shared_ptr<AppointmentService> m_appointmentService;
+    std::shared_ptr<PharmacyService> m_pharmacyService;
 };

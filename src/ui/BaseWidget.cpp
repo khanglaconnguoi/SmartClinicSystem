@@ -1,9 +1,10 @@
+#include <QDebug>
+
 #include "BaseDashboard.h"
-#include "view/Profile.h"
-#include "repository/StaffRepository.h"
 #include "service/StaffService.h"
 #include "service/UserSession.h"
-#include <QDebug>
+#include "view/Profile.h"
+
 
 BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user, std::shared_ptr<StaffService> staffService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
     : QWidget(parent), m_sidebarFrame(nullptr), m_mainContentWidget(nullptr), m_currentUser(user ? user : UserSession::getInstance().getCurrentAccount()), m_baseStaffService(std::move(staffService)), m_basePatientService(std::move(patientService)), m_baseAppointmentService(std::move(appointmentService))

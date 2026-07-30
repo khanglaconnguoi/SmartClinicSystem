@@ -65,6 +65,10 @@ int main(int argc, char *argv[])
     auto patientService = std::make_shared<PatientService>(patientRepo);
     auto appointmentService = std::make_shared<AppointmentService>(appointmentRepo);
 
+    auto medicationRepo = std::make_shared<MedicationRepository>();
+    auto prescriptionRepo = std::make_shared<PrescriptionRepository>();
+    auto pharmacyService = std::make_shared<PharmacyService>(medicationRepo, prescriptionRepo);
+
     // 3. Giả lập Bác sĩ đang đăng nhập (Dr. Nguyễn Văn A - Mã BS01) dựa trên DoctorProfileDTO (StaffDTOs.h)
     DoctorProfileDTO docProfile;
     docProfile.staffId = 1;
@@ -92,7 +96,7 @@ int main(int argc, char *argv[])
     UserSession::getInstance().setCurrentAccount(currentDoctor);
 
     // 4. Khởi tạo và hiển thị Giao diện DoctorDashboard
-    DoctorDashboardWidget doctorDashboard(currentDoctor, staffService, patientService, appointmentService);
+    DoctorDashboardWidget doctorDashboard(currentDoctor, staffService, patientService, appointmentService, pharmacyService);
     doctorDashboard.setWindowTitle("Hệ Thống Phòng Khám - Phân Hệ Bác Sĩ (Test Mode)");
     doctorDashboard.resize(1280, 800);
     doctorDashboard.show();

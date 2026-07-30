@@ -93,7 +93,8 @@ void AdminDashboardWidget::fillDashboardData() {
   m_mainContentLayout->addWidget(m_stackedWidget, 1);
 
   // Khởi tạo các trang quản lý bằng widget độc lập
-  m_manageDoctorsPage = new ManageDoctorsWidget(m_staffService, this);
+  m_manageDoctorsPage = new ManageDoctorsWidget(m_staffService, m_baseAppointmentService, this);
+
   m_manageNursesPage = new ManageNursesWidget(m_staffService, this);
   m_managePatientsPage = new ManagePatientsWidget(m_patientService, m_stackedWidget);
   m_manageReceptionPage = new ManageReceptionWidget(m_staffService, this);

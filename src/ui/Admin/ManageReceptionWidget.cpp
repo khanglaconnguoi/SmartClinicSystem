@@ -76,6 +76,10 @@ void ManageReceptionWidget::showEditReceptionDialog(std::shared_ptr<SystemUser> 
     QMessageBox::information(this, "Sửa Lễ tân", "Tính năng sửa Lễ tân đang được triển khai!");
 }
 
+namespace {
+constexpr int PAGE_SIZE = 20;
+}
+
 void ManageReceptionWidget::loadReceptionList() {
     if (!m_tblReception || !m_staffService) return;
     m_tblReception->setRowCount(0);
@@ -83,9 +87,10 @@ void ManageReceptionWidget::loadReceptionList() {
     ReceptionistSearchCriteria criteria;
     criteria.onlyActive = true;
     criteria.includeDeleted = false;
-    criteria.pageSize = 0; // Load all for UI table display
+    criteria.pageSize = PAGE_SIZE;
 
     auto receptionists = m_staffService->searchReceptionistsPaged(criteria).items;
+
 
     
     for (int i = 0; i < receptionists.size(); ++i) {

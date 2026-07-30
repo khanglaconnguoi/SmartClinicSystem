@@ -350,3 +350,8 @@ QPair<int, QString>
 AppointmentService::callSpecificPatient(int appointmentId) const {
   return m_appointmentRepository->callSpecificPatient(appointmentId);
 }
+
+QList<QPair<int, QString>> AppointmentService::getExaminationRooms() const {
+    if (!m_appointmentRepository) return {};
+    return m_appointmentRepository->getExaminationRooms();
+}

@@ -573,7 +573,12 @@ void ReceptionDashboardWidget::updateDoctorList() {
   
   QDate date = m_dateEdit->date();
 
-  auto doctors = m_staffService->searchDoctors("", specialty, -1, "", true, false);
+  DoctorSearchCriteria docCriteria;
+  docCriteria.specialty = specialty;
+  docCriteria.onlyActive = true;
+  docCriteria.includeDeleted = false;
+  auto doctors = m_staffService->searchDoctorsPaged(docCriteria).items;
+
 
   if (doctors.isEmpty()) {
       QLabel* lblEmpty = new QLabel("Không có bác sĩ nào cho chuyên khoa này.");
@@ -704,7 +709,8 @@ void ReceptionDashboardWidget::buildPatientsPage() {
   layout->addWidget(table);
 
   PatientSearchCriteria criteria;
-  auto patients = m_basePatientService->searchPatients(criteria);
+  auto patients = m_basePatientService->searchPatientsPaged(criteria).items;
+
   table->setRowCount(patients.size());
   for (int i = 0; i < patients.size(); ++i) {
       const auto& p = patients[i];

@@ -560,3 +560,15 @@ QPair<int, QString> AppointmentRepository::callSpecificPatient(int appointmentId
 
     return {nextTicket, patientName};
 }
+
+QList<QPair<int, QString>> AppointmentRepository::getExaminationRooms() const {
+    QList<QPair<int, QString>> rooms;
+    DatabaseManager& db = DatabaseManager::getInstance();
+    QString sql =
+            "SELECT room_id, room_number FROM rooms WHERE room_type = 'EXAM' ORDER BY room_id ASC";
+    QSqlQuery query = db.selectQuery(sql);
+    while (query.next()) {
+        rooms.append({query.value("room_id").toInt(), query.value("room_number").toString()});
+    }
+    return rooms;
+}

@@ -43,4 +43,7 @@ class AppointmentRepository {
             const QString& startTime,
             const QString& endTime = "",
             int excludeAppointmentId = -1) const;
+
+    QList<QPair<int, QString>> getExaminationRooms() const;
 };
+

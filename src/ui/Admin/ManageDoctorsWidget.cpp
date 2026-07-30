@@ -9,10 +9,12 @@
 #include <QVBoxLayout>
 
 ManageDoctorsWidget::ManageDoctorsWidget(
-    std::shared_ptr<StaffService> staffService, QWidget *parent)
-    : QWidget(parent), m_staffService(staffService), m_tblDoctors(nullptr) {
+    std::shared_ptr<StaffService> staffService,
+    std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
+    : QWidget(parent), m_staffService(staffService), m_appointmentService(appointmentService), m_tblDoctors(nullptr) {
   buildUI();
 }
+
 
 QFrame *ManageDoctorsWidget::makeCard(QWidget *parent) {
   QFrame *card = new QFrame(parent);
@@ -81,6 +83,10 @@ void ManageDoctorsWidget::buildUI() {
   loadDoctorsList();
 }
 
+namespace {
+constexpr int PAGE_SIZE = 20;
+}
+
 void ManageDoctorsWidget::loadDoctorsList() {
   if (!m_tblDoctors || !m_staffService)
     return;
@@ -89,10 +95,11 @@ void ManageDoctorsWidget::loadDoctorsList() {
   DoctorSearchCriteria criteria;
   criteria.onlyActive = true;
   criteria.includeDeleted = false;
-  criteria.pageSize = 0; // Load all for UI table display
+  criteria.pageSize = PAGE_SIZE;
 
   QList<std::shared_ptr<SystemUser>> doctors =
       m_staffService->searchDoctorsPaged(criteria).items;
+
 
 
   for (int i = 0; i < doctors.size(); ++i) {
@@ -158,7 +165,7 @@ void ManageDoctorsWidget::loadDoctorsList() {
 }
 
 void ManageDoctorsWidget::showAddDoctorDialog() {
-  DoctorRegistrationDialog dialog(m_staffService, this);
+  DoctorRegistrationDialog dialog(m_staffService, m_appointmentService, this);
   if (dialog.exec() == QDialog::Accepted) {
     loadDoctorsList();
   }
@@ -168,7 +175,7 @@ void ManageDoctorsWidget::showEditDoctorDialog(std::shared_ptr<Doctor> doc) {
   auto profile = m_staffService->getOwnProfile(doc->getAccountId());
   auto doctorProfile = dynamic_cast<DoctorProfileDTO *>(profile.get());
   if (doctorProfile) {
-    DoctorRegistrationDialog dialog(m_staffService, this);
+    DoctorRegistrationDialog dialog(m_staffService, m_appointmentService, this);
     dialog.loadDoctorData(doctorProfile);
     if (dialog.exec() == QDialog::Accepted) {
       loadDoctorsList();
@@ -178,3 +185,4 @@ void ManageDoctorsWidget::showEditDoctorDialog(std::shared_ptr<Doctor> doc) {
                          "Không thể lấy thông tin chi tiết bác sĩ.");
   }
 }
+

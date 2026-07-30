@@ -72,13 +72,18 @@ void ManagePatientsWidget::showEditPatientDialog() {
     QMessageBox::information(this, "Sửa Bệnh nhân", "Tính năng sửa bệnh nhân đang được phát triển.");
 }
 
+namespace {
+constexpr int PAGE_SIZE = 20;
+}
+
 void ManagePatientsWidget::loadPatientsList() {
     if (!m_tblPatients || !m_patientService) return;
     m_tblPatients->setRowCount(0);
 
     PatientSearchCriteria criteria;
-    criteria.pageSize = 0; //Load all for UI table display
+    criteria.pageSize = PAGE_SIZE;
     auto patients = m_patientService->searchPatientsPaged(criteria).items;
+
 
     
     for (int i = 0; i < patients.size(); ++i) {

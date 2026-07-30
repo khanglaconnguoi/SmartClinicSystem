@@ -1,7 +1,7 @@
 #include "CreatePrescriptionDialog.h"
-#include "repository/PrescriptionRepository.h"
 #include "service/PharmacyService.h"
 #include "service/UserSession.h"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
@@ -219,14 +219,9 @@ void CreatePrescriptionDialog::onSaveClicked() {
             QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString("Không thể tạo đơn thuốc: %1").arg(errorMsg));
         }
     } else {
-        PrescriptionRepository repo;
-        if (repo.insert(dto)) {
-            QMessageBox::information(this, QString::fromUtf8("Thành công"), QString::fromUtf8("Đã lưu đơn thuốc vào cơ sở dữ liệu thành công."));
-            accept();
-        } else {
-            QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString::fromUtf8("Không thể lưu đơn thuốc vào cơ sở dữ liệu."));
-        }
+        QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString::fromUtf8("Dịch vụ Dược chưa được khởi tạo. Không thể tạo đơn thuốc."));
     }
+
 }
 
 void CreatePrescriptionDialog::onExportPdfClicked() {

@@ -19,10 +19,11 @@ class DoctorDashboardWidget : public BaseDashboardWidget {
 
 public:
   explicit DoctorDashboardWidget(
-      std::shared_ptr<IAuthenticatable> user = nullptr,
-      std::shared_ptr<StaffService> staffService = nullptr,
-      std::shared_ptr<PatientService> patientService = nullptr,
-      std::shared_ptr<AppointmentService> appointmentService = nullptr,
+      std::shared_ptr<IAuthenticatable> user,
+      std::shared_ptr<StaffService> staffService,
+      std::shared_ptr<PatientService> patientService,
+      std::shared_ptr<AppointmentService> appointmentService,
+      std::shared_ptr<class PharmacyService> pharmacyService,
       QWidget *parent = nullptr);
   virtual ~DoctorDashboardWidget() override = default;
 
@@ -32,7 +33,10 @@ protected:
 private:
   int m_currentExaminingRow = -1;
 
+  std::shared_ptr<class PharmacyService> m_pharmacyService = nullptr;
+
   QStackedWidget *m_stackedWidget = nullptr;
+
   QPushButton *m_btnDash = nullptr;
   QPushButton *m_btnPatients = nullptr;
   QPushButton *m_btnAppoint = nullptr;

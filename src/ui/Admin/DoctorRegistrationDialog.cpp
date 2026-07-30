@@ -19,8 +19,10 @@
 #include <QVBoxLayout>
 
 DoctorRegistrationDialog::DoctorRegistrationDialog(
-    std::shared_ptr<StaffService> staffService, QWidget *parent)
-    : QDialog(parent), m_staffService(staffService), m_editStaffId(-1) {
+    std::shared_ptr<StaffService> staffService,
+    std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
+    : QDialog(parent), m_staffService(staffService), m_appointmentService(appointmentService), m_editStaffId(-1) {
+
   setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
   setWindowTitle("Thêm Bác sĩ");
   setMinimumWidth(650);
@@ -162,12 +164,13 @@ void DoctorRegistrationDialog::setupUi() {
   m_cbRoom = new QComboBox(gbWorkInfo);
   m_cbRoom->setStyleSheet(extraInputStyle);
   m_cbRoom->addItem("Chưa xếp phòng", 0);
-  {
-      QSqlQuery query = DatabaseManager::getInstance().selectQuery("SELECT room_id, room_number FROM rooms WHERE room_type = 'EXAM' ORDER BY room_id");
-      while (query.next()) {
-          m_cbRoom->addItem(query.value("room_number").toString(), query.value("room_id").toInt());
+  if (m_appointmentService) {
+      auto rooms = m_appointmentService->getExaminationRooms();
+      for (const auto& room : rooms) {
+          m_cbRoom->addItem(room.second, room.first);
       }
   }
+
   form2->addRow("Phòng khám:", m_cbRoom);
 
   m_cbShift = new QComboBox(gbWorkInfo);
