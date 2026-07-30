@@ -584,6 +584,7 @@ bool DatabaseManager::createTables() {
   if (!query.exec(createAppointments)) {
     qDebug() << "Lỗi bảng Appointments:" << query.lastError().text();
     m_db.rollback();
+    return false;
   }
 
   // Bảng Leave Balances
