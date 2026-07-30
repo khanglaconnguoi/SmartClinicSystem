@@ -122,6 +122,7 @@ void PatientRecordHistoryDialog::loadPatientHistory(int patientId, const QString
 
         QTableWidgetItem *itemCode = new QTableWidgetItem(QString("DT%1").arg(p.prescriptionId, 6, 10, QChar('0')));
         itemCode->setData(Qt::UserRole, p.prescriptionId);
+        itemCode->setData(Qt::UserRole + 1, p.recordId);
         
         QTableWidgetItem *itemDate = new QTableWidgetItem(p.prescribedAt.toString("yyyy-MM-dd HH:mm"));
         QTableWidgetItem *itemDoc = new QTableWidgetItem(p.doctorName);
@@ -142,12 +143,13 @@ void PatientRecordHistoryDialog::loadPatientHistory(int patientId, const QString
 void PatientRecordHistoryDialog::onRecordSelected(int row, int /*column*/) {
     if (row < 0 || !tblRecordList->item(row, 0)) return;
 
-    int prescriptionId = tblRecordList->item(row, 0)->data(Qt::UserRole).toInt();
+    int recordId = tblRecordList->item(row, 0)->data(Qt::UserRole + 1).toInt();
     if (!m_pharmacyService) return;
 
     PrescriptionSearchCriteria criteria;
-    criteria.recordId = prescriptionId;
-    auto list = m_pharmacyService->searchPrescriptions(criteria);
+    criteria.recordId = recordId;
+    auto list = m_pharmacyService->searchPrescriptionsPaged(criteria).items;
+
     if (list.isEmpty()) return;
 
     const auto &p = list.first();

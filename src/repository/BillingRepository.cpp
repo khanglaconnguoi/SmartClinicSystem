@@ -337,7 +337,7 @@ QList<InvoiceSummaryDTO> BillingRepository::searchInvoices(
   return results;
 }
 
-int BillingRepository::countSearchResults(const InvoiceSearchCriteria &criteria) {
+int BillingRepository::countSearchResults(const InvoiceSearchCriteria &criteria) const {
   QVariantList params;
   QString whereClause = buildSearchWhereClause(criteria, params);
 
@@ -352,3 +352,59 @@ int BillingRepository::countSearchResults(const InvoiceSearchCriteria &criteria)
     return query.value(0).toInt();
   return 0;
 }
+
+PagedResult<InvoiceSummaryDTO> BillingRepository::searchInvoicesPaged(
+    const InvoiceSearchCriteria &criteria) const {
+  PagedResult<InvoiceSummaryDTO> result;
+  result.page = qMax(1, criteria.page);
+  result.pageSize = criteria.pageSize;
+
+  result.totalCount = countSearchResults(criteria);
+
+  QVariantList params;
+  QString whereClause = buildSearchWhereClause(criteria, params);
+
+  QString sql = QString(R"(
+    SELECT i.invoice_id, i.invoice_code, i.patient_id, i.record_id,
+           i.patient_type, i.total_amount, i.status,
+           i.issued_date, i.paid_date
+    FROM   invoices i
+    WHERE  %1
+    ORDER  BY i.issued_date DESC
+  )").arg(whereClause);
+
+  if (criteria.pageSize > 0) {
+    int offset = (result.page - 1) * criteria.pageSize;
+    sql += " LIMIT ? OFFSET ?";
+    params << criteria.pageSize << offset;
+  }
+
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+  if (!query.isActive()) {
+    qWarning() << "BillingRepository::searchInvoicesPaged - Query thất bại";
+    return result;
+  }
+
+  while (query.next()) {
+    InvoiceSummaryDTO dto;
+    dto.invoiceId   = query.value("invoice_id").toInt();
+    dto.invoiceCode = query.value("invoice_code").toString();
+    dto.patientId   = query.value("patient_id").toInt();
+
+    QVariant recId  = query.value("record_id");
+    dto.recordId    = recId.isNull() ? std::nullopt : std::make_optional(recId.toInt());
+
+    dto.patientType  = patientTypeFromEn(query.value("patient_type").toString());
+    dto.totalAmount  = query.value("total_amount").toDouble();
+    dto.status       = query.value("status").toString();
+    dto.issuedDate   = query.value("issued_date").toDate();
+
+    QVariant paidDate = query.value("paid_date");
+    dto.paidDate = paidDate.isNull() ? std::nullopt : std::make_optional(paidDate.toDate());
+
+    result.items.append(dto);
+  }
+
+  return result;
+}
+

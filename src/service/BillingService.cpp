@@ -175,3 +175,17 @@ int BillingService::countSearchResults(InvoiceSearchCriteria criteria) {
   }
   return m_billingRepository->countSearchResults(criteria);
 }
+
+PagedResult<InvoiceSummaryDTO> BillingService::searchInvoicesPaged(
+    InvoiceSearchCriteria criteria) const {
+  normalizeSearchCriteria(criteria);
+  QString err = validateSearchCriteria(criteria);
+  if (!err.isEmpty()) {
+    qDebug() << "BillingService::searchInvoicesPaged validation failed:" << err;
+    return {};
+  }
+  if (criteria.page < 1) criteria.page = 1;
+  if (criteria.pageSize < 1) criteria.pageSize = 20;
+  return m_billingRepository->searchInvoicesPaged(criteria);
+}
+

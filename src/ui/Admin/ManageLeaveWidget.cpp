@@ -85,7 +85,9 @@ void ManageLeaveWidget::setupUi() {
     
     StaffSearchCriteria criteria;
     criteria.onlyActive = true;
-    auto staffList = m_staffService->searchStaff(criteria);
+    criteria.pageSize = 100;
+    auto staffList = m_staffService->searchStaffPaged(criteria).items;
+
     m_comboLeaveStaff->addItem("--- Chọn nhân viên ---", -1);
     for (const auto& staff : staffList) {
         m_comboLeaveStaff->addItem(QString("%1 - %2 (%3)").arg(staff->getStaffCode(), staff->getFullName(), userRoleToVi(staff->getRole())), staff->getAccountId());

@@ -32,8 +32,12 @@ public:
   QList<InvoiceSummaryDTO>
   searchInvoices(const InvoiceSearchCriteria &criteria);
 
+  PagedResult<InvoiceSummaryDTO>
+  searchInvoicesPaged(const InvoiceSearchCriteria &criteria) const;
+
   /**
    * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
    */
-  int countSearchResults(const InvoiceSearchCriteria &criteria);
+  int countSearchResults(const InvoiceSearchCriteria &criteria) const;
 };
+

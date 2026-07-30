@@ -566,3 +566,17 @@ PharmacyService::getPrescriptionsByPatient(int patientId) const {
   return m_prescriptionRepo->findByPatientId(patientId);
 }
 
+PagedResult<PrescriptionResultDTO> PharmacyService::searchPrescriptionsPaged(
+    PrescriptionSearchCriteria criteria) const {
+  criteria.patientName = criteria.patientName.simplified();
+  criteria.doctorName = criteria.doctorName.simplified();
+  criteria.keyword = criteria.keyword.simplified();
+  criteria.status = criteria.status.trimmed();
+
+  if (criteria.page < 1) criteria.page = 1;
+  if (criteria.pageSize < 1) criteria.pageSize = 20;
+
+  return m_prescriptionRepo->searchPaged(criteria);
+}
+
+

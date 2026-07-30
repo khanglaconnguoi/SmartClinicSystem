@@ -1,11 +1,13 @@
 #pragma once
 
 #include "model/CommonEnums.h"
+#include "dto/Pagination.h"
 #include <QDateTime>
 #include <QList>
 #include <QPair>
 #include <QString>
 #include <optional>
+
 
 struct AllergyResultDTO;
 
@@ -83,7 +85,11 @@ struct PrescriptionSearchCriteria {
   QDateTime toDate;   // ...đến ngày
 
   QString status;
+
+  int page = 1;
+  int pageSize = 20;
 };
+
 
 // ── RESULT DTO — đọc từ DB để hiển thị ──────────────────────────────
 struct PrescriptionResultDTO {

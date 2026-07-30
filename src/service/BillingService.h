@@ -54,9 +54,11 @@ public:
    *        Hỗ trợ partial match (LIKE %...%) và không phân biệt hoa thường.
    */
   QList<InvoiceSummaryDTO> searchInvoices(InvoiceSearchCriteria criteria);
+  PagedResult<InvoiceSummaryDTO> searchInvoicesPaged(InvoiceSearchCriteria criteria) const;
 
   /**
    * @brief Đếm tổng số kết quả khớp tiêu chí — dùng cho phân trang.
    */
   int countSearchResults(InvoiceSearchCriteria criteria);
 };
+

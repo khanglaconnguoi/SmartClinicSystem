@@ -1,10 +1,12 @@
 #pragma once
 
 #include "model/CommonEnums.h"
+#include "dto/Pagination.h"
 #include <QDate>
 #include <QString>
 #include <QList>
 #include <optional>
+
 
 struct InvoiceItemDTO {
   // ── invoice_items ─────────────────────────────────────────────────────────
@@ -83,9 +85,12 @@ struct InvoiceSearchCriteria {
   std::optional<QDate> toDate;
 
   // Phân trang
+  int page = 1;
+  int pageSize = 20;
   int limit  = 50;
   int offset = 0;
 };
+
 
 /**
  * @brief Kết quả gọn khi tìm kiếm hóa đơn.

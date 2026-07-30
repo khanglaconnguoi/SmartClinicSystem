@@ -337,6 +337,27 @@ QList<PrescriptionResultDTO> PrescriptionRepository::search(const PrescriptionSe
     return results;
 }
 
+PagedResult<PrescriptionResultDTO> PrescriptionRepository::searchPaged(const PrescriptionSearchCriteria& criteria) const {
+    PagedResult<PrescriptionResultDTO> result;
+    result.page = qMax(1, criteria.page);
+    result.pageSize = criteria.pageSize;
+
+    QList<PrescriptionResultDTO> allItems = search(criteria);
+    result.totalCount = static_cast<int>(allItems.size());
+
+    if (criteria.pageSize > 0) {
+        int startIdx = (result.page - 1) * criteria.pageSize;
+        if (startIdx < allItems.size()) {
+            int count = qMin(criteria.pageSize, static_cast<int>(allItems.size()) - startIdx);
+            result.items = allItems.mid(startIdx, count);
+        }
+    } else {
+        result.items = allItems;
+    }
+
+    return result;
+}
+
 
 std::optional<PrescriptionResultDTO> PrescriptionRepository::findById(int prescriptionId) const {
     QString sql = SELECT_PRESCRIPTION_SQL + " AND p.prescription_id = ?";

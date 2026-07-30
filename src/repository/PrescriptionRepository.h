@@ -23,6 +23,8 @@ public:
     bool dispense(int prescriptionId, int dispensedBy);
 
     QList<PrescriptionResultDTO> search(const PrescriptionSearchCriteria& criteria) const;
+    PagedResult<PrescriptionResultDTO> searchPaged(const PrescriptionSearchCriteria& criteria) const;
+
     std::optional<PrescriptionResultDTO> findById(int prescriptionId) const;
     std::optional<PrescriptionResultDTO> findByRecordId(int recordId) const;
     QList<PrescriptionResultDTO> findByPatientId(int patientId) const;

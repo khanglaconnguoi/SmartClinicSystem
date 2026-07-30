@@ -252,6 +252,8 @@ public:
     // ════════════════════════════════════════════════════════════════
 
     QList<PrescriptionResultDTO> searchPrescriptions(PrescriptionSearchCriteria& criteria) const;
+    PagedResult<PrescriptionResultDTO> searchPrescriptionsPaged(PrescriptionSearchCriteria criteria) const;
+
 
     /**
      * @brief Lấy đơn thuốc theo hồ sơ khám.
