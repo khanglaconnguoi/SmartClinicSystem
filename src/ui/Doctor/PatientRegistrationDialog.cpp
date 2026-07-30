@@ -1,6 +1,6 @@
 #include "PatientRegistrationDialog.h"
-#include "../../dto/PatientDTOs.h"
-#include "../../model/CommonEnums.h"
+#include "dto/PatientDTOs.h"
+#include "model/CommonEnums.h"
 #include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
@@ -99,7 +99,7 @@ void PatientRegistrationDialog::setupUi()
       "background-color: #FFFFFF; color: #111827; selection-background-color: "
       "#4B94F2; selection-color: white; }";
 
-  -- -Loại Bệnh nhân-- -
+  //-- -Loại Bệnh nhân-- -
       m_cbPatientType = new QComboBox(formCard);
   for (const auto &item : patientTypeList)
     m_cbPatientType->addItem(item.viText, item.enText);
@@ -111,7 +111,7 @@ void PatientRegistrationDialog::setupUi()
   typeLayout->addWidget(m_cbPatientType, 1);
   cardLayout->addLayout(typeLayout);
 
-  -- -Group 1 : Thông tin Cá nhân-- -
+  //-- -Group 1 : Thông tin Cá nhân-- -
       QGroupBox *gbPersonalInfo = new QGroupBox("Thông tin Cơ bản", formCard);
   gbPersonalInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form1 = new QFormLayout(gbPersonalInfo);
@@ -141,7 +141,7 @@ void PatientRegistrationDialog::setupUi()
 
   cardLayout->addWidget(gbPersonalInfo);
 
-  -- -Group 2 : Liên hệ-- -
+  //-- -Group 2 : Liên hệ-- -
       QGroupBox *gbContactInfo = new QGroupBox("Thông tin Liên hệ", formCard);
   gbContactInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form2 = new QFormLayout(gbContactInfo);
@@ -170,7 +170,7 @@ void PatientRegistrationDialog::setupUi()
 
   cardLayout->addWidget(gbContactInfo);
 
-  -- -Group 3 : Thông tin Y tế cơ bản-- -
+  //-- -Group 3 : Thông tin Y tế cơ bản-- -
       QGroupBox *gbMedicalInfo = new QGroupBox("Thông tin Y tế", formCard);
   gbMedicalInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form3 = new QFormLayout(gbMedicalInfo);
@@ -189,7 +189,7 @@ void PatientRegistrationDialog::setupUi()
   m_txtAllergies->setStyleSheet(extraInputStyle);
   form3->addRow("Dị ứng:", m_txtAllergies);
 
-  -- -Group 4 : Thông tin Bảo hiểm Y tế-- -
+  //-- -Group 4 : Thông tin Bảo hiểm Y tế-- -
       QGroupBox *gbInsuranceInfo = new QGroupBox("Thông tin Bảo hiểm Y tế", formCard);
   gbInsuranceInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form4 = new QFormLayout(gbInsuranceInfo);
@@ -238,7 +238,7 @@ void PatientRegistrationDialog::setupUi()
   scrollArea->setWidget(formCard);
   containerLayout->addWidget(scrollArea);
 
-  -- -Nút Lưu và Trở lại-- -
+  //-- -Nút Lưu và Trở lại-- -
       QFrame *bottomFrame = new QFrame(container);
   bottomFrame->setStyleSheet(
       "background-color: transparent; border-top: 1px solid #EAEAEA;");
@@ -302,14 +302,9 @@ void PatientRegistrationDialog::handleSave()
   QString email = m_txtEmail->text().trimmed();
   QString address = m_txtAddress->text().trimmed();
 
-  QString typeText = m_cbPatientType->currentText();
-  PatientType type = (typeText == "Nội trú")   ? PatientType::Inpatient
-                     : (typeText == "Cấp cứu") ? PatientType::Emergency
-                                               : PatientType::Outpatient;
+  PatientType type = patientTypeFromVi(m_cbPatientType->currentText());
 
-  QString bloodType = m_cbBloodType->currentText();
-  if (bloodType == "Chưa rõ")
-    bloodType = "UNKNOWN";
+  QString bloodType = BloodTypeText::toEn(m_cbBloodType->currentText());
 
   QString allergies = m_txtAllergies->text().trimmed();
 

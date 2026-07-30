@@ -741,48 +741,6 @@ ResetPasswordResult StaffService::resetPassword(int staffId) {
     return ResetPasswordResult{true, password};
 }
 
-StaffUpdateDTO StaffService::mapStaffToUpdateDTO(const StaffInputDTO& dto, int staffId) {
-    StaffUpdateDTO updateDto;
-    updateDto.staffId = staffId;
-    updateDto.fullName = dto.fullName;
-    updateDto.gender = dto.gender;
-    updateDto.dateOfBirth = dto.dateOfBirth.toString("yyyy-MM-dd");
-    updateDto.citizenId = dto.citizenId;
-    updateDto.phoneNumber = dto.phoneNumber;
-    updateDto.email = dto.email;
-    updateDto.address = dto.address;
-    updateDto.departmentId = dto.departmentId;
-    updateDto.shift = dto.shift;
-    return updateDto;
-}
-
-DoctorUpdateDTO StaffService::mapDoctorToUpdateDTO(const DoctorInputDTO& dto, int staffId) {
-    DoctorUpdateDTO updateDto;
-    static_cast<StaffUpdateDTO&>(updateDto) = mapStaffToUpdateDTO(dto, staffId);
-    updateDto.specialty = dto.specialty;
-    updateDto.licenseNumber = dto.licenseNumber;
-    updateDto.experienceYears = dto.experienceYears;
-    updateDto.consultationFee = dto.consultationFee;
-    updateDto.bio = dto.bio;
-    return updateDto;
-}
-
-NurseUpdateDTO StaffService::mapNurseToUpdateDTO(const NurseInputDTO& dto, int staffId) {
-    NurseUpdateDTO updateDto;
-    static_cast<StaffUpdateDTO&>(updateDto) = mapStaffToUpdateDTO(dto, staffId);
-    updateDto.nurseLevel = dto.nurseLevel;
-    updateDto.certification = dto.certification;
-    return updateDto;
-}
-
-PharmacistUpdateDTO StaffService::mapPharmacistToUpdateDTO(const PharmacistInputDTO& dto, int staffId) {
-    PharmacistUpdateDTO updateDto;
-    static_cast<StaffUpdateDTO&>(updateDto) = mapStaffToUpdateDTO(dto, staffId);
-    updateDto.licenseNumber = dto.licenseNumber;
-    updateDto.pharmacySection = dto.pharmacySection;
-    updateDto.experienceYears = dto.experienceYears;
-    return updateDto;
-}
 
 bool StaffService::deactivateStaff(int staffId) {
     return m_staffRepository->deactivate(staffId);

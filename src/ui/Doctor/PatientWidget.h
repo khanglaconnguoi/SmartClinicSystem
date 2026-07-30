@@ -1,5 +1,6 @@
 #pragma once
 #include <QWidget>
+#include <QFrame>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -17,6 +18,8 @@
 #include <QScrollArea>
 #include <QGraphicsDropShadowEffect>
 #include <QDateEdit>
+#include "service/PatientService.h"
+#include <memory>
 
 class PatientWidget : public QWidget {
     Q_OBJECT
@@ -24,6 +27,9 @@ class PatientWidget : public QWidget {
 public:
     explicit PatientWidget(QWidget *parent = nullptr);
     ~PatientWidget() override;
+
+    void setPatientService(std::shared_ptr<PatientService> patientService);
+    void loadPatientsData();
 
 private slots:
     void handlePatientSelected(int row, int column);
@@ -34,6 +40,9 @@ private:
     void setupUi();
     void createListView();
     void createDetailView();
+
+    std::shared_ptr<PatientService> m_patientService;
+    QList<PatientSearchResultDTO> m_patientList;
 
     QVBoxLayout* m_mainLayout;
     QStackedWidget* m_mainStackedWidget;
@@ -59,12 +68,10 @@ private:
     QPushButton* m_btnDeleteInfo;
     QLineEdit* txtCitizenID;
     QLineEdit* txtEmail;
-    QLineEdit* txtBloodType;
+    QComboBox* cbBloodType;
     QLineEdit* txtAllergies;
     QLineEdit* txtInsurance;
     QLineEdit* txtEmergencyName;
     QLineEdit* txtEmergencyPhone;
-    QCheckBox* radMale;
-    QCheckBox* radFemale;
-    QButtonGroup* m_genderGroup;
+    QComboBox* cbGender;
 };

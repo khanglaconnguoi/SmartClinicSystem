@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QWidget>
-#include <memory>
+#include <QFrame>
 #include <QComboBox>
 #include <QDateEdit>
 #include <QTextEdit>
@@ -9,8 +9,9 @@
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QPushButton>
-#include "../../service/StaffService.h"
-#include "../../service/AppointmentService.h"
+#include <memory>
+#include "service/StaffService.h"
+#include "service/AppointmentService.h"
 
 class ManageLeaveWidget : public QWidget {
     Q_OBJECT
@@ -26,7 +27,7 @@ private slots:
 
 private:
     void setupUi();
-    class QFrame* makeCard(QWidget* parent);
+    QFrame* makeCard(QWidget* parent);
 
     std::shared_ptr<StaffService> m_staffService;
     std::shared_ptr<AppointmentService> m_appointmentService;

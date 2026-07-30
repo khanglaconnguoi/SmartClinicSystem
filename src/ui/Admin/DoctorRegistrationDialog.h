@@ -1,17 +1,16 @@
 #pragma once
 
-#include "../../service/StaffService.h"
+#include "service/StaffService.h"
+#include "dto/StaffDTOs.h"
 #include <QDialog>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QDateEdit>
+#include <QSpinBox>
+#include <QTextEdit>
+#include <QPushButton>
+#include <QLabel>
 #include <memory>
-
-class QLineEdit;
-class QComboBox;
-class QDateEdit;
-class QSpinBox;
-class QTextEdit;
-class QPushButton;
-class QLabel;
-struct DoctorProfileDTO;
 
 class DoctorRegistrationDialog : public QDialog {
   Q_OBJECT

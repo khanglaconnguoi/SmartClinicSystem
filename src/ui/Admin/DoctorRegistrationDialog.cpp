@@ -1,6 +1,7 @@
 #include "DoctorRegistrationDialog.h"
 #include "../../dto/StaffDTOs.h"
 #include "../../model/Doctor.h"
+#include "../../model/CommonEnums.h"
 #include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
@@ -268,12 +269,7 @@ void DoctorRegistrationDialog::loadDoctorData(DoctorProfileDTO *doctor) {
   m_txtAddress->setText(doctor->address);
   m_dtDateOfBirth->setDate(doctor->dateOfBirth);
 
-  if (doctor->gender == "Nam")
-    m_cbGender->setCurrentIndex(0);
-  else if (doctor->gender == "Nữ")
-    m_cbGender->setCurrentIndex(1);
-  else
-    m_cbGender->setCurrentIndex(2);
+  m_cbGender->setCurrentText(GenderText::toVi(doctor->gender));
 
   m_cbDepartment->setCurrentIndex(qMax(0, doctor->departmentId - 1));
 
@@ -293,11 +289,7 @@ void DoctorRegistrationDialog::loadDoctorData(DoctorProfileDTO *doctor) {
     }
   }
 
-  QString shiftText = (doctor->shift == "MORNING")     ? "Sáng"
-                      : (doctor->shift == "AFTERNOON") ? "Chiều"
-                      : (doctor->shift == "NIGHT")     ? "Tối"
-                                                       : "Cả ngày";
-  m_cbShift->setCurrentText(shiftText);
+  m_cbShift->setCurrentText(ShiftText::toVi(doctor->shift));
 
   m_cbSpecialty->setCurrentText(doctor->specialty);
   m_txtLicenseNumber->setText(doctor->licenseNumber);
@@ -328,11 +320,7 @@ void DoctorRegistrationDialog::handleSave() {
 
   QDate dob = m_dtDateOfBirth->date();
 
-  QString shiftText = m_cbShift->currentText();
-  QString shift = (shiftText == "Sáng")    ? "MORNING"
-                  : (shiftText == "Chiều") ? "AFTERNOON"
-                  : (shiftText == "Tối")   ? "NIGHT"
-                                           : "FULL_DAY";
+  QString shift = ShiftText::toEn(m_cbShift->currentText());
   QString specialty = m_cbSpecialty->currentText();
   int departmentId = m_cbDepartment->currentText().split(" - ").first().toInt();
   int roomId = m_cbRoom->currentData().toInt();

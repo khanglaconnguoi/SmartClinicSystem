@@ -8,10 +8,9 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include "dto/PrescriptionDTOs.h"
-#include "repository/PrescriptionRepository.h"
 #include <QMessageBox>
 #include <memory>
-class PharmacyService;
+#include "service/PharmacyService.h"
 
 class CreatePrescriptionDialog : public QDialog {
     Q_OBJECT

@@ -1,15 +1,15 @@
 #include "DoctorDashboard.h"
-#include "../../model/IAuthenticatable.h"
-#include "../../model/SystemUser.h"
-#include "../../service/AppointmentService.h"
-#include "../../service/PatientService.h"
-#include "../../service/StaffService.h"
-#include "../../service/AppointmentService.h"
-#include "../../service/PharmacyService.h"
-#include "../../repository/MedicationRepository.h"
-#include "../../repository/PrescriptionRepository.h"
+#include "model/IAuthenticatable.h"
+#include "../../model/CommonEnums.h"
+#include "model/SystemUser.h"
+#include "service/PatientService.h"
+#include "service/StaffService.h"
+#include "service/AppointmentService.h"
+#include "service/PharmacyService.h"
+#include "service/MedicalRecordService.h"
 #include "ClinicalExamWidget.h"
-#include "../Patient/PatientWidget.h"
+#include "PatientWidget.h"
+#include "ui/view/Profile.h"
 #include <QCalendarWidget>
 #include <QDate>
 #include <QDateEdit>
@@ -34,12 +34,16 @@ DoctorDashboardWidget::DoctorDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
     std::shared_ptr<StaffService> staffService,
     std::shared_ptr<PatientService> patientService,
-    std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : BaseDashboardWidget(user, staffService, patientService,
-                          appointmentService, parent),
-      m_currentExaminingRow(-1), m_overviewPage(nullptr),
-      m_patientsPage(nullptr), m_appointmentsPage(nullptr),
-      m_settingsPage(nullptr), m_clinicalExamPage(nullptr) {
+    std::shared_ptr<AppointmentService> appointmentService,
+    std::shared_ptr<MedicalRecordService> medicalRecordService,
+    std::shared_ptr<PharmacyService> pharmacyService,
+    QWidget *parent)
+    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent),
+      m_medicalRecordService(medicalRecordService),
+      m_pharmacyService(pharmacyService),
+      m_overviewPage(nullptr), m_patientsPage(nullptr),
+      m_appointmentsPage(nullptr), m_settingsPage(nullptr),
+      m_clinicalExamPage(nullptr), m_currentExaminingRow(-1) {
   initializeDashboard();
 }
 
@@ -88,8 +92,32 @@ void DoctorDashboardWidget::fillDashboardData() {
     m_docAvatarBtn->update();
 
     disconnect(m_docAvatarBtn, &QPushButton::clicked, nullptr, nullptr);
-    connect(m_docAvatarBtn, &QPushButton::clicked, this,
-            []() { qDebug() << "Đang mở trang Profile của bác sĩ..."; });
+    connect(m_docAvatarBtn, &QPushButton::clicked, this, [this]() {
+      if (!m_currentUser || !m_baseStaffService) return;
+      ProfileWidget dialog(m_baseStaffService, this);
+      dialog.loadProfile(m_currentUser->getAccountId());
+      dialog.exec();
+      if (m_docNameLabel) {
+        m_docNameLabel->setText(m_currentUser->getFullName());
+      }
+      if (m_docAvatarBtn && m_currentUser) {
+        QPixmap raw = m_currentUser->getAvatar();
+        if (!raw.isNull()) {
+          int sz = 36;
+          QPixmap scaled = raw.scaled(sz, sz, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+          QPixmap target(sz, sz);
+          target.fill(Qt::transparent);
+          QPainter p(&target);
+          p.setRenderHint(QPainter::Antialiasing);
+          QPainterPath path;
+          path.addEllipse(0, 0, sz, sz);
+          p.setClipPath(path);
+          p.drawPixmap(0, 0, scaled);
+          p.end();
+          m_docAvatarBtn->setIcon(QIcon(target));
+        }
+      }
+    });
   }
 
   m_stackedWidget = new QStackedWidget(m_mainContentWidget);
@@ -191,6 +219,9 @@ void DoctorDashboardWidget::buildOverviewPage() {
 
 void DoctorDashboardWidget::buildPatientsPage() {
   m_patientsPage = new PatientWidget(this);
+  if (m_basePatientService) {
+    m_patientsPage->setPatientService(m_basePatientService);
+  }
   m_stackedWidget->addWidget(m_patientsPage);
 }
 
@@ -498,11 +529,8 @@ void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
 }
 
 void DoctorDashboardWidget::buildClinicalExamPage() {
-  m_clinicalExamPage = new ClinicalExamWidget(this);
-  auto pharmacyService = std::make_shared<PharmacyService>(
-      std::make_shared<MedicationRepository>(),
-      std::make_shared<PrescriptionRepository>());
-  m_clinicalExamPage->setServices(pharmacyService, m_basePatientService, m_baseAppointmentService);
+  m_clinicalExamPage = new ClinicalExamWidget(m_medicalRecordService, this);
+  m_clinicalExamPage->setServices(m_pharmacyService, m_basePatientService, m_baseAppointmentService);
   m_stackedWidget->addWidget(m_clinicalExamPage);
 
   connect(m_clinicalExamPage, &ClinicalExamWidget::backToDashboardRequested,
@@ -527,7 +555,22 @@ void DoctorDashboardWidget::openClinicalExam(
 
   m_currentExaminingRow = rowIndex;
   m_isExaminingFromTodayList = isFromTodayList;
-  m_clinicalExamPage->loadPatientInfo(name, id, time, specialty);
+
+  int patientId = 0;
+  int appointmentId = 0;
+  if (isFromTodayList) {
+    if (rowIndex >= 0 && rowIndex < m_rowApptMeta.size()) {
+      patientId = m_rowApptMeta[rowIndex].patientId;
+      appointmentId = m_rowApptMeta[rowIndex].appointmentId;
+    }
+  } else {
+    if (rowIndex >= 0 && rowIndex < m_apptPageMeta.size()) {
+      patientId = m_apptPageMeta[rowIndex].patientId;
+      appointmentId = m_apptPageMeta[rowIndex].appointmentId;
+    }
+  }
+
+  m_clinicalExamPage->loadPatientInfo(patientId, appointmentId, name, id, time, specialty);
 
   int idx = m_stackedWidget->indexOf(m_clinicalExamPage);
   if (idx != -1) {
@@ -623,7 +666,14 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
       QString time = m_patientTable->item(nextRow, 2)->text();
       QString dept = m_patientTable->item(nextRow, 3)->text();
 
-      m_clinicalExamPage->loadPatientInfo(name, id, time, dept);
+      int patientId = 0;
+      int appointmentId = 0;
+      if (nextRow >= 0 && nextRow < m_rowApptMeta.size()) {
+        patientId = m_rowApptMeta[nextRow].patientId;
+        appointmentId = m_rowApptMeta[nextRow].appointmentId;
+      }
+
+      m_clinicalExamPage->loadPatientInfo(patientId, appointmentId, name, id, time, dept);
 
       QMessageBox::information(this, "Nova Care Clinic",
                                QString("Đã kết thúc ca khám hiện tại.\nChuyển "
@@ -949,13 +999,13 @@ void DoctorDashboardWidget::loadLeaveHistory() {
         row, 1, new QTableWidgetItem(req.endDate.toString("dd/MM/yyyy")));
     m_tableLeaveHistory->setItem(row, 2, new QTableWidgetItem(req.reason));
 
-    QTableWidgetItem *statusItem = new QTableWidgetItem(req.status);
+    QTableWidgetItem *statusItem = new QTableWidgetItem(LeaveStatusText::toVi(req.status));
     statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
-    if (req.status == "PENDING") {
+    if (req.status == LeaveStatusText::PENDING) {
       statusItem->setForeground(QColor("#F29900")); // Yellow
-    } else if (req.status == "APPROVED") {
+    } else if (req.status == LeaveStatusText::APPROVED) {
       statusItem->setForeground(QColor("#34A853")); // Green
-    } else if (req.status == "REJECTED") {
+    } else if (req.status == LeaveStatusText::REJECTED) {
       statusItem->setForeground(QColor("#EA4335")); // Red
     }
 

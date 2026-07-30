@@ -1,10 +1,15 @@
 #pragma once
 
-#include "../BaseDashboard.h"
+#include "ui/BaseDashboard.h"
+#include "model/IAuthenticatable.h"
+#include "service/StaffService.h"
+#include "service/PatientService.h"
+#include "service/AppointmentService.h"
+#include <QFrame>
 #include <QScrollArea>
+#include <QPushButton>
+#include <QVBoxLayout>
 #include <memory>
-
-class IAuthenticatable;
 
 class PatientDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT

@@ -227,11 +227,7 @@ void ReceptionRegistrationDialog::handleSave()
 	QString email = m_txtEmail->text().trimmed();
 	QString address = m_txtAddress->text().trimmed();
 
-	QString shiftText = m_cbShift->currentText();
-	QString shift = (shiftText == "Sáng")	 ? "MORNING"
-					: (shiftText == "Chiều") ? "AFTERNOON"
-					: (shiftText == "Tối")	 ? "NIGHT"
-											 : "FULL_DAY";
+	QString shift = ShiftText::toEn(m_cbShift->currentText());
 
 	ReceptionistInputDTO dto;
 	dto.fullName = fullName;

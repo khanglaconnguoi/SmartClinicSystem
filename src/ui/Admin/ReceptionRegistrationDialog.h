@@ -1,13 +1,12 @@
 #pragma once
 
+#include "service/StaffService.h"
 #include <QDialog>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QDateEdit>
+#include <QPushButton>
 #include <memory>
-#include "../../service/StaffService.h"
-
-class QLineEdit;
-class QComboBox;
-class QDateEdit;
-class QPushButton;
 
 class ReceptionRegistrationDialog : public QDialog {
     Q_OBJECT

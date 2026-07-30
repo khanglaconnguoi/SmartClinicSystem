@@ -1,10 +1,10 @@
 #include "PatientDashboard.h"
-#include "../../model/IAuthenticatable.h"
-#include "../../service/AppointmentService.h"
-#include "../../service/AuthService.h"
-#include "../../service/PatientService.h"
-#include "../../service/StaffService.h"
-#include "../../model/CommonEnums.h"
+#include "model/IAuthenticatable.h"
+#include "service/AppointmentService.h"
+#include "service/AuthService.h"
+#include "service/PatientService.h"
+#include "service/StaffService.h"
+#include "model/CommonEnums.h"
 #include <QDate>
 #include <QGraphicsDropShadowEffect>
 #include <QMessageBox>
@@ -390,13 +390,13 @@ void PatientDashboardWidget::createUpcomingAppointments() {
       // Badge trạng thái
       QString statusColor = "#5F6368";
       QString statusBg = "#F1F3F4";
-      if (a.status == "PENDING" || a.status == "SCHEDULED") {
+      if (a.status == AppointmentStatusText::PENDING || a.status == AppointmentStatusText::SCHEDULED) {
         statusColor = "#F59E0B";
         statusBg = "#FEF3C7";
-      } else if (a.status == "COMPLETED") {
+      } else if (a.status == AppointmentStatusText::COMPLETED) {
         statusColor = "#10B981";
         statusBg = "#D1FAE5";
-      } else if (a.status == "CANCELLED") {
+      } else if (a.status == AppointmentStatusText::CANCELLED) {
         statusColor = "#EF4444";
         statusBg = "#FEE2E2";
       }
@@ -415,7 +415,7 @@ void PatientDashboardWidget::createUpcomingAppointments() {
       hl->addWidget(statusLbl);
 
       // Nút Hủy
-      if (a.status == "PENDING" || a.status == "SCHEDULED") {
+      if (a.status == AppointmentStatusText::PENDING || a.status == AppointmentStatusText::SCHEDULED) {
         QPushButton *btnCancel = new QPushButton("Hủy", item);
         btnCancel->setCursor(Qt::PointingHandCursor);
         btnCancel->setStyleSheet(

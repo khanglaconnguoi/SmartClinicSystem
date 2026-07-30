@@ -1,36 +1,48 @@
 #pragma once
-#include "../BaseDashboard.h"
+#include "ui/BaseDashboard.h"
+#include "ui/Doctor/PatientWidget.h"
+#include "ui/Doctor/ClinicalExamWidget.h"
+#include "service/MedicalRecordService.h"
+#include "service/PharmacyService.h"
+#include "service/StaffService.h"
+#include "service/PatientService.h"
+#include "service/AppointmentService.h"
+#include "model/IAuthenticatable.h"
+#include <QFrame>
 #include <QDateEdit>
 #include <QTextEdit>
 #include <QTabWidget>
 #include <QTableWidget>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QStackedWidget>
+#include <QCalendarWidget>
+#include <QLabel>
+#include <QPushButton>
 #include <memory>
-
-
-class IAuthenticatable;
-class QVBoxLayout;
-class QHBoxLayout;
-class QStackedWidget;
-class QCalendarWidget;
-class PatientWidget;
 
 class DoctorDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT
 
 public:
-  explicit DoctorDashboardWidget(
-      std::shared_ptr<IAuthenticatable> user = nullptr,
-      std::shared_ptr<StaffService> staffService = nullptr,
-      std::shared_ptr<PatientService> patientService = nullptr,
-      std::shared_ptr<AppointmentService> appointmentService = nullptr,
-      QWidget *parent = nullptr);
-  virtual ~DoctorDashboardWidget() override = default;
+    explicit DoctorDashboardWidget(
+        std::shared_ptr<IAuthenticatable> user = nullptr, 
+        std::shared_ptr<StaffService> staffService = nullptr, 
+        std::shared_ptr<PatientService> patientService = nullptr, 
+        std::shared_ptr<AppointmentService> appointmentService = nullptr, 
+        std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr, 
+        std::shared_ptr<PharmacyService> pharmacyService = nullptr, 
+        QWidget *parent = nullptr
+    );
+    virtual ~DoctorDashboardWidget() override = default;
 
 protected:
   virtual void fillDashboardData() override;
 
 private:
-  int m_currentExaminingRow = -1;
+    std::shared_ptr<MedicalRecordService> m_medicalRecordService;
+    std::shared_ptr<PharmacyService> m_pharmacyService;
+    int m_currentExaminingRow = -1;
 
   QStackedWidget *m_stackedWidget = nullptr;
   QPushButton *m_btnDash = nullptr;
@@ -44,13 +56,13 @@ private:
   QWidget *m_appointmentsPage = nullptr;
   QWidget *m_settingsPage = nullptr;
   QWidget *m_leaveManagePage = nullptr;
-  class ClinicalExamWidget *m_clinicalExamPage = nullptr;
+  ClinicalExamWidget *m_clinicalExamPage = nullptr;
 
   // Leave Management UI components
-  class QLabel *m_lblLeaveBalance = nullptr;
-  class QDateEdit *m_leaveStartDate = nullptr;
-  class QDateEdit *m_leaveEndDate = nullptr;
-  class QTextEdit *m_txtLeaveReason = nullptr;
+  QLabel *m_lblLeaveBalance = nullptr;
+  QDateEdit *m_leaveStartDate = nullptr;
+  QDateEdit *m_leaveEndDate = nullptr;
+  QTextEdit *m_txtLeaveReason = nullptr;
   
   QTabWidget *m_leaveTabWidget = nullptr;
   QTableWidget *m_tableLeaveHistory = nullptr;

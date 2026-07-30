@@ -7,9 +7,8 @@
 #include <QLabel>
 #include <memory>
 
-// Forward declarations
-class AuthService;
-class IAuthenticatable;
+#include "service/AuthService.h"
+#include "model/IAuthenticatable.h"
 
 class LoginDialog : public QWidget
 {
