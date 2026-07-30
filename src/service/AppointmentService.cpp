@@ -1,4 +1,5 @@
 #include "AppointmentService.h"
+#include "../model/CommonEnums.h"
 
 #include <QDate>
 #include <QDebug>
@@ -298,7 +299,7 @@ QStringList AppointmentService::getAvailableTimeSlots(int doctorId,
     }
 
     for (const auto &appt : bookedAppts) {
-      if (appt.status == "CANCELLED")
+      if (appt.status == AppointmentStatusText::CANCELLED)
         continue;
 
       QTime apptStart = QTime::fromString(appt.startTime, "HH:mm");

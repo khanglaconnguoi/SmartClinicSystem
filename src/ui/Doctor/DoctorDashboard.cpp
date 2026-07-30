@@ -1,6 +1,7 @@
 #include "DoctorDashboard.h"
 #include "../../model/IAuthenticatable.h"
 #include "../../model/SystemUser.h"
+#include "../../model/CommonEnums.h"
 #include "../../service/AppointmentService.h"
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
@@ -601,7 +602,7 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
     if (m_currentExaminingRow >= 0 &&
         m_currentExaminingRow < m_rowApptMeta.size()) {
       int apptId = m_rowApptMeta[m_currentExaminingRow].appointmentId;
-      m_baseAppointmentService->updateAppointmentStatus(apptId, "COMPLETED");
+      m_baseAppointmentService->updateAppointmentStatus(apptId, AppointmentStatusText::COMPLETED);
     }
 
     refreshAppointmentsTables();
@@ -632,7 +633,7 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
     if (m_currentExaminingRow >= 0 &&
         m_currentExaminingRow < m_apptPageMeta.size()) {
       int apptId = m_apptPageMeta[m_currentExaminingRow].appointmentId;
-      m_baseAppointmentService->updateAppointmentStatus(apptId, "COMPLETED");
+      m_baseAppointmentService->updateAppointmentStatus(apptId, AppointmentStatusText::COMPLETED);
     }
 
     refreshAppointmentsTables();

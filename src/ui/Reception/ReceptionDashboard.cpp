@@ -818,7 +818,7 @@ void ReceptionDashboardWidget::updateAppointmentsTable() {
         QDate apptDate = QDate::fromString(a.appointmentDate, "yyyy-MM-dd");
         QDate todayDate = QDate::currentDate();
 
-        if (a.status == "SCHEDULED" && apptDate >= todayDate) {
+        if (a.status == AppointmentStatusText::SCHEDULED && apptDate >= todayDate) {
             QWidget* widget = new QWidget();
             QHBoxLayout* l = new QHBoxLayout(widget);
             l->setContentsMargins(4, 4, 4, 4);
@@ -1060,7 +1060,7 @@ void ReceptionDashboardWidget::showPatientHistoryDialog(int patientId, const QSt
         QDate apptDate = QDate::fromString(a.appointmentDate, "yyyy-MM-dd");
         QDate todayDate = QDate::currentDate();
 
-        if (a.status == "SCHEDULED" && apptDate >= todayDate) {
+        if (a.status == AppointmentStatusText::SCHEDULED && apptDate >= todayDate) {
             QWidget* widget = new QWidget();
             QHBoxLayout* l = new QHBoxLayout(widget);
             l->setContentsMargins(4, 4, 4, 4);
