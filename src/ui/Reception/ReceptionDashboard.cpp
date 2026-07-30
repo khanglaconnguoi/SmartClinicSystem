@@ -6,7 +6,7 @@
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
 #include "../Patient/PatientRegistrationDialog.h"
-#include "view/Profile.h"
+#include "../view/Profile.h"
 #include "RoomQueueWidget.h"
 #include "RoomQueueDialog.h"
 #include <QComboBox>
