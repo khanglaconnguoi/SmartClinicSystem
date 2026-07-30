@@ -219,7 +219,8 @@ void CreatePrescriptionDialog::onSaveClicked() {
             QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString("Không thể tạo đơn thuốc: %1").arg(errorMsg));
         }
     } else {
-        QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString::fromUtf8("Dịch vụ Dược chưa được khởi tạo. Không thể tạo đơn thuốc."));
+        // QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString::fromUtf8("Dịch vụ Dược chưa được khởi tạo. Không thể tạo đơn thuốc."));
+        QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString::fromUtf8("Chưa kết nối dịch vụ nhà thuốc (PharmacyService)."));
     }
 
 }

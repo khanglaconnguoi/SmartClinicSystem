@@ -11,24 +11,25 @@
 #include <QFrame>
 
 #include <memory>
-class PharmacyService;
-class PatientService;
-class AppointmentService;
-
 #include "dto/PatientDTOs.h"
+#include "service/MedicalRecordService.h"
+#include "service/PharmacyService.h"
+#include "service/PatientService.h"
+#include "service/AppointmentService.h"
 
 class ClinicalExamWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit ClinicalExamWidget(QWidget* parent = nullptr);
+    explicit ClinicalExamWidget(std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr, QWidget* parent = nullptr);
     virtual ~ClinicalExamWidget() override = default;
 
     void setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService);
 
     // Hàm load thông tin bệnh nhân khi bác sĩ chọn khám
-    void loadPatientInfo(const QString& name, const QString& id, const QString& time, const QString& specialty);
-    void loadPatientInfo(const PatientDetailDTO& patient, const QString& time = "", const QString& specialty = "");
+    void loadPatientInfo(int patientId, int appointmentId, const QString& name, const QString& id, const QString& time, const QString& specialty);
+    void loadPatientInfo(const PatientDetailDTO& patient, int appointmentId, const QString& time = "", const QString& specialty = "");
+    void clearExamForm();
 
 signals:
     // Tín hiệu yêu cầu quay lại màn hình Dashboard chính
@@ -37,10 +38,24 @@ signals:
     void viewAppointmentsListRequested();
     void callPatientRequested();
 
+private slots:
+    void onSaveClicked();
+    void validateTemperatureInput();
+    void validateHeartRateInput();
+    void validateWeightInput();
+    void validateHeightInput();
+    void validateDiagnosisInput();
+    void validateChiefComplaintInput();
+
 private:
     std::shared_ptr<PharmacyService> m_pharmacyService;
     std::shared_ptr<PatientService> m_patientService;
     std::shared_ptr<AppointmentService> m_appointmentService;
+    std::shared_ptr<MedicalRecordService> m_medicalRecordService;
+    int m_currentPatientId = 0;
+    int m_currentAppointmentId = 0;
+
+    QList<Diagnosis> getDiagnosesFromUi() const;
 
     // --- TOP TABS BAR ---
     QPushButton* m_tabAppointmentsList;
@@ -85,6 +100,7 @@ private:
 
     QTextEdit* m_txtReason;
     QComboBox* m_cbDiagnosis;
+    QComboBox* m_cbSeverity;
     QLineEdit* m_txtMainDisease;
     QLineEdit* m_txtSubDisease;
     QComboBox* m_cbDirection;

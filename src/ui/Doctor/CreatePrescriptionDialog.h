@@ -10,8 +10,7 @@
 #include "dto/PrescriptionDTOs.h"
 #include <QMessageBox>
 #include <memory>
-
-class PharmacyService;
+#include "service/PharmacyService.h"
 
 class CreatePrescriptionDialog : public QDialog {
     Q_OBJECT

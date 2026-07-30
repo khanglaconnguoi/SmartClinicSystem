@@ -446,7 +446,7 @@ void ProfileWidget::loadProfile(int staffId) {
         cardRoleSpecific->show();
         cardBio->show(); 
         
-        lblRole->setText(roleToString(profile->role) == "DOCTOR" ? "Bác sĩ" : roleToString(profile->role));
+        lblRole->setText(userRoleToVi(profile->role));
         txtSpecialty->setText(docProfile->specialty);
         txtLicenseNumber->setText(docProfile->licenseNumber);
         txtConsultationFee->setText(QString::number(docProfile->consultationFee));
@@ -460,7 +460,7 @@ void ProfileWidget::loadProfile(int staffId) {
         cardRoleSpecific->show();
         cardBio->hide(); 
         
-        lblRole->setText(roleToString(profile->role) == "NURSE" ? "Y tá" : roleToString(profile->role));
+        lblRole->setText(userRoleToVi(profile->role));
         txtNurseLevel->setText(nurseProfile->nurseLevel);
         txtCertification->setText(nurseProfile->certification);
     }

@@ -185,6 +185,33 @@ inline QString toEn(const QString &vi) {
 
 } // namespace MedicationUnitText
 
+namespace DiagnosisSeverityText {
+  inline const QString MILD = "MILD";
+  inline const QString MODERATE = "MODERATE";
+  inline const QString SEVERE = "SEVERE";
+
+  inline const QList<QPair<QString, QString>> severities = {
+      {MILD, "Nhẹ"}, {MODERATE, "Vừa"}, {SEVERE, "Nặng"}};
+
+  inline const QList<QPair<QString, QString>> &getList() { return severities; }
+
+  inline QString toVi(const QString &en) {
+    QString cleanEn = en.toUpper().trimmed();
+    for (const auto &pair : severities) {
+      if (pair.first == cleanEn) return pair.second;
+    }
+    return "Vừa";
+  }
+
+  inline QString toEn(const QString &vi, const QString &defaultVal = "") {
+    QString cleanVi = vi.trimmed();
+    for (const auto &pair : severities) {
+      if (pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0) return pair.first;
+    }
+    return defaultVal.isEmpty() ? MODERATE : defaultVal;
+  }
+}
+
 namespace InvoiceStatusText {
 inline const QString UNPAID = "UNPAID";
 inline const QString PAID = "PAID";
@@ -227,6 +254,7 @@ inline QString toEn(const QString &vi) {
 } // namespace InvoiceStatusText
 
 namespace AppointmentStatusText {
+    inline const QString PENDING    = "PENDING";
     inline const QString SCHEDULED  = "SCHEDULED";
     inline const QString CHECKED_IN = "CHECKED_IN";
     inline const QString STARTED    = "STARTED";
@@ -235,6 +263,7 @@ namespace AppointmentStatusText {
     inline const QString NO_SHOW    = "NO_SHOW";
 
     inline const QList<QPair<QString, QString>> statuses = {
+        {PENDING,    "Chờ duyệt"},
         {SCHEDULED,  "Đã hẹn"},
         {CHECKED_IN, "Đã check-in"},
         {STARTED,    "Đang khám"},
@@ -272,6 +301,36 @@ namespace AppointmentStatusText {
     return SCHEDULED;
     }
 } // namespace AppointmentStatusText
+
+namespace LeaveStatusText {
+    inline const QString PENDING  = "PENDING";
+    inline const QString APPROVED = "APPROVED";
+    inline const QString REJECTED = "REJECTED";
+
+    inline const QList<QPair<QString, QString>> statuses = {
+        {PENDING,  "Chờ duyệt"},
+        {APPROVED, "Đã duyệt"},
+        {REJECTED, "Đã từ chối"}};
+
+    inline const QList<QPair<QString, QString>> &getList() { return statuses; }
+
+    inline QString toVi(const QString &en) {
+        QString cleanEn = en.toUpper().trimmed();
+        for (const auto &pair : statuses) {
+            if (pair.first == cleanEn) return pair.second;
+        }
+        return "Chờ duyệt";
+    }
+
+    inline QString toEn(const QString &vi) {
+        QString cleanVi = vi.trimmed();
+        for (const auto &pair : statuses) {
+            if (pair.first == cleanVi.toUpper() || pair.second.compare(cleanVi, Qt::CaseInsensitive) == 0)
+                return pair.first;
+        }
+        return PENDING;
+    }
+} // namespace LeaveStatusText
 
 namespace ShiftText {
     inline const QList<QPair<QString, QString>> shifts = {

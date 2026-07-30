@@ -1,6 +1,7 @@
 #include <QDebug>
 
 #include "BaseDashboard.h"
+#include "view/Profile.h"
 #include "service/StaffService.h"
 #include "service/UserSession.h"
 #include "view/Profile.h"

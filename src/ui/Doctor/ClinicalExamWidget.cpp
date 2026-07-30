@@ -1,16 +1,18 @@
 #include "ClinicalExamWidget.h"
 #include "CreatePrescriptionDialog.h"
 #include "PatientRecordHistoryDialog.h"
-#include "../../service/PharmacyService.h"
-#include "../../service/PatientService.h"
-#include "../../service/AppointmentService.h"
+#include "service/PharmacyService.h"
+#include "service/PatientService.h"
+#include "service/AppointmentService.h"
+#include "service/UserSession.h"
+#include "service/Validation.h"
 #include <QDoubleValidator>
 #include <QDebug>
 #include <QMessageBox>
 #include "../../model/CommonEnums.h"
 
-ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
-    : QWidget(parent)
+ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> medicalRecordService, QWidget* parent)
+    : QWidget(parent), m_medicalRecordService(medicalRecordService)
 {
     setupUi();
 
@@ -21,6 +23,11 @@ ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
     connect(m_btnCallPatient, &QPushButton::clicked, this, [this]() {
             emit callPatientRequested();
         });
+
+    if (m_btnSave) {
+        connect(m_btnSave, &QPushButton::clicked, this, &ClinicalExamWidget::onSaveClicked);
+    }
+
     if (m_subPrescription) {
         connect(m_subPrescription, &QPushButton::clicked, this, [this]() {
             CreatePrescriptionDialog dialog(m_pharmacyService, this);
@@ -52,6 +59,15 @@ ClinicalExamWidget::ClinicalExamWidget(QWidget* parent)
     };
     connect(m_txtWeight, &QLineEdit::textChanged, this, onBmiInputChanged);
     connect(m_txtHeight, &QLineEdit::textChanged, this, onBmiInputChanged);
+
+    // Kết nối tín hiệu validate thời gian thực
+    connect(m_txtTemp, &QLineEdit::textChanged, this, &ClinicalExamWidget::validateTemperatureInput);
+    connect(m_txtPulse, &QLineEdit::textChanged, this, &ClinicalExamWidget::validateHeartRateInput);
+    connect(m_txtWeight, &QLineEdit::textChanged, this, &ClinicalExamWidget::validateWeightInput);
+    connect(m_txtHeight, &QLineEdit::textChanged, this, &ClinicalExamWidget::validateHeightInput);
+    connect(m_txtReason, &QTextEdit::textChanged, this, &ClinicalExamWidget::validateChiefComplaintInput);
+    connect(m_cbDiagnosis, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ClinicalExamWidget::validateDiagnosisInput);
+    connect(m_txtMainDisease, &QLineEdit::textChanged, this, &ClinicalExamWidget::validateDiagnosisInput);
 }
 
 void ClinicalExamWidget::setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService) {
@@ -367,9 +383,15 @@ QWidget* ClinicalExamWidget::setupMainExamForm() {
     formGrid->setSpacing(10);
 
     formGrid->addWidget(new QLabel("Chẩn đoán ban đầu:", mainForm), 0, 0);
+    QHBoxLayout* diagRowLayout = new QHBoxLayout();
+    diagRowLayout->setSpacing(6);
     m_cbDiagnosis = new QComboBox(mainForm);
     for (const auto& pair : DiagnosisText::getList()) m_cbDiagnosis->addItem(pair.second, pair.first);
-    formGrid->addWidget(m_cbDiagnosis, 1, 0);
+    m_cbSeverity = new QComboBox(mainForm);
+    for (const auto& pair : DiagnosisSeverityText::getList()) m_cbSeverity->addItem(pair.second, pair.first);
+    diagRowLayout->addWidget(m_cbDiagnosis, 3);
+    diagRowLayout->addWidget(m_cbSeverity, 1);
+    formGrid->addLayout(diagRowLayout, 1, 0);
 
     formGrid->addWidget(new QLabel("Bệnh chính (ICD10):", mainForm), 0, 1);
     m_txtMainDisease = new QLineEdit(mainForm);
@@ -439,7 +461,30 @@ QFrame* ClinicalExamWidget::setupMedicalHistoryPanel() {
     return rightPanel;
 }
 
-void ClinicalExamWidget::loadPatientInfo(const QString& name, const QString& id, const QString& time, const QString& specialty) {
+void ClinicalExamWidget::clearExamForm() {
+    if (m_txtTemp) m_txtTemp->clear();
+    if (m_txtBp) m_txtBp->clear();
+    if (m_txtPulse) m_txtPulse->clear();
+    if (m_txtWeight) m_txtWeight->clear();
+    if (m_txtHeight) m_txtHeight->clear();
+    if (m_txtReason) m_txtReason->clear();
+    if (m_txtMainDisease) m_txtMainDisease->clear();
+    if (m_txtSubDisease) m_txtSubDisease->clear();
+    if (m_txtAdvice) m_txtAdvice->clear();
+    if (m_txtHistoryIllness) m_txtHistoryIllness->clear();
+    if (m_txtHistoryPersonal) m_txtHistoryPersonal->clear();
+    if (m_txtExamGeneral) m_txtExamGeneral->clear();
+    if (m_txtClsSummary) m_txtClsSummary->clear();
+    if (m_lblBmiVal) m_lblBmiVal->setText("0.0");
+    if (m_cbDiagnosis) m_cbDiagnosis->setCurrentIndex(0);
+    if (m_cbSeverity) m_cbSeverity->setCurrentIndex(0);
+}
+
+void ClinicalExamWidget::loadPatientInfo(int patientId, int appointmentId, const QString& name, const QString& id, const QString& time, const QString& specialty) {
+    clearExamForm();
+    m_currentPatientId = patientId;
+    m_currentAppointmentId = appointmentId;
+
     if (m_lblPatientNameVal) m_lblPatientNameVal->setText(name.toUpper());
     if (m_lblPatientCodeVal) m_lblPatientCodeVal->setText(id);
     
@@ -449,11 +494,11 @@ void ClinicalExamWidget::loadPatientInfo(const QString& name, const QString& id,
     if (m_lblPatientAgeVal) m_lblPatientAgeVal->setText(QString("%1 tuổi").arg(age));
     if (m_lblPatientGenderVal) m_lblPatientGenderVal->setText(age % 2 == 0 ? "Nam" : "Nữ");
     
-    qDebug() << "Loaded patient info to clinical workspace:" << name << id << time << specialty;
+    qDebug() << "Loaded patient info to clinical workspace:" << name << id << time << specialty << "patientId:" << patientId << "appointmentId:" << appointmentId;
 }
 
-void ClinicalExamWidget::loadPatientInfo(const PatientDetailDTO& patient, const QString& time, const QString& specialty) {
-    loadPatientInfo(patient.fullName, patient.patientCode, time, specialty);
+void ClinicalExamWidget::loadPatientInfo(const PatientDetailDTO& patient, int appointmentId, const QString& time, const QString& specialty) {
+    loadPatientInfo(patient.patientId, appointmentId, patient.fullName, patient.patientCode, time, specialty);
     if (!patient.gender.isEmpty() && m_lblPatientGenderVal) {
         m_lblPatientGenderVal->setText(GenderText::toVi(patient.gender));
     }
@@ -486,4 +531,216 @@ QFrame* ClinicalExamWidget::createSeparator() {
     line->setFrameShape(QFrame::HLine);
     line->setStyleSheet("background-color: #E5E7EB; border: none; max-height: 1px;");
     return line;
+}
+
+QList<Diagnosis> ClinicalExamWidget::getDiagnosesFromUi() const {
+    QList<Diagnosis> list;
+    QString diagnosisDesc = m_cbDiagnosis->currentIndex() > 0 ? m_cbDiagnosis->currentText() : "";
+    QString mainDisease = m_txtMainDisease->text().trimmed();
+
+    if (!diagnosisDesc.isEmpty() || !mainDisease.isEmpty()) {
+        Diagnosis d;
+        d.icdCode = mainDisease;
+        d.description = !diagnosisDesc.isEmpty() ? diagnosisDesc : mainDisease;
+        d.severity = m_cbSeverity ? DiagnosisSeverityText::toEn(m_cbSeverity->currentText()) : DiagnosisSeverityText::MODERATE;
+        list.append(d);
+    }
+    return list;
+}
+
+void ClinicalExamWidget::validateTemperatureInput() {
+    QString text = m_txtTemp->text().trimmed();
+    if (text.isEmpty()) {
+        m_txtTemp->setStyleSheet("");
+        m_txtTemp->setToolTip("");
+        return;
+    }
+    bool ok;
+    double val = text.toDouble(&ok);
+    QString err = "";
+    if (!ok) {
+        err = "Nhiệt độ phải là số thực hợp lệ.";
+    } else {
+        err = MedicalRecordService::validateTemperature(val);
+    }
+
+    if (!err.isEmpty()) {
+        m_txtTemp->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
+        m_txtTemp->setToolTip(err);
+    } else {
+        m_txtTemp->setStyleSheet("");
+        m_txtTemp->setToolTip("");
+    }
+}
+
+void ClinicalExamWidget::validateHeartRateInput() {
+    QString text = m_txtPulse->text().trimmed();
+    if (text.isEmpty()) {
+        m_txtPulse->setStyleSheet("");
+        m_txtPulse->setToolTip("");
+        return;
+    }
+    bool ok;
+    int val = text.toInt(&ok);
+    QString err = "";
+    if (!ok) {
+        err = "Nhịp tim phải là số nguyên hợp lệ.";
+    } else {
+        err = MedicalRecordService::validateHeartRate(val);
+    }
+
+    if (!err.isEmpty()) {
+        m_txtPulse->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
+        m_txtPulse->setToolTip(err);
+    } else {
+        m_txtPulse->setStyleSheet("");
+        m_txtPulse->setToolTip("");
+    }
+}
+
+void ClinicalExamWidget::validateWeightInput() {
+    QString text = m_txtWeight->text().trimmed();
+    if (text.isEmpty()) {
+        m_txtWeight->setStyleSheet("");
+        m_txtWeight->setToolTip("");
+        return;
+    }
+    bool ok;
+    double val = text.toDouble(&ok);
+    QString err = "";
+    if (!ok) {
+        err = "Cân nặng phải là số thực hợp lệ.";
+    } else {
+        err = MedicalRecordService::validateWeight(val);
+    }
+
+    if (!err.isEmpty()) {
+        m_txtWeight->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
+        m_txtWeight->setToolTip(err);
+    } else {
+        m_txtWeight->setStyleSheet("");
+        m_txtWeight->setToolTip("");
+    }
+}
+
+void ClinicalExamWidget::validateHeightInput() {
+    QString text = m_txtHeight->text().trimmed();
+    if (text.isEmpty()) {
+        m_txtHeight->setStyleSheet("");
+        m_txtHeight->setToolTip("");
+        return;
+    }
+    bool ok;
+    double val = text.toDouble(&ok);
+    QString err = "";
+    if (!ok) {
+        err = "Chiều cao phải là số thực hợp lệ.";
+    } else {
+        err = MedicalRecordService::validateHeight(val);
+    }
+
+    if (!err.isEmpty()) {
+        m_txtHeight->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
+        m_txtHeight->setToolTip(err);
+    } else {
+        m_txtHeight->setStyleSheet("");
+        m_txtHeight->setToolTip("");
+    }
+}
+
+void ClinicalExamWidget::validateDiagnosisInput() {
+    QList<Diagnosis> list = getDiagnosesFromUi();
+    QString err = MedicalRecordService::validateDiagnosisList(list);
+    if (!err.isEmpty()) {
+        m_cbDiagnosis->setStyleSheet("QComboBox { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
+        m_txtMainDisease->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
+        m_cbDiagnosis->setToolTip(err);
+        m_txtMainDisease->setToolTip(err);
+    } else {
+        m_cbDiagnosis->setStyleSheet("");
+        m_txtMainDisease->setStyleSheet("");
+        m_cbDiagnosis->setToolTip("");
+        m_txtMainDisease->setToolTip("");
+    }
+}
+
+void ClinicalExamWidget::validateChiefComplaintInput() {
+    QString text = m_txtReason->toPlainText().trimmed();
+    QString err = Validation::validateTrimmedNotEmpty(text, "Lý do khám không được để trống.");
+    if (!err.isEmpty()) {
+        m_txtReason->setStyleSheet("QTextEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
+        m_txtReason->setToolTip(err);
+    } else {
+        m_txtReason->setStyleSheet("");
+        m_txtReason->setToolTip("");
+    }
+}
+
+void ClinicalExamWidget::onSaveClicked() {
+    if (!m_medicalRecordService) {
+        QMessageBox::critical(this, "Lỗi", "Chưa kết nối dịch vụ hồ sơ bệnh án (MedicalRecordService).");
+        return;
+    }
+
+    // 1. Thu thập dữ liệu
+    MedicalRecordInsertDTO dto;
+    dto.patientId = m_currentPatientId;
+    
+    int doctorId = 1; // mặc định test mode
+    if (UserSession::getInstance().isLoggedIn() && UserSession::getInstance().getCurrentAccount()) {
+        doctorId = UserSession::getInstance().getCurrentAccount()->getAccountId();
+    }
+    dto.doctorId = doctorId;
+    dto.appointmentId = m_currentAppointmentId;
+    dto.visitDateTime = QDateTime::currentDateTime();
+
+    dto.vitals.temperature = m_txtTemp->text().trimmed().toDouble();
+    dto.vitals.bloodPressure = m_txtBp->text().trimmed();
+    dto.vitals.heartRate = m_txtPulse->text().trimmed().toInt();
+    dto.vitals.weight = m_txtWeight->text().trimmed().toDouble();
+    dto.vitals.height = m_txtHeight->text().trimmed().toDouble();
+
+    dto.chiefComplaint = m_txtReason->toPlainText().trimmed();
+    dto.clinicalNotes = QString(
+        "Bệnh sử: %1\n"
+        "Tiền sử: %2\n"
+        "Khám lâm sàng chung: %3\n"
+        "Cận lâm sàng tóm tắt: %4"
+    ).arg(
+        m_txtHistoryIllness->toPlainText().trimmed(),
+        m_txtHistoryPersonal->toPlainText().trimmed(),
+        m_txtExamGeneral->toPlainText().trimmed(),
+        m_txtClsSummary->toPlainText().trimmed()
+    );
+    dto.treatment = QString("Hướng xử lý: %1. Xử trí: %2. Lời dặn: %3")
+        .arg(m_cbDirection->currentText(), m_cbAction->currentText(), m_txtAdvice->text().trimmed());
+    
+    dto.nextVisitDate = std::nullopt;
+    dto.diagnoses = getDiagnosesFromUi();
+
+    // 2. Chạy validate tổng (bằng cách gọi createMedicalRecord)
+    QString err = m_medicalRecordService->createMedicalRecord(dto);
+    if (!err.isEmpty()) {
+        QMessageBox::warning(this, "Lỗi kiểm tra dữ liệu", err);
+        
+        // Cập nhật lại màu viền đỏ của các trường sai
+        validateTemperatureInput();
+        validateHeartRateInput();
+        validateWeightInput();
+        validateHeightInput();
+        validateChiefComplaintInput();
+        validateDiagnosisInput();
+        return;
+    }
+
+    QMessageBox::information(this, "Thành công", "Đã lưu hồ sơ bệnh án thành công!");
+    
+    // Reset stylesheets
+    m_txtTemp->setStyleSheet("");
+    m_txtPulse->setStyleSheet("");
+    m_txtWeight->setStyleSheet("");
+    m_txtHeight->setStyleSheet("");
+    m_txtReason->setStyleSheet("");
+    m_cbDiagnosis->setStyleSheet("");
+    m_txtMainDisease->setStyleSheet("");
 }

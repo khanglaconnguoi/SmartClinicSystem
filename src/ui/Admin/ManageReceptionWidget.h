@@ -4,9 +4,8 @@
 #include <QTableWidget>
 #include <QFrame>
 #include <memory>
-#include "../../service/StaffService.h"
-
-class SystemUser;
+#include "service/StaffService.h"
+#include "model/SystemUser.h"
 
 class ManageReceptionWidget : public QWidget {
     Q_OBJECT

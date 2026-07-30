@@ -1,46 +1,42 @@
+#include <QApplication>
+#include <QDebug>
+#include <QMessageBox>
+#include <QSqlDatabase>
+#include <QSqlError>
+#include <QSqlQuery>
+#include <memory>
+
 #include "dto/BillingDTOs.h"
 #include "dto/MedicalRecordDTOs.h"
 #include "dto/PatientDTOs.h"
 #include "dto/PrescriptionDTOs.h"
+#include "dto/StaffDTOs.h"
+
 #include "model/CommonEnums.h"
+#include "model/doctor.h"
+
 #include "repository/AppointmentRepository.h"
 #include "repository/BillingRepository.h"
 #include "repository/DatabaseManager.h"
 #include "repository/MedicalRecordRepository.h"
+#include "repository/MedicationRepository.h"
 #include "repository/PatientRepository.h"
+#include "repository/PrescriptionRepository.h"
 #include "repository/StaffRepository.h"
+
 #include "service/AppointmentService.h"
 #include "service/AuthService.h"
 #include "service/BillingService.h"
 #include "service/MedicalRecordService.h"
 #include "service/PatientService.h"
-#include "service/StaffService.h"
-#include "service/Validation.h"
-#include "ui/MainWindow.h"
-#include <QApplication>
-#include <QSqlDatabase>
-#include <QSqlQuery>
-#include <QSqlError>
-#include <QDebug>
-#include <QMessageBox>
-#include <memory>
-
-#include "repository/DatabaseManager.h"
-#include "repository/StaffRepository.h"
-#include "repository/PatientRepository.h"
-#include "repository/AppointmentRepository.h"
-#include "repository/MedicationRepository.h"
-#include "repository/PrescriptionRepository.h"
-
-#include "service/StaffService.h"
-#include "service/PatientService.h"
-#include "service/AppointmentService.h"
 #include "service/PharmacyService.h"
+#include "service/StaffService.h"
 #include "service/UserSession.h"
+#include "service/Validation.h"
 
-#include "dto/StaffDTOs.h"
-#include "model/doctor.h"
 #include "ui/Doctor/DoctorDashboard.h"
+#include "ui/MainWindow.h"
+
 
 int main(int argc, char *argv[])
 {
@@ -69,6 +65,9 @@ int main(int argc, char *argv[])
     auto prescriptionRepo = std::make_shared<PrescriptionRepository>();
     auto pharmacyService = std::make_shared<PharmacyService>(medicationRepo, prescriptionRepo);
 
+    auto recordRepo = std::make_shared<MedicalRecordRepository>(patientRepo);
+    auto recordService = std::make_shared<MedicalRecordService>(recordRepo, patientService);
+
     // 3. Giả lập Bác sĩ đang đăng nhập (Dr. Nguyễn Văn A - Mã BS01) dựa trên DoctorProfileDTO (StaffDTOs.h)
     DoctorProfileDTO docProfile;
     docProfile.staffId = 1;
@@ -96,7 +95,7 @@ int main(int argc, char *argv[])
     UserSession::getInstance().setCurrentAccount(currentDoctor);
 
     // 4. Khởi tạo và hiển thị Giao diện DoctorDashboard
-    DoctorDashboardWidget doctorDashboard(currentDoctor, staffService, patientService, appointmentService, pharmacyService);
+    DoctorDashboardWidget doctorDashboard(currentDoctor, staffService, patientService, appointmentService, recordService, pharmacyService);
     doctorDashboard.setWindowTitle("Hệ Thống Phòng Khám - Phân Hệ Bác Sĩ (Test Mode)");
     doctorDashboard.resize(1280, 800);
     doctorDashboard.show();

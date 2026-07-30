@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../../service/PatientService.h"
+#include "service/PatientService.h"
 #include <QDialog>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QDateEdit>
+#include <QDoubleSpinBox>
+#include <QPushButton>
 #include <memory>
-
-class QLineEdit;
-class QComboBox;
-class QDateEdit;
-class QPushButton;
 
 class PatientRegistrationDialog : public QDialog {
   Q_OBJECT
@@ -47,7 +47,7 @@ private:
   QComboBox *m_cbInsuranceType;
   QLineEdit *m_txtInsuranceProvider;
   QLineEdit *m_txtInsurancePolicy;
-  class QDoubleSpinBox *m_spinInsuranceCoverage;
+  QDoubleSpinBox *m_spinInsuranceCoverage;
   QDateEdit *m_dateInsuranceFrom;
   QDateEdit *m_dateInsuranceTo;
 

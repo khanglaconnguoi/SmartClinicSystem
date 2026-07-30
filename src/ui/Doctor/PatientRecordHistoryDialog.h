@@ -15,8 +15,8 @@
 #include "dto/PatientDTOs.h"
 #include "dto/PrescriptionDTOs.h"
 
-class MedicalRecordService;
-class PharmacyService;
+#include "service/MedicalRecordService.h"
+#include "service/PharmacyService.h"
 
 /**
  * @class PatientRecordHistoryDialog

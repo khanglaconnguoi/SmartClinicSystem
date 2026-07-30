@@ -1,20 +1,20 @@
 #pragma once
 
-#include "../../model/Doctor.h"
-#include "../../service/PatientService.h"
-#include "../../service/StaffService.h"
-#include "../BaseDashboard.h"
+#include "ui/BaseDashboard.h"
+#include "ui/Admin/ManageDoctorsWidget.h"
+#include "ui/Admin/ManageNursesWidget.h"
+#include "ui/Admin/ManagePatientsWidget.h"
+#include "ui/Admin/ManageReceptionWidget.h"
+#include "ui/Admin/ManageLeaveWidget.h"
+#include "service/StaffService.h"
+#include "service/PatientService.h"
+#include "service/AppointmentService.h"
 #include <QComboBox>
 #include <QDateEdit>
 #include <QFrame>
 #include <QLineEdit>
 #include <QStackedWidget>
-
-class ManageDoctorsWidget;
-class ManageNursesWidget;
-class ManagePatientsWidget;
-class ManageReceptionWidget;
-class ManageLeaveWidget;
+#include <QPushButton>
 
 class AdminDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT

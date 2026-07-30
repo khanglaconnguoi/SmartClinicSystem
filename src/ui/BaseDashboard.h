@@ -12,9 +12,9 @@
 #include <memory>
 #include "model/IAuthenticatable.h"
 
-class StaffService;
-class PatientService;
-class AppointmentService;
+#include "service/StaffService.h"
+#include "service/PatientService.h"
+#include "service/AppointmentService.h"
 
 class ClickableLabel : public QLabel {
     Q_OBJECT

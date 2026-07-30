@@ -10,6 +10,7 @@
 #include "service/StaffService.h"
 #include "service/PatientService.h"
 #include "service/AppointmentService.h"
+#include "service/MedicalRecordService.h"
 #include "service/PharmacyService.h"
 
 class MainWindow : public QMainWindow {
@@ -20,6 +21,8 @@ public:
                         std::shared_ptr<StaffService> staffService, 
                         std::shared_ptr<PatientService> patientService,
                         std::shared_ptr<AppointmentService> appointmentService,
+                        std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr,
+                        std::shared_ptr<PharmacyService> pharmacyService = nullptr,
                         QWidget *parent = nullptr);
     ~MainWindow() override;
 
@@ -39,5 +42,6 @@ private:
     std::shared_ptr<StaffService> m_staffService;
     std::shared_ptr<PatientService> m_patientService;
     std::shared_ptr<AppointmentService> m_appointmentService;
+    std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     std::shared_ptr<PharmacyService> m_pharmacyService;
 };

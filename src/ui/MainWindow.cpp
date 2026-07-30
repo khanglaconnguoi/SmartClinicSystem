@@ -1,7 +1,7 @@
 #include "MainWindow.h"
 #include "Admin/AdminDashboard.h"
 #include "Doctor/DoctorDashboard.h"
-#include "Patient/PatientDashboard.h"
+#include "Doctor/PatientDashboard.h"
 #include "Reception/ReceptionDashboard.h"
 #include "model/CommonEnums.h"
 #include "model/IAuthenticatable.h"
@@ -21,19 +21,20 @@
 #include <QScreen>
 #include <QVBoxLayout>
 
-
-MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
-                       std::shared_ptr<StaffService> staffService,
-                       std::shared_ptr<PatientService> patientService,
-                       std::shared_ptr<AppointmentService> appointmentService,
-                       QWidget *parent)
-    : QMainWindow(parent), m_authService(std::move(authService)),
-      m_staffService(std::move(staffService)),
-      m_patientService(std::move(patientService)),
-      m_appointmentService(std::move(appointmentService)),
-      m_pharmacyService(std::make_shared<PharmacyService>(
-          std::make_shared<MedicationRepository>(),
-          std::make_shared<PrescriptionRepository>())) {
+MainWindow::MainWindow(std::shared_ptr<AuthService> authService, 
+                       std::shared_ptr<StaffService> staffService, 
+                       std::shared_ptr<PatientService> patientService, 
+                       std::shared_ptr<AppointmentService> appointmentService, 
+                       std::shared_ptr<MedicalRecordService> medicalRecordService, 
+                       std::shared_ptr<PharmacyService> pharmacyService, 
+                       QWidget *parent) : 
+  QMainWindow(parent), 
+  m_authService(std::move(authService)), 
+  m_staffService(std::move(staffService)), 
+  m_patientService(std::move(patientService)), 
+  m_appointmentService(std::move(appointmentService)), 
+  m_medicalRecordService(std::move(medicalRecordService)), 
+  m_pharmacyService(std::move(pharmacyService)) {
   setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
   setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
   this->setMinimumSize(800, 500);
@@ -118,8 +119,7 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget *page) {
 
 void MainWindow::switchToDoctorDashboard(
     std::shared_ptr<IAuthenticatable> user) {
-  auto dashboard = new DoctorDashboardWidget(
-      user, m_staffService, m_patientService, m_appointmentService, m_pharmacyService, this);
+  auto dashboard = new DoctorDashboardWidget(user, m_staffService, m_patientService, m_appointmentService, m_medicalRecordService, m_pharmacyService, this);
   registerDashboardPage(dashboard);
 }
 

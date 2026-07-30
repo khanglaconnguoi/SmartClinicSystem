@@ -1,6 +1,7 @@
 #include "NurseRegistrationDialog.h"
 #include "../../dto/StaffDTOs.h"
 #include "../../model/SystemUser.h"
+#include "../../model/CommonEnums.h"
 #include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
@@ -242,10 +243,7 @@ void NurseRegistrationDialog::loadNurseData(NurseProfileDTO* nurse) {
         }
     }
     
-    QString shiftText = (nurse->shift == "MORNING") ? "Sáng" :
-                        (nurse->shift == "AFTERNOON") ? "Chiều" :
-                        (nurse->shift == "NIGHT") ? "Tối" : "Cả ngày";
-    m_cbShift->setCurrentText(shiftText);
+    m_cbShift->setCurrentText(ShiftText::toVi(nurse->shift));
     
     m_cbNurseLevel->setCurrentText(nurse->nurseLevel);
     m_txtCertification->setText("..."); //Not in ProfileDTO directly usually
@@ -273,10 +271,7 @@ void NurseRegistrationDialog::handleSave() {
 
   QDate dob = m_dtDateOfBirth->date();
   
-  QString shiftText = m_cbShift->currentText();
-  QString shift = (shiftText == "Sáng") ? "MORNING" :
-                  (shiftText == "Chiều") ? "AFTERNOON" :
-                  (shiftText == "Tối") ? "NIGHT" : "FULL_DAY";
+  QString shift = ShiftText::toEn(m_cbShift->currentText());
   int departmentId = m_cbDepartment->currentText().split(" - ").first().toInt();
 
   QString nurseLevel = m_cbNurseLevel->currentText();

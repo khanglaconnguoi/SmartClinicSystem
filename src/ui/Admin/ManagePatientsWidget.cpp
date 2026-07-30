@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <QHeaderView>
 #include <QMessageBox>
-#include "../Patient/PatientRegistrationDialog.h"
+#include "../Doctor/PatientRegistrationDialog.h"
 
 ManagePatientsWidget::ManagePatientsWidget(std::shared_ptr<PatientService> patientService, QWidget* parent)
     : QWidget(parent), m_patientService(patientService), m_tblPatients(nullptr) {

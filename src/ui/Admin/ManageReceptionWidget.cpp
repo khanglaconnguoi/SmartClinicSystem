@@ -2,6 +2,7 @@
 #include "ReceptionRegistrationDialog.h"
 #include "../../dto/StaffDTOs.h"
 #include "../../model/SystemUser.h"
+#include "../../model/CommonEnums.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -106,7 +107,7 @@ void ManageReceptionWidget::loadReceptionList() {
         m_tblReception->setItem(i, 1, new QTableWidgetItem(receptionist->getFullName()));
         
         auto profile = m_staffService->getOwnProfile(receptionist->getAccountId());
-        QString shiftStr = profile ? profile->shift : "Cả ngày";
+        QString shiftStr = ShiftText::toVi(profile ? profile->shift : "");
         QString phoneStr = profile ? profile->phoneNumber : "";
         
         m_tblReception->setItem(i, 2, new QTableWidgetItem(shiftStr));

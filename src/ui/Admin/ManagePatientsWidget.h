@@ -5,7 +5,7 @@
 #include <QFrame>
 #include <memory>
 
-class PatientService;
+#include "service/PatientService.h"
 
 class ManagePatientsWidget : public QWidget {
     Q_OBJECT
