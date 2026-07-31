@@ -9,6 +9,8 @@
 #include <QDate>
 #include <QFrame>
 #include <QScrollArea>
+#include "../utils/UIValidationUtils.h"
+#include "../../service/Validation.h"
 
 ProfileWidget::ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget *parent) 
     : QDialog(parent), m_staffService(staffService) {
@@ -406,6 +408,44 @@ QWidget* ProfileWidget::createRightPanel() {
 
     cardRoleSpecific->hide();
     cardBio->hide();
+
+    // --- UI Validation Hooks ---
+    UIValidationUtils::attachPrimitiveValidators(txtCitizenId, txtPhone);
+    UIValidationUtils::attachPrimitiveValidators(nullptr, txtConsultationFee); 
+
+    connect(txtPhone, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtPhone->isReadOnly()) {
+            QString err = Validation::validatePhoneNumber(txtPhone->text());
+            UIValidationUtils::applyFieldValidationStyle(txtPhone, err);
+        }
+    });
+    connect(txtEmail, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtEmail->isReadOnly()) {
+            QString err = Validation::validateEmail(txtEmail->text());
+            UIValidationUtils::applyFieldValidationStyle(txtEmail, err);
+        }
+    });
+    connect(txtAddress, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtAddress->isReadOnly()) {
+            QString err = Validation::validateTrimmedNotEmpty(txtAddress->text(), "Vui lòng nhập địa chỉ");
+            UIValidationUtils::applyFieldValidationStyle(txtAddress, err);
+        }
+    });
+    connect(txtBio, &QTextEdit::cursorPositionChanged, this, [this]() {
+        // TextEdit doesn't have editingFinished in the same way, but we can style if needed. We'll skip for now or apply on focus out via event filter.
+    });
+    connect(txtNurseLevel, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtNurseLevel->isReadOnly()) {
+            QString err = Validation::validateTrimmedNotEmpty(txtNurseLevel->text(), "Vui lòng nhập cấp độ y tá");
+            UIValidationUtils::applyFieldValidationStyle(txtNurseLevel, err);
+        }
+    });
+    connect(txtCertification, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtCertification->isReadOnly()) {
+            QString err = Validation::validateTrimmedNotEmpty(txtCertification->text(), "Vui lòng nhập chứng chỉ");
+            UIValidationUtils::applyFieldValidationStyle(txtCertification, err);
+        }
+    });
 
     scrollArea->setWidget(scrollContent);
     return scrollArea;

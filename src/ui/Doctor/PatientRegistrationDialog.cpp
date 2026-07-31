@@ -1,5 +1,7 @@
 #include "PatientRegistrationDialog.h"
-#include "dto/PatientDTOs.h"
+#include "../../dto/PatientDTOs.h"
+#include "../utils/UIValidationUtils.h"
+#include "../../service/Validation.h"
 #include "model/CommonEnums.h"
 #include <QComboBox>
 #include <QDate>
@@ -274,6 +276,35 @@ void PatientRegistrationDialog::setupUi()
           {
     emit cancelled();
     reject(); });
+
+  // --- UI Validation (Step 1 & 2) ---
+  UIValidationUtils::attachPrimitiveValidators(m_txtCitizenId, m_txtPhone);
+  if (m_txtEmergencyContactPhone) {
+      m_txtEmergencyContactPhone->setValidator(new QRegularExpressionValidator(QRegularExpression("^0\\d{0,10}$"), m_txtEmergencyContactPhone));
+  }
+
+  connect(m_txtPhone, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validatePhoneNumber(m_txtPhone->text());
+      UIValidationUtils::applyFieldValidationStyle(m_txtPhone, err);
+  });
+  connect(m_txtEmergencyContactPhone, &QLineEdit::editingFinished, this, [this]() {
+      QString text = m_txtEmergencyContactPhone->text().trimmed();
+      QString err = text.isEmpty() ? "" : Validation::validatePhoneNumber(text);
+      UIValidationUtils::applyFieldValidationStyle(m_txtEmergencyContactPhone, err);
+  });
+  connect(m_txtCitizenId, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validateCitizenId(m_txtCitizenId->text());
+      UIValidationUtils::applyFieldValidationStyle(m_txtCitizenId, err);
+  });
+  connect(m_txtEmail, &QLineEdit::editingFinished, this, [this]() {
+      QString text = m_txtEmail->text().trimmed();
+      QString err = text.isEmpty() ? "" : Validation::validateEmail(text);
+      UIValidationUtils::applyFieldValidationStyle(m_txtEmail, err);
+  });
+  connect(m_txtFullName, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validateFullName(m_txtFullName->text());
+      UIValidationUtils::applyFieldValidationStyle(m_txtFullName, err);
+  });
 }
 
 void PatientRegistrationDialog::handleSave()

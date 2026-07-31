@@ -1,5 +1,7 @@
 #include "DoctorRegistrationDialog.h"
 #include "../../dto/StaffDTOs.h"
+#include "../utils/UIValidationUtils.h"
+#include "../../service/Validation.h"
 #include "../../model/Doctor.h"
 #include "../../model/CommonEnums.h"
 #include <QComboBox>
@@ -262,6 +264,30 @@ void DoctorRegistrationDialog::setupUi() {
   connect(m_btnSave, &QPushButton::clicked, this,
           &DoctorRegistrationDialog::handleSave);
   connect(m_btnCancel, &QPushButton::clicked, this, &QDialog::reject);
+
+  // --- UI Validation (Step 1 & 2) ---
+  UIValidationUtils::attachPrimitiveValidators(m_txtCitizenId, m_txtPhone);
+
+  connect(m_txtPhone, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validatePhoneNumber(m_txtPhone->text());
+      UIValidationUtils::applyFieldValidationStyle(m_txtPhone, err);
+  });
+  connect(m_txtCitizenId, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validateCitizenId(m_txtCitizenId->text());
+      UIValidationUtils::applyFieldValidationStyle(m_txtCitizenId, err);
+  });
+  connect(m_txtEmail, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validateEmail(m_txtEmail->text());
+      UIValidationUtils::applyFieldValidationStyle(m_txtEmail, err);
+  });
+  connect(m_txtFullName, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validateFullName(m_txtFullName->text());
+      UIValidationUtils::applyFieldValidationStyle(m_txtFullName, err);
+  });
+  connect(m_txtLicenseNumber, &QLineEdit::editingFinished, this, [this]() {
+      QString err = Validation::validateTrimmedNotEmpty(m_txtLicenseNumber->text(), "Vui lòng nhập Số CCHN hợp lệ.");
+      UIValidationUtils::applyFieldValidationStyle(m_txtLicenseNumber, err);
+  });
 }
 
 void DoctorRegistrationDialog::loadDoctorData(DoctorProfileDTO *doctor) {

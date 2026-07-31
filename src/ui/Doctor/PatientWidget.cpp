@@ -2,6 +2,19 @@
 #include "PatientWidget.h"
 #include "ui/Pharmacy/AddMedicationDialog.h"
 #include "ui/Doctor/CreatePrescriptionDialog.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QGridLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QHeaderView>
+#include <QFrame>
+#include <QSpacerItem>
+#include <QGraphicsDropShadowEffect>
+#include "model/CommonEnums.h"
+#include <QComboBox>
+#include "../utils/UIValidationUtils.h"
+#include "../../service/Validation.h"
 
 PatientWidget::PatientWidget(QWidget *parent) : QWidget(parent) {
     setupUi();
@@ -465,6 +478,43 @@ void PatientWidget::createDetailView() {
             cbGender->setEnabled(false);
             cbBloodType->setEnabled(false);
             m_btnEditInfo->setText("Chỉnh sửa thông tin");
+        }
+    });
+
+    // --- UI Validation Hooks ---
+    UIValidationUtils::attachPrimitiveValidators(txtCitizenID, txtPhone);
+    UIValidationUtils::attachPrimitiveValidators(nullptr, txtEmergencyPhone);
+
+    connect(txtPhone, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtPhone->isReadOnly()) {
+            QString err = Validation::validatePhoneNumber(txtPhone->text());
+            UIValidationUtils::applyFieldValidationStyle(txtPhone, err);
+        }
+    });
+    connect(txtCitizenID, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtCitizenID->isReadOnly()) {
+            QString err = Validation::validateCitizenId(txtCitizenID->text());
+            UIValidationUtils::applyFieldValidationStyle(txtCitizenID, err);
+        }
+    });
+    connect(txtEmergencyPhone, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtEmergencyPhone->isReadOnly()) {
+            QString text = txtEmergencyPhone->text().trimmed();
+            QString err = text.isEmpty() ? "" : Validation::validatePhoneNumber(text);
+            UIValidationUtils::applyFieldValidationStyle(txtEmergencyPhone, err);
+        }
+    });
+    connect(txtEmail, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtEmail->isReadOnly()) {
+            QString text = txtEmail->text().trimmed();
+            QString err = text.isEmpty() ? "" : Validation::validateEmail(text);
+            UIValidationUtils::applyFieldValidationStyle(txtEmail, err);
+        }
+    });
+    connect(txtFullName, &QLineEdit::editingFinished, this, [this]() {
+        if (!txtFullName->isReadOnly()) {
+            QString err = Validation::validateFullName(txtFullName->text());
+            UIValidationUtils::applyFieldValidationStyle(txtFullName, err);
         }
     });
 }

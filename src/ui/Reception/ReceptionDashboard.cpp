@@ -30,6 +30,8 @@
 #include <QDebug>
 #include <QTextCharFormat>
 #include "../../model/CommonEnums.h"
+#include "../utils/UIValidationUtils.h"
+#include "../../service/Validation.h"
 
 ReceptionDashboardWidget::ReceptionDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
@@ -549,6 +551,21 @@ void ReceptionDashboardWidget::buildRegisterPage() {
     m_dateEdit->setDate(QDate::currentDate());
     m_comboSpecialty->setCurrentIndex(0);
     updateDoctorList();
+  });
+
+  // --- UI Validation Hooks ---
+  UIValidationUtils::attachPrimitiveValidators(m_txtPatientCitizenId, m_txtPatientPhone);
+
+  connect(m_txtPatientPhone, &QLineEdit::editingFinished, this, [this]() {
+      QString text = m_txtPatientPhone->text().trimmed();
+      QString err = text.isEmpty() ? "" : Validation::validatePhoneNumber(text);
+      UIValidationUtils::applyFieldValidationStyle(m_txtPatientPhone, err);
+  });
+
+  connect(m_txtPatientCitizenId, &QLineEdit::editingFinished, this, [this]() {
+      QString text = m_txtPatientCitizenId->text().trimmed();
+      QString err = text.isEmpty() ? "" : Validation::validateCitizenId(text);
+      UIValidationUtils::applyFieldValidationStyle(m_txtPatientCitizenId, err);
   });
 
   mainScroll->setWidget(contentWidget);

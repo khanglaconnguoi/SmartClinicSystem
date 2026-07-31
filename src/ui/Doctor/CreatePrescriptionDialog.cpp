@@ -1,6 +1,8 @@
 #include "CreatePrescriptionDialog.h"
 #include "service/PharmacyService.h"
 #include "service/UserSession.h"
+#include "../utils/UIValidationUtils.h"
+#include "../../service/Validation.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -160,11 +162,21 @@ void CreatePrescriptionDialog::addMedicineRow(const QString &name, double price,
     // 3. Liều Lượng (QLineEdit - không có đơn vị)
     QLineEdit *txtDosage = new QLineEdit(dosage, this);
     txtDosage->setPlaceholderText(QString::fromUtf8("Ví dụ: 1"));
+    txtDosage->setValidator(new QRegularExpressionValidator(QRegularExpression("^[0-9]+(?:\\.[0-9]+)?$"), txtDosage));
+    connect(txtDosage, &QLineEdit::editingFinished, this, [txtDosage]() {
+        QString err = txtDosage->text().trimmed().isEmpty() ? "Vui lòng nhập liều lượng" : "";
+        UIValidationUtils::applyFieldValidationStyle(txtDosage, err);
+    });
     tblPrescription->setCellWidget(row, 3, txtDosage);
 
     // 4. Tần Suất (QLineEdit - không có đơn vị)
     QLineEdit *txtFreq = new QLineEdit(freq, this);
     txtFreq->setPlaceholderText(QString::fromUtf8("Ví dụ: 2"));
+    txtFreq->setValidator(new QRegularExpressionValidator(QRegularExpression("^[0-9]+$"), txtFreq));
+    connect(txtFreq, &QLineEdit::editingFinished, this, [txtFreq]() {
+        QString err = txtFreq->text().trimmed().isEmpty() ? "Vui lòng nhập tần suất" : "";
+        UIValidationUtils::applyFieldValidationStyle(txtFreq, err);
+    });
     tblPrescription->setCellWidget(row, 4, txtFreq);
 
     // 5. Số Ngày
