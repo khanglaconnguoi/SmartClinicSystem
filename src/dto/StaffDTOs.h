@@ -43,6 +43,7 @@ struct DoctorInputDTO : public StaffInputDTO {
 struct NurseInputDTO : public StaffInputDTO {
     QString nurseLevel;
     QString certification;
+    int     roomId = 0;
 };
 
 struct ReceptionistInputDTO : public StaffInputDTO {};
@@ -89,6 +90,7 @@ struct DoctorInsertDTO : public StaffInsertDTO {
 struct NurseInsertDTO : public StaffInsertDTO {
     QString nurseLevel;
     QString certification;
+    int     roomId = 0;
 };
 
 struct ReceptionistInsertDTO : public StaffInsertDTO {};
@@ -132,6 +134,7 @@ struct DoctorUpdateDTO : public StaffUpdateDTO {
 struct NurseUpdateDTO : public StaffUpdateDTO {
     QString nurseLevel;
     QString certification;
+    int     roomId = 0;
 };
 
 struct ReceptionistUpdateDTO : public StaffUpdateDTO {};
@@ -279,9 +282,10 @@ struct DoctorProfileDTO : public StaffProfileDTO {
 struct NurseProfileDTO : public StaffProfileDTO {
     QString  nurseLevel;
     QString  certification;
+    int      roomId   = 0;
+    QString  roomName;  // JOIN từ bảng rooms
 
     ~NurseProfileDTO() override = default;
-
 
     std::unique_ptr<StaffInputDTO> toInputDTO() const override {
         auto dto = std::make_unique<NurseInputDTO>();
@@ -298,6 +302,7 @@ struct NurseProfileDTO : public StaffProfileDTO {
         // Nurse-specific
         dto->nurseLevel   = nurseLevel;
         dto->certification = certification;
+        dto->roomId       = roomId;
         return dto;
     }
 };

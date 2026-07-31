@@ -75,7 +75,11 @@ struct MedicationSummaryDTO {
   QString unit;
   double unitPrice;
   int stockQuantity;
+  int minimumStock;
+  int reorderThreshold;
   QDate expiryDate;
+  QString manufacturer;
+  QString description;
   bool isLowStock;      // stock <= reorderThreshold → màu vàng
   bool isCriticalStock; // stock <= minimumStock     → màu đỏ
   bool isExpiringSoon;  // còn < 30 ngày hết hạn     → màu cam

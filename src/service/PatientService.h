@@ -11,11 +11,10 @@
 
 #include "dto/PatientDTOs.h"
 #include "model/CommonEnums.h"
+#include "repository/PatientRepository.h"
 #include <QDate>
 #include <QString>
 #include <memory>
-
-class PatientRepository;
 
 
 

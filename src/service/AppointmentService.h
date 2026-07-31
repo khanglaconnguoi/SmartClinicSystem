@@ -71,5 +71,7 @@ public:
   QString createAppointment(AppointmentInputDTO input) const;
 
   QList<QPair<int, QString>> getExaminationRooms() const;
+  QList<QPair<int, QString>> getRoomsByType(const QString& roomType) const;
 };
+
 

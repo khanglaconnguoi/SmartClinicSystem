@@ -127,12 +127,14 @@ bool StaffRepository::insertNurse(const NurseInsertDTO &nurse) {
         INSERT INTO nurse_profiles (
             staff_id,
             nurse_level,
-            certification
+            certification,
+            room_id
         )
-        VALUES (?, ?, ?)
+        VALUES (?, ?, ?, ?)
     )";
 
-  QVariantList params = {staffId, nurse.nurseLevel, nurse.certification};
+  QVariantList params = {staffId, nurse.nurseLevel, nurse.certification,
+                         nurse.roomId > 0 ? QVariant(nurse.roomId) : QVariant(QVariant::Int)};
 
   if (db.executeQuery(insert, params).lastError().isValid()) {
     db.rollbackTransaction();
@@ -261,11 +263,14 @@ bool StaffRepository::updateNurse(const NurseUpdateDTO &nurse) {
   QString sql = R"(
         UPDATE nurse_profiles
         SET nurse_level = ?,
-            certification = ?
+            certification = ?,
+            room_id = ?
         WHERE staff_id = (SELECT staff_id FROM staff WHERE staff_id = ?);
     )";
 
-  QVariantList params = {nurse.nurseLevel, nurse.certification, nurse.staffId};
+  QVariantList params = {nurse.nurseLevel, nurse.certification,
+                         nurse.roomId > 0 ? QVariant(nurse.roomId) : QVariant(QVariant::Int),
+                         nurse.staffId};
 
   if (db.executeQuery(sql, params).lastError().isValid()) {
     db.rollbackTransaction();
@@ -453,6 +458,7 @@ static const QString SELECT_STAFF_PROFILE_SQL = R"(
         s.email,
         s.address,
         s.department_id,
+        dept.department_name    AS department_name,
         s.hire_date,
         s.shift,
         s.is_active,
@@ -467,15 +473,19 @@ static const QString SELECT_STAFF_PROFILE_SQL = R"(
 
         np.nurse_level          AS nurse_level,
         np.certification        AS nurse_certification,
+        np.room_id              AS nurse_room_id,
+        rn.room_number          AS nurse_room_name,
 
         pp.license_number       AS pharmacist_license_number,
         pp.pharmacy_section     AS pharmacist_section,
         pp.experience_years     AS pharmacist_experience_years
     FROM staff s
+    LEFT JOIN departments dept ON s.department_id = dept.department_id
     LEFT JOIN doctor_profiles dp ON s.staff_id = dp.staff_id
     LEFT JOIN nurse_profiles  np ON s.staff_id = np.staff_id
     LEFT JOIN pharmacist_profiles pp ON s.staff_id = pp.staff_id
-    LEFT JOIN rooms r ON dp.room_id = r.room_id
+    LEFT JOIN rooms r  ON dp.room_id = r.room_id
+    LEFT JOIN rooms rn ON np.room_id = rn.room_id
 
 )";
 
@@ -627,7 +637,7 @@ std::unique_ptr<StaffProfileDTO> StaffRepository::queryProfile(const QString& wh
         dto.isActive = query.value("is_active").toBool();
         dto.hireDate =
         QDate::fromString(query.value("hire_date").toString(), "yyyy-MM-dd");
-        // dto.departmentName = query.value("department_name").toString();
+        dto.departmentName = query.value("department_name").toString();
         dto.fullName = query.value("full_name").toString();
         dto.gender = query.value("gender").toString();
         dto.dateOfBirth = QDate::fromString(query.value("date_of_birth").toString(), "yyyy-MM-dd");
@@ -667,6 +677,8 @@ std::unique_ptr<StaffProfileDTO> StaffRepository::queryProfile(const QString& wh
         fill(*dto);
         dto->nurseLevel    = query.value("nurse_level").toString();
         dto->certification = query.value("nurse_certification").toString();
+        dto->roomId        = query.value("nurse_room_id").toInt();
+        dto->roomName      = query.value("nurse_room_name").toString();
         return dto;
     }
     case UserRole::Pharmacist: {

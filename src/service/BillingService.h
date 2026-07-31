@@ -1,14 +1,12 @@
 #pragma once
 #include "dto/BillingDTOs.h"
 #include "model/CommonEnums.h"
+#include "repository/BillingRepository.h"
+#include "factory/IInvoiceFactory.h"
+#include "dto/PrescriptionDTOs.h"
 #include <memory>
 #include <optional>
 #include <QList>
-
-#include "dto/PrescriptionDTOs.h"
-
-class BillingRepository;
-class IInvoiceFactory;
 
 class BillingService {
 private:
@@ -48,6 +46,7 @@ public:
 
   bool updateInvoice(const InvoiceUpdateDTO &dto);
   bool cancelInvoice(int invoiceId);
+  bool collectPayment(int invoiceId);
 
   /**
    * @brief Tìm kiếm hóa đơn theo tiêu chí linh hoạt.

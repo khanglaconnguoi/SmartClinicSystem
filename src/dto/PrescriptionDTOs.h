@@ -2,14 +2,12 @@
 
 #include "model/CommonEnums.h"
 #include "dto/Pagination.h"
+#include "dto/PatientDTOs.h"
 #include <QDateTime>
 #include <QList>
 #include <QPair>
 #include <QString>
 #include <optional>
-
-
-struct AllergyResultDTO;
 
 struct IngredientDuplicationWarning {
   int ingredientId;

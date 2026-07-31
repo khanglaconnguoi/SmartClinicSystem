@@ -153,6 +153,13 @@ bool BillingRepository::cancelInvoice(int invoiceId) {
     return db.executeQuery(sql, {invoiceId}).isActive();
 }
 
+bool BillingRepository::collectPayment(int invoiceId) {
+    DatabaseManager &db = DatabaseManager::getInstance();
+    QString sql = "UPDATE invoices SET status = 'PAID', paid_date = ? WHERE invoice_id = ?";
+    QString todayStr = QDate::currentDate().toString("yyyy-MM-dd");
+    return db.executeQuery(sql, {todayStr, invoiceId}).isActive();
+}
+
 std::optional<InvoiceResultDTO> BillingRepository::getInvoiceByRecordId(int recordId) {
     DatabaseManager &db = DatabaseManager::getInstance();
     QString sql = "SELECT * FROM invoices WHERE record_id = ?";

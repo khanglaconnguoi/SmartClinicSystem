@@ -22,6 +22,7 @@ public:
   bool insertInvoice(const InvoiceInsertDTO &dto);
   bool updateInvoice(const InvoiceUpdateDTO &dto);
   bool cancelInvoice(int invoiceId);
+  bool collectPayment(int invoiceId);
   std::optional<InvoiceResultDTO> getInvoiceByRecordId(int recordId);
   QList<InvoiceResultDTO> getInvoicesByPatientId(int patientId);
 

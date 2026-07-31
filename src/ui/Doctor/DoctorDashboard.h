@@ -44,7 +44,7 @@ protected:
 private:
     std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     int m_currentExaminingRow = -1;
-    std::shared_ptr<class PharmacyService> m_pharmacyService = nullptr;
+    std::shared_ptr<PharmacyService> m_pharmacyService = nullptr;
 
     QStackedWidget* m_stackedWidget = nullptr;
 

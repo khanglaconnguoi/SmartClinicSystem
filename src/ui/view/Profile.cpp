@@ -327,9 +327,14 @@ QWidget* ProfileWidget::createRightPanel() {
     txtConsultationFee->setMinimumWidth(520);
     txtConsultationFee->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
+    txtDocRoom = new QLineEdit(widgetDoctorFields);
+    txtDocRoom->setMinimumWidth(520);
+    txtDocRoom->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
     addFormRow(formDoc, "Chuyên khoa", txtSpecialty);
     addFormRow(formDoc, "Số CCHN", txtLicenseNumber);
     addFormRow(formDoc, "Phí khám", txtConsultationFee);
+    addFormRow(formDoc, "Phòng khám", txtDocRoom);
     formDoc->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     vboxDoc->addLayout(formDoc);
     layout3->addWidget(widgetDoctorFields);
@@ -344,9 +349,11 @@ QWidget* ProfileWidget::createRightPanel() {
 
     txtNurseLevel = new QLineEdit(widgetNurseFields);
     txtCertification = new QLineEdit(widgetNurseFields);
+    txtNurseRoom = new QLineEdit(widgetNurseFields);
 
     addFormRow(formNurse, "Cấp độ y tá", txtNurseLevel);
     addFormRow(formNurse, "Chứng chỉ", txtCertification);
+    addFormRow(formNurse, "Phòng làm việc", txtNurseRoom);
     vboxNurse->addLayout(formNurse);
     layout3->addWidget(widgetNurseFields);
     layout->addWidget(cardRoleSpecific);
@@ -379,8 +386,8 @@ QWidget* ProfileWidget::createRightPanel() {
 
     QList<QLineEdit*> allFields = {
         txtFullName, txtDob, txtCitizenId, txtAddress,
-        txtSpecialty, txtLicenseNumber, txtConsultationFee,
-        txtNurseLevel, txtCertification
+        txtSpecialty, txtLicenseNumber, txtConsultationFee, txtDocRoom,
+        txtNurseLevel, txtCertification, txtNurseRoom
     };
     txtBio->setReadOnly(true);
     for (QLineEdit* field : allFields) {
@@ -405,6 +412,8 @@ QWidget* ProfileWidget::createRightPanel() {
     txtAddress->setStyleSheet(rightStyle);
     txtNurseLevel->setStyleSheet(rightStyle);
     txtCertification->setStyleSheet(rightStyle);
+    txtDocRoom->setStyleSheet(rightStyle);
+    txtNurseRoom->setStyleSheet(rightStyle);
 
     cardRoleSpecific->hide();
     cardBio->hide();
@@ -472,7 +481,7 @@ void ProfileWidget::loadProfile(int staffId) {
     txtAddress->setText(profile->address);
     txtDob->setText(profile->dateOfBirth.toString("dd/MM/yyyy"));
     txtCitizenId->setText(profile->citizenId);
-    lblDepartment->setText(profile->departmentName);
+    lblDepartment->setText(profile->departmentName.isEmpty() ? "Chưa phân khoa" : profile->departmentName);
     currentDepartmentId = profile->departmentId;
     lblStaffCode->setText(profile->staffCode);
     lblHireDate -> setText(profile->hireDate.toString("dd/MM/yyyy"));
@@ -490,6 +499,7 @@ void ProfileWidget::loadProfile(int staffId) {
         txtSpecialty->setText(docProfile->specialty);
         txtLicenseNumber->setText(docProfile->licenseNumber);
         txtConsultationFee->setText(QString::number(docProfile->consultationFee));
+        txtDocRoom->setText(docProfile->roomNumber.isEmpty() ? "Chưa gán phòng" : docProfile->roomNumber);
         txtBio->setPlainText(docProfile->bio);
         currentExperienceYears = docProfile->experienceYears;
     } 
@@ -501,8 +511,9 @@ void ProfileWidget::loadProfile(int staffId) {
         cardBio->hide(); 
         
         lblRole->setText(userRoleToVi(profile->role));
-        txtNurseLevel->setText(nurseProfile->nurseLevel);
+        txtNurseLevel->setText(NurseLevelText::toVi(nurseProfile->nurseLevel));
         txtCertification->setText(nurseProfile->certification);
+        txtNurseRoom->setText(nurseProfile->roomName.isEmpty() ? "Chưa gán phòng" : nurseProfile->roomName);
     }
     else {
         lblRole->setText("Nhân viên");

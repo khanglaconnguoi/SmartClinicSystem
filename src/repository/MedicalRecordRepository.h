@@ -1,15 +1,12 @@
 #pragma once
 
 #include "dto/MedicalRecordDTOs.h"
+#include "dto/PrescriptionDTOs.h"
 #include "PatientRepository.h"
 #include <QList>
 #include <QString>
 #include <memory>
 #include <optional>
-
-// Forward declare — đồng đội sẽ #include header thật của họ khi PrescriptionDTOs.h
-// tồn tại; để file này compile ngay bây giờ, tạm forward declare.
-struct PrescriptionItemDTO;
 
 class MedicalRecordRepository {
 private:

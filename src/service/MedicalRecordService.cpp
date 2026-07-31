@@ -210,6 +210,11 @@ MedicalRecordService::getMedicalHistory(int patientId) {
   return m_recordRepository->getHistoryByPatientId(patientId);
 }
 
+std::optional<MedicalRecordResultDTO>
+MedicalRecordService::getMedicalRecordById(int recordId) const {
+  return m_recordRepository->findById(recordId);
+}
+
 PagedResult<MedicalRecordSummaryDTO>
 MedicalRecordService::searchMedicalRecordsPaged(MedicalRecordSearchCriteria criteria) const {
   normalizeSearchCriteria(criteria);

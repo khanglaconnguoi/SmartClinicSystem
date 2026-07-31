@@ -1,11 +1,9 @@
 #pragma once
 #include "dto/MedicalRecordDTOs.h"
+#include "repository/MedicalRecordRepository.h"
+#include "service/PatientService.h"
 #include <QList>
 #include <memory>
-
-
-class MedicalRecordRepository;
-class PatientService;
 
 class MedicalRecordService {
 private:
@@ -54,6 +52,7 @@ public:
 //   bool updateMedicalRecord(MedicalRecordUpdateDTO &dto);
   bool softDeleteMedicalRecord(int recordId);
   QList<MedicalRecordResultDTO> getMedicalHistory(int patientId);
+  std::optional<MedicalRecordResultDTO> getMedicalRecordById(int recordId) const;
 
   /**
    * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.

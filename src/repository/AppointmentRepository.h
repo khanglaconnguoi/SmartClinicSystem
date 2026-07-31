@@ -45,5 +45,7 @@ class AppointmentRepository {
             int excludeAppointmentId = -1) const;
 
     QList<QPair<int, QString>> getExaminationRooms() const;
+    QList<QPair<int, QString>> getRoomsByType(const QString& roomType) const;
 };
+
 

@@ -3,12 +3,16 @@
 #include "Doctor/DoctorDashboard.h"
 #include "Doctor/PatientDashboard.h"
 #include "Reception/ReceptionDashboard.h"
+#include "Pharmacy/PharmacistDashboard.h"
+#include "Nurse/NurseDashboard.h"
 #include "model/CommonEnums.h"
 #include "model/IAuthenticatable.h"
 #include "model/SystemUser.h"
 #include "model/CommonEnums.h"
 #include "service/UserSession.h"
 #include "service/PharmacyService.h"
+#include "service/BillingService.h"
+#include "service/ServiceRequestService.h"
 #include "repository/MedicationRepository.h"
 #include "repository/PrescriptionRepository.h"
 #include <QDialog>
@@ -27,6 +31,8 @@ MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
                        std::shared_ptr<AppointmentService> appointmentService, 
                        std::shared_ptr<MedicalRecordService> medicalRecordService, 
                        std::shared_ptr<PharmacyService> pharmacyService, 
+                       std::shared_ptr<BillingService> billingService,
+                       std::shared_ptr<ServiceRequestService> serviceRequestService,
                        QWidget *parent) : 
   QMainWindow(parent), 
   m_authService(std::move(authService)), 
@@ -34,7 +40,9 @@ MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
   m_patientService(std::move(patientService)), 
   m_appointmentService(std::move(appointmentService)), 
   m_medicalRecordService(std::move(medicalRecordService)), 
-  m_pharmacyService(std::move(pharmacyService)) {
+  m_pharmacyService(std::move(pharmacyService)),
+  m_billingService(std::move(billingService)),
+  m_serviceRequestService(std::move(serviceRequestService)) {
   setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
   setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
   this->setMinimumSize(800, 500);
@@ -71,11 +79,11 @@ MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
                 } else if (staffUser->getRole() == UserRole::Admin) {
                   switchToAdminDashboard(user);
                 } else if (staffUser->getRole() == UserRole::Nurse) {
-                  QMessageBox::information(
-                      this, "Thông báo",
-                      "Giao diện Điều dưỡng đang được phát triển.");
+                  switchToNurseDashboard(user);
                 } else if (staffUser->getRole() == UserRole::Receptionist) {
                   switchToReceptionDashboard(user);
+                } else if (staffUser->getRole() == UserRole::Pharmacist) {
+                  switchToPharmacistDashboard(user);
                 }
               }
             } else if (user->getAccountType() == AccountType::Patient) {
@@ -150,6 +158,21 @@ void MainWindow::switchToPatientDashboard(
       user, m_staffService, m_patientService, m_appointmentService, this);
   registerDashboardPage(dashboard);
 }
+
+void MainWindow::switchToPharmacistDashboard(
+    std::shared_ptr<IAuthenticatable> user) {
+  auto dashboard = new PharmacistDashboardWidget(
+      user, m_staffService, m_patientService, m_appointmentService, m_medicalRecordService, m_pharmacyService, m_billingService, this);
+  registerDashboardPage(dashboard);
+}
+
+void MainWindow::switchToNurseDashboard(
+    std::shared_ptr<IAuthenticatable> user) {
+  auto dashboard = new NurseDashboardWidget(
+      user, m_staffService, m_patientService, m_appointmentService, m_serviceRequestService, this);
+  registerDashboardPage(dashboard);
+}
+
 
 void MainWindow::handleGlobalLogout() {
   QDialog dialog(this);

@@ -13,7 +13,11 @@ namespace UIValidationUtils {
 
         // Store original style if not already stored
         if (lineEdit->property("originalStyle").isNull()) {
-            lineEdit->setProperty("originalStyle", lineEdit->styleSheet());
+            QString currentStyle = lineEdit->styleSheet();
+            if (currentStyle.trimmed().isEmpty()) {
+                currentStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; background-color: #FFFFFF; color: #111827; padding: 6px 10px; font-size: 13px; min-height: 30px; }";
+            }
+            lineEdit->setProperty("originalStyle", currentStyle);
         }
 
         if (!errorMessage.isEmpty()) {
@@ -22,7 +26,11 @@ namespace UIValidationUtils {
             lineEdit->setToolTip(errorMessage);
         } else {
             // Restore original style
-            lineEdit->setStyleSheet(lineEdit->property("originalStyle").toString());
+            QString orig = lineEdit->property("originalStyle").toString();
+            if (orig.trimmed().isEmpty()) {
+                orig = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; background-color: #FFFFFF; color: #111827; padding: 6px 10px; font-size: 13px; min-height: 30px; }";
+            }
+            lineEdit->setStyleSheet(orig);
             lineEdit->setToolTip("");
         }
     }

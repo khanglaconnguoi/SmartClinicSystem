@@ -1,91 +1,94 @@
-// #pragma once
+#pragma once
 
-// #include <QDialog>
-// #include <QLineEdit>
-// #include <QComboBox>
-// #include <QSpinBox>
-// #include <QDoubleSpinBox>
-// #include <QDateEdit>
-// #include <QTextEdit>
-// #include <QPushButton>
-// #include <QTableWidget>
-// #include <QLabel>
-// #include <QVBoxLayout>
-// #include <QHBoxLayout>
-// #include <QGridLayout>
-// #include <QHeaderView>
-// #include <QMessageBox>
-// #include <QScrollArea>
-// #include <QGroupBox>
-// #include <QCheckBox>
-// #include <QList>
-// #include <memory>
-// class PharmacyService;
-// struct ActiveIngredientDTO;
-// struct ActiveIngredientPageResult {
-//     QList<ActiveIngredientDTO> items;
-//     int totalItems;
-//     int totalPages;
-//     int currentPage;
-// };
+#include <QDialog>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QDateEdit>
+#include <QTextEdit>
+#include <QPushButton>
+#include <QTableWidget>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QGridLayout>
+#include <QHeaderView>
+#include <QMessageBox>
+#include <QScrollArea>
+#include <QGroupBox>
+#include <QCheckBox>
+#include <QList>
+#include <memory>
 
-// class ActiveIngredientSearchDialog : public QDialog {
-//     Q_OBJECT
-// public:
-//     explicit ActiveIngredientSearchDialog(std::shared_ptr<PharmacyService> pharmacyService, QWidget* parent = nullptr);
+#include "service/PharmacyService.h"
+#include "dto/MedicationDTOs.h"
 
-// signals:
-//     void ingredientSelected(int id, const QString& name);
+class ActiveIngredientSearchDialog : public QDialog {
+    Q_OBJECT
+public:
+    explicit ActiveIngredientSearchDialog(std::shared_ptr<PharmacyService> pharmacyService, QWidget* parent = nullptr);
 
-// private slots:
-//     void performSearch();
-//     void goToPreviousPage();
-//     void goToNextPage();
-//     void handleRowClicked(int row);
+signals:
+    void ingredientSelected(int id, const QString& name);
 
-// private:
-//     void loadPageData();
-//     void updatePaginationButtons();
-//     void setupUI();
+private slots:
+    void performSearch();
+    void goToPreviousPage();
+    void goToNextPage();
+    void handleRowClicked(int row);
 
-//     std::shared_ptr<PharmacyService> m_pharmacyService;
-//     QLineEdit* m_searchBar;
-//     QTableWidget* m_resultsTable;
-//     QPushButton* m_btnPrev;
-//     QPushButton* m_btnNext;
-//     QLabel* m_lblPageInfo;
-//     QPushButton* m_btnClose;
+private:
+    void loadPageData();
+    void updatePaginationButtons();
+    void setupUI();
 
-//     int m_currentPage;
-//     int m_pageSize;
-//     int m_totalPages;
-// };
+    std::shared_ptr<PharmacyService> m_pharmacyService;
+    QLineEdit* m_searchBar;
+    QTableWidget* m_resultsTable;
+    QPushButton* m_btnPrev;
+    QPushButton* m_btnNext;
+    QLabel* m_lblPageInfo;
+    QPushButton* m_btnClose;
 
-// class AddMedicationDialog : public QDialog {
-//     Q_OBJECT
-// public:
-//     explicit AddMedicationDialog(std::shared_ptr<PharmacyService> pharmacyService, QWidget* parent = nullptr);
+    int m_currentPage;
+    int m_pageSize;
+    int m_totalPages;
+};
 
-// private slots:
-//     void openIngredientSearch();
-//     void addIngredientToTable(int id, const QString& name);
-//     void handleSave();
+class AddMedicationDialog : public QDialog {
+    Q_OBJECT
+public:
+    explicit AddMedicationDialog(std::shared_ptr<PharmacyService> pharmacyService, int medicationId = -1, QWidget* parent = nullptr);
 
-// private:
-//     void loadCommonEnums();
-//     void setupUI();
+private slots:
+    void openIngredientSearch();
+    void addIngredientToTable(int id, const QString& name);
+    void handleSave();
+    void removeSelectedIngredient();
 
-//     std::shared_ptr<PharmacyService> m_pharmacyService;
-//     QLineEdit* m_txtBrandName;
-//     QHBoxLayout* m_categoriesLayout;
-//     QList<QCheckBox*> m_categoryCheckBoxes;
-//     QComboBox* m_cbUnit;
-//     QDoubleSpinBox* m_spinUnitPrice;
-//     QSpinBox* m_spinStockQuantity;
-//     QSpinBox* m_spinMinimumStock;
-//     QSpinBox* m_spinReorderThreshold;
-//     QDateEdit* m_dateExpiry;
-//     QLineEdit* m_txtManufacturer;
-//     QTextEdit* m_txtDescription;
-//     QTableWidget* m_ingredientsTable;
-// };
+private:
+    void loadCommonEnums();
+    void setupUI();
+    void loadMedicationData();
+
+    std::shared_ptr<PharmacyService> m_pharmacyService;
+    int m_medicationId;
+
+    QLineEdit* m_txtBrandName;
+    QHBoxLayout* m_categoriesLayout;
+    QList<QCheckBox*> m_categoryCheckBoxes;
+    QComboBox* m_cbUnit;
+    QDoubleSpinBox* m_spinUnitPrice;
+    QSpinBox* m_spinStockQuantity;
+    QSpinBox* m_spinMinimumStock;
+    QSpinBox* m_spinReorderThreshold;
+    QDateEdit* m_dateExpiry;
+    QLineEdit* m_txtManufacturer;
+    QTextEdit* m_txtDescription;
+    QTableWidget* m_ingredientsTable;
+    QPushButton* m_btnAddIngredient;
+    QPushButton* m_btnRemoveIngredient;
+    QPushButton* m_btnSave;
+    QPushButton* m_btnCancel;
+};

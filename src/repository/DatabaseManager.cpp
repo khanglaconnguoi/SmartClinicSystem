@@ -467,7 +467,7 @@ bool DatabaseManager::createTables() {
           must_change_password  INTEGER NOT NULL DEFAULT 1 CHECK (must_change_password IN (0,1)),
           full_name     TEXT    NOT NULL,
           avatar        BLOB,
-          role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST')),
+          role          TEXT    NOT NULL CHECK (role IN ('ADMIN','DOCTOR','NURSE','RECEPTIONIST','PHARMACIST')),
           gender        TEXT    NOT NULL CHECK (gender IN ('MALE','FEMALE','OTHER')),
           date_of_birth TEXT    NOT NULL,
           citizen_id    TEXT    NOT NULL UNIQUE,
@@ -520,6 +520,7 @@ bool DatabaseManager::createTables() {
           staff_id      INTEGER PRIMARY KEY,
           nurse_level   TEXT NOT NULL DEFAULT 'JUNIOR' CHECK (nurse_level IN ('JUNIOR','SENIOR','HEAD')),
           certification TEXT,
+          room_id       INTEGER REFERENCES rooms(room_id) ON DELETE SET NULL,
           FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
       );
   )";
@@ -713,6 +714,87 @@ bool DatabaseManager::createTables() {
   }
 
   qDebug() << "Hệ thống các bảng CSDL đã sẵn sàng!";
+
+  // ── Migration: thêm cột room_id vào nurse_profiles nếu chưa có ──
+  {
+    QSqlQuery checkCol(m_db);
+    checkCol.exec("PRAGMA table_info(nurse_profiles)");
+    bool hasRoomId = false;
+    while (checkCol.next()) {
+      if (checkCol.value("name").toString() == "room_id") { hasRoomId = true; break; }
+    }
+    if (!hasRoomId) {
+      QSqlQuery alter(m_db);
+      if (!alter.exec("ALTER TABLE nurse_profiles ADD COLUMN room_id INTEGER REFERENCES rooms(room_id) ON DELETE SET NULL")) {
+        qDebug() << "Migration nurse_profiles.room_id failed:" << alter.lastError().text();
+      } else {
+        qDebug() << "Migration: nurse_profiles.room_id added.";
+      }
+    }
+  }
+
+  // ── Migration: tạo bảng service_requests nếu chưa có ──
+  {
+    QSqlQuery createSR(m_db);
+    QString createServiceRequests = R"(
+      CREATE TABLE IF NOT EXISTS service_requests (
+          request_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+          record_id     INTEGER NOT NULL REFERENCES medical_records(record_id) ON DELETE CASCADE,
+          room_id       INTEGER NOT NULL REFERENCES rooms(room_id),
+          doctor_id     INTEGER NOT NULL REFERENCES staff(staff_id),
+          service_name  TEXT    NOT NULL,
+          status        TEXT    NOT NULL DEFAULT 'PENDING'
+                        CHECK (status IN ('PENDING','CHECKED_IN','PROCESSING','COMPLETED','CANCELLED')),
+          ticket_number INTEGER,
+          prescribed_at TEXT    NOT NULL DEFAULT (datetime('now')),
+          started_at    TEXT,
+          completed_at  TEXT,
+          result_note   TEXT
+      )
+    )";
+    if (!createSR.exec(createServiceRequests)) {
+      qDebug() << "Migration: tạo service_requests thất bại:" << createSR.lastError().text();
+    } else {
+      qDebug() << "Migration: service_requests OK.";
+    }
+  }
+
+  // ── Seed dữ liệu mặc định cho departments nếu trống ──
+  {
+    QSqlQuery checkDept(m_db);
+    checkDept.exec("SELECT COUNT(*) FROM departments");
+    if (checkDept.next() && checkDept.value(0).toInt() == 0) {
+      QSqlQuery seed(m_db);
+      seed.exec(R"(
+        INSERT INTO departments (department_id, department_code, department_name, description) VALUES
+        (1, 'DEPT_1', 'Khoa Khám bệnh', 'Khoa Khám bệnh chung'),
+        (2, 'DEPT_2', 'Khoa Nội', 'Khoa Nội tổng hợp'),
+        (3, 'DEPT_3', 'Khoa Ngoại', 'Khoa Ngoại tổng hợp'),
+        (4, 'DEPT_4', 'Khoa Sản', 'Khoa Phụ sản'),
+        (5, 'DEPT_5', 'Khoa Nhi', 'Khoa Nhi'),
+        (6, 'DEPT_6', 'Khoa Cấp cứu', 'Khoa Cấp cứu');
+      )");
+      qDebug() << "Seed: đã khởi tạo danh mục phòng ban (departments).";
+    }
+  }
+
+  // ── Seed dữ liệu mặc định cho rooms nếu trống ──
+  {
+    QSqlQuery checkRoom(m_db);
+    checkRoom.exec("SELECT COUNT(*) FROM rooms");
+    if (checkRoom.next() && checkRoom.value(0).toInt() == 0) {
+      QSqlQuery seedR(m_db);
+      seedR.exec(R"(
+        INSERT INTO rooms (room_number, department_id, room_type, capacity, status) VALUES
+        ('P101', 1, 'EXAM', 1, 'AVAILABLE'),
+        ('P102', 1, 'EXAM', 1, 'AVAILABLE'),
+        ('LAB_101', 1, 'LAB', 2, 'AVAILABLE'),
+        ('PHARM_101', 1, 'PHARMACY', 5, 'AVAILABLE');
+      )");
+      qDebug() << "Seed: đã khởi tạo danh sách phòng mặc định (rooms).";
+    }
+  }
+
   return true;
 }
 
@@ -759,4 +841,4 @@ QSqlQuery DatabaseManager::selectQuery(const QString &sql,
 
   return query;
 }
-
+

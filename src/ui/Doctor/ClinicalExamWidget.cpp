@@ -550,8 +550,9 @@ QList<Diagnosis> ClinicalExamWidget::getDiagnosesFromUi() const {
 
 void ClinicalExamWidget::validateTemperatureInput() {
     QString text = m_txtTemp->text().trimmed();
+    static const QString normalLineEditStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
     if (text.isEmpty()) {
-        m_txtTemp->setStyleSheet("");
+        m_txtTemp->setStyleSheet(normalLineEditStyle);
         m_txtTemp->setToolTip("");
         return;
     }
@@ -568,15 +569,16 @@ void ClinicalExamWidget::validateTemperatureInput() {
         m_txtTemp->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
         m_txtTemp->setToolTip(err);
     } else {
-        m_txtTemp->setStyleSheet("");
+        m_txtTemp->setStyleSheet(normalLineEditStyle);
         m_txtTemp->setToolTip("");
     }
 }
 
 void ClinicalExamWidget::validateHeartRateInput() {
     QString text = m_txtPulse->text().trimmed();
+    static const QString normalLineEditStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
     if (text.isEmpty()) {
-        m_txtPulse->setStyleSheet("");
+        m_txtPulse->setStyleSheet(normalLineEditStyle);
         m_txtPulse->setToolTip("");
         return;
     }
@@ -593,15 +595,16 @@ void ClinicalExamWidget::validateHeartRateInput() {
         m_txtPulse->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
         m_txtPulse->setToolTip(err);
     } else {
-        m_txtPulse->setStyleSheet("");
+        m_txtPulse->setStyleSheet(normalLineEditStyle);
         m_txtPulse->setToolTip("");
     }
 }
 
 void ClinicalExamWidget::validateWeightInput() {
     QString text = m_txtWeight->text().trimmed();
+    static const QString normalLineEditStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
     if (text.isEmpty()) {
-        m_txtWeight->setStyleSheet("");
+        m_txtWeight->setStyleSheet(normalLineEditStyle);
         m_txtWeight->setToolTip("");
         return;
     }
@@ -618,15 +621,16 @@ void ClinicalExamWidget::validateWeightInput() {
         m_txtWeight->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
         m_txtWeight->setToolTip(err);
     } else {
-        m_txtWeight->setStyleSheet("");
+        m_txtWeight->setStyleSheet(normalLineEditStyle);
         m_txtWeight->setToolTip("");
     }
 }
 
 void ClinicalExamWidget::validateHeightInput() {
     QString text = m_txtHeight->text().trimmed();
+    static const QString normalLineEditStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
     if (text.isEmpty()) {
-        m_txtHeight->setStyleSheet("");
+        m_txtHeight->setStyleSheet(normalLineEditStyle);
         m_txtHeight->setToolTip("");
         return;
     }
@@ -643,7 +647,7 @@ void ClinicalExamWidget::validateHeightInput() {
         m_txtHeight->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
         m_txtHeight->setToolTip(err);
     } else {
-        m_txtHeight->setStyleSheet("");
+        m_txtHeight->setStyleSheet(normalLineEditStyle);
         m_txtHeight->setToolTip("");
     }
 }
@@ -651,14 +655,16 @@ void ClinicalExamWidget::validateHeightInput() {
 void ClinicalExamWidget::validateDiagnosisInput() {
     QList<Diagnosis> list = getDiagnosesFromUi();
     QString err = MedicalRecordService::validateDiagnosisList(list);
+    static const QString normalLineEditStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
+    static const QString normalComboStyle = "QComboBox { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
     if (!err.isEmpty()) {
         m_cbDiagnosis->setStyleSheet("QComboBox { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
         m_txtMainDisease->setStyleSheet("QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
         m_cbDiagnosis->setToolTip(err);
         m_txtMainDisease->setToolTip(err);
     } else {
-        m_cbDiagnosis->setStyleSheet("");
-        m_txtMainDisease->setStyleSheet("");
+        m_cbDiagnosis->setStyleSheet(normalComboStyle);
+        m_txtMainDisease->setStyleSheet(normalLineEditStyle);
         m_cbDiagnosis->setToolTip("");
         m_txtMainDisease->setToolTip("");
     }
@@ -667,11 +673,12 @@ void ClinicalExamWidget::validateDiagnosisInput() {
 void ClinicalExamWidget::validateChiefComplaintInput() {
     QString text = m_txtReason->toPlainText().trimmed();
     QString err = Validation::validateTrimmedNotEmpty(text, "Lý do khám không được để trống.");
+    static const QString normalTextEditStyle = "QTextEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
     if (!err.isEmpty()) {
         m_txtReason->setStyleSheet("QTextEdit { border: 1px solid #DC2626; background-color: #FEF2F2; color: #111827; }");
         m_txtReason->setToolTip(err);
     } else {
-        m_txtReason->setStyleSheet("");
+        m_txtReason->setStyleSheet(normalTextEditStyle);
         m_txtReason->setToolTip("");
     }
 }
@@ -736,11 +743,15 @@ void ClinicalExamWidget::onSaveClicked() {
     QMessageBox::information(this, "Thành công", "Đã lưu hồ sơ bệnh án thành công!");
     
     // Reset stylesheets
-    m_txtTemp->setStyleSheet("");
-    m_txtPulse->setStyleSheet("");
-    m_txtWeight->setStyleSheet("");
-    m_txtHeight->setStyleSheet("");
-    m_txtReason->setStyleSheet("");
-    m_cbDiagnosis->setStyleSheet("");
-    m_txtMainDisease->setStyleSheet("");
+    static const QString lineEditStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
+    static const QString comboStyle = "QComboBox { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
+    static const QString textEditStyle = "QTextEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
+
+    m_txtTemp->setStyleSheet(lineEditStyle);
+    m_txtPulse->setStyleSheet(lineEditStyle);
+    m_txtWeight->setStyleSheet(lineEditStyle);
+    m_txtHeight->setStyleSheet(lineEditStyle);
+    m_txtReason->setStyleSheet(textEditStyle);
+    m_cbDiagnosis->setStyleSheet(comboStyle);
+    m_txtMainDisease->setStyleSheet(lineEditStyle);
 }

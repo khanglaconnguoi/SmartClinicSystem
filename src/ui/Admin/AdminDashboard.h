@@ -5,6 +5,7 @@
 #include "ui/Admin/ManageNursesWidget.h"
 #include "ui/Admin/ManagePatientsWidget.h"
 #include "ui/Admin/ManageReceptionWidget.h"
+#include "ui/Admin/ManagePharmacistsWidget.h"
 #include "ui/Admin/ManageLeaveWidget.h"
 #include "service/StaffService.h"
 #include "service/PatientService.h"
@@ -45,7 +46,7 @@ private:
   ManagePatientsWidget *m_managePatientsPage;
   ManageReceptionWidget *m_manageReceptionPage;
   ManageLeaveWidget *m_manageLeavesPage;
-  class ManagePharmacistsWidget *m_managePharmacistsPage;
+  ManagePharmacistsWidget *m_managePharmacistsPage;
 
   QPushButton *m_btnManageLeaves;
 };

@@ -23,6 +23,7 @@
 #include <memory>
 
 #include "repository/StaffRepository.h"
+#include "service/AppointmentService.h"
 
 
 struct ResetPasswordResult {
@@ -167,7 +168,7 @@ private:
     QString registerLeave(int staffId, const QDate& startDate, const QDate& endDate, const QString& reason) const;
     QList<LeaveRequestDTO> getPendingLeaveRequests() const;
     QList<LeaveRequestDTO> getOwnLeaveHistory(int staffId) const;
-    QString processLeaveRequest(int requestId, bool isApproved, std::shared_ptr<class AppointmentService> appointmentService) const;
+    QString processLeaveRequest(int requestId, bool isApproved, std::shared_ptr<AppointmentService> appointmentService) const;
     
     QList<std::shared_ptr<SystemUser>> searchStaff(const StaffSearchCriteria& criteria) const;
     

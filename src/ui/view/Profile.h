@@ -58,11 +58,14 @@ private:
     QLineEdit *txtSpecialty;
     QLineEdit *txtLicenseNumber;
     QLineEdit *txtConsultationFee;
+    QLineEdit *txtDocRoom;
     QTextEdit *txtBio;
 
     QWidget *widgetNurseFields;
     QLineEdit *txtNurseLevel;
     QLineEdit *txtCertification;
+    QLineEdit *txtNurseRoom;
+
 
     int currentStaffId;
     int currentDepartmentId = -1;

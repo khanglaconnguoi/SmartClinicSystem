@@ -44,7 +44,11 @@ MedicationSummaryDTO Medication::toSummary() const {
     dto.unit = m_unit;
     dto.unitPrice = m_unitPrice;
     dto.stockQuantity = m_stockQuantity;
+    dto.minimumStock = m_minimumStock;
+    dto.reorderThreshold = m_reorderThreshold;
     dto.expiryDate = m_expiryDate;
+    dto.manufacturer = m_manufacturer;
+    dto.description = m_description;
     dto.isActive = m_isActive;
     
     dto.isCriticalStock = this->isCriticalStock();

@@ -355,3 +355,9 @@ QList<QPair<int, QString>> AppointmentService::getExaminationRooms() const {
     if (!m_appointmentRepository) return {};
     return m_appointmentRepository->getExaminationRooms();
 }
+
+QList<QPair<int, QString>> AppointmentService::getRoomsByType(const QString& roomType) const {
+    if (!m_appointmentRepository) return {};
+    return m_appointmentRepository->getRoomsByType(roomType);
+}
+

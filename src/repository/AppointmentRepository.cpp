@@ -572,3 +572,15 @@ QList<QPair<int, QString>> AppointmentRepository::getExaminationRooms() const {
     }
     return rooms;
 }
+
+QList<QPair<int, QString>> AppointmentRepository::getRoomsByType(const QString& roomType) const {
+    QList<QPair<int, QString>> rooms;
+    DatabaseManager& db = DatabaseManager::getInstance();
+    QString sql = "SELECT room_id, room_number FROM rooms WHERE room_type = ? AND is_deleted = 0 ORDER BY room_id ASC";
+    QSqlQuery query = db.selectQuery(sql, {roomType});
+    while (query.next()) {
+        rooms.append({query.value("room_id").toInt(), query.value("room_number").toString()});
+    }
+    return rooms;
+}
+

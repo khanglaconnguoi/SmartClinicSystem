@@ -12,6 +12,8 @@
 #include "service/AppointmentService.h"
 #include "service/MedicalRecordService.h"
 #include "service/PharmacyService.h"
+#include "service/BillingService.h"
+#include "service/ServiceRequestService.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -23,6 +25,8 @@ public:
                         std::shared_ptr<AppointmentService> appointmentService,
                         std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr,
                         std::shared_ptr<PharmacyService> pharmacyService = nullptr,
+                        std::shared_ptr<BillingService> billingService = nullptr,
+                        std::shared_ptr<ServiceRequestService> serviceRequestService = nullptr,
                         QWidget *parent = nullptr);
     ~MainWindow() override;
 
@@ -35,6 +39,8 @@ private:
     void switchToPatientDashboard(std::shared_ptr<IAuthenticatable> user);
     void switchToAdminDashboard(std::shared_ptr<IAuthenticatable> user);
     void switchToReceptionDashboard(std::shared_ptr<IAuthenticatable> user);
+    void switchToPharmacistDashboard(std::shared_ptr<IAuthenticatable> user);
+    void switchToNurseDashboard(std::shared_ptr<IAuthenticatable> user);
 
     QStackedWidget* m_stackedWidget;
     LoginDialog* m_loginWidget;
@@ -44,4 +50,6 @@ private:
     std::shared_ptr<AppointmentService> m_appointmentService;
     std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     std::shared_ptr<PharmacyService> m_pharmacyService;
-};
+    std::shared_ptr<BillingService> m_billingService;
+    std::shared_ptr<ServiceRequestService> m_serviceRequestService;
+};

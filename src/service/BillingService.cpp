@@ -145,6 +145,10 @@ bool BillingService::cancelInvoice(int invoiceId) {
     return m_billingRepository->cancelInvoice(invoiceId);
 }
 
+bool BillingService::collectPayment(int invoiceId) {
+    return m_billingRepository->collectPayment(invoiceId);
+}
+
 QString BillingService::validateSearchCriteria(const InvoiceSearchCriteria &criteria) {
   // Validate khoảng ngày nếu cả hai đầu đều hợp lệ
   if (criteria.fromDate.has_value() && criteria.toDate.has_value() &&

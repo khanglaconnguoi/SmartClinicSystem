@@ -809,3 +809,207 @@ inline PrescriptionStatus prescriptionStatusFromEn(const QString &text) {
   }
   return PrescriptionStatus::Pending;
 }
+
+// =====================================================================
+// SECTION 3: NAMESPACE TEXT — các trường CHECK dùng để lưu/hiển thị
+// =====================================================================
+
+namespace RoomTypeText {
+    inline const QString EXAM     = "EXAM";
+    inline const QString SURGERY  = "SURGERY";
+    inline const QString WARD     = "WARD";
+    inline const QString LAB      = "LAB";
+    inline const QString PHARMACY = "PHARMACY";
+    inline const QString ADMIN    = "ADMIN";
+
+    inline const QList<QPair<QString, QString>> roomTypes = {
+        {EXAM,     "Phòng khám"},
+        {SURGERY,  "Phòng phẫu thuật"},
+        {WARD,     "Phòng bệnh"},
+        {LAB,      "Phòng xét nghiệm"},
+        {PHARMACY, "Nhà thuốc"},
+        {ADMIN,    "Hành chính"}
+    };
+
+    inline const QList<QPair<QString, QString>> &getList() { return roomTypes; }
+
+    inline bool isValid(const QString &val) {
+        QString v = val.toUpper().trimmed();
+        for (const auto &p : roomTypes) if (p.first == v) return true;
+        return false;
+    }
+
+    inline QString toVi(const QString &en) {
+        QString v = en.toUpper().trimmed();
+        for (const auto &p : roomTypes) if (p.first == v) return p.second;
+        return "Phòng khám";
+    }
+
+    inline QString toEn(const QString &vi) {
+        for (const auto &p : roomTypes)
+            if (p.second.compare(vi.trimmed(), Qt::CaseInsensitive) == 0) return p.first;
+        return EXAM;
+    }
+} // namespace RoomTypeText
+
+namespace RoomStatusText {
+    inline const QString AVAILABLE   = "AVAILABLE";
+    inline const QString OCCUPIED    = "OCCUPIED";
+    inline const QString CLEANING    = "CLEANING";
+    inline const QString MAINTENANCE = "MAINTENANCE";
+
+    inline const QList<QPair<QString, QString>> statuses = {
+        {AVAILABLE,   "Sẵn sàng"},
+        {OCCUPIED,    "Đang sử dụng"},
+        {CLEANING,    "Đang dọn dẹp"},
+        {MAINTENANCE, "Bảo trì"}
+    };
+
+    inline const QList<QPair<QString, QString>> &getList() { return statuses; }
+
+    inline QString toVi(const QString &en) {
+        QString v = en.toUpper().trimmed();
+        for (const auto &p : statuses) if (p.first == v) return p.second;
+        return "Sẵn sàng";
+    }
+
+    inline QString toEn(const QString &vi) {
+        for (const auto &p : statuses)
+            if (p.second.compare(vi.trimmed(), Qt::CaseInsensitive) == 0) return p.first;
+        return AVAILABLE;
+    }
+} // namespace RoomStatusText
+
+namespace NurseLevelText {
+    inline const QString JUNIOR = "JUNIOR";
+    inline const QString SENIOR = "SENIOR";
+    inline const QString HEAD   = "HEAD";
+
+    inline const QList<QPair<QString, QString>> levels = {
+        {JUNIOR, "Y tá sơ cấp"},
+        {SENIOR, "Y tá cao cấp"},
+        {HEAD,   "Trưởng y tá"}
+    };
+
+    inline const QList<QPair<QString, QString>> &getList() { return levels; }
+
+    inline bool isValid(const QString &val) {
+        QString v = val.toUpper().trimmed();
+        for (const auto &p : levels) if (p.first == v) return true;
+        return false;
+    }
+
+    inline QString toVi(const QString &en) {
+        QString v = en.toUpper().trimmed();
+        for (const auto &p : levels) if (p.first == v) return p.second;
+        return "Y tá sơ cấp";
+    }
+
+    inline QString toEn(const QString &vi) {
+        for (const auto &p : levels)
+            if (p.second.compare(vi.trimmed(), Qt::CaseInsensitive) == 0) return p.first;
+        return JUNIOR;
+    }
+} // namespace NurseLevelText
+
+namespace InvoiceItemTypeText {
+    inline const QString CONSULTATION = "CONSULTATION";
+    inline const QString MEDICATION   = "MEDICATION";
+    inline const QString ROOM_FEE     = "ROOM_FEE";
+    inline const QString SERVICE      = "SERVICE";
+    inline const QString PROCEDURE    = "PROCEDURE";
+    inline const QString OTHER        = "OTHER";
+
+    inline const QList<QPair<QString, QString>> itemTypes = {
+        {CONSULTATION, "Tiền khám"},
+        {MEDICATION,   "Thuốc"},
+        {ROOM_FEE,     "Tiền phòng"},
+        {SERVICE,      "Dịch vụ"},
+        {PROCEDURE,    "Thủ thuật"},
+        {OTHER,        "Khác"}
+    };
+
+    inline const QList<QPair<QString, QString>> &getList() { return itemTypes; }
+
+    inline bool isValid(const QString &val) {
+        QString v = val.toUpper().trimmed();
+        for (const auto &p : itemTypes) if (p.first == v) return true;
+        return false;
+    }
+
+    inline QString toVi(const QString &en) {
+        QString v = en.toUpper().trimmed();
+        for (const auto &p : itemTypes) if (p.first == v) return p.second;
+        return "Khác";
+    }
+
+    inline QString toEn(const QString &vi) {
+        for (const auto &p : itemTypes)
+            if (p.second.compare(vi.trimmed(), Qt::CaseInsensitive) == 0) return p.first;
+        return OTHER;
+    }
+} // namespace InvoiceItemTypeText
+
+// =====================================================================
+// SECTION 4: ServiceRequestStatus — enum class (có vòng đời state machine)
+// PENDING → CHECKED_IN → PROCESSING → COMPLETED
+//                       ↘ CANCELLED (từ mọi trạng thái trừ COMPLETED)
+// =====================================================================
+
+enum class ServiceRequestStatus {
+    Pending,    // Bác sĩ vừa chỉ định, chưa đến phòng xét nghiệm
+    CheckedIn,  // Y tá đã tiếp nhận, đã cấp số thứ tự
+    Processing, // Đang thực hiện xét nghiệm
+    Completed,  // Đã hoàn thành, có kết quả
+    Cancelled   // Đã hủy
+};
+
+static const QList<EnumInfo<ServiceRequestStatus>> serviceRequestStatusList = {
+    {ServiceRequestStatus::Pending,    "Chờ tiếp nhận", "PENDING"},
+    {ServiceRequestStatus::CheckedIn,  "Đã tiếp nhận",  "CHECKED_IN"},
+    {ServiceRequestStatus::Processing, "Đang thực hiện","PROCESSING"},
+    {ServiceRequestStatus::Completed,  "Hoàn thành",    "COMPLETED"},
+    {ServiceRequestStatus::Cancelled,  "Đã hủy",        "CANCELLED"},
+};
+
+inline QString serviceRequestStatusToVi(ServiceRequestStatus value) {
+    for (const auto &item : serviceRequestStatusList)
+        if (item.value == value) return item.viText;
+    return "Chờ tiếp nhận";
+}
+
+inline QString serviceRequestStatusToEn(ServiceRequestStatus value) {
+    for (const auto &item : serviceRequestStatusList)
+        if (item.value == value) return item.enText;
+    return "PENDING";
+}
+
+inline ServiceRequestStatus serviceRequestStatusFromEn(const QString &text) {
+    QString clean = text.trimmed().toUpper();
+    for (const auto &item : serviceRequestStatusList)
+        if (item.enText == clean) return item.value;
+    return ServiceRequestStatus::Pending;
+}
+
+// Kiểm tra transition hợp lệ theo state machine
+inline bool canTransition(ServiceRequestStatus from, ServiceRequestStatus to) {
+    switch (from) {
+        case ServiceRequestStatus::Pending:
+            return to == ServiceRequestStatus::CheckedIn
+                || to == ServiceRequestStatus::Cancelled;
+        case ServiceRequestStatus::CheckedIn:
+            return to == ServiceRequestStatus::Processing
+                || to == ServiceRequestStatus::Cancelled;
+        case ServiceRequestStatus::Processing:
+            return to == ServiceRequestStatus::Completed
+                || to == ServiceRequestStatus::Cancelled;
+        case ServiceRequestStatus::Completed:
+        case ServiceRequestStatus::Cancelled:
+            return false; // terminal states
+    }
+    return false;
+}
+
+inline const QList<EnumInfo<ServiceRequestStatus>> &getServiceRequestStatusList() {
+    return serviceRequestStatusList;
+}
