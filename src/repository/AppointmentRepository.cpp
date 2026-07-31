@@ -1,5 +1,6 @@
 #include "AppointmentRepository.h"
 #include "DatabaseManager.h"
+#include "model/CommonEnums.h"
 #include <QDebug>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -299,7 +300,7 @@ bool AppointmentRepository::createAppointment(const AppointmentInputDTO &input) 
   QString dateStr = input.date.isValid() ? input.date.toString("yyyy-MM-dd") : QDate::currentDate().toString("yyyy-MM-dd");
   bool isToday = (dateStr == QDate::currentDate().toString("yyyy-MM-dd"));
   int ticketNum = input.ticketNumber;
-  QString initialStatus = "SCHEDULED";
+  QString initialStatus = AppointmentStatusText::SCHEDULED;
   
   if (ticketNum <= 0 && isToday) {
       // Calculate next ticket number for today
@@ -495,10 +496,7 @@ QList<RoomQueueItemDTO> AppointmentRepository::getDoctorQueue(int doctorId, cons
         dto.startTime = query.value("start_time").toString();
         
         QString status = query.value("status").toString();
-        if (status == "STARTED") dto.status = "Đang khám";
-        else if (status == "CHECKED_IN") dto.status = "Đang chờ";
-        else if (status == "COMPLETED") dto.status = "Đã khám xong";
-        else dto.status = status;
+        dto.status = AppointmentStatusText::toVi(status);
         
         queue.append(dto);
     }
