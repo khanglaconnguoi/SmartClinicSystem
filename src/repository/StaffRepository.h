@@ -27,6 +27,7 @@ public:
     bool updateDoctor(const DoctorUpdateDTO& doctor);
     bool updateNurse(const NurseUpdateDTO& nurse);
     bool updatePharmacist(const PharmacistUpdateDTO& pharmacist);
+    bool updateReceptionist(const ReceptionistUpdateDTO& receptionist);
 
 
     bool deactivate(int staffId);

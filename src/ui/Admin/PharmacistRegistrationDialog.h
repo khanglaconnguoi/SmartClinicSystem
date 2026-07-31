@@ -8,15 +8,16 @@
 #include <QComboBox>
 #include <QDateEdit>
 #include <QPushButton>
+#include <QSpinBox>
 #include <memory>
 
-class NurseRegistrationDialog : public QDialog {
+class PharmacistRegistrationDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit NurseRegistrationDialog(std::shared_ptr<StaffService> staffService, QWidget* parent = nullptr);
-    ~NurseRegistrationDialog() override = default;
+    explicit PharmacistRegistrationDialog(std::shared_ptr<StaffService> staffService, QWidget* parent = nullptr);
+    ~PharmacistRegistrationDialog() override = default;
 
-    void loadNurseData(NurseProfileDTO* nurse);
+    void loadPharmacistData(PharmacistProfileDTO* pharmacist);
 
 private slots:
     void handleSave();
@@ -40,8 +41,10 @@ private:
     QComboBox* m_cbDepartment;
     QDateEdit* m_dtHireDate;
     QComboBox* m_cbShift;
-    QComboBox* m_cbNurseLevel;
-    QLineEdit* m_txtCertification;
+    
+    QLineEdit* m_txtLicenseNumber;
+    QLineEdit* m_txtPharmacySection;
+    QSpinBox* m_sbExperienceYears;
 
     QPushButton* m_btnCancel;
     QPushButton* m_btnSave;

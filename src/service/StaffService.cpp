@@ -430,6 +430,14 @@ StaffService::mapPharmacistToUpdateDTO(const PharmacistInputDTO &dto,
   return updateDto;
 }
 
+
+ReceptionistUpdateDTO StaffService::mapReceptionistToUpdateDTO(
+    const ReceptionistInputDTO &dto, int staffId) {
+  ReceptionistUpdateDTO updateDto;
+  static_cast<StaffUpdateDTO &>(updateDto) = mapStaffToUpdateDTO(dto, staffId);
+  return updateDto;
+}
+
 QString StaffService::generateStaffCode(UserRole role) const {
   int year = QDate::currentDate().year();
   QString yearCode = QString("%1").arg(year % LAST_TWO_DIGITS_FACTOR, 2,
@@ -535,27 +543,25 @@ StaffHireResult StaffService::hireNewNurse(NurseInputDTO nurse) {
   return StaffHireResult{"", staffCode, plainPassword};
 }
 
-// StaffHireResult StaffService::hireNewReceptionist(StaffInputDTO receptionist)
-// {
-//     normalizeStaffInput(receptionist);
-//     QString validationError = validateStaffBaseInput(receptionist);
-//     if (!validationError.isEmpty()) { return StaffHireResult{validationError,
-//     "", ""}; }
+StaffHireResult StaffService::hireNewReceptionist(ReceptionistInputDTO receptionist) {
+  normalizeStaffInput(receptionist);
+  QString validationError = validateStaffBaseInput(receptionist);
+  if (!validationError.isEmpty()) {
+    return StaffHireResult{validationError, "", ""};
+  }
 
-//     const QString staffCode = generateStaffCode(UserRole::Receptionist);
-//     const QString plainPassword = generateRandomPassword();
-//     const QString passwordHash = QString::fromStdString(bcrypt::generateHash(
-//             plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
+  const QString staffCode = generateStaffCode(UserRole::Receptionist);
+  const QString plainPassword = generateRandomPassword();
+  const QString passwordHash = QString::fromStdString(bcrypt::generateHash(
+      plainPassword.toStdString(), PASSWORD_HASH_COST_FACTOR));
 
-//     StaffInsertDTO insertDto =
-//             mapStaffToInsertDTO(receptionist, staffCode, passwordHash,
-//             UserRole::Receptionist);
-//     if (!this->m_staffRepository->insertStaff(insertDto)) {
-//         return StaffHireResult{"Failed to insert receptionist into the
-//         database.", "", ""};
-//     }
-//     return StaffHireResult{"", staffCode, plainPassword};
-// }
+  StaffInsertDTO insertDto =
+      mapStaffToInsertDTO(receptionist, staffCode, passwordHash, UserRole::Receptionist);
+  if (!this->m_staffRepository->insertStaff(insertDto)) {
+    return StaffHireResult{"Failed to insert receptionist into the database.", "", ""};
+  }
+  return StaffHireResult{"", staffCode, plainPassword};
+}
 
 StaffHireResult StaffService::hireNewPharmacist(PharmacistInputDTO pharmacist) {
   normalizePharmacistInput(pharmacist);
@@ -623,6 +629,19 @@ QString StaffService::editPharmacistInformation(
   PharmacistUpdateDTO updateDto =
       mapPharmacistToUpdateDTO(pharmacistInformation, staffId);
   if (!m_staffRepository->updatePharmacist(updateDto))
+    return "Repository update failed (DB error).";
+  return "";
+}
+
+QString StaffService::editReceptionistInformation(
+    ReceptionistInputDTO receptionistInformation, int staffId) {
+  normalizeStaffInput(receptionistInformation);
+  QString err = validateStaffBaseInput(receptionistInformation, staffId);
+  if (!err.isEmpty())
+    return err;
+  ReceptionistUpdateDTO updateDto =
+      mapReceptionistToUpdateDTO(receptionistInformation, staffId);
+  if (!m_staffRepository->updateReceptionist(updateDto))
     return "Repository update failed (DB error).";
   return "";
 }

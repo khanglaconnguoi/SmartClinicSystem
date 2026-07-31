@@ -49,8 +49,12 @@ void ManageReceptionWidget::buildUI() {
     m_tblReception->verticalHeader()->setVisible(false);
     m_tblReception->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblReception->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_tblReception->setAlternatingRowColors(true);
-    m_tblReception->setStyleSheet("QTableWidget { border: none; background-color: white; alternate-background-color: #F9FAFB; color: #111827; } QHeaderView::section { background-color: #F3F4F6; padding: 12px; font-weight: bold; border: none; border-bottom: 1px solid #E5E7EB; color: #111827; } QTableWidget::item { padding: 12px; border-bottom: 1px solid #E5E7EB; color: #111827; }");
+    m_tblReception->setStyleSheet(
+        "QTableWidget { border: none; gridline-color: #EAEAEA; font-size: 13px; "
+        "background-color: white; }"
+        "QHeaderView::section { background-color: #F8FAFC; padding: 8px; "
+        "font-weight: bold; border: none; border-bottom: 1px solid #EAEAEA; "
+        "color: #111827; }");
 
     cardLayout->addWidget(m_tblReception);
     pageLayout->addWidget(tableCard);
@@ -74,7 +78,16 @@ void ManageReceptionWidget::showAddReceptionDialog() {
 }
 
 void ManageReceptionWidget::showEditReceptionDialog(std::shared_ptr<SystemUser> reception) {
-    QMessageBox::information(this, "Sửa Lễ tân", "Tính năng sửa Lễ tân đang được triển khai!");
+    auto profile = m_staffService->getOwnProfile(reception->getAccountId());
+    if (profile) {
+        ReceptionRegistrationDialog dialog(m_staffService, this);
+        dialog.loadReceptionistData(profile.get());
+        if (dialog.exec() == QDialog::Accepted) {
+            loadReceptionList();
+        }
+    } else {
+        QMessageBox::warning(this, "Lỗi", "Không thể lấy thông tin chi tiết Lễ tân.");
+    }
 }
 
 namespace {
@@ -101,34 +114,82 @@ void ManageReceptionWidget::loadReceptionList() {
         m_tblReception->insertRow(i);
         
         QTableWidgetItem* itemCode = new QTableWidgetItem(receptionist->getStaffCode());
-        itemCode->setData(Qt::UserRole, receptionist->getAccountId());
+        itemCode->setForeground(QBrush(QColor("#111827")));
         
-        m_tblReception->setItem(i, 0, itemCode);
-        m_tblReception->setItem(i, 1, new QTableWidgetItem(receptionist->getFullName()));
+        QTableWidgetItem* itemName = new QTableWidgetItem(receptionist->getFullName());
+        itemName->setForeground(QBrush(QColor("#111827")));
         
         auto profile = m_staffService->getOwnProfile(receptionist->getAccountId());
         QString shiftStr = ShiftText::toVi(profile ? profile->shift : "");
-        QString phoneStr = profile ? profile->phoneNumber : "";
+        QString phoneStr = profile ? profile->phoneNumber : "---";
         
-        m_tblReception->setItem(i, 2, new QTableWidgetItem(shiftStr));
+        QTableWidgetItem* itemShift = new QTableWidgetItem(shiftStr);
+        itemShift->setForeground(QBrush(QColor("#111827")));
         
-        m_tblReception->setItem(i, 3, new QTableWidgetItem(phoneStr));
-        m_tblReception->setItem(i, 4, new QTableWidgetItem(receptionist->isActive() ? "Hoạt động" : "Nghỉ việc"));
+        QTableWidgetItem* itemPhone = new QTableWidgetItem(phoneStr);
+        itemPhone->setForeground(QBrush(QColor("#111827")));
+
+        QTableWidgetItem *itemStatus =
+            new QTableWidgetItem(receptionist->isActive() ? "Hoạt động" : "Nghỉ việc");
+        if (receptionist->isActive()) {
+            itemStatus->setForeground(QBrush(QColor("#059669")));
+        } else {
+            itemStatus->setForeground(QBrush(QColor("#DC2626")));
+        }
         
-        QPushButton* btnEdit = new QPushButton("Sửa");
-        btnEdit->setStyleSheet("QPushButton { color: #2563EB; font-weight: bold; background: transparent; border: none; } QPushButton:hover { text-decoration: underline; }");
+        m_tblReception->setItem(i, 0, itemCode);
+        m_tblReception->setItem(i, 1, itemName);
+        m_tblReception->setItem(i, 2, itemShift);
+        m_tblReception->setItem(i, 3, itemPhone);
+        m_tblReception->setItem(i, 4, itemStatus);
+
+        QWidget *actionWidget = new QWidget();
+        QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
+        actionLayout->setContentsMargins(4, 4, 4, 4);
+        actionLayout->setSpacing(8);
+
+        QPushButton *btnEdit = new QPushButton("Sửa");
         btnEdit->setCursor(Qt::PointingHandCursor);
-        
-        connect(btnEdit, &QPushButton::clicked, this, [this, receptionist]() {
-            showEditReceptionDialog(receptionist);
-        });
-        
-        QWidget* actionWidget = new QWidget();
-        QHBoxLayout* actionLayout = new QHBoxLayout(actionWidget);
-        actionLayout->setContentsMargins(0, 0, 0, 0);
+        btnEdit->setStyleSheet(
+            "QPushButton { color: #4B94F2; border: 1px solid #4B94F2; padding: 4px "
+            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
+            "{ background-color: #EBF5FF; }");
+
+        QPushButton *btnDeactivate = new QPushButton(receptionist->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
+        btnDeactivate->setCursor(Qt::PointingHandCursor);
+        if (receptionist->isActive()) {
+            btnDeactivate->setStyleSheet(
+                "QPushButton { color: #D93025; border: 1px solid #D93025; padding: 4px "
+                "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
+                "{ background-color: #FCE8E6; }");
+        } else {
+            btnDeactivate->setStyleSheet(
+                "QPushButton { color: #059669; border: 1px solid #059669; padding: 4px "
+                "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
+                "{ background-color: #D1FAE5; }");
+        }
+
         actionLayout->addWidget(btnEdit);
-        actionLayout->setAlignment(Qt::AlignCenter);
-        
+        actionLayout->addWidget(btnDeactivate);
         m_tblReception->setCellWidget(i, 5, actionWidget);
+
+        connect(btnEdit, &QPushButton::clicked, this,
+                [this, receptionist]() { showEditReceptionDialog(receptionist); });
+                
+        connect(btnDeactivate, &QPushButton::clicked, this, [this, receptionist]() {
+            if (receptionist->isActive()) {
+                if (m_staffService->deactivateStaff(receptionist->getAccountId())) {
+                    loadReceptionList();
+                } else {
+                    QMessageBox::warning(this, "Lỗi", "Không thể vô hiệu hóa Lễ tân này.");
+                }
+            } else {
+                if (m_staffService->reactivateStaff(receptionist->getAccountId())) {
+                    loadReceptionList();
+                } else {
+                    QMessageBox::warning(this, "Lỗi", "Không thể kích hoạt Lễ tân này.");
+                }
+            }
+        });
     }
 }

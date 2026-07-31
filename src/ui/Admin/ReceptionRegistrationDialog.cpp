@@ -105,6 +105,9 @@ void ReceptionRegistrationDialog::setupUi()
 	form1->setContentsMargins(15, 25, 15, 15);
 	form1->setSpacing(12);
 
+	m_avatarPicker = new AvatarPickerWidget(gbPersonalInfo);
+	form1->addRow("Ảnh đại diện:", m_avatarPicker);
+
 	m_txtFullName = new QLineEdit(gbPersonalInfo);
 	m_txtFullName->setStyleSheet(extraInputStyle);
 	form1->addRow("Họ và Tên (*):", m_txtFullName);
@@ -202,6 +205,24 @@ void ReceptionRegistrationDialog::setupUi()
 	connect(m_btnCancel, &QPushButton::clicked, this, &QDialog::reject);
 }
 
+void ReceptionRegistrationDialog::loadReceptionistData(StaffProfileDTO* receptionist) {
+    if (!receptionist) return;
+    m_editStaffId = receptionist->staffId;
+
+    m_avatarPicker->setAvatarPixmap(receptionist->avatar);
+    m_txtFullName->setText(receptionist->fullName);
+    m_txtCitizenId->setText(receptionist->citizenId);
+    m_txtPhone->setText(receptionist->phoneNumber);
+    m_txtEmail->setText(receptionist->email);
+    m_txtAddress->setText(receptionist->address);
+    
+    QString genderText = GenderText::toVi(receptionist->gender);
+    m_cbGender->setCurrentText(genderText);
+    
+    m_dtDateOfBirth->setDate(receptionist->dateOfBirth);
+    m_cbShift->setCurrentText(ShiftText::toVi(receptionist->shift));
+}
+
 void ReceptionRegistrationDialog::handleSave()
 {
 	if (!m_staffService)
@@ -228,9 +249,12 @@ void ReceptionRegistrationDialog::handleSave()
 	QString address = m_txtAddress->text().trimmed();
 
 	QString shift = ShiftText::toEn(m_cbShift->currentText());
+    
+    QPixmap avatar = m_avatarPicker->getAvatarPixmap();
 
 	ReceptionistInputDTO dto;
 	dto.fullName = fullName;
+    dto.avatar = avatar;
 	dto.gender = gender;
 	dto.dateOfBirth = dob;
 	dto.citizenId = citizenId;
@@ -239,13 +263,64 @@ void ReceptionRegistrationDialog::handleSave()
 	dto.address = address;
 	dto.shift = shift;
 
-	// QString errorMsg = m_staffService->hireNewReceptionist(dto);
-	//   if (!errorMsg.isEmpty()) {
-	//       QMessageBox::critical(this, "Lỗi", errorMsg);
-	//       return;
-	//   }
+    QString errorMsg;
+    if (m_editStaffId == -1) {
+        StaffHireResult result = m_staffService->hireNewReceptionist(dto);
+        errorMsg = result.errorMessage;
+        if (errorMsg.isEmpty()) {
+            QMessageBox msgBox(this);
+            msgBox.setWindowTitle("Thành công");
+            msgBox.setText(
+                QString("Tạo tài khoản Lễ tân thành công!\nMã nhân viên: %1\nMật khẩu: %2")
+                    .arg(result.staffCode)
+                    .arg(result.plainPassword));
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.setStyleSheet(
+                "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+                "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+                "QPushButton { background-color: #34A853; color: white; "
+                "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+                "6px; border: none; font-size: 14px; }"
+                "QPushButton:hover { background-color: #2C8E46; }");
+            msgBox.exec();
+            accept();
+            return;
+        }
+    } else {
+        errorMsg = m_staffService->editReceptionistInformation(dto, m_editStaffId);
+        if (errorMsg.isEmpty()) {
+            QMessageBox msgBox(this);
+            msgBox.setWindowTitle("Thành công");
+            msgBox.setText("Cập nhật thông tin Lễ tân thành công!");
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.setStyleSheet(
+                "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+                "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+                "QPushButton { background-color: #34A853; color: white; "
+                "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+                "6px; border: none; font-size: 14px; }"
+                "QPushButton:hover { background-color: #2C8E46; }");
+            msgBox.exec();
+            accept();
+            return;
+        }
+    }
 
-	// QMessageBox::information(this, "Thành công",
-	//                          "Tạo tài khoản Lễ tân thành công!");
+    if (!errorMsg.isEmpty()) {
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("Lỗi");
+        msgBox.setText(errorMsg);
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setStyleSheet(
+            "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+            "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+            "QPushButton { background-color: #EF4444; color: white; "
+            "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+            "6px; border: none; font-size: 14px; }"
+            "QPushButton:hover { background-color: #DC2828; }");
+        msgBox.exec();
+        return;
+    }
+
 	accept();
 }

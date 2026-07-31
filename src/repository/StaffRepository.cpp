@@ -307,6 +307,10 @@ bool StaffRepository::updatePharmacist(const PharmacistUpdateDTO& pharmacist) {
   return true;
 }
 
+bool StaffRepository::updateReceptionist(const ReceptionistUpdateDTO& receptionist) {
+  return updateStaff(receptionist);
+}
+
 bool StaffRepository::deactivate(int staffId) {
   QString sql = "UPDATE staff SET is_active = 0 WHERE staff_id = ?";
 

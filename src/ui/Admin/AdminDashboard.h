@@ -45,6 +45,7 @@ private:
   ManagePatientsWidget *m_managePatientsPage;
   ManageReceptionWidget *m_manageReceptionPage;
   ManageLeaveWidget *m_manageLeavesPage;
+  class ManagePharmacistsWidget *m_managePharmacistsPage;
 
   QPushButton *m_btnManageLeaves;
 };

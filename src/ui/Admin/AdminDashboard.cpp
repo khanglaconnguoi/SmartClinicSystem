@@ -5,6 +5,7 @@
 #include "ManageNursesWidget.h"
 #include "ManagePatientsWidget.h"
 #include "ManageReceptionWidget.h"
+#include "ManagePharmacistsWidget.h"
 #include "ManageLeaveWidget.h"
 #include "../../service/PatientService.h"
 #include <QGridLayout>
@@ -23,7 +24,7 @@ AdminDashboardWidget::AdminDashboardWidget(
     : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent), m_staffService(staffService),
       m_patientService(patientService), m_manageDoctorsPage(nullptr),
       m_manageNursesPage(nullptr), m_managePatientsPage(nullptr),
-      m_manageReceptionPage(nullptr) {
+      m_manageReceptionPage(nullptr), m_managePharmacistsPage(nullptr) {
   initializeDashboard();
 }
 
@@ -41,6 +42,8 @@ void AdminDashboardWidget::fillDashboardData() {
       new QPushButton("Quản lý Bệnh nhân", m_sidebarFrame);
   QPushButton *btnManageReception =
       new QPushButton("Quản lý Lễ tân", m_sidebarFrame);
+  QPushButton *btnManagePharmacists =
+      new QPushButton("Quản lý Dược sĩ", m_sidebarFrame);
   m_btnManageLeaves =
       new QPushButton("Quản lý Nghỉ phép", m_sidebarFrame);
 
@@ -58,6 +61,7 @@ void AdminDashboardWidget::fillDashboardData() {
   setSidebarBtnStyle(btnManageNurses);
   setSidebarBtnStyle(btnManagePatients);
   setSidebarBtnStyle(btnManageReception);
+  setSidebarBtnStyle(btnManagePharmacists);
   setSidebarBtnStyle(m_btnManageLeaves);
 
   // Default active style
@@ -70,6 +74,7 @@ void AdminDashboardWidget::fillDashboardData() {
   m_sidebarLayout->addWidget(btnManageNurses);
   m_sidebarLayout->addWidget(btnManagePatients);
   m_sidebarLayout->addWidget(btnManageReception);
+  m_sidebarLayout->addWidget(btnManagePharmacists);
   m_sidebarLayout->addWidget(m_btnManageLeaves);
   m_sidebarLayout->addStretch(); // Đẩy menu lên trên
 
@@ -98,12 +103,14 @@ void AdminDashboardWidget::fillDashboardData() {
   m_manageNursesPage = new ManageNursesWidget(m_staffService, this);
   m_managePatientsPage = new ManagePatientsWidget(m_patientService, m_stackedWidget);
   m_manageReceptionPage = new ManageReceptionWidget(m_staffService, this);
+  m_managePharmacistsPage = new ManagePharmacistsWidget(m_staffService, this);
   m_manageLeavesPage = new ManageLeaveWidget(m_staffService, m_baseAppointmentService, this);
 
   m_stackedWidget->addWidget(m_manageDoctorsPage);
   m_stackedWidget->addWidget(m_manageNursesPage);
   m_stackedWidget->addWidget(m_managePatientsPage);
   m_stackedWidget->addWidget(m_manageReceptionPage);
+  m_stackedWidget->addWidget(m_managePharmacistsPage);
   m_stackedWidget->addWidget(m_manageLeavesPage);
 
   // Mặc định hiển thị trang Quản lý Bác sĩ
@@ -118,6 +125,7 @@ void AdminDashboardWidget::fillDashboardData() {
       btnManageNurses->setStyleSheet(activeBtn == btnManageNurses ? activeStyle : inactiveStyle);
       btnManagePatients->setStyleSheet(activeBtn == btnManagePatients ? activeStyle : inactiveStyle);
       btnManageReception->setStyleSheet(activeBtn == btnManageReception ? activeStyle : inactiveStyle);
+      btnManagePharmacists->setStyleSheet(activeBtn == btnManagePharmacists ? activeStyle : inactiveStyle);
       m_btnManageLeaves->setStyleSheet(activeBtn == m_btnManageLeaves ? activeStyle : inactiveStyle);
   };
 
@@ -143,6 +151,12 @@ void AdminDashboardWidget::fillDashboardData() {
       m_stackedWidget->setCurrentWidget(m_manageReceptionPage);
       m_manageReceptionPage->loadReceptionList();
       setActiveMenu(btnManageReception);
+  });
+  
+  connect(btnManagePharmacists, &QPushButton::clicked, this, [=]() {
+      m_stackedWidget->setCurrentWidget(m_managePharmacistsPage);
+      m_managePharmacistsPage->loadPharmacistsList();
+      setActiveMenu(btnManagePharmacists);
   });
 
   connect(m_btnManageLeaves, &QPushButton::clicked, this, [=]() {

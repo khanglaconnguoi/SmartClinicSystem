@@ -45,9 +45,7 @@ struct NurseInputDTO : public StaffInputDTO {
     QString certification;
 };
 
-struct ReceptionistInputDTO : public StaffInputDTO {
-    QString shift;
-};
+struct ReceptionistInputDTO : public StaffInputDTO {};
 
 struct PharmacistInputDTO : public StaffInputDTO {
     QString licenseNumber;
@@ -93,6 +91,8 @@ struct NurseInsertDTO : public StaffInsertDTO {
     QString certification;
 };
 
+struct ReceptionistInsertDTO : public StaffInsertDTO {};
+
 
 struct PharmacistInsertDTO : public StaffInsertDTO {
     QString licenseNumber;
@@ -133,6 +133,8 @@ struct NurseUpdateDTO : public StaffUpdateDTO {
     QString nurseLevel;
     QString certification;
 };
+
+struct ReceptionistUpdateDTO : public StaffUpdateDTO {};
 
 struct PharmacistUpdateDTO : public StaffUpdateDTO {
     QString licenseNumber;

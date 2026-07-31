@@ -1,6 +1,7 @@
 #pragma once
 
 #include "service/StaffService.h"
+#include "../view/AvatarPickerWidget.h"
 #include <QDialog>
 #include <QLineEdit>
 #include <QComboBox>
@@ -14,6 +15,8 @@ public:
     explicit ReceptionRegistrationDialog(std::shared_ptr<StaffService> staffService, QWidget* parent = nullptr);
     ~ReceptionRegistrationDialog() override = default;
 
+    void loadReceptionistData(StaffProfileDTO* receptionist);
+
 private slots:
     void handleSave();
 
@@ -21,8 +24,10 @@ private:
     void setupUi();
 
     std::shared_ptr<StaffService> m_staffService;
+    int m_editStaffId = -1;
 
     // Các trường form tạo Lễ tân
+    AvatarPickerWidget *m_avatarPicker;
     QLineEdit *m_txtFullName;
     QLineEdit *m_txtCitizenId;
     QLineEdit *m_txtPhone;

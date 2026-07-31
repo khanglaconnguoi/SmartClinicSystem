@@ -4,6 +4,7 @@
 #include "../../service/AppointmentService.h"
 #include "service/StaffService.h"
 #include "dto/StaffDTOs.h"
+#include "../view/AvatarPickerWidget.h"
 #include <QDialog>
 #include <QLineEdit>
 #include <QComboBox>
@@ -34,8 +35,8 @@ private:
   std::shared_ptr<AppointmentService> m_appointmentService;
   int m_editStaffId = -1;
 
-
   // Các trường form tạo bác sĩ
+  AvatarPickerWidget *m_avatarPicker;
   QLineEdit *m_txtFullName;
   QLineEdit *m_txtCitizenId;
   QLineEdit *m_txtPhone;
@@ -57,3 +58,4 @@ private:
   QPushButton *m_btnSave;
   QPushButton *m_btnCancel;
 };
+

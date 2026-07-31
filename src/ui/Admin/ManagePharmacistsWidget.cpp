@@ -1,6 +1,6 @@
-#include "ManageDoctorsWidget.h"
+#include "ManagePharmacistsWidget.h"
 #include "../../dto/StaffDTOs.h"
-#include "DoctorRegistrationDialog.h"
+#include "PharmacistRegistrationDialog.h"
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -8,15 +8,13 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-ManageDoctorsWidget::ManageDoctorsWidget(
-    std::shared_ptr<StaffService> staffService,
-    std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : QWidget(parent), m_staffService(staffService), m_appointmentService(appointmentService), m_tblDoctors(nullptr) {
+ManagePharmacistsWidget::ManagePharmacistsWidget(
+    std::shared_ptr<StaffService> staffService, QWidget *parent)
+    : QWidget(parent), m_staffService(staffService), m_tblPharmacists(nullptr) {
   buildUI();
 }
 
-
-QFrame *ManageDoctorsWidget::makeCard(QWidget *parent) {
+QFrame *ManagePharmacistsWidget::makeCard(QWidget *parent) {
   QFrame *card = new QFrame(parent);
   card->setObjectName("DashboardCard");
   card->setStyleSheet("QFrame#DashboardCard {"
@@ -27,21 +25,21 @@ QFrame *ManageDoctorsWidget::makeCard(QWidget *parent) {
   return card;
 }
 
-void ManageDoctorsWidget::buildUI() {
+void ManagePharmacistsWidget::buildUI() {
   QVBoxLayout *pageLayout = new QVBoxLayout(this);
   pageLayout->setContentsMargins(30, 30, 30, 30);
   pageLayout->setSpacing(20);
 
   // Header
   QHBoxLayout *headerLayout = new QHBoxLayout();
-  QLabel *lblPageTitle = new QLabel("Danh sách Bác sĩ", this);
+  QLabel *lblPageTitle = new QLabel("Danh sách Dược sĩ", this);
   lblPageTitle->setStyleSheet(
       "font-size: 24px; font-weight: bold; color: #111827;");
   headerLayout->addWidget(lblPageTitle);
 
   headerLayout->addStretch();
 
-  QPushButton *btnAddNew = new QPushButton("+ Thêm Bác sĩ", this);
+  QPushButton *btnAddNew = new QPushButton("+ Thêm Dược sĩ", this);
   btnAddNew->setCursor(Qt::PointingHandCursor);
   btnAddNew->setFixedSize(140, 40);
   btnAddNew->setStyleSheet(
@@ -56,59 +54,56 @@ void ManageDoctorsWidget::buildUI() {
   QVBoxLayout *cardLayout = new QVBoxLayout(tableCard);
   cardLayout->setContentsMargins(0, 0, 0, 0);
 
-  m_tblDoctors = new QTableWidget(0, 6, tableCard);
-  m_tblDoctors->setHorizontalHeaderLabels(
-      {"Mã BS", "Họ Tên", "Chuyên khoa", "SĐT", "Trạng thái", "Thao tác"});
-  m_tblDoctors->horizontalHeader()->setStretchLastSection(true);
-  m_tblDoctors->horizontalHeader()->setSectionResizeMode(1,
-                                                         QHeaderView::Stretch);
-  m_tblDoctors->verticalHeader()->setDefaultSectionSize(50);
-  m_tblDoctors->verticalHeader()->setVisible(false);
-  m_tblDoctors->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  m_tblDoctors->setSelectionBehavior(QAbstractItemView::SelectRows);
-  m_tblDoctors->setStyleSheet(
+  m_tblPharmacists = new QTableWidget(0, 7, tableCard);
+  m_tblPharmacists->setHorizontalHeaderLabels(
+      {"Mã DS", "Họ Tên", "Khu vực NT", "Số CCHN", "SĐT", "Trạng thái", "Thao tác"});
+  m_tblPharmacists->horizontalHeader()->setStretchLastSection(true);
+  m_tblPharmacists->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+  m_tblPharmacists->verticalHeader()->setDefaultSectionSize(50);
+  m_tblPharmacists->verticalHeader()->setVisible(false);
+  m_tblPharmacists->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_tblPharmacists->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_tblPharmacists->setStyleSheet(
       "QTableWidget { border: none; gridline-color: #EAEAEA; font-size: 13px; "
       "background-color: white; }"
       "QHeaderView::section { background-color: #F8FAFC; padding: 8px; "
       "font-weight: bold; border: none; border-bottom: 1px solid #EAEAEA; "
       "color: #111827; }");
 
-  cardLayout->addWidget(m_tblDoctors);
+  cardLayout->addWidget(m_tblPharmacists);
   pageLayout->addWidget(tableCard);
 
   connect(btnAddNew, &QPushButton::clicked, this,
-          &ManageDoctorsWidget::showAddDoctorDialog);
+          &ManagePharmacistsWidget::showAddPharmacistDialog);
 
   // Load data
-  loadDoctorsList();
+  loadPharmacistsList();
 }
 
 namespace {
 constexpr int PAGE_SIZE = 20;
 }
 
-void ManageDoctorsWidget::loadDoctorsList() {
-  if (!m_tblDoctors || !m_staffService)
+void ManagePharmacistsWidget::loadPharmacistsList() {
+  if (!m_tblPharmacists || !m_staffService)
     return;
-  m_tblDoctors->setRowCount(0);
+  m_tblPharmacists->setRowCount(0);
 
-  DoctorSearchCriteria criteria;
+  PharmacistSearchCriteria criteria;
   criteria.onlyActive = true;
   criteria.includeDeleted = false;
   criteria.pageSize = PAGE_SIZE;
 
-  QList<std::shared_ptr<SystemUser>> doctors =
-      m_staffService->searchDoctorsPaged(criteria).items;
+  QList<std::shared_ptr<SystemUser>> pharmacists =
+      m_staffService->searchPharmacistsPaged(criteria).items;
 
-
-
-  for (int i = 0; i < doctors.size(); ++i) {
-    auto doc = std::dynamic_pointer_cast<Doctor>(doctors[i]);
+  for (int i = 0; i < pharmacists.size(); ++i) {
+    auto doc = std::dynamic_pointer_cast<Pharmacist>(pharmacists[i]);
     if (!doc)
       continue;
 
-    int row = m_tblDoctors->rowCount();
-    m_tblDoctors->insertRow(row);
+    int row = m_tblPharmacists->rowCount();
+    m_tblPharmacists->insertRow(row);
 
     QTableWidgetItem *itemCode = new QTableWidgetItem(doc->getStaffCode());
     itemCode->setForeground(QBrush(QColor("#111827")));
@@ -116,9 +111,12 @@ void ManageDoctorsWidget::loadDoctorsList() {
     QTableWidgetItem *itemName = new QTableWidgetItem(doc->getFullName());
     itemName->setForeground(QBrush(QColor("#111827")));
 
-    QTableWidgetItem *itemSpec = new QTableWidgetItem(doc->getSpecialty());
-    itemSpec->setForeground(QBrush(QColor("#111827")));
+    QTableWidgetItem *itemSection = new QTableWidgetItem(doc->getPharmacySection());
+    itemSection->setForeground(QBrush(QColor("#111827")));
 
+    QTableWidgetItem *itemLicense = new QTableWidgetItem(doc->getLicenseNumber());
+    itemLicense->setForeground(QBrush(QColor("#111827")));
+    
     QTableWidgetItem *itemPhone = new QTableWidgetItem("---");
     itemPhone->setForeground(QBrush(QColor("#111827")));
 
@@ -130,11 +128,12 @@ void ManageDoctorsWidget::loadDoctorsList() {
       itemStatus->setForeground(QBrush(QColor("#DC2626")));
     }
 
-    m_tblDoctors->setItem(row, 0, itemCode);
-    m_tblDoctors->setItem(row, 1, itemName);
-    m_tblDoctors->setItem(row, 2, itemSpec);
-    m_tblDoctors->setItem(row, 3, itemPhone);
-    m_tblDoctors->setItem(row, 4, itemStatus);
+    m_tblPharmacists->setItem(row, 0, itemCode);
+    m_tblPharmacists->setItem(row, 1, itemName);
+    m_tblPharmacists->setItem(row, 2, itemSection);
+    m_tblPharmacists->setItem(row, 3, itemLicense);
+    m_tblPharmacists->setItem(row, 4, itemPhone);
+    m_tblPharmacists->setItem(row, 5, itemStatus);
 
     QWidget *actionWidget = new QWidget();
     QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
@@ -164,48 +163,47 @@ void ManageDoctorsWidget::loadDoctorsList() {
 
     actionLayout->addWidget(btnEdit);
     actionLayout->addWidget(btnDeactivate);
-    m_tblDoctors->setCellWidget(row, 5, actionWidget);
+    m_tblPharmacists->setCellWidget(row, 6, actionWidget);
 
     connect(btnEdit, &QPushButton::clicked, this,
-            [this, doc]() { showEditDoctorDialog(doc); });
+            [this, doc]() { showEditPharmacistDialog(doc); });
             
     connect(btnDeactivate, &QPushButton::clicked, this, [this, doc]() {
         if (doc->isActive()) {
             if (m_staffService->deactivateStaff(doc->getAccountId())) {
-                loadDoctorsList();
+                loadPharmacistsList();
             } else {
-                QMessageBox::warning(this, "Lỗi", "Không thể vô hiệu hóa Bác sĩ này.");
+                QMessageBox::warning(this, "Lỗi", "Không thể vô hiệu hóa Dược sĩ này.");
             }
         } else {
             if (m_staffService->reactivateStaff(doc->getAccountId())) {
-                loadDoctorsList();
+                loadPharmacistsList();
             } else {
-                QMessageBox::warning(this, "Lỗi", "Không thể kích hoạt Bác sĩ này.");
+                QMessageBox::warning(this, "Lỗi", "Không thể kích hoạt Dược sĩ này.");
             }
         }
     });
   }
 }
 
-void ManageDoctorsWidget::showAddDoctorDialog() {
-  DoctorRegistrationDialog dialog(m_staffService, m_appointmentService, this);
+void ManagePharmacistsWidget::showAddPharmacistDialog() {
+  PharmacistRegistrationDialog dialog(m_staffService, this);
   if (dialog.exec() == QDialog::Accepted) {
-    loadDoctorsList();
+    loadPharmacistsList();
   }
 }
 
-void ManageDoctorsWidget::showEditDoctorDialog(std::shared_ptr<Doctor> doc) {
+void ManagePharmacistsWidget::showEditPharmacistDialog(std::shared_ptr<Pharmacist> doc) {
   auto profile = m_staffService->getOwnProfile(doc->getAccountId());
-  auto doctorProfile = dynamic_cast<DoctorProfileDTO *>(profile.get());
-  if (doctorProfile) {
-    DoctorRegistrationDialog dialog(m_staffService, m_appointmentService, this);
-    dialog.loadDoctorData(doctorProfile);
+  auto pharmacistProfile = dynamic_cast<PharmacistProfileDTO *>(profile.get());
+  if (pharmacistProfile) {
+    PharmacistRegistrationDialog dialog(m_staffService, this);
+    dialog.loadPharmacistData(pharmacistProfile);
     if (dialog.exec() == QDialog::Accepted) {
-      loadDoctorsList();
+      loadPharmacistsList();
     }
   } else {
     QMessageBox::warning(this, "Lỗi",
-                         "Không thể lấy thông tin chi tiết bác sĩ.");
+                         "Không thể lấy thông tin chi tiết dược sĩ.");
   }
 }
-

@@ -104,6 +104,9 @@ void NurseRegistrationDialog::setupUi() {
   form1->setContentsMargins(15, 25, 15, 15);
   form1->setSpacing(12);
 
+  m_avatarPicker = new AvatarPickerWidget(gbPersonalInfo);
+  form1->addRow("Ảnh đại diện:", m_avatarPicker);
+
   m_txtFullName = new QLineEdit(gbPersonalInfo);
   m_txtFullName->setStyleSheet(extraInputStyle);
   form1->addRow("Họ và Tên (*):", m_txtFullName);
@@ -222,6 +225,7 @@ void NurseRegistrationDialog::loadNurseData(NurseProfileDTO* nurse) {
     if (!nurse) return;
     m_editStaffId = nurse->staffId;
 
+    m_avatarPicker->setAvatarPixmap(nurse->avatar);
     m_txtFullName->setText(nurse->fullName);
     m_txtCitizenId->setText(nurse->citizenId);
     m_txtPhone->setText(nurse->phoneNumber);
@@ -246,7 +250,7 @@ void NurseRegistrationDialog::loadNurseData(NurseProfileDTO* nurse) {
     m_cbShift->setCurrentText(ShiftText::toVi(nurse->shift));
     
     m_cbNurseLevel->setCurrentText(nurse->nurseLevel);
-    m_txtCertification->setText("..."); //Not in ProfileDTO directly usually
+    m_txtCertification->setText(nurse->certification);
 }
 
 void NurseRegistrationDialog::handleSave() {
@@ -277,7 +281,7 @@ void NurseRegistrationDialog::handleSave() {
   QString nurseLevel = m_cbNurseLevel->currentText();
   QString certification = m_txtCertification->text().trimmed();
 
-  QPixmap avatar;
+  QPixmap avatar = m_avatarPicker->getAvatarPixmap();
 
   NurseInputDTO dto;
   dto.fullName = fullName;
