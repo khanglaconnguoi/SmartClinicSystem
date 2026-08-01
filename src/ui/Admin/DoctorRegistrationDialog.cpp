@@ -119,7 +119,7 @@ void DoctorRegistrationDialog::setupUi() {
   m_txtFullName = new QLineEdit(gbPersonalInfo);
   m_txtFullName->setStyleSheet(extraInputStyle);
   m_txtFullName->setPlaceholderText("VD: Nguyễn Văn A");
-  form1->addRow("Họ và Tên (*):", m_txtFullName);
+  form1->addRow("Họ và tên (*):", m_txtFullName);
 
   m_dtDateOfBirth = new QDateEdit(QDate(1990, 1, 1), gbPersonalInfo);
   m_dtDateOfBirth->setCalendarPopup(true);
@@ -134,7 +134,7 @@ void DoctorRegistrationDialog::setupUi() {
   m_txtCitizenId = new QLineEdit(gbPersonalInfo);
   m_txtCitizenId->setStyleSheet(extraInputStyle);
   m_txtCitizenId->setPlaceholderText("Nhập 12 chữ số hợp lệ");
-  form1->addRow("Số CMND / CCCD (*):", m_txtCitizenId);
+  form1->addRow("Số CMND/CCCD (*):", m_txtCitizenId);
 
   m_txtPhone = new QLineEdit(gbPersonalInfo);
   m_txtPhone->setStyleSheet(extraInputStyle);
@@ -144,12 +144,12 @@ void DoctorRegistrationDialog::setupUi() {
   m_txtEmail = new QLineEdit(gbPersonalInfo);
   m_txtEmail->setStyleSheet(extraInputStyle);
   m_txtEmail->setPlaceholderText("VD: doctor@example.com");
-  form1->addRow("Email:", m_txtEmail);
+  form1->addRow("Email (*):", m_txtEmail);
 
   m_txtAddress = new QLineEdit(gbPersonalInfo);
   m_txtAddress->setStyleSheet(extraInputStyle);
-  m_txtAddress->setPlaceholderText("VD: TP Hồ Chí Minh");
-  form1->addRow("Địa chỉ:", m_txtAddress);
+  m_txtAddress->setPlaceholderText("VD: TP. Hồ Chí Minh");
+  form1->addRow("Địa chỉ (*):", m_txtAddress);
 
   cardLayout->addWidget(gbPersonalInfo);
 
@@ -165,7 +165,7 @@ void DoctorRegistrationDialog::setupUi() {
   m_cbDepartment = new QComboBox(gbWorkInfo);
   m_cbDepartment->setStyleSheet(extraInputStyle);
   for (const auto& pair : DepartmentText::getList()) m_cbDepartment->addItem(pair.second, pair.first);
-  form2->addRow("Phòng ban:", m_cbDepartment);
+  form2->addRow("Phòng ban (*):", m_cbDepartment);
 
   m_cbRoom = new QComboBox(gbWorkInfo);
   m_cbRoom->setStyleSheet(extraInputStyle);
@@ -177,17 +177,17 @@ void DoctorRegistrationDialog::setupUi() {
       }
   }
 
-  form2->addRow("Phòng khám:", m_cbRoom);
+  form2->addRow("Phòng khám (*):", m_cbRoom);
 
   m_cbShift = new QComboBox(gbWorkInfo);
   m_cbShift->setStyleSheet(extraInputStyle);
   for (const auto& pair : ShiftText::getList()) m_cbShift->addItem(pair.second, pair.first);
-  form2->addRow("Ca làm việc:", m_cbShift);
+  form2->addRow("Ca làm việc (*):", m_cbShift);
 
   m_dtHireDate = new QDateEdit(QDate::currentDate(), gbWorkInfo);
   m_dtHireDate->setCalendarPopup(true);
   m_dtHireDate->setStyleSheet(extraInputStyle);
-  form2->addRow("Ngày vào làm:", m_dtHireDate);
+  form2->addRow("Ngày vào làm (*):", m_dtHireDate);
 
   cardLayout->addWidget(gbWorkInfo);
 
@@ -203,16 +203,16 @@ void DoctorRegistrationDialog::setupUi() {
   m_cbSpecialty->setStyleSheet(extraInputStyle);
   m_cbSpecialty->addItems(
       {"Nội khoa", "Ngoại khoa", "Nhi khoa", "Da liễu", "Răng Hàm Mặt"});
-  form3->addRow("Chuyên khoa:", m_cbSpecialty);
+  form3->addRow("Chuyên khoa (*):", m_cbSpecialty);
 
   m_txtLicenseNumber = new QLineEdit(gbMedicalInfo);
   m_txtLicenseNumber->setStyleSheet(extraInputStyle);
-  form3->addRow("Số CCHN:", m_txtLicenseNumber);
+  form3->addRow("Số CCHN (*):", m_txtLicenseNumber);
 
   m_sbExperienceYears = new QSpinBox(gbMedicalInfo);
   m_sbExperienceYears->setStyleSheet(extraInputStyle);
   m_sbExperienceYears->setRange(0, 50);
-  form3->addRow("Số năm kinh nghiệm:", m_sbExperienceYears);
+  form3->addRow("Số năm kinh nghiệm (*):", m_sbExperienceYears);
 
   m_sbConsultationFee = new QSpinBox(gbMedicalInfo);
   m_sbConsultationFee->setStyleSheet(extraInputStyle);
@@ -224,7 +224,7 @@ void DoctorRegistrationDialog::setupUi() {
   m_txtBio = new QTextEdit(gbMedicalInfo);
   m_txtBio->setStyleSheet(extraInputStyle);
   m_txtBio->setFixedHeight(60);
-  form3->addRow("Tiểu sử / Giới thiệu:", m_txtBio);
+  form3->addRow("Tiểu sử / giới thiệu:", m_txtBio);
 
   cardLayout->addWidget(gbMedicalInfo);
 

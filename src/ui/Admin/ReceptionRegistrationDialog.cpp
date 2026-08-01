@@ -112,24 +112,24 @@ void ReceptionRegistrationDialog::setupUi()
 
 	m_txtFullName = new QLineEdit(gbPersonalInfo);
 	m_txtFullName->setStyleSheet(extraInputStyle);
-	form1->addRow("Họ và Tên (*):", m_txtFullName);
+	form1->addRow("Họ và tên (*):", m_txtFullName);
 
 	m_txtCitizenId = new QLineEdit(gbPersonalInfo);
 	m_txtCitizenId->setStyleSheet(extraInputStyle);
-	form1->addRow("CCCD (*):", m_txtCitizenId);
+	form1->addRow("Số CMND/CCCD (*):", m_txtCitizenId);
 
 	m_cbGender = new QComboBox(gbPersonalInfo);
 	for (const auto &pair : GenderText::getList())
 		m_cbGender->addItem(pair.second, pair.first);
 	m_cbGender->setStyleSheet(extraInputStyle);
-	form1->addRow("Giới tính:", m_cbGender);
+	form1->addRow("Giới tính (*):", m_cbGender);
 
 	m_dtDateOfBirth =
 		new QDateEdit(QDate::currentDate().addYears(-25), gbPersonalInfo);
 	m_dtDateOfBirth->setCalendarPopup(true);
 	m_dtDateOfBirth->setDisplayFormat("dd/MM/yyyy");
 	m_dtDateOfBirth->setStyleSheet(extraInputStyle);
-	form1->addRow("Ngày sinh:", m_dtDateOfBirth);
+	form1->addRow("Ngày sinh (*):", m_dtDateOfBirth);
 
 	cardLayout->addWidget(gbPersonalInfo);
 
@@ -146,11 +146,11 @@ void ReceptionRegistrationDialog::setupUi()
 
 	m_txtEmail = new QLineEdit(gbContactInfo);
 	m_txtEmail->setStyleSheet(extraInputStyle);
-	form2->addRow("Email:", m_txtEmail);
+	form2->addRow("Email (*):", m_txtEmail);
 
 	m_txtAddress = new QLineEdit(gbContactInfo);
 	m_txtAddress->setStyleSheet(extraInputStyle);
-	form2->addRow("Địa chỉ:", m_txtAddress);
+	form2->addRow("Địa chỉ (*):", m_txtAddress);
 
 	cardLayout->addWidget(gbContactInfo);
 
@@ -165,7 +165,7 @@ void ReceptionRegistrationDialog::setupUi()
 	for (const auto &pair : ShiftText::getList())
 		m_cbShift->addItem(pair.second, pair.first);
 	m_cbShift->setStyleSheet(extraInputStyle);
-	form3->addRow("Ca làm việc:", m_cbShift);
+	form3->addRow("Ca làm việc (*):", m_cbShift);
 
 	cardLayout->addWidget(gbJobInfo);
 

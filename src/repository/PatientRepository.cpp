@@ -302,7 +302,7 @@ bool PatientRepository::updatePatient(const PatientUpdateDTO &dto) {
         date_of_birth = ?,
         gender = ?,
         citizen_id = ?,
-        phone = ?,
+        phone_number = ?,
         email = ?,
         address = ?,
         blood_type = ?,
@@ -464,10 +464,10 @@ PatientRepository::buildSearchWhereClause(const PatientSearchCriteria &criteria,
     conditions << "p.is_deleted = 0";
   }
 
-  // searchKey: so khớp LIKE trên full_name / patient_code / citizen_id / phone
+  // searchKey: so khớp LIKE trên full_name / patient_code / citizen_id / phone_number
   if (!criteria.searchKey.trimmed().isEmpty()) {
     conditions << "(LOWER(p.full_name) LIKE ? OR LOWER(p.patient_code) LIKE ? OR "
-                  "LOWER(p.citizen_id) LIKE ? OR LOWER(p.phone) LIKE ?)";
+                  "LOWER(p.citizen_id) LIKE ? OR LOWER(p.phone_number) LIKE ?)";
     QString pattern = "%" + criteria.searchKey.trimmed().toLower() + "%";
     outParams << pattern << pattern << pattern << pattern;
   }
@@ -752,7 +752,7 @@ PatientRepository::searchPatientsPaged(const PatientSearchCriteria &criteria) co
     row.fullName = dataQuery.value("full_name").toString();
     row.dateOfBirth = QDate::fromString(dataQuery.value("date_of_birth").toString(), "yyyy-MM-dd");
     row.gender = dataQuery.value("gender").toString();
-    row.phone = dataQuery.value("phone").toString();
+    row.phone = dataQuery.value("phone_number").toString();
     row.type = patientTypeFromEn(dataQuery.value("type").toString());
     row.statusLabel = dataQuery.value("status_label").toString();
     row.roomId = dataQuery.isNull("room_id") ? QString() : dataQuery.value("room_id").toString();

@@ -25,7 +25,7 @@ DatabaseManager::DatabaseManager() {
     }
   }
 
-  QString dbPath = databaseDir.filePath("hospital.db");
+  QString dbPath = databaseDir.filePath("SmartClinicSystem.db");
   qDebug() << "Đường dẫn Database:" << dbPath;
 
   m_db.setDatabaseName(dbPath);
@@ -530,7 +530,7 @@ bool DatabaseManager::createTables() {
     return false;
   }
 
-  // Bảng Nurse Profiles
+  // Bảng Pharmacist Profiles
   QString createPharmacistProfiles = R"(
     CREATE TABLE IF NOT EXISTS pharmacist_profiles (
         staff_id          INTEGER PRIMARY KEY,
@@ -546,7 +546,27 @@ bool DatabaseManager::createTables() {
     return false;
   }
 
-
+  QString createServiceRequests = R"(
+      CREATE TABLE IF NOT EXISTS service_requests (
+          request_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+          record_id     INTEGER NOT NULL REFERENCES medical_records(record_id) ON DELETE CASCADE,
+          room_id       INTEGER NOT NULL REFERENCES rooms(room_id),
+          doctor_id     INTEGER NOT NULL REFERENCES staff(staff_id),
+          service_name  TEXT    NOT NULL,
+          status        TEXT    NOT NULL DEFAULT 'PENDING'
+                        CHECK (status IN ('PENDING','CHECKED_IN','PROCESSING','COMPLETED','CANCELLED')),
+          ticket_number INTEGER,
+          prescribed_at TEXT    NOT NULL DEFAULT (datetime('now')),
+          started_at    TEXT,
+          completed_at  TEXT,
+          result_note   TEXT
+      )
+    )";
+    if (!query.exec(createServiceRequests)) {
+      qDebug() << "Lỗi bảng Service Request:" << query.lastError().text();
+      m_db.rollback();
+      return false;
+    }
 
 
   // -------------------------------------------------
@@ -627,8 +647,8 @@ bool DatabaseManager::createTables() {
 
   // ============= TẠO INDEX ===============
   QStringList createIndexList = {
-      R"( CREATE INDEX IF NOT EXISTS idx_staff_role               ON staff(role);             )",
-      R"( CREATE INDEX IF NOT EXISTS idx_staff_department         ON staff(department_id);    )",
+      R"( CREATE INDEX IF NOT EXISTS idx_staff_role               ON staff(role);            )",
+      R"( CREATE INDEX IF NOT EXISTS idx_staff_department         ON staff(department_id);   )",
       R"( CREATE INDEX IF NOT EXISTS idx_appointments_doctor_date ON appointments(doctor_id, appointment_date); )",
       // R"( CREATE INDEX IF NOT EXISTS idx_patients_full_name       ON
       // patients(full_name);     )"
@@ -716,49 +736,7 @@ bool DatabaseManager::createTables() {
 
   qDebug() << "Hệ thống các bảng CSDL đã sẵn sàng!";
 
-  // ── Migration: thêm cột room_id vào nurse_profiles nếu chưa có ──
-  {
-    QSqlQuery checkCol(m_db);
-    checkCol.exec("PRAGMA table_info(nurse_profiles)");
-    bool hasRoomId = false;
-    while (checkCol.next()) {
-      if (checkCol.value("name").toString() == "room_id") { hasRoomId = true; break; }
-    }
-    if (!hasRoomId) {
-      QSqlQuery alter(m_db);
-      if (!alter.exec("ALTER TABLE nurse_profiles ADD COLUMN room_id INTEGER REFERENCES rooms(room_id) ON DELETE SET NULL")) {
-        qDebug() << "Migration nurse_profiles.room_id failed:" << alter.lastError().text();
-      } else {
-        qDebug() << "Migration: nurse_profiles.room_id added.";
-      }
-    }
-  }
 
-  // ── Migration: tạo bảng service_requests nếu chưa có ──
-  {
-    QSqlQuery createSR(m_db);
-    QString createServiceRequests = R"(
-      CREATE TABLE IF NOT EXISTS service_requests (
-          request_id    INTEGER PRIMARY KEY AUTOINCREMENT,
-          record_id     INTEGER NOT NULL REFERENCES medical_records(record_id) ON DELETE CASCADE,
-          room_id       INTEGER NOT NULL REFERENCES rooms(room_id),
-          doctor_id     INTEGER NOT NULL REFERENCES staff(staff_id),
-          service_name  TEXT    NOT NULL,
-          status        TEXT    NOT NULL DEFAULT 'PENDING'
-                        CHECK (status IN ('PENDING','CHECKED_IN','PROCESSING','COMPLETED','CANCELLED')),
-          ticket_number INTEGER,
-          prescribed_at TEXT    NOT NULL DEFAULT (datetime('now')),
-          started_at    TEXT,
-          completed_at  TEXT,
-          result_note   TEXT
-      )
-    )";
-    if (!createSR.exec(createServiceRequests)) {
-      qDebug() << "Migration: tạo service_requests thất bại:" << createSR.lastError().text();
-    } else {
-      qDebug() << "Migration: service_requests OK.";
-    }
-  }
 
   // ── Seed dữ liệu mặc định cho departments nếu trống ──
   {
@@ -842,4 +820,3 @@ QSqlQuery DatabaseManager::selectQuery(const QString &sql,
 
   return query;
 }
-

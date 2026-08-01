@@ -134,7 +134,7 @@ bool StaffRepository::insertNurse(const NurseInsertDTO &nurse) {
     )";
 
   QVariantList params = {staffId, nurse.nurseLevel, nurse.certification,
-                         nurse.roomId > 0 ? QVariant(nurse.roomId) : QVariant(QVariant::Int)};
+                         nurse.roomId > 0 ? QVariant(nurse.roomId) : QVariant(QMetaType::fromType<int>())};
 
   if (db.executeQuery(insert, params).lastError().isValid()) {
     db.rollbackTransaction();
@@ -269,7 +269,7 @@ bool StaffRepository::updateNurse(const NurseUpdateDTO &nurse) {
     )";
 
   QVariantList params = {nurse.nurseLevel, nurse.certification,
-                         nurse.roomId > 0 ? QVariant(nurse.roomId) : QVariant(QVariant::Int),
+                         nurse.roomId > 0 ? QVariant(nurse.roomId) : QVariant(QMetaType::fromType<int>()),
                          nurse.staffId};
 
   if (db.executeQuery(sql, params).lastError().isValid()) {
