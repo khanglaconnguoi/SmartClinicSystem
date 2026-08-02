@@ -129,7 +129,7 @@ void MainWindow::registerDashboardPage(BaseDashboardWidget *page) {
 
 void MainWindow::switchToDoctorDashboard(
     std::shared_ptr<IAuthenticatable> user) {
-  auto dashboard = new DoctorDashboardWidget(user, m_staffService, m_patientService, m_appointmentService, m_medicalRecordService, m_pharmacyService, this);
+  auto dashboard = new DoctorDashboardWidget(user, m_staffService, m_patientService, m_appointmentService, m_medicalRecordService, m_pharmacyService, m_serviceRequestService, this);
   registerDashboardPage(dashboard);
 }
 

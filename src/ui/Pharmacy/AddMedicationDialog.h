@@ -76,7 +76,7 @@ private:
     int m_medicationId;
 
     QLineEdit* m_txtBrandName;
-    QHBoxLayout* m_categoriesLayout;
+    QGridLayout* m_categoriesLayout;
     QList<QCheckBox*> m_categoryCheckBoxes;
     QComboBox* m_cbUnit;
     QDoubleSpinBox* m_spinUnitPrice;

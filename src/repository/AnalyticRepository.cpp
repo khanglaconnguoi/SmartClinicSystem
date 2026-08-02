@@ -31,16 +31,16 @@ QList<DoctorMetricRawData> AnalyticRepository::getDoctorRawMetrics(
 
     if (doctorMap.isEmpty()) { return resultList; }
 
-    QString startStr = startDate.toString("yyyy-MM-dd") + " 00:00:00";
-    QString endStr = endDate.toString("yyyy-MM-dd") + " 23:59:59";
+    QString startStr = startDate.toString("yyyy-MM-dd");
+    QString endStr = endDate.toString("yyyy-MM-dd");
 
     // 2. Thống kê số lượng bệnh nhân khám theo bác sĩ (medical_records)
     QString visitSql = R"(
       SELECT doctor_id, COUNT(record_id) AS visit_count
       FROM medical_records
       WHERE is_deleted = 0
-        AND visit_datetime >= ?
-        AND visit_datetime <= ?
+        AND DATE(visit_datetime) >= ?
+        AND DATE(visit_datetime) <= ?
       GROUP BY doctor_id
   )";
 
@@ -58,8 +58,8 @@ QList<DoctorMetricRawData> AnalyticRepository::getDoctorRawMetrics(
       JOIN medical_records mr ON inv.record_id = mr.record_id
       WHERE inv.status = 'PAID'
         AND mr.is_deleted = 0
-        AND mr.visit_datetime >= ?
-        AND mr.visit_datetime <= ?
+        AND DATE(mr.visit_datetime) >= ?
+        AND DATE(mr.visit_datetime) <= ?
       GROUP BY mr.doctor_id
   )";
 
@@ -84,15 +84,15 @@ SpecialityDistDTO AnalyticRepository::getSpecialityDistribution(
         JOIN staff s ON dp.staff_id = s.staff_id
         LEFT JOIN medical_records mr ON dp.staff_id = mr.doctor_id
             AND mr.is_deleted = 0
-            AND mr.visit_datetime >= ?
-            AND mr.visit_datetime <= ?
+            AND DATE(mr.visit_datetime) >= ?
+            AND DATE(mr.visit_datetime) <= ?
         WHERE s.is_deleted = 0
         GROUP BY dp.specialty
         ORDER BY visit_count DESC, dp.specialty ASC
     )";
 
-    QString startStr = startDate.toString("yyyy-MM-dd") + " 00:00:00";
-    QString endStr = endDate.toString("yyyy-MM-dd") + " 23:59:59";
+    QString startStr = startDate.toString("yyyy-MM-dd");
+    QString endStr = endDate.toString("yyyy-MM-dd");
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {startStr, endStr});
     while (query.next()) {
@@ -113,14 +113,14 @@ PatientStatsDTO AnalyticRepository::getPatientStats(
         SELECT date(visit_datetime) AS visit_date, COUNT(record_id) AS patient_count
         FROM medical_records
         WHERE is_deleted = 0
-          AND visit_datetime >= ?
-          AND visit_datetime <= ?
+          AND DATE(visit_datetime) >= ?
+          AND DATE(visit_datetime) <= ?
         GROUP BY date(visit_datetime)
         ORDER BY visit_date ASC
     )";
 
-    QString startStr = startDate.toString("yyyy-MM-dd") + " 00:00:00";
-    QString endStr = endDate.toString("yyyy-MM-dd") + " 23:59:59";
+    QString startStr = startDate.toString("yyyy-MM-dd");
+    QString endStr = endDate.toString("yyyy-MM-dd");
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {startStr, endStr});
     QMap<QDate, int> map;
@@ -148,14 +148,14 @@ IncomeStatsDTO AnalyticRepository::getIncomeStats(
         SELECT date(COALESCE(paid_date, issued_date)) AS invoice_date, SUM(total_amount) AS daily_income
         FROM invoices
         WHERE status = 'PAID'
-          AND COALESCE(paid_date, issued_date) >= ?
-          AND COALESCE(paid_date, issued_date) <= ?
+          AND DATE(COALESCE(paid_date, issued_date)) >= ?
+          AND DATE(COALESCE(paid_date, issued_date)) <= ?
         GROUP BY date(COALESCE(paid_date, issued_date))
         ORDER BY invoice_date ASC
     )";
 
-    QString startStr = startDate.toString("yyyy-MM-dd") + " 00:00:00";
-    QString endStr = endDate.toString("yyyy-MM-dd") + " 23:59:59";
+    QString startStr = startDate.toString("yyyy-MM-dd");
+    QString endStr = endDate.toString("yyyy-MM-dd");
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {startStr, endStr});
     QMap<QDate, double> map;
@@ -187,14 +187,14 @@ WaitTimeStatsDTO AnalyticRepository::getWaitTimeStats(
         FROM medical_records mr
         JOIN appointments app ON mr.appointment_id = app.appointment_id
         WHERE mr.is_deleted = 0
-          AND mr.visit_datetime >= ?
-          AND mr.visit_datetime <= ?
+          AND DATE(mr.visit_datetime) >= ?
+          AND DATE(mr.visit_datetime) <= ?
         GROUP BY date(mr.visit_datetime)
         ORDER BY visit_date ASC
     )";
 
-    QString startStr = startDate.toString("yyyy-MM-dd") + " 00:00:00";
-    QString endStr = endDate.toString("yyyy-MM-dd") + " 23:59:59";
+    QString startStr = startDate.toString("yyyy-MM-dd");
+    QString endStr = endDate.toString("yyyy-MM-dd");
 
     QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {startStr, endStr});
     QMap<QDate, double> map;

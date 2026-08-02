@@ -62,15 +62,23 @@ void NurseDashboardWidget::fillDashboardData() {
 void NurseDashboardWidget::buildSidebar() {
     m_btnOverview = new QPushButton("Tổng quan", m_sidebarFrame);
     m_btnLabQueue = new QPushButton("Phòng xét nghiệm", m_sidebarFrame);
+    QPushButton *btnLogout = new QPushButton("Đăng xuất", m_sidebarFrame);
 
     QString btnStyle =
-        "QPushButton { text-align: left; padding: 12px 20px; font-size: 15px; font-weight: 600; "
-        "border: none; border-radius: 6px; color: #42526E; background-color: transparent; } "
-        "QPushButton:hover { background-color: #EBECF0; color: #172B4D; } "
-        "QPushButton:checked { background-color: #DEEBFF; color: #0052CC; }";
+        "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; font-weight: 600; "
+        "border: none; border-radius: 6px; color: #475569; background-color: transparent; } "
+        "QPushButton:hover { background-color: #F1F5F9; color: #1E293B; } "
+        "QPushButton:checked { background-color: #EFF6FF; color: #2563EB; }";
 
     m_btnOverview->setStyleSheet(btnStyle);
     m_btnLabQueue->setStyleSheet(btnStyle);
+    
+    btnLogout->setCursor(Qt::PointingHandCursor);
+    btnLogout->setStyleSheet(
+        "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; font-weight: 600; "
+        "border: none; border-radius: 6px; color: #DC2626; background-color: transparent; } "
+        "QPushButton:hover { background-color: #FEE2E2; color: #991B1B; }"
+    );
 
     m_btnOverview->setCheckable(true);
     m_btnLabQueue->setCheckable(true);
@@ -79,6 +87,7 @@ void NurseDashboardWidget::buildSidebar() {
     m_sidebarLayout->addWidget(m_btnOverview);
     m_sidebarLayout->addWidget(m_btnLabQueue);
     m_sidebarLayout->addStretch();
+    m_sidebarLayout->addWidget(btnLogout);
 
     connect(m_btnOverview, &QPushButton::clicked, this, [this]() {
         m_btnOverview->setChecked(true);
@@ -93,12 +102,14 @@ void NurseDashboardWidget::buildSidebar() {
         m_stackedWidget->setCurrentIndex(1);
         updateQueueTable();
     });
+
+    connect(btnLogout, &QPushButton::clicked, this, &NurseDashboardWidget::logoutRequested);
 }
 
 void NurseDashboardWidget::buildOverviewPage() {
     m_overviewPage = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(m_overviewPage);
-    mainLayout->setContentsMargins(20, 20, 20, 20);
+    mainLayout->setContentsMargins(20, 20, 20, 28);
     mainLayout->setSpacing(20);
 
     // Title
@@ -159,7 +170,7 @@ void NurseDashboardWidget::buildOverviewPage() {
 void NurseDashboardWidget::buildLabQueuePage() {
     m_labQueuePage = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(m_labQueuePage);
-    mainLayout->setContentsMargins(20, 20, 20, 20);
+    mainLayout->setContentsMargins(20, 20, 20, 28);
     mainLayout->setSpacing(15);
 
     // Top Filter Bar Card

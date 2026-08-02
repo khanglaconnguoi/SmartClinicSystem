@@ -31,7 +31,7 @@ void ManagePatientsWidget::buildUI() {
     
     headerLayout->addStretch();
     
-    QPushButton* btnAddNew = new QPushButton("+ Thêm Bệnh nhân");
+    QPushButton* btnAddNew = new QPushButton("Thêm Bệnh nhân");
     btnAddNew->setCursor(Qt::PointingHandCursor);
     btnAddNew->setStyleSheet("QPushButton { background-color: #2563EB; color: white; border-radius: 6px; padding: 8px 16px; font-weight: bold; font-size: 14px; } QPushButton:hover { background-color: #1D4ED8; }");
     headerLayout->addWidget(btnAddNew);
@@ -48,10 +48,12 @@ void ManagePatientsWidget::buildUI() {
     m_tblPatients->setHorizontalHeaderLabels({"Mã BN", "Họ Tên", "Tuổi", "SĐT", "Loại", "Thao tác"});
     m_tblPatients->horizontalHeader()->setStretchLastSection(true);
     m_tblPatients->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblPatients->verticalHeader()->setDefaultSectionSize(46);
+    m_tblPatients->verticalHeader()->setVisible(false);
     m_tblPatients->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblPatients->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblPatients->setAlternatingRowColors(true);
-    m_tblPatients->setStyleSheet("QTableWidget { border: none; background-color: white; alternate-background-color: #F9FAFB; color: #111827; } QHeaderView::section { background-color: #F3F4F6; padding: 12px; font-weight: bold; border: none; border-bottom: 1px solid #E5E7EB; color: #111827; } QTableWidget::item { padding: 12px; border-bottom: 1px solid #E5E7EB; color: #111827; }");
+    m_tblPatients->setStyleSheet("QTableWidget { border: none; background-color: white; alternate-background-color: #F8FAFC; color: #0F172A; } QHeaderView::section { background-color: #F8FAFC; padding: 10px; font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; color: #1E293B; } QTableWidget::item { padding: 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A; }");
 
     cardLayout->addWidget(m_tblPatients);
     pageLayout->addWidget(tableCard);

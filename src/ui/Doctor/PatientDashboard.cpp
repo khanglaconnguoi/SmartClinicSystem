@@ -113,7 +113,7 @@ void PatientDashboardWidget::buildTopbar() {
 
   // --- Ẩn thanh search (bệnh nhân không cần search toàn hệ thống) ---
   if (m_searchInput) {
-    m_searchInput->setPlaceholderText("🔍 Tìm kiếm...");
+    m_searchInput->setPlaceholderText("Tìm kiếm...");
     m_searchInput->setFixedWidth(280);
   }
 

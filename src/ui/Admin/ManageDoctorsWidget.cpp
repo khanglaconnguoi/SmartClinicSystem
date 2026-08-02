@@ -41,13 +41,13 @@ void ManageDoctorsWidget::buildUI() {
 
   headerLayout->addStretch();
 
-  QPushButton *btnAddNew = new QPushButton("+ Thêm Bác sĩ", this);
+  QPushButton *btnAddNew = new QPushButton("Thêm Bác sĩ", this);
   btnAddNew->setCursor(Qt::PointingHandCursor);
   btnAddNew->setFixedSize(140, 40);
   btnAddNew->setStyleSheet(
-      "QPushButton { background-color: #4B94F2; color: white; font-size: 14px; "
+      "QPushButton { background-color: #2563EB; color: white; font-size: 14px; "
       "font-weight: bold; border-radius: 6px; border: none; }"
-      "QPushButton:hover { background-color: #398CBF; }");
+      "QPushButton:hover { background-color: #1D4ED8; }");
   headerLayout->addWidget(btnAddNew);
   pageLayout->addLayout(headerLayout);
 
@@ -62,16 +62,16 @@ void ManageDoctorsWidget::buildUI() {
   m_tblDoctors->horizontalHeader()->setStretchLastSection(true);
   m_tblDoctors->horizontalHeader()->setSectionResizeMode(1,
                                                          QHeaderView::Stretch);
-  m_tblDoctors->verticalHeader()->setDefaultSectionSize(50);
+  m_tblDoctors->verticalHeader()->setDefaultSectionSize(46);
   m_tblDoctors->verticalHeader()->setVisible(false);
   m_tblDoctors->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_tblDoctors->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_tblDoctors->setStyleSheet(
-      "QTableWidget { border: none; gridline-color: #EAEAEA; font-size: 13px; "
-      "background-color: white; }"
-      "QHeaderView::section { background-color: #F8FAFC; padding: 8px; "
-      "font-weight: bold; border: none; border-bottom: 1px solid #EAEAEA; "
-      "color: #111827; }");
+      "QTableWidget { border: none; gridline-color: #E2E8F0; font-size: 13px; "
+      "background-color: white; color: #0F172A; }"
+      "QHeaderView::section { background-color: #F8FAFC; padding: 10px; "
+      "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
+      "color: #1E293B; }");
 
   cardLayout->addWidget(m_tblDoctors);
   pageLayout->addWidget(tableCard);
@@ -144,22 +144,22 @@ void ManageDoctorsWidget::loadDoctorsList() {
     QPushButton *btnEdit = new QPushButton("Sửa");
     btnEdit->setCursor(Qt::PointingHandCursor);
     btnEdit->setStyleSheet(
-        "QPushButton { color: #4B94F2; border: 1px solid #4B94F2; padding: 4px "
-        "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-        "{ background-color: #EBF5FF; }");
+        "QPushButton { color: #2563EB; border: 1px solid #2563EB; padding: 6px "
+        "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+        "{ background-color: #EFF6FF; }");
 
     QPushButton *btnDeactivate = new QPushButton(doc->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
     btnDeactivate->setCursor(Qt::PointingHandCursor);
     if (doc->isActive()) {
         btnDeactivate->setStyleSheet(
-            "QPushButton { color: #D93025; border: 1px solid #D93025; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-            "{ background-color: #FCE8E6; }");
+            "QPushButton { color: #DC2626; border: 1px solid #DC2626; padding: 6px "
+            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "{ background-color: #FEE2E2; }");
     } else {
         btnDeactivate->setStyleSheet(
-            "QPushButton { color: #059669; border: 1px solid #059669; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-            "{ background-color: #D1FAE5; }");
+            "QPushButton { color: #22C55E; border: 1px solid #22C55E; padding: 6px "
+            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "{ background-color: #DCFCE7; }");
     }
 
     actionLayout->addWidget(btnEdit);

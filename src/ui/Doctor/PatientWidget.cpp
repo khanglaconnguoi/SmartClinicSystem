@@ -92,14 +92,20 @@ void PatientWidget::createListView() {
     toolbarLayout->setSpacing(12);
 
     m_searchBar = new QLineEdit(container);
-    m_searchBar->setPlaceholderText("🔍 Tìm kiếm tên, mã bệnh nhân, số điện thoại...");
+    m_searchBar->setPlaceholderText("Tìm kiếm tên, mã bệnh nhân, số điện thoại...");
     m_searchBar->setFixedWidth(380);
     m_searchBar->setStyleSheet(
         "QLineEdit { border: 1px solid #CBD5E1; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #0F172A; background-color: #FFFFFF; }"
-        "QLineEdit:focus { border: 1px solid #0284C7; background-color: #F0F9FF; }"
+        "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; }"
     );
 
+    QPushButton *btnRefresh = new QPushButton("Tải lại", container);
+    btnRefresh->setCursor(Qt::PointingHandCursor);
+    btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 6px 14px; border-radius: 6px; } QPushButton:hover { background-color: #DBEAFE; }");
+    connect(btnRefresh, &QPushButton::clicked, this, &PatientWidget::loadPatientsData);
+
     toolbarLayout->addWidget(m_searchBar);
+    toolbarLayout->addWidget(btnRefresh);
     toolbarLayout->addStretch();
     containerLayout->addLayout(toolbarLayout);
 
@@ -113,6 +119,7 @@ void PatientWidget::createListView() {
     m_patientTable->setFocusPolicy(Qt::NoFocus);
     m_patientTable->setCursor(Qt::PointingHandCursor);
     m_patientTable->verticalHeader()->setVisible(false);
+    m_patientTable->verticalHeader()->setDefaultSectionSize(46);
     
     m_patientTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_patientTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -120,7 +127,7 @@ void PatientWidget::createListView() {
     m_patientTable->setStyleSheet(
         "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; }"
         "QTableWidget::item { padding: 12px 8px; border-bottom: 1px solid #F1F5F9; }"
-        "QTableWidget::item:selected { background-color: #E0F2FE; color: #0369A1; font-weight: 500; }"
+        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
         "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }"
     );
 
@@ -346,18 +353,18 @@ void PatientWidget::createDetailView() {
         "QPushButton:hover { background-color: #F1F5F9; color: #0F172A; }"
         "QPushButton#activeMenuBtn { background-color: #E0F2FE; color: #0284C7; font-weight: bold; }";
 
-    m_btnInfo = new QPushButton("📄 Thông tin cá nhân", rightMenuContainer);
+    m_btnInfo = new QPushButton("Thông tin cá nhân", rightMenuContainer);
     m_btnInfo->setObjectName("activeMenuBtn");
     m_btnInfo->setStyleSheet(menuBtnStyle);
 
-    m_btnHistoryInfo = new QPushButton("⏳ Lịch sử khám bệnh", rightMenuContainer);
+    m_btnHistoryInfo = new QPushButton("Lịch sử khám bệnh", rightMenuContainer);
     m_btnHistoryInfo->setCursor(Qt::PointingHandCursor);
     m_btnHistoryInfo->setStyleSheet(
         "QPushButton { background-color: #0284C7; color: white; font-size: 13px; font-weight: bold; font-family: 'Segoe UI'; border: none; border-radius: 6px; padding: 12px 15px; text-align: center; }"
         "QPushButton:hover { background-color: #0369A1; }"
     );
 
-    m_btnBack = new QPushButton("⬅️ Quay lại danh sách", rightMenuContainer);
+    m_btnBack = new QPushButton("Quay lại danh sách", rightMenuContainer);
     m_btnBack->setCursor(Qt::PointingHandCursor);
     m_btnBack->setStyleSheet(
         "QPushButton { background-color: #FFFFFF; color: #475569; font-family: 'Segoe UI'; font-size: 13px; font-weight: bold; border: 1px solid #CBD5E1; border-radius: 6px; padding: 12px 15px; text-align: center; }"
@@ -433,7 +440,7 @@ void PatientWidget::loadPatientsData() {
         actLayout->setContentsMargins(4, 3, 4, 3);
         actLayout->setSpacing(6);
 
-        QPushButton* btnHist = new QPushButton("⏳ Xem Lịch Sử Khám", actWidget);
+        QPushButton* btnHist = new QPushButton("Xem Lịch Sử Khám", actWidget);
         btnHist->setCursor(Qt::PointingHandCursor);
         btnHist->setMinimumHeight(32);
         btnHist->setStyleSheet(

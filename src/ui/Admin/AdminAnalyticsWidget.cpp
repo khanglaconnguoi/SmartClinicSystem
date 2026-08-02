@@ -229,6 +229,11 @@ void AdminAnalyticsWidget::onPresetThisMonthClicked() {
     setPresetRange(startOfMonth, today);
 }
 
+void AdminAnalyticsWidget::showEvent(QShowEvent *event) {
+    QWidget::showEvent(event);
+    loadAnalyticsData();
+}
+
 void AdminAnalyticsWidget::onFilterClicked() {
     loadAnalyticsData();
 }

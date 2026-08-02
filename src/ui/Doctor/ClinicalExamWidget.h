@@ -16,6 +16,7 @@
 #include "service/PharmacyService.h"
 #include "service/PatientService.h"
 #include "service/AppointmentService.h"
+#include "service/ServiceRequestService.h"
 
 class ClinicalExamWidget : public QWidget {
     Q_OBJECT
@@ -24,13 +25,19 @@ public:
     explicit ClinicalExamWidget(std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr, QWidget* parent = nullptr);
     virtual ~ClinicalExamWidget() override = default;
 
-    void setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService);
+    void setServices(
+        std::shared_ptr<PharmacyService> pharmacyService, 
+        std::shared_ptr<PatientService> patientService, 
+        std::shared_ptr<AppointmentService> appointmentService,
+        std::shared_ptr<ServiceRequestService> serviceRequestService = nullptr
+    );
 
     // Hàm load thông tin bệnh nhân khi bác sĩ chọn khám
     void loadPatientInfo(int patientId, int appointmentId, const QString& name, const QString& id, const QString& time, const QString& specialty);
     void loadPatientInfo(const PatientDetailDTO& patient, int appointmentId, const QString& time = "", const QString& specialty = "");
     void clearExamForm();
     int currentAppointmentId() const { return m_currentAppointmentId; }
+    void loadLabResults();
 
 signals:
     // Tín hiệu yêu cầu quay lại màn hình Dashboard chính
@@ -42,6 +49,7 @@ signals:
 private slots:
     void onSaveClicked();
     void onFinishExamClicked();
+    void openLabRequestDialog();
     void validateTemperatureInput();
     void validateHeartRateInput();
     void validateWeightInput();
@@ -54,6 +62,7 @@ private:
     std::shared_ptr<PatientService> m_patientService;
     std::shared_ptr<AppointmentService> m_appointmentService;
     std::shared_ptr<MedicalRecordService> m_medicalRecordService;
+    std::shared_ptr<ServiceRequestService> m_serviceRequestService;
     int m_currentPatientId = 0;
     int m_currentAppointmentId = 0;
     int m_currentMedicalRecordId = 0;

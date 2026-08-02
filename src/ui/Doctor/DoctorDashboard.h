@@ -18,6 +18,7 @@
 #include "service/PatientService.h"
 #include "service/PharmacyService.h"
 #include "service/StaffService.h"
+#include "service/ServiceRequestService.h"
 #include "ui/BaseDashboard.h"
 #include "ui/Doctor/ClinicalExamWidget.h"
 #include "ui/Doctor/PatientWidget.h"
@@ -34,6 +35,7 @@ public:
         std::shared_ptr<AppointmentService> appointmentService = nullptr, 
         std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr, 
         std::shared_ptr<PharmacyService> pharmacyService = nullptr, 
+        std::shared_ptr<ServiceRequestService> serviceRequestService = nullptr,
         QWidget *parent = nullptr
     );
     virtual ~DoctorDashboardWidget() override = default;
@@ -45,6 +47,7 @@ private:
     std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     int m_currentExaminingRow = -1;
     std::shared_ptr<PharmacyService> m_pharmacyService = nullptr;
+    std::shared_ptr<ServiceRequestService> m_serviceRequestService = nullptr;
 
     QStackedWidget* m_stackedWidget = nullptr;
 
@@ -121,5 +124,6 @@ private:
     QList<ApptMeta> m_apptPageMeta;
     QTableWidget* m_appointmentsTable = nullptr;
     QTableWidget* m_patientTable = nullptr;
+    QDateEdit* m_apptDateFilter = nullptr;
     bool m_isExaminingFromTodayList = true;
 };

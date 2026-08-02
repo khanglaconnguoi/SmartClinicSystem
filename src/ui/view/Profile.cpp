@@ -33,8 +33,32 @@ ProfileWidget::ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
+    // Top Bar with Back Button
+    QFrame *topBar = new QFrame(this);
+    topBar->setStyleSheet("background-color: #FFFFFF; border-bottom: 1px solid #E2E8F0;");
+    QHBoxLayout *topBarLayout = new QHBoxLayout(topBar);
+    topBarLayout->setContentsMargins(24, 12, 24, 12);
+
+    QPushButton *btnBack = new QPushButton("Quay về", topBar);
+    btnBack->setCursor(Qt::PointingHandCursor);
+    btnBack->setStyleSheet(
+        "QPushButton { background-color: #EFF6FF; color: #2563EB; font-weight: bold; border: 1px solid #2563EB; border-radius: 6px; padding: 8px 18px; font-size: 13px; }"
+        "QPushButton:hover { background-color: #DBEAFE; }"
+    );
+    connect(btnBack, &QPushButton::clicked, this, &QDialog::reject);
+
+    QLabel *lblTopTitle = new QLabel("THÔNG TIN HỒ SƠ CÁ NHÂN", topBar);
+    lblTopTitle->setStyleSheet("font-size: 18px; font-weight: bold; color: #1E293B;");
+
+    topBarLayout->addWidget(btnBack);
+    topBarLayout->addSpacing(16);
+    topBarLayout->addWidget(lblTopTitle);
+    topBarLayout->addStretch();
+
+    mainLayout->addWidget(topBar);
+
     QHBoxLayout *contentLayout = new QHBoxLayout();
-    contentLayout->setContentsMargins(40, 30, 40, 30);
+    contentLayout->setContentsMargins(40, 20, 40, 30);
     contentLayout->setSpacing(35);
 
     QWidget *leftPanel = createLeftPanel();

@@ -2,7 +2,6 @@
 #include "../../dto/StaffDTOs.h"
 #include "../utils/UIValidationUtils.h"
 #include "../../service/Validation.h"
-#include "../../model/SystemUser.h"
 #include "../../model/CommonEnums.h"
 #include <QComboBox>
 #include <QDate>
@@ -17,6 +16,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSpinBox>
 #include <QApplication>
 #include <QScreen>
 #include <QVBoxLayout>
@@ -26,11 +26,11 @@ PharmacistRegistrationDialog::PharmacistRegistrationDialog(
     : QDialog(parent), m_staffService(staffService), m_editStaffId(-1) {
   setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
   setWindowTitle("Thêm Dược sĩ");
-  setMinimumWidth(650);
+  setMinimumWidth(700);
   const QRect avail = QApplication::primaryScreen()->availableGeometry();
-  const int dlgW = qMin(700, avail.width() - 40);
-  const int dlgH = qMin(780, avail.height() - 40);
-  setMinimumHeight(qMin(580, dlgH));
+  const int dlgW = qMin(720, avail.width() - 40);
+  const int dlgH = qMin(820, avail.height() - 40);
+  setMinimumHeight(qMin(600, dlgH));
   resize(dlgW, dlgH);
   setupUi();
 }
@@ -41,12 +41,12 @@ void PharmacistRegistrationDialog::setupUi() {
                       "QLabel { color: #333333; }");
 
   QVBoxLayout *mainLayout = new QVBoxLayout(this);
-  mainLayout->setContentsMargins(20, 20, 20, 20);
+  mainLayout->setContentsMargins(20, 20, 20, 25);
 
   QFrame *container = new QFrame(this);
   container->setObjectName("mainContainer");
   container->setStyleSheet(
-      "#mainContainer { background-color: #FFFFFF; border-radius: 12px; }");
+      "#mainContainer { background-color: #FFFFFF; border-radius: 14px; }");
 
   QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(this);
   shadow->setBlurRadius(20);
@@ -58,6 +58,7 @@ void PharmacistRegistrationDialog::setupUi() {
   containerLayout->setContentsMargins(0, 0, 0, 0);
   containerLayout->setSpacing(0);
 
+  // Header Frame
   QFrame *headerFrame = new QFrame(container);
   headerFrame->setStyleSheet(
       "background-color: transparent; border-bottom: 1px solid #EAEAEA;");
@@ -66,12 +67,13 @@ void PharmacistRegistrationDialog::setupUi() {
 
   QLabel *lblPageTitle = new QLabel("THÔNG TIN DƯỢC SĨ", headerFrame);
   lblPageTitle->setStyleSheet(
-      "font-size: 20px; font-weight: bold; color: #111827;");
+      "font-size: 22px; font-weight: bold; color: #1F2937;");
   lblPageTitle->setAlignment(Qt::AlignCenter);
   headerLayout->addWidget(lblPageTitle);
 
   containerLayout->addWidget(headerFrame);
 
+  // Scroll Area
   QScrollArea *scrollArea = new QScrollArea(container);
   scrollArea->setWidgetResizable(true);
   scrollArea->setFrameShape(QFrame::NoFrame);
@@ -79,131 +81,143 @@ void PharmacistRegistrationDialog::setupUi() {
       "QScrollArea { background-color: transparent; border: none; }");
 
   QFrame *formCard = new QFrame(scrollArea);
-  formCard->setStyleSheet("QFrame { background-color: #FFFFFF; border: none; } "
-                          "QLabel { color: #333333; font-weight: bold; }");
+  formCard->setStyleSheet(
+      "QFrame { background-color: #FFFFFF; border: none; } "
+      "QLabel { color: #374151; font-size: 13px; font-weight: 600; }");
 
   QVBoxLayout *cardLayout = new QVBoxLayout(formCard);
-  cardLayout->setContentsMargins(24, 24, 24, 24);
-  cardLayout->setSpacing(20);
+  cardLayout->setContentsMargins(24, 20, 24, 24);
+  cardLayout->setSpacing(18);
 
   QString groupBoxStyle =
       "QGroupBox { "
-      "border: 1px solid #D0D0D0; border-radius: 6px; "
-      "margin-top: 15px; font-weight: bold; color: #333333; background-color: "
-      "transparent; } "
+      "border: 1px solid #E5E7EB; border-radius: 10px; "
+      "margin-top: 16px; padding-top: 8px; font-weight: 700; color: #374151; "
+      "background-color: #FCFDFF; } "
       "QGroupBox::title { "
       "subcontrol-origin: margin; subcontrol-position: top left; "
-      "padding: 0 5px; color: #1A73E8; }";
+      "left: 12px; padding: 0 8px; color: #2563EB; font-size: 14px; }";
 
   QString extraInputStyle =
       "QLineEdit, QComboBox, QDateEdit, QSpinBox { "
-      "border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; "
-      "font-size: 13px; color: #111827; background: #FFFFFF; min-height: 30px; "
+      "border: 1px solid #D1D5DB; border-radius: 8px; padding: 8px 12px; "
+      "font-size: 13px; color: #111827; background: #FFFFFF; min-height: 36px; "
       "} "
       "QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QSpinBox:focus { "
-      "border: 1px solid #4B94F2; } "
+      "border: 1px solid #2563EB; background-color: #F8FBFF; } "
       "QComboBox QAbstractItemView { "
-      "background-color: #FFFFFF; color: #111827; selection-background-color: #4B94F2; selection-color: white; }";
+      "background-color: #FFFFFF; color: #111827; selection-background-color: "
+      "#2563EB; selection-color: white; }";
 
-  //--- Group 1: Thông tin Cá nhân ---
-  QGroupBox *gbPersonalInfo = new QGroupBox("Thông tin Cá nhân", formCard);
+  // --- Nhóm 1: Thông tin cá nhân ---
+  QGroupBox *gbPersonalInfo = new QGroupBox("Thông tin cá nhân", formCard);
   gbPersonalInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form1 = new QFormLayout(gbPersonalInfo);
-  form1->setContentsMargins(15, 25, 15, 15);
+  form1->setContentsMargins(16, 18, 16, 16);
   form1->setSpacing(12);
+  form1->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
   m_avatarPicker = new AvatarPickerWidget(gbPersonalInfo);
   form1->addRow("Ảnh đại diện:", m_avatarPicker);
 
   m_txtFullName = new QLineEdit(gbPersonalInfo);
   m_txtFullName->setStyleSheet(extraInputStyle);
+  m_txtFullName->setPlaceholderText("VD: Nguyễn Văn B");
   form1->addRow("Họ và tên (*):", m_txtFullName);
 
-  m_txtCitizenId = new QLineEdit(gbPersonalInfo);
-  m_txtCitizenId->setStyleSheet(extraInputStyle);
-  form1->addRow("Số CMND/CCCD (*):", m_txtCitizenId);
-
-  m_cbGender = new QComboBox(gbPersonalInfo);
-  for (const auto& pair : GenderText::getList()) m_cbGender->addItem(pair.second, pair.first);
-  m_cbGender->setStyleSheet(extraInputStyle);
-  form1->addRow("Giới tính (*):", m_cbGender);
-
-  m_dtDateOfBirth = new QDateEdit(QDate::currentDate().addYears(-25), gbPersonalInfo);
+  m_dtDateOfBirth = new QDateEdit(QDate(1990, 1, 1), gbPersonalInfo);
   m_dtDateOfBirth->setCalendarPopup(true);
   m_dtDateOfBirth->setDisplayFormat("dd/MM/yyyy");
   m_dtDateOfBirth->setStyleSheet(extraInputStyle);
   form1->addRow("Ngày sinh (*):", m_dtDateOfBirth);
 
+  m_cbGender = new QComboBox(gbPersonalInfo);
+  m_cbGender->setStyleSheet(extraInputStyle);
+  for (const auto& pair : GenderText::getList()) m_cbGender->addItem(pair.second, pair.first);
+  form1->addRow("Giới tính (*):", m_cbGender);
+
+  m_txtCitizenId = new QLineEdit(gbPersonalInfo);
+  m_txtCitizenId->setStyleSheet(extraInputStyle);
+  m_txtCitizenId->setPlaceholderText("Nhập 12 chữ số hợp lệ");
+  form1->addRow("Số CMND/CCCD (*):", m_txtCitizenId);
+
+  m_txtPhone = new QLineEdit(gbPersonalInfo);
+  m_txtPhone->setStyleSheet(extraInputStyle);
+  m_txtPhone->setPlaceholderText("VD: 0901234567");
+  form1->addRow("Số điện thoại (*):", m_txtPhone);
+
+  m_txtEmail = new QLineEdit(gbPersonalInfo);
+  m_txtEmail->setStyleSheet(extraInputStyle);
+  m_txtEmail->setPlaceholderText("VD: pharmacist@example.com");
+  form1->addRow("Email (*):", m_txtEmail);
+
+  m_txtAddress = new QLineEdit(gbPersonalInfo);
+  m_txtAddress->setStyleSheet(extraInputStyle);
+  m_txtAddress->setPlaceholderText("VD: TP. Hồ Chí Minh");
+  form1->addRow("Địa chỉ (*):", m_txtAddress);
+
   cardLayout->addWidget(gbPersonalInfo);
 
-  //--- Group 2: Liên hệ ---
-  QGroupBox *gbContactInfo = new QGroupBox("Thông tin Liên hệ", formCard);
-  gbContactInfo->setStyleSheet(groupBoxStyle);
-  QFormLayout *form2 = new QFormLayout(gbContactInfo);
-  form2->setContentsMargins(15, 25, 15, 15);
+  // --- Nhóm 2: Thông tin công việc ---
+  QGroupBox *gbWorkInfo = new QGroupBox("Thông tin công việc", formCard);
+  gbWorkInfo->setStyleSheet(groupBoxStyle);
+  QFormLayout *form2 = new QFormLayout(gbWorkInfo);
+  form2->setContentsMargins(16, 18, 16, 16);
   form2->setSpacing(12);
+  form2->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-  m_txtPhone = new QLineEdit(gbContactInfo);
-  m_txtPhone->setStyleSheet(extraInputStyle);
-  form2->addRow("Số điện thoại (*):", m_txtPhone);
-
-  m_txtEmail = new QLineEdit(gbContactInfo);
-  m_txtEmail->setStyleSheet(extraInputStyle);
-  form2->addRow("Email (*):", m_txtEmail);
-
-  m_txtAddress = new QLineEdit(gbContactInfo);
-  m_txtAddress->setStyleSheet(extraInputStyle);
-  form2->addRow("Địa chỉ (*):", m_txtAddress);
-
-  cardLayout->addWidget(gbContactInfo);
-
-  //--- Group 3: Thông tin Công việc ---
-  QGroupBox *gbJobInfo = new QGroupBox("Thông tin Công việc", formCard);
-  gbJobInfo->setStyleSheet(groupBoxStyle);
-  QFormLayout *form3 = new QFormLayout(gbJobInfo);
-  form3->setContentsMargins(15, 25, 15, 15);
-  form3->setSpacing(12);
-
-  m_cbDepartment = new QComboBox(gbJobInfo);
-  for (const auto& pair : DepartmentText::getList()) m_cbDepartment->addItem(pair.second, pair.first);
+  m_cbDepartment = new QComboBox(gbWorkInfo);
   m_cbDepartment->setStyleSheet(extraInputStyle);
-  form3->addRow("Phòng ban (*):", m_cbDepartment);
+  for (const auto& pair : DepartmentText::getList()) m_cbDepartment->addItem(pair.second, pair.first);
+  form2->addRow("Phòng ban (*):", m_cbDepartment);
 
-  m_dtHireDate = new QDateEdit(QDate::currentDate(), gbJobInfo);
+  m_cbShift = new QComboBox(gbWorkInfo);
+  m_cbShift->setStyleSheet(extraInputStyle);
+  for (const auto& pair : ShiftText::getList()) m_cbShift->addItem(pair.second, pair.first);
+  form2->addRow("Ca làm việc (*):", m_cbShift);
+
+  m_dtHireDate = new QDateEdit(QDate::currentDate(), gbWorkInfo);
   m_dtHireDate->setCalendarPopup(true);
   m_dtHireDate->setDisplayFormat("dd/MM/yyyy");
   m_dtHireDate->setStyleSheet(extraInputStyle);
-  form3->addRow("Ngày vào làm (*):", m_dtHireDate);
+  form2->addRow("Ngày vào làm (*):", m_dtHireDate);
 
-  m_cbShift = new QComboBox(gbJobInfo);
-  for (const auto& pair : ShiftText::getList()) m_cbShift->addItem(pair.second, pair.first);
-  m_cbShift->setStyleSheet(extraInputStyle);
-  form3->addRow("Ca làm việc (*):", m_cbShift);
-  
-  m_txtLicenseNumber = new QLineEdit(gbJobInfo);
+  cardLayout->addWidget(gbWorkInfo);
+
+  // --- Nhóm 3: Thông tin chuyên môn ---
+  QGroupBox *gbPharmacyInfo = new QGroupBox("Thông tin chuyên môn Dược", formCard);
+  gbPharmacyInfo->setStyleSheet(groupBoxStyle);
+  QFormLayout *form3 = new QFormLayout(gbPharmacyInfo);
+  form3->setContentsMargins(16, 18, 16, 16);
+  form3->setSpacing(12);
+  form3->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+  m_txtLicenseNumber = new QLineEdit(gbPharmacyInfo);
   m_txtLicenseNumber->setStyleSheet(extraInputStyle);
-  form3->addRow("Số CCHN (*):", m_txtLicenseNumber);
+  m_txtLicenseNumber->setPlaceholderText("VD: DSY-12345");
+  form3->addRow("Số chứng chỉ hành nghề (*):", m_txtLicenseNumber);
 
-  m_txtPharmacySection = new QLineEdit(gbJobInfo);
+  m_txtPharmacySection = new QLineEdit(gbPharmacyInfo);
   m_txtPharmacySection->setStyleSheet(extraInputStyle);
-  form3->addRow("Khu vực nhà thuốc (*):", m_txtPharmacySection);
+  m_txtPharmacySection->setPlaceholderText("VD: Kho thuốc ngoại trú, Kho dược chính");
+  form3->addRow("Khu vực phụ trách (*):", m_txtPharmacySection);
 
-  m_sbExperienceYears = new QSpinBox(gbJobInfo);
+  m_sbExperienceYears = new QSpinBox(gbPharmacyInfo);
   m_sbExperienceYears->setStyleSheet(extraInputStyle);
   m_sbExperienceYears->setRange(0, 50);
   form3->addRow("Số năm kinh nghiệm (*):", m_sbExperienceYears);
 
-  cardLayout->addWidget(gbJobInfo);
+  cardLayout->addWidget(gbPharmacyInfo);
 
   scrollArea->setWidget(formCard);
   containerLayout->addWidget(scrollArea);
 
-  //--- Nút Lưu và Trở lại ---
+  // Bottom Buttons
   QFrame *bottomFrame = new QFrame(container);
   bottomFrame->setStyleSheet(
-      "background-color: transparent; border-top: 1px solid #EAEAEA;");
+      "background-color: transparent; border-top: 1px solid #E5E7EB;");
   QHBoxLayout *btnLayout = new QHBoxLayout(bottomFrame);
-  btnLayout->setContentsMargins(20, 15, 20, 15);
+  btnLayout->setContentsMargins(20, 15, 20, 20);
 
   btnLayout->addStretch();
   m_btnCancel = new QPushButton("Hủy", bottomFrame);
@@ -211,8 +225,8 @@ void PharmacistRegistrationDialog::setupUi() {
   m_btnCancel->setFixedSize(100, 40);
   m_btnCancel->setStyleSheet(
       "QPushButton { background-color: #EAEAEA; color: "
-      "#333; font-size: 14px; font-weight: bold; "
-      "border-radius: 4px; border: none; }"
+      "#333; font-size: 13px; font-weight: 600; "
+      "border-radius: 8px; border: none; padding: 0 10px; }"
       "QPushButton:hover { background-color: #D6D6D6; }");
   btnLayout->addWidget(m_btnCancel);
 
@@ -220,9 +234,9 @@ void PharmacistRegistrationDialog::setupUi() {
   m_btnSave->setCursor(Qt::PointingHandCursor);
   m_btnSave->setFixedSize(140, 40);
   m_btnSave->setStyleSheet(
-      "QPushButton { background-color: #34A853; color: white; font-size: 14px; "
-      "font-weight: bold; border-radius: 4px; border: none; }"
-      "QPushButton:hover { background-color: #2C8E46; }");
+      "QPushButton { background-color: #2563EB; color: white; font-size: 13px; "
+      "font-weight: 600; border-radius: 8px; border: none; padding: 0 10px; }"
+      "QPushButton:hover { background-color: #1D4ED8; }");
   btnLayout->addWidget(m_btnSave);
 
   containerLayout->addWidget(bottomFrame);
@@ -232,7 +246,7 @@ void PharmacistRegistrationDialog::setupUi() {
           &PharmacistRegistrationDialog::handleSave);
   connect(m_btnCancel, &QPushButton::clicked, this, &QDialog::reject);
 
-  // --- UI Validation (Step 1 & 2) ---
+  // UI Validation
   UIValidationUtils::attachPrimitiveValidators(m_txtCitizenId, m_txtPhone);
 
   connect(m_txtPhone, &QLineEdit::editingFinished, this, [this]() {
@@ -283,7 +297,7 @@ void PharmacistRegistrationDialog::loadPharmacistData(PharmacistProfileDTO *phar
   m_dtHireDate->setReadOnly(true);
 
   m_cbShift->setCurrentText(ShiftText::toVi(pharmacist->shift));
-  
+
   m_txtLicenseNumber->setText(pharmacist->licenseNumber);
   m_txtPharmacySection->setText(pharmacist->pharmacySection);
   m_sbExperienceYears->setValue(pharmacist->experienceYears);
@@ -309,19 +323,12 @@ void PharmacistRegistrationDialog::handleSave() {
 
   QString gender = GenderText::toEn(m_cbGender->currentText());
   QDate dob = m_dtDateOfBirth->date();
-
   QString shift = ShiftText::toEn(m_cbShift->currentText());
   int departmentId = m_cbDepartment->currentText().split(" - ").first().toInt();
 
   QString licenseNumber = m_txtLicenseNumber->text().trimmed();
   QString pharmacySection = m_txtPharmacySection->text().trimmed();
   int experienceYears = m_sbExperienceYears->value();
-
-  if (licenseNumber.isEmpty()) {
-    QMessageBox::warning(this, "Thiếu thông tin",
-                         "Vui lòng nhập số chứng chỉ hành nghề.");
-    return;
-  }
 
   QPixmap avatar = m_avatarPicker->getAvatarPixmap();
 
@@ -336,7 +343,6 @@ void PharmacistRegistrationDialog::handleSave() {
   dto.address = address;
   dto.departmentId = departmentId;
   dto.shift = shift;
-  
   dto.licenseNumber = licenseNumber;
   dto.pharmacySection = pharmacySection;
   dto.experienceYears = experienceYears;
@@ -348,18 +354,17 @@ void PharmacistRegistrationDialog::handleSave() {
     if (errorMsg.isEmpty()) {
       QMessageBox msgBox(this);
       msgBox.setWindowTitle("Thành công");
-      msgBox.setText(
-          QString("Tạo tài khoản Dược sĩ thành công!\nMã nhân viên: %1\nMật khẩu: %2")
-              .arg(result.staffCode)
-              .arg(result.plainPassword));
+      msgBox.setText(QString("Tạo tài khoản Dược sĩ thành công!\nMã nhân viên: %1\nMật khẩu: %2")
+                     .arg(result.staffCode)
+                     .arg(result.plainPassword));
       msgBox.setIcon(QMessageBox::Information);
       msgBox.setStyleSheet(
           "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
           "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
-          "QPushButton { background-color: #34A853; color: white; "
-          "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
-          "6px; border: none; font-size: 14px; }"
-          "QPushButton:hover { background-color: #2C8E46; }");
+          "QPushButton { background-color: #2563EB; color: white; "
+          "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: 6px; border: none; font-size: 14px; }"
+          "QPushButton:hover { background-color: #1D4ED8; }"
+      );
       msgBox.exec();
       accept();
       return;
@@ -374,10 +379,10 @@ void PharmacistRegistrationDialog::handleSave() {
       msgBox.setStyleSheet(
           "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
           "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
-          "QPushButton { background-color: #34A853; color: white; "
-          "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
-          "6px; border: none; font-size: 14px; }"
-          "QPushButton:hover { background-color: #2C8E46; }");
+          "QPushButton { background-color: #2563EB; color: white; "
+          "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: 6px; border: none; font-size: 14px; }"
+          "QPushButton:hover { background-color: #1D4ED8; }"
+      );
       msgBox.exec();
       accept();
       return;
@@ -395,7 +400,7 @@ void PharmacistRegistrationDialog::handleSave() {
         "QPushButton { background-color: #EF4444; color: white; "
         "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
         "6px; border: none; font-size: 14px; }"
-        "QPushButton:hover { background-color: #DC2828; }");
+        "QPushButton:hover { background-color: #DC2626; }");
     msgBox.exec();
     return;
   }

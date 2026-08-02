@@ -34,10 +34,10 @@ void BaseDashboardWidget::setupSidebarFrame() {
     m_sidebarFrame->setFixedWidth(240); 
     
     m_sidebarFrame->setStyleSheet(
-        "QFrame#Sidebar { background-color: #FFFFFF; border-right: 1px solid #EAEAEA; }"
-        "QFrame#Sidebar QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; border: none; border-radius: 0px; color: #5F6368; background: transparent; font-weight: 500; }"
-        "QFrame#Sidebar QPushButton:hover { background-color: #F1F3F4; color: #202124; }"
-        "QFrame#Sidebar QPushButton#activeBtn, QFrame#Sidebar QPushButton#activeMenu, QFrame#Sidebar QPushButton:checked { background-color: #E8F0FE; color: #4B94F2; font-weight: bold; border-left: 4px solid #4B94F2; }"
+        "QFrame#Sidebar { background-color: #FFFFFF; border-right: 1px solid #E2E8F0; }"
+        "QFrame#Sidebar QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; border: none; border-radius: 8px; color: #475569; background: transparent; font-weight: 600; }"
+        "QFrame#Sidebar QPushButton:hover { background-color: #F1F5F9; color: #1E293B; }"
+        "QFrame#Sidebar QPushButton#activeBtn, QFrame#Sidebar QPushButton#activeMenu, QFrame#Sidebar QPushButton:checked { background-color: #EFF6FF; color: #2563EB; font-weight: bold; border-left: 4px solid #2563EB; }"
     );
 
     m_sidebarLayout = new QVBoxLayout(m_sidebarFrame);
@@ -45,7 +45,7 @@ void BaseDashboardWidget::setupSidebarFrame() {
     m_sidebarLayout->setSpacing(10);
 
     m_logoLabel = new QLabel("Nova Care Clinic", m_sidebarFrame);
-    m_logoLabel->setStyleSheet("font-size: 20px; font-weight: bold; color: #4B94F2; margin-bottom: 20px;");
+    m_logoLabel->setStyleSheet("font-size: 20px; font-weight: bold; color: #2563EB; margin-bottom: 20px;");
     m_sidebarLayout->addWidget(m_logoLabel);
 
     m_globalLayout->addWidget(m_sidebarFrame);
@@ -56,15 +56,15 @@ void BaseDashboardWidget::setupMainContentFrame() {
 
     m_mainContentWidget = new QWidget(this);
     m_mainContentLayout = new QVBoxLayout(m_mainContentWidget);
-    m_mainContentLayout->setContentsMargins(30, 25, 30, 25);
+    m_mainContentLayout->setContentsMargins(30, 25, 30, 28);
     m_mainContentLayout->setSpacing(25);
 
     QHBoxLayout* topbarLayout = new QHBoxLayout();
 
     m_searchInput = new QLineEdit(m_mainContentWidget);
-    m_searchInput->setPlaceholderText("🔍 Search for patients, doctors and etc...");
+    m_searchInput->setPlaceholderText("Nhập từ khóa tìm kiếm (bệnh nhân, bác sĩ...)...");
     m_searchInput->setFixedWidth(350);
-    m_searchInput->setStyleSheet("padding: 10px 15px; border: 1px solid #DADCE0; border-radius: 8px; background-color: #FFFFFF; font-size: 13px; color: #333333;");
+    m_searchInput->setStyleSheet("padding: 10px 15px; border: 1px solid #CBD5E1; border-radius: 8px; background-color: #FFFFFF; font-size: 13px; color: #0F172A;");
     
     QHBoxLayout* userInfoLayout = new QHBoxLayout();
     userInfoLayout->setSpacing(10); 
@@ -72,7 +72,7 @@ void BaseDashboardWidget::setupMainContentFrame() {
     m_docNameLabel = new ClickableLabel(m_mainContentWidget);
     m_docNameLabel->setText(m_currentUser ? m_currentUser->getFullName() : "Loading...");
     m_docNameLabel->setCursor(Qt::PointingHandCursor);
-    m_docNameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #3C4043; font-family: 'Arial';");
+    m_docNameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #1E293B; font-family: 'Arial';");
 
     m_docAvatarBtn = new QPushButton(m_mainContentWidget);
     m_docAvatarBtn->setFixedSize(36, 36);
@@ -83,9 +83,9 @@ void BaseDashboardWidget::setupMainContentFrame() {
     }
     m_docAvatarBtn->setStyleSheet(
         "QPushButton { "
-        "   background-color: #E8F0FE; "
-        "   color: #4B94F2; "
-        "   border: none; "
+        "   background-color: #EFF6FF; "
+        "   color: #2563EB; "
+        "   border: 1px solid #DBEAFE; "
         "   border-radius: 18px; "
         "   font-size: 16px; "
         "   font-weight: bold; "

@@ -1,5 +1,6 @@
 #include "CreatePrescriptionDialog.h"
 #include "service/PharmacyService.h"
+#include "service/PatientService.h"
 #include "service/UserSession.h"
 #include "../utils/UIValidationUtils.h"
 #include "../../service/Validation.h"
@@ -14,39 +15,127 @@
 #include <QTextDocument>
 #include <QPdfWriter>
 #include <QPainter>
+#include <QRegularExpressionValidator>
 
-CreatePrescriptionDialog::CreatePrescriptionDialog(std::shared_ptr<PharmacyService> pharmacyService, QWidget *parent)
-    : QDialog(parent), m_pharmacyService(pharmacyService) {
+CreatePrescriptionDialog::CreatePrescriptionDialog(std::shared_ptr<PharmacyService> pharmacyService,
+                                                   std::shared_ptr<PatientService> patientService,
+                                                   int patientId,
+                                                   QWidget *parent)
+    : QDialog(parent), m_pharmacyService(pharmacyService), m_patientService(patientService), m_patientId(patientId) {
     setWindowTitle(QString::fromUtf8("Tạo Đơn Thuốc Mới"));
-    resize(900, 600);
+    resize(1200, 700);
 
     setupUI();
     setupStyleSheets();
+    updateSearchResults();
 }
 
 void CreatePrescriptionDialog::setPharmacyService(std::shared_ptr<PharmacyService> pharmacyService) {
     m_pharmacyService = pharmacyService;
 }
 
-void CreatePrescriptionDialog::setupUI() {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setSpacing(15);
-    mainLayout->setContentsMargins(20, 20, 20, 20);
+void CreatePrescriptionDialog::setPatientService(std::shared_ptr<PatientService> patientService, int patientId) {
+    m_patientService = patientService;
+    m_patientId = patientId;
+}
 
-    QLabel *lblTitle = new QLabel(QString::fromUtf8("TẠO ĐƠN THUỐC MỚI"), this);
+void CreatePrescriptionDialog::setupUI() {
+    QHBoxLayout *mainLayout = new QHBoxLayout(this);
+    mainLayout->setSpacing(15);
+    mainLayout->setContentsMargins(15, 15, 15, 15);
+
+    // =========================================================================
+    // LEFT PANEL: MEDICATION SEARCH
+    // =========================================================================
+    QWidget *leftPanel = new QWidget(this);
+    QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(10);
+
+    QLabel *lblSearchTitle = new QLabel(QString::fromUtf8("TRA CỨU BIỆT DƯỢC / HOẠT CHẤT"), this);
+    lblSearchTitle->setObjectName("lblDetail");
+    leftLayout->addWidget(lblSearchTitle);
+
+    QHBoxLayout *searchBarLayout = new QHBoxLayout();
+    txtSearchKeyword = new QLineEdit(this);
+    txtSearchKeyword->setPlaceholderText(QString::fromUtf8("Nhập tên thuốc hoặc hoạt chất..."));
+    btnSearch = new QPushButton(QString::fromUtf8("Tìm kiếm"), this);
+    btnSearch->setObjectName("btnSearch");
+    btnSearch->setFixedWidth(100);
+    searchBarLayout->addWidget(txtSearchKeyword);
+    searchBarLayout->addWidget(btnSearch);
+    leftLayout->addLayout(searchBarLayout);
+
+    tblSearchResults = new QTableWidget(0, 5, this);
+    tblSearchResults->setHorizontalHeaderLabels(QStringList{
+        QString::fromUtf8("Tên Thuốc"),
+        QString::fromUtf8("Hoạt Chất"),
+        QString::fromUtf8("Đơn vị"),
+        QString::fromUtf8("Đơn Giá"),
+        QString::fromUtf8("Tồn Kho")
+    });
+    tblSearchResults->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    tblSearchResults->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    tblSearchResults->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    tblSearchResults->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    tblSearchResults->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+    tblSearchResults->setSelectionBehavior(QAbstractItemView::SelectRows);
+    tblSearchResults->setSelectionMode(QAbstractItemView::SingleSelection);
+    tblSearchResults->verticalHeader()->setVisible(false);
+    leftLayout->addWidget(tblSearchResults);
+
+    QHBoxLayout *paginationLayout = new QHBoxLayout();
+    btnPrevPage = new QPushButton(QString::fromUtf8("◀ Trang trước"), this);
+    btnPrevPage->setObjectName("btnPagination");
+    btnPrevPage->setFixedWidth(110);
+    lblPageIndicator = new QLabel(QString::fromUtf8("Trang 1/1"), this);
+    lblPageIndicator->setAlignment(Qt::AlignCenter);
+    btnNextPage = new QPushButton(QString::fromUtf8("Trang sau ▶"), this);
+    btnNextPage->setObjectName("btnPagination");
+    btnNextPage->setFixedWidth(110);
+    paginationLayout->addWidget(btnPrevPage);
+    paginationLayout->addWidget(lblPageIndicator, 1);
+    paginationLayout->addWidget(btnNextPage);
+    leftLayout->addLayout(paginationLayout);
+
+    // Selected Info Area
+    QFrame *detailFrame = new QFrame(this);
+    detailFrame->setObjectName("detailFrame");
+    detailFrame->setFrameShape(QFrame::StyledPanel);
+    QVBoxLayout *detailLayout = new QVBoxLayout(detailFrame);
+    detailLayout->setContentsMargins(10, 10, 10, 10);
+    lblMedicationDetails = new QLabel(this);
+    lblMedicationDetails->setWordWrap(true);
+    lblMedicationDetails->setText(QString::fromUtf8("<i>Chọn một loại thuốc từ bảng tìm kiếm để xem chi tiết.</i>"));
+    detailLayout->addWidget(lblMedicationDetails);
+    leftLayout->addWidget(detailFrame);
+
+    btnAddSelected = new QPushButton(QString::fromUtf8("Thêm Vào Đơn Thuốc"), this);
+    btnAddSelected->setObjectName("btnSave"); 
+    btnAddSelected->setFixedHeight(38);
+    btnAddSelected->setEnabled(false);
+    leftLayout->addWidget(btnAddSelected);
+
+    // =========================================================================
+    // RIGHT PANEL: PRESCRIPTION DETAILS
+    // =========================================================================
+    QWidget *rightPanel = new QWidget(this);
+    QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(10);
+
+    QLabel *lblTitle = new QLabel(QString::fromUtf8("ĐƠN THUỐC CỦA BỆNH NHÂN"), this);
     lblTitle->setObjectName("dialogTitle");
     lblTitle->setAlignment(Qt::AlignCenter);
-    mainLayout->addWidget(lblTitle);
+    rightLayout->addWidget(lblTitle);
 
     QHBoxLayout *topInfoLayout = new QHBoxLayout();
-    topInfoLayout->setSpacing(20);
+    topInfoLayout->setSpacing(10);
 
     txtRecordId = new QLineEdit(this);
     txtRecordId->setReadOnly(true);
-
     txtDoctorId = new QLineEdit(this);
     txtDoctorId->setReadOnly(true);
-
     cboDoctorName = new QComboBox(this);
 
     QLabel *lblRecord = new QLabel(QString::fromUtf8("Mã Bệnh Án:"), this);
@@ -59,23 +148,20 @@ void CreatePrescriptionDialog::setupUI() {
     topInfoLayout->addWidget(txtDoctorId, 1);
     topInfoLayout->addWidget(lblDocName);
     topInfoLayout->addWidget(cboDoctorName, 2);
-
-    mainLayout->addLayout(topInfoLayout);
+    rightLayout->addLayout(topInfoLayout);
 
     QHBoxLayout *notesLayout = new QHBoxLayout();
     QLabel *lblNotes = new QLabel(QString::fromUtf8("Ghi Chú Chung:"), this);
-
     txtGeneralNotes = new QTextEdit(this);
     txtGeneralNotes->setFixedHeight(45);
     txtGeneralNotes->setPlaceholderText(QString::fromUtf8("Nhập ghi chú chung cho đơn thuốc (nếu có)..."));
-
     notesLayout->addWidget(lblNotes);
     notesLayout->addWidget(txtGeneralNotes);
-    mainLayout->addLayout(notesLayout);
+    rightLayout->addLayout(notesLayout);
 
-    QLabel *lblDetail = new QLabel(QString::fromUtf8("Chi Tiết Đơn Thuốc"), this);
+    QLabel *lblDetail = new QLabel(QString::fromUtf8("Chi Tiết Toa Thuốc"), this);
     lblDetail->setObjectName("lblDetail");
-    mainLayout->addWidget(lblDetail);
+    rightLayout->addWidget(lblDetail);
 
     tblPrescription = new QTableWidget(0, 8, this);
     tblPrescription->setHorizontalHeaderLabels(QStringList{
@@ -99,17 +185,7 @@ void CreatePrescriptionDialog::setupUI() {
     tblPrescription->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);
     tblPrescription->setColumnWidth(7, 40);
     tblPrescription->verticalHeader()->setVisible(false);
-
-    mainLayout->addWidget(tblPrescription);
-
-    btnAddMedicine = new QPushButton(QString::fromUtf8("+ Thêm Thuốc"), this);
-    btnAddMedicine->setObjectName("btnAddMedicine");
-    btnAddMedicine->setFixedWidth(130);
-
-    QHBoxLayout *addBtnLayout = new QHBoxLayout();
-    addBtnLayout->addWidget(btnAddMedicine);
-    addBtnLayout->addStretch();
-    mainLayout->addLayout(addBtnLayout);
+    rightLayout->addWidget(tblPrescription);
 
     QHBoxLayout *bottomLayout = new QHBoxLayout();
     bottomLayout->addStretch();
@@ -118,7 +194,7 @@ void CreatePrescriptionDialog::setupUI() {
     btnSave->setObjectName("btnSave");
     btnSave->setFixedHeight(38);
 
-    btnExportPdf = new QPushButton(QString::fromUtf8("📄 Xuất PDF"), this);
+    btnExportPdf = new QPushButton(QString::fromUtf8("Xuất PDF"), this);
     btnExportPdf->setObjectName("btnExportPdf");
     btnExportPdf->setFixedHeight(38);
 
@@ -129,22 +205,196 @@ void CreatePrescriptionDialog::setupUI() {
     bottomLayout->addWidget(btnSave);
     bottomLayout->addWidget(btnExportPdf);
     bottomLayout->addWidget(btnCancel);
+    rightLayout->addLayout(bottomLayout);
 
-    mainLayout->addLayout(bottomLayout);
+    // Add Left and Right Panels to main layout
+    mainLayout->addWidget(leftPanel, 4); 
+    mainLayout->addWidget(rightPanel, 6); 
 
-    connect(btnAddMedicine, &QPushButton::clicked, this, &CreatePrescriptionDialog::onAddMedicineClicked);
+    // Connections
+    connect(btnSearch, &QPushButton::clicked, this, &CreatePrescriptionDialog::onSearchClicked);
+    connect(txtSearchKeyword, &QLineEdit::returnPressed, this, &CreatePrescriptionDialog::onSearchClicked);
+    connect(btnPrevPage, &QPushButton::clicked, this, &CreatePrescriptionDialog::onPrevPageClicked);
+    connect(btnNextPage, &QPushButton::clicked, this, &CreatePrescriptionDialog::onNextPageClicked);
+    connect(tblSearchResults, &QTableWidget::itemSelectionChanged, this, &CreatePrescriptionDialog::onSearchTableSelectionChanged);
+    connect(btnAddSelected, &QPushButton::clicked, this, &CreatePrescriptionDialog::onAddSelectedClicked);
     connect(btnSave, &QPushButton::clicked, this, &CreatePrescriptionDialog::onSaveClicked);
     connect(btnExportPdf, &QPushButton::clicked, this, &CreatePrescriptionDialog::onExportPdfClicked);
     connect(btnCancel, &QPushButton::clicked, this, &QDialog::reject);
 }
 
-void CreatePrescriptionDialog::addMedicineRow(const QString &name, double price, int qty, const QString &dosage, const QString &freq, int days, const QString &note) {
+void CreatePrescriptionDialog::updateSearchResults() {
+    if (!m_pharmacyService) return;
+
+    MedicationSearchCriteria criteria;
+    criteria.keyword = txtSearchKeyword->text().trimmed();
+    criteria.page = m_searchPage;
+    criteria.pageSize = m_searchPageSize;
+    criteria.inStockOnly = false; 
+    criteria.excludeExpired = false; 
+
+    PagedResult<MedicationSummaryDTO> result = m_pharmacyService->searchMedicationsPaged(criteria);
+    m_currentSearchResults = result.items;
+
+    m_searchTotalPages = qMax(1, (result.totalCount + m_searchPageSize - 1) / m_searchPageSize);
+
+    btnPrevPage->setEnabled(m_searchPage > 1);
+    btnNextPage->setEnabled(m_searchPage < m_searchTotalPages);
+    lblPageIndicator->setText(QString("Trang %1/%2").arg(m_searchPage).arg(m_searchTotalPages));
+
+    tblSearchResults->setRowCount(0);
+    for (int i = 0; i < m_currentSearchResults.size(); ++i) {
+        const auto &med = m_currentSearchResults[i];
+        tblSearchResults->insertRow(i);
+
+        // 0. Tên thuốc
+        QTableWidgetItem *itemBrand = new QTableWidgetItem(med.brandName);
+        itemBrand->setData(Qt::UserRole, i); 
+        tblSearchResults->setItem(i, 0, itemBrand);
+
+        // 1. Hoạt chất
+        QStringList ingList;
+        for (const auto &ing : med.ingredients) {
+            ingList.append(QString("%1 (%2)").arg(ing.ingredientName, ing.strength));
+        }
+        QTableWidgetItem *itemIngs = new QTableWidgetItem(ingList.join(", "));
+        tblSearchResults->setItem(i, 1, itemIngs);
+
+        // 2. Đơn vị
+        QTableWidgetItem *itemUnit = new QTableWidgetItem(med.unit);
+        tblSearchResults->setItem(i, 2, itemUnit);
+
+        // 3. Đơn giá
+        QTableWidgetItem *itemPrice = new QTableWidgetItem(QString("%1 đ").arg(med.unitPrice, 0, 'f', 0));
+        itemPrice->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        tblSearchResults->setItem(i, 3, itemPrice);
+
+        // 4. Tồn kho
+        QTableWidgetItem *itemStock = new QTableWidgetItem(QString::number(med.stockQuantity));
+        itemStock->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        tblSearchResults->setItem(i, 4, itemStock);
+
+        // Color coding based on status
+        QColor textColor(0, 0, 0);
+        if (!med.isActive) {
+            textColor = QColor(156, 163, 175); // gray
+        } else if (med.expiryDate.isValid() && med.expiryDate <= QDate::currentDate()) {
+            textColor = QColor(239, 68, 68); // red
+        } else if (med.stockQuantity <= 0) {
+            textColor = QColor(249, 115, 22); // orange
+        }
+
+        for (int col = 0; col < 5; ++col) {
+            if (auto item = tblSearchResults->item(i, col)) {
+                item->setForeground(QBrush(textColor));
+            }
+        }
+    }
+
+    tblSearchResults->clearSelection();
+    m_selectedMedication = std::nullopt;
+    updateSelectedDetails();
+}
+
+void CreatePrescriptionDialog::updateSelectedDetails() {
+    int selectedRow = tblSearchResults->currentRow();
+    if (selectedRow < 0 || selectedRow >= m_currentSearchResults.size()) {
+        m_selectedMedication = std::nullopt;
+        lblMedicationDetails->setText(QString::fromUtf8("<i>Chọn một loại thuốc từ bảng tìm kiếm để xem chi tiết.</i>"));
+        btnAddSelected->setEnabled(false);
+        return;
+    }
+
+    const auto &med = m_currentSearchResults[selectedRow];
+    m_selectedMedication = med;
+
+    QString statusHtml;
+    bool canPrescribe = true;
+
+    if (!med.isActive) {
+        statusHtml = QString::fromUtf8("<span style='color: #ef4444; font-weight: bold;'>[Ngừng Kinh Doanh]</span>");
+        canPrescribe = false;
+    } else if (med.expiryDate.isValid() && med.expiryDate <= QDate::currentDate()) {
+        statusHtml = QString::fromUtf8("<span style='color: #ef4444; font-weight: bold;'>[Đã Hết Hạn: %1]</span>").arg(med.expiryDate.toString("dd/MM/yyyy"));
+        canPrescribe = false;
+    } else if (med.stockQuantity <= 0) {
+        statusHtml = QString::fromUtf8("<span style='color: #f97316; font-weight: bold;'>[Hết Hàng Trong Kho]</span>");
+        canPrescribe = false;
+    } else {
+        statusHtml = QString::fromUtf8("<span style='color: #22c55e; font-weight: bold;'>[Có thể kê đơn]</span>");
+    }
+
+    QString details = QString(R"(
+        <p style='margin: 0; padding: 0;'>
+            <b>Tên thuốc:</b> %1 &nbsp;&nbsp;|&nbsp;&nbsp; <b>Nhà SX:</b> %2<br/>
+            <b>Đơn giá:</b> %3 đ / %4 &nbsp;&nbsp;|&nbsp;&nbsp; <b>Tồn kho:</b> %5 %6<br/>
+            <b>Hoạt chất:</b> %7<br/>
+            <b>Mô tả:</b> %8<br/>
+            <b>Trạng thái:</b> %9
+        </p>
+    )").arg(med.brandName)
+       .arg(med.manufacturer.isEmpty() ? "---" : med.manufacturer)
+       .arg(QString::number(med.unitPrice, 'f', 0))
+       .arg(med.unit)
+       .arg(med.stockQuantity)
+       .arg(med.unit)
+       .arg(tblSearchResults->item(selectedRow, 1)->text())
+       .arg(med.description.isEmpty() ? "---" : med.description)
+       .arg(statusHtml);
+
+    lblMedicationDetails->setText(details);
+    btnAddSelected->setEnabled(canPrescribe);
+}
+
+void CreatePrescriptionDialog::onSearchClicked() {
+    m_searchPage = 1;
+    updateSearchResults();
+}
+
+void CreatePrescriptionDialog::onPrevPageClicked() {
+    if (m_searchPage > 1) {
+        m_searchPage--;
+        updateSearchResults();
+    }
+}
+
+void CreatePrescriptionDialog::onNextPageClicked() {
+    if (m_searchPage < m_searchTotalPages) {
+        m_searchPage++;
+        updateSearchResults();
+    }
+}
+
+void CreatePrescriptionDialog::onSearchTableSelectionChanged() {
+    updateSelectedDetails();
+}
+
+void CreatePrescriptionDialog::onAddSelectedClicked() {
+    if (!m_selectedMedication.has_value()) return;
+    const auto &med = m_selectedMedication.value();
+
+    for (int i = 0; i < tblPrescription->rowCount(); ++i) {
+        if (QTableWidgetItem *itemDrug = tblPrescription->item(i, 0)) {
+            int medId = itemDrug->data(Qt::UserRole).toInt();
+            if (medId == med.medicationId) {
+                QMessageBox::warning(this, QString::fromUtf8("Cảnh báo"), 
+                                     QString::fromUtf8("Thuốc \"%1\" đã có trong đơn thuốc. Bạn có thể thay đổi số lượng trực tiếp tại bảng đơn thuốc.").arg(med.brandName));
+                return;
+            }
+        }
+    }
+
+    addMedicineRow(med.medicationId, med.brandName, med.unitPrice, 1, "", "", 1, "", med.stockQuantity);
+}
+
+void CreatePrescriptionDialog::addMedicineRow(int medicationId, const QString &name, double price, int qty, const QString &dosage, const QString &freq, int days, const QString &note, int maxStock) {
     int row = tblPrescription->rowCount();
     tblPrescription->insertRow(row);
 
     // 0. Tên thuốc
-    QTableWidgetItem *itemDrug = new QTableWidgetItem("🔵 " + name);
+    QTableWidgetItem *itemDrug = new QTableWidgetItem(name);
     itemDrug->setForeground(QBrush(QColor(0, 0, 0)));
+    itemDrug->setData(Qt::UserRole, medicationId); 
     tblPrescription->setItem(row, 0, itemDrug);
 
     // 1. Đơn giá
@@ -155,11 +405,11 @@ void CreatePrescriptionDialog::addMedicineRow(const QString &name, double price,
 
     // 2. Số lượng
     QSpinBox *spnQty = new QSpinBox(this);
-    spnQty->setRange(1, 1000);
+    spnQty->setRange(1, maxStock);
     spnQty->setValue(qty);
     tblPrescription->setCellWidget(row, 2, spnQty);
 
-    // 3. Liều Lượng (QLineEdit - không có đơn vị)
+    // 3. Liều Lượng
     QLineEdit *txtDosage = new QLineEdit(dosage, this);
     txtDosage->setPlaceholderText(QString::fromUtf8("Ví dụ: 1"));
     txtDosage->setValidator(new QRegularExpressionValidator(QRegularExpression("^[0-9]+(?:\\.[0-9]+)?$"), txtDosage));
@@ -169,7 +419,7 @@ void CreatePrescriptionDialog::addMedicineRow(const QString &name, double price,
     });
     tblPrescription->setCellWidget(row, 3, txtDosage);
 
-    // 4. Tần Suất (QLineEdit - không có đơn vị)
+    // 4. Tần Suất
     QLineEdit *txtFreq = new QLineEdit(freq, this);
     txtFreq->setPlaceholderText(QString::fromUtf8("Ví dụ: 2"));
     txtFreq->setValidator(new QRegularExpressionValidator(QRegularExpression("^[0-9]+$"), txtFreq));
@@ -191,15 +441,10 @@ void CreatePrescriptionDialog::addMedicineRow(const QString &name, double price,
     tblPrescription->setCellWidget(row, 6, txtNote);
 
     // 7. Nút Xóa
-    QPushButton *btnDelete = new QPushButton("🗑️", this);
+    QPushButton *btnDelete = new QPushButton("Xóa", this);
     btnDelete->setObjectName("btnDeleteRow");
     connect(btnDelete, &QPushButton::clicked, this, &CreatePrescriptionDialog::onRemoveMedicineClicked);
     tblPrescription->setCellWidget(row, 7, btnDelete);
-}
-
-// ── BỔ SUNG 2 HÀM SLOT XỬ LÝ NÚT BẤM CÒN THIẾU ────────────────────
-void CreatePrescriptionDialog::onAddMedicineClicked() {
-    addMedicineRow("", 0, 1, "", "", 1, "");
 }
 
 void CreatePrescriptionDialog::onRemoveMedicineClicked() {
@@ -213,7 +458,6 @@ void CreatePrescriptionDialog::onRemoveMedicineClicked() {
         }
     }
 }
-// ──────────────────────────────────────────────────────────────────
 
 void CreatePrescriptionDialog::onSaveClicked() {
     PrescriptionInputDTO dto = getPrescriptionInput();
@@ -222,19 +466,101 @@ void CreatePrescriptionDialog::onSaveClicked() {
         return;
     }
 
-    if (m_pharmacyService) {
-        QString errorMsg = m_pharmacyService->createPrescription(dto);
-        if (errorMsg.isEmpty()) {
-            QMessageBox::information(this, QString::fromUtf8("Thành công"), QString::fromUtf8("Đã tạo đơn thuốc thành công và tự động chuyển đơn sang Hàng đợi Dược sĩ để cấp phát!"));
-            accept();
-        } else {
-            QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString("Không thể tạo đơn thuốc: %1").arg(errorMsg));
-        }
-    } else {
-        // QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString::fromUtf8("Dịch vụ Dược chưa được khởi tạo. Không thể tạo đơn thuốc."));
+    if (!m_pharmacyService) {
         QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString::fromUtf8("Chưa kết nối dịch vụ nhà thuốc (PharmacyService)."));
+        return;
     }
 
+    // ────────────────────────────────────────────────────────────────
+    // CLINICAL DRUG SAFETY CHECKS (Duplications & Allergies)
+    // ────────────────────────────────────────────────────────────────
+    QList<AllergyResultDTO> allergies;
+    if (m_patientService && m_patientId > 0) {
+        allergies = m_patientService->getAllergies(m_patientId);
+    }
+
+    PrescriptionSafetyReport report = m_pharmacyService->checkPrescriptionSafety(dto.items, allergies);
+
+    if (!report.isSafe()) {
+        QString warningMsg;
+
+        // 1. Handle Severe Allergy Conflicts (BLOCK SAVING)
+        if (report.hasSevereConflict()) {
+            warningMsg = QString::fromUtf8("<b>NGUY HIỂM: Phát hiện dị ứng thuốc Nghiêm Trọng!</b><br/>"
+                                           "Bệnh nhân có tiền sử dị ứng ở mức độ <b>NẶNG (SEVERE)</b> với thành phần hoạt chất sau:<br/><br/>");
+            for (const auto &conflict : report.allergyConflicts) {
+                if (conflict.severity == Severity::Severe) {
+                    QStringList meds;
+                    for (const auto &m : conflict.conflictingMedications) meds.append(m.second);
+                    warningMsg += QString::fromUtf8("- Hoạt chất: <b>%1</b> (Ghi chú: %2)<br/>  Thuốc kê xung đột: <i>%3</i><br/><br/>")
+                                  .arg(conflict.ingredientName, 
+                                       conflict.allergyNotes.isEmpty() ? QString::fromUtf8("Không có") : conflict.allergyNotes, 
+                                       meds.join(", "));
+                }
+            }
+            warningMsg += QString::fromUtf8("<b>Vì lý do an toàn, không thể lưu đơn thuốc này. Vui lòng loại bỏ thuốc gây dị ứng nặng.</b>");
+            
+            QMessageBox msgBox(this);
+            msgBox.setWindowTitle(QString::fromUtf8("Xung Đột Dị Ứng Nghiêm Trọng"));
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setText(warningMsg);
+            msgBox.setStandardButtons(QMessageBox::Ok);
+            msgBox.exec();
+            return;
+        }
+
+        // 2. Handle Mild/Moderate Allergy Conflicts & Duplications (WARN & CONFIRM BYPASS)
+        warningMsg = QString::fromUtf8("<b>CẢNH BÁO AN TOÀN ĐƠN THUỐC</b><br/>"
+                                       "Phát hiện một số cảnh báo khi kê đơn:<br/><br/>");
+
+        if (report.hasAllergyConflict()) {
+            warningMsg += QString::fromUtf8("<b>[Dị ứng thuốc Nhẹ/Vừa]:</b><br/>");
+            for (const auto &conflict : report.allergyConflicts) {
+                if (conflict.severity != Severity::Severe) {
+                    QStringList meds;
+                    for (const auto &m : conflict.conflictingMedications) meds.append(m.second);
+                    QString severityText = (conflict.severity == Severity::Mild) ? QString::fromUtf8("Nhẹ") : QString::fromUtf8("Vừa");
+                    warningMsg += QString::fromUtf8("- Bệnh nhân dị ứng mức <b>%1</b> với hoạt chất <b>%2</b> (Ghi chú: %3). Thuốc kê: <i>%4</i><br/>")
+                                  .arg(severityText, conflict.ingredientName, 
+                                       conflict.allergyNotes.isEmpty() ? QString::fromUtf8("Không có") : conflict.allergyNotes, 
+                                       meds.join(", "));
+                }
+            }
+            warningMsg += "<br/>";
+        }
+
+        if (report.hasDuplication()) {
+            warningMsg += QString::fromUtf8("<b>[Trùng lặp hoạt chất]:</b><br/>");
+            for (const auto &dup : report.duplications) {
+                QStringList meds;
+                for (const auto &m : dup.conflictingMedications) meds.append(m.second);
+                warningMsg += QString::fromUtf8("- Hoạt chất <b>%1</b> được kê trùng lặp trong các thuốc: <i>%2</i><br/>")
+                              .arg(dup.ingredientName, meds.join(", "));
+            }
+            warningMsg += "<br/>";
+        }
+
+        warningMsg += QString::fromUtf8("Bạn có chắc chắn muốn bỏ qua và tiếp tục lưu đơn thuốc không?");
+
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle(QString::fromUtf8("Xác Nhận Kê Đơn"));
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.setText(warningMsg);
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::No);
+
+        if (msgBox.exec() != QMessageBox::Yes) {
+            return; 
+        }
+    }
+
+    QString errorMsg = m_pharmacyService->createPrescription(dto);
+    if (errorMsg.isEmpty()) {
+        QMessageBox::information(this, QString::fromUtf8("Thành công"), QString::fromUtf8("Đã tạo đơn thuốc thành công và tự động chuyển đơn sang Hàng đợi Dược sĩ để cấp phát!"));
+        accept();
+    } else {
+        QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString("Không thể tạo đơn thuốc: %1").arg(errorMsg));
+    }
 }
 
 void CreatePrescriptionDialog::onExportPdfClicked() {
@@ -318,6 +644,11 @@ void CreatePrescriptionDialog::setDoctorName(const QString &doctorName) {
     }
 }
 
+void CreatePrescriptionDialog::onPrescriptionCellChanged(int row, int col) {
+    Q_UNUSED(row);
+    Q_UNUSED(col);
+}
+
 PrescriptionInputDTO CreatePrescriptionDialog::getPrescriptionInput() const {
     PrescriptionInputDTO dto;
     dto.recordId = txtRecordId->text().toInt();
@@ -331,7 +662,8 @@ PrescriptionInputDTO CreatePrescriptionDialog::getPrescriptionInput() const {
     for (int i = 0; i < tblPrescription->rowCount(); ++i) {
         PrescriptionItemDTO item;
         if (QTableWidgetItem *itemDrug = tblPrescription->item(i, 0)) {
-            item.brandName = itemDrug->text().remove("🔵 ").remove("🟢 ").trimmed();
+            item.medicationId = itemDrug->data(Qt::UserRole).toInt();
+            item.brandName = itemDrug->text().trimmed();
         }
         if (QTableWidgetItem *itemPrice = tblPrescription->item(i, 1)) {
             QString priceStr = itemPrice->text();
@@ -365,63 +697,81 @@ void CreatePrescriptionDialog::setupStyleSheets() {
         #dialogTitle {
             font-size: 20px;
             font-weight: bold;
-            color: #000000;
+            color: #0f172a;
             padding-bottom: 5px;
         }
         #lblDetail {
             font-size: 15px;
             font-weight: bold;
-            color: #000000;
+            color: #1e293b;
             margin-top: 10px;
         }
         QLabel {
             font-weight: bold;
-            color: #000000;
+            color: #334155;
         }
         QLineEdit, QComboBox, QTextEdit, QSpinBox {
             border: 1px solid #cbd5e1;
             border-radius: 4px;
             padding: 4px 8px;
             background-color: #ffffff;
-            color: #000000;
+            color: #0f172a;
         }
         QComboBox QAbstractItemView {
-            color: #000000;
+            color: #0f172a;
             background-color: #ffffff;
             selection-background-color: #e2e8f0;
-            selection-color: #000000;
+            selection-color: #0f172a;
         }
         QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QSpinBox:focus {
             border: 1px solid #2563eb;
-            color: #000000;
+            color: #0f172a;
         }
         QTableWidget {
             background-color: #ffffff;
             border: 1px solid #cbd5e1;
             gridline-color: #e2e8f0;
-            color: #000000;
-        }
-        QTableWidget::item {
-            color: #000000;
+            color: #0f172a;
+            selection-background-color: #eff6ff;
+            selection-color: #1e40af;
         }
         QHeaderView::section {
             background-color: #f1f5f9;
-            color: #000000;
+            color: #334155;
             font-weight: bold;
             padding: 6px;
             border: 1px solid #cbd5e1;
         }
-        #btnAddMedicine {
+        #detailFrame {
             background-color: #ffffff;
-            border: 1px dashed #2563eb;
-            color: #000000;
-            font-weight: bold;
+            border: 1px solid #cbd5e1;
             border-radius: 4px;
-            padding: 6px;
         }
-        #btnAddMedicine:hover {
-            background-color: #eff6ff;
-            color: #000000;
+        #btnSearch {
+            background-color: #2563eb;
+            color: #ffffff;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+        }
+        #btnSearch:hover {
+            background-color: #1d4ed8;
+        }
+        #btnPagination {
+            background-color: #ffffff;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-weight: bold;
+            padding: 4px 8px;
+        }
+        #btnPagination:hover {
+            background-color: #f1f5f9;
+        }
+        #btnPagination:disabled {
+            background-color: #f8fafc;
+            color: #94a3b8;
+            border: 1px solid #e2e8f0;
         }
         #btnSave {
             background-color: #22c55e;

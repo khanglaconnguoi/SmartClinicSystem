@@ -1,5 +1,6 @@
 #include "ClinicalExamWidget.h"
 #include "CreatePrescriptionDialog.h"
+#include "CreateLabRequestDialog.h"
 #include "PatientRecordHistoryDialog.h"
 #include "service/PharmacyService.h"
 #include "service/PatientService.h"
@@ -35,7 +36,7 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
             QMessageBox::warning(this, "Chưa lưu bệnh án", "Vui lòng 'Viết Hồ Sơ Bệnh Án' và lưu thành công trước khi kê đơn thuốc!");
             return;
         }
-        CreatePrescriptionDialog dialog(m_pharmacyService, this);
+        CreatePrescriptionDialog dialog(m_pharmacyService, m_patientService, m_currentPatientId, this);
         dialog.setRecordId(QString::number(m_currentMedicalRecordId));
         int doctorId = 1;
         QString doctorName = "Bác sĩ";
@@ -51,12 +52,8 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
     if (m_btnPrescription) connect(m_btnPrescription, &QPushButton::clicked, this, openPrescriptionAction);
     if (m_subPrescription) connect(m_subPrescription, &QPushButton::clicked, this, openPrescriptionAction);
 
-    auto openServiceOrderAction = [this]() {
-        QMessageBox::information(this, "Yêu Cầu Xét Nghiệm", "Đã khởi tạo yêu cầu xét nghiệm / cận lâm sàng cho bệnh nhân.");
-    };
-
-    if (m_btnServiceOrder) connect(m_btnServiceOrder, &QPushButton::clicked, this, openServiceOrderAction);
-    if (m_subServiceOrder) connect(m_subServiceOrder, &QPushButton::clicked, this, openServiceOrderAction);
+    if (m_btnServiceOrder) connect(m_btnServiceOrder, &QPushButton::clicked, this, &ClinicalExamWidget::openLabRequestDialog);
+    if (m_subServiceOrder) connect(m_subServiceOrder, &QPushButton::clicked, this, &ClinicalExamWidget::openLabRequestDialog);
 
     auto openHistoryAction = [this]() {
         PatientRecordHistoryDialog dialog(m_pharmacyService, m_medicalRecordService, this);
@@ -91,10 +88,69 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
     connect(m_txtMainDisease, &QLineEdit::textChanged, this, &ClinicalExamWidget::validateDiagnosisInput);
 }
 
-void ClinicalExamWidget::setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService) {
+void ClinicalExamWidget::setServices(
+    std::shared_ptr<PharmacyService> pharmacyService, 
+    std::shared_ptr<PatientService> patientService, 
+    std::shared_ptr<AppointmentService> appointmentService,
+    std::shared_ptr<ServiceRequestService> serviceRequestService) {
     m_pharmacyService = pharmacyService;
     m_patientService = patientService;
     m_appointmentService = appointmentService;
+    m_serviceRequestService = serviceRequestService;
+}
+
+void ClinicalExamWidget::openLabRequestDialog() {
+    if (m_currentMedicalRecordId <= 0) {
+        QMessageBox::warning(this, "Chưa lưu bệnh án", "Vui lòng 'Viết Hồ Sơ Bệnh Án' và lưu thành công trước khi gửi yêu cầu xét nghiệm!");
+        return;
+    }
+
+    int doctorId = 1;
+    QString doctorName = "Bác sĩ";
+    if (UserSession::getInstance().isLoggedIn() && UserSession::getInstance().getCurrentAccount()) {
+        doctorId = UserSession::getInstance().getCurrentAccount()->getAccountId();
+        doctorName = UserSession::getInstance().getCurrentAccount()->getFullName();
+    }
+
+    QString patName = m_lblPatientNameVal ? m_lblPatientNameVal->text() : "Bệnh nhân";
+    QString patCode = m_lblPatientCodeVal ? m_lblPatientCodeVal->text() : "";
+
+    CreateLabRequestDialog dialog(
+        m_serviceRequestService,
+        m_appointmentService,
+        m_currentMedicalRecordId,
+        doctorId,
+        doctorName,
+        patName,
+        patCode,
+        this
+    );
+
+    if (dialog.exec() == QDialog::Accepted) {
+        loadLabResults();
+    }
+}
+
+void ClinicalExamWidget::loadLabResults() {
+    if (!m_serviceRequestService || m_currentMedicalRecordId <= 0 || !m_txtClsSummary) return;
+
+    auto requests = m_serviceRequestService->getRequestsByRoom(-1, "");
+    QString summaryText;
+
+    for (const auto &req : requests) {
+        if (req.recordId == m_currentMedicalRecordId) {
+            summaryText += QString("[%1] %2 - Trạng thái: %3\n")
+                .arg(req.roomName, req.serviceName, serviceRequestStatusToVi(req.status));
+            if (!req.resultNote.isEmpty()) {
+                summaryText += QString("   -> Kết quả: %1\n").arg(req.resultNote);
+            }
+            summaryText += "\n";
+        }
+    }
+
+    if (!summaryText.isEmpty()) {
+        m_txtClsSummary->setText(summaryText);
+    }
 }
 
 void ClinicalExamWidget::setupUi() {
@@ -161,8 +217,8 @@ QFrame* ClinicalExamWidget::setupPatientInfoCard() {
     QHBoxLayout* patDetailsLayout = new QHBoxLayout();
     patDetailsLayout->setSpacing(16);
 
-    QLabel* avatarIcon = new QLabel("👤", infoCard);
-    avatarIcon->setStyleSheet("font-size: 32px; color: #007A7E; background: transparent;");
+    QLabel* avatarIcon = new QLabel("BN", infoCard);
+    avatarIcon->setStyleSheet("font-size: 16px; font-weight: bold; color: #2563EB; background: #EFF6FF; border-radius: 18px; padding: 8px;");
     patDetailsLayout->addWidget(avatarIcon);
 
     QVBoxLayout* detailsText = new QVBoxLayout();
@@ -746,6 +802,7 @@ void ClinicalExamWidget::onSaveClicked() {
     }
 
     QMessageBox::information(this, "Thành công", "Đã lưu hồ sơ bệnh án thành công!");
+    loadLabResults();
     
     static const QString lineEditStyle = "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
     static const QString comboStyle = "QComboBox { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";

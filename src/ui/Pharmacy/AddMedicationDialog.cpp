@@ -177,7 +177,7 @@ void AddMedicationDialog::loadCommonEnums() {
 
 void AddMedicationDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(20, 20, 20, 20);
+    mainLayout->setContentsMargins(20, 20, 20, 28);
     mainLayout->setSpacing(16);
 
     QScrollArea* scrollArea = new QScrollArea(this);
@@ -248,16 +248,19 @@ void AddMedicationDialog::setupUI() {
 
     formLayout->addWidget(grpStock);
 
-    // 3. Group Box: Danh mục thuốc
+    // 3. Group Box: Danh mục thuốc (Sử dụng QGridLayout để wrap các checkbox)
     QGroupBox* grpCategories = new QGroupBox("Danh mục thuốc", formContainer);
-    m_categoriesLayout = new QHBoxLayout(grpCategories);
+    m_categoriesLayout = new QGridLayout(grpCategories);
     m_categoriesLayout->setSpacing(10);
     
     QList<QString> defaultCategories = {"Kháng sinh", "Giảm đau", "Kháng viêm", "Hạ sốt", "Tim mạch", "Tiêu hóa", "Khác"};
+    int cRow = 0, cCol = 0;
     for (const auto& catName : defaultCategories) {
         QCheckBox* chk = new QCheckBox(catName, grpCategories);
         m_categoryCheckBoxes.append(chk);
-        m_categoriesLayout->addWidget(chk);
+        m_categoriesLayout->addWidget(chk, cRow, cCol);
+        cCol++;
+        if (cCol >= 4) { cCol = 0; cRow++; }
     }
     formLayout->addWidget(grpCategories);
 
@@ -271,13 +274,15 @@ void AddMedicationDialog::setupUI() {
     m_ingredientsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     m_ingredientsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_ingredientsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    m_ingredientsTable->verticalHeader()->setDefaultSectionSize(40);
+    m_ingredientsTable->setMinimumHeight(180); // Đảm bảo bảng hoạt chất có chiều cao cố định để cuộn mượt mà
     layIngredients->addWidget(m_ingredientsTable);
 
     QHBoxLayout* btnIngredientsLayout = new QHBoxLayout();
-    m_btnAddIngredient = new QPushButton("+ Thêm hoạt chất", grpIngredients);
-    m_btnAddIngredient->setStyleSheet("background-color: #E8F0FE; color: #4B94F2; border: 1px solid #4B94F2; font-weight: bold; padding: 4px 10px; border-radius: 4px;");
-    m_btnRemoveIngredient = new QPushButton("- Xóa hoạt chất", grpIngredients);
-    m_btnRemoveIngredient->setStyleSheet("background-color: #FFF5F5; color: #E53E3E; border: 1px solid #E53E3E; font-weight: bold; padding: 4px 10px; border-radius: 4px;");
+    m_btnAddIngredient = new QPushButton("Thêm hoạt chất", grpIngredients);
+    m_btnAddIngredient->setStyleSheet("background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 6px 12px; border-radius: 6px;");
+    m_btnRemoveIngredient = new QPushButton("Xóa hoạt chất", grpIngredients);
+    m_btnRemoveIngredient->setStyleSheet("background-color: #FEE2E2; color: #DC2626; border: 1px solid #DC2626; font-weight: bold; padding: 6px 12px; border-radius: 6px;");
     btnIngredientsLayout->addWidget(m_btnAddIngredient);
     btnIngredientsLayout->addWidget(m_btnRemoveIngredient);
     btnIngredientsLayout->addStretch();
@@ -301,12 +306,14 @@ void AddMedicationDialog::setupUI() {
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
     m_btnCancel = new QPushButton("Hủy bỏ", this);
-    m_btnCancel->setFixedWidth(100);
+    m_btnCancel->setFixedWidth(110);
+    m_btnCancel->setFixedHeight(38);
     m_btnCancel->setStyleSheet("background-color: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; border-radius: 6px; padding: 8px 16px; font-weight: bold;");
     
     m_btnSave = new QPushButton("Lưu lại", this);
-    m_btnSave->setFixedWidth(100);
-    m_btnSave->setStyleSheet("background-color: #4B94F2; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold;");
+    m_btnSave->setFixedWidth(110);
+    m_btnSave->setFixedHeight(38);
+    m_btnSave->setStyleSheet("background-color: #2563EB; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: bold;");
 
     buttonLayout->addWidget(m_btnCancel);
     buttonLayout->addWidget(m_btnSave);

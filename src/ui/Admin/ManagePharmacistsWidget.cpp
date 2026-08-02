@@ -39,13 +39,13 @@ void ManagePharmacistsWidget::buildUI() {
 
   headerLayout->addStretch();
 
-  QPushButton *btnAddNew = new QPushButton("+ Thêm Dược sĩ", this);
+  QPushButton *btnAddNew = new QPushButton("Thêm Dược sĩ", this);
   btnAddNew->setCursor(Qt::PointingHandCursor);
   btnAddNew->setFixedSize(140, 40);
   btnAddNew->setStyleSheet(
-      "QPushButton { background-color: #4B94F2; color: white; font-size: 14px; "
+      "QPushButton { background-color: #2563EB; color: white; font-size: 14px; "
       "font-weight: bold; border-radius: 6px; border: none; }"
-      "QPushButton:hover { background-color: #398CBF; }");
+      "QPushButton:hover { background-color: #1D4ED8; }");
   headerLayout->addWidget(btnAddNew);
   pageLayout->addLayout(headerLayout);
 
@@ -59,16 +59,16 @@ void ManagePharmacistsWidget::buildUI() {
       {"Mã DS", "Họ Tên", "Khu vực NT", "Số CCHN", "SĐT", "Trạng thái", "Thao tác"});
   m_tblPharmacists->horizontalHeader()->setStretchLastSection(true);
   m_tblPharmacists->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
-  m_tblPharmacists->verticalHeader()->setDefaultSectionSize(50);
+  m_tblPharmacists->verticalHeader()->setDefaultSectionSize(46);
   m_tblPharmacists->verticalHeader()->setVisible(false);
   m_tblPharmacists->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_tblPharmacists->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_tblPharmacists->setStyleSheet(
-      "QTableWidget { border: none; gridline-color: #EAEAEA; font-size: 13px; "
-      "background-color: white; }"
-      "QHeaderView::section { background-color: #F8FAFC; padding: 8px; "
-      "font-weight: bold; border: none; border-bottom: 1px solid #EAEAEA; "
-      "color: #111827; }");
+      "QTableWidget { border: none; gridline-color: #E2E8F0; font-size: 13px; "
+      "background-color: white; color: #0F172A; }"
+      "QHeaderView::section { background-color: #F8FAFC; padding: 10px; "
+      "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
+      "color: #1E293B; }");
 
   cardLayout->addWidget(m_tblPharmacists);
   pageLayout->addWidget(tableCard);

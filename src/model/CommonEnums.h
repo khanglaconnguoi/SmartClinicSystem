@@ -1012,4 +1012,4 @@ inline bool canTransition(ServiceRequestStatus from, ServiceRequestStatus to) {
 
 inline const QList<EnumInfo<ServiceRequestStatus>> &getServiceRequestStatusList() {
     return serviceRequestStatusList;
-}
+}

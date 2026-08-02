@@ -24,6 +24,9 @@ public:
 
     void loadAnalyticsData();
 
+protected:
+    void showEvent(QShowEvent *event) override;
+
 private slots:
     void onFilterClicked();
     void onPresetTodayClicked();

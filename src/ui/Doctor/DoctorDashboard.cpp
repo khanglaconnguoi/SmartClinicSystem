@@ -41,11 +41,13 @@ DoctorDashboardWidget::DoctorDashboardWidget(
     std::shared_ptr<AppointmentService> appointmentService,
     std::shared_ptr<MedicalRecordService> medicalRecordService,
     std::shared_ptr<PharmacyService> pharmacyService,
+    std::shared_ptr<ServiceRequestService> serviceRequestService,
     QWidget *parent)
     : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent),
       m_medicalRecordService(medicalRecordService),
       m_currentExaminingRow(-1),
       m_pharmacyService(pharmacyService),
+      m_serviceRequestService(serviceRequestService),
       m_overviewPage(nullptr), m_patientsPage(nullptr),
       m_appointmentsPage(nullptr), m_settingsPage(nullptr),
       m_clinicalExamPage(nullptr) {
@@ -237,9 +239,39 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   pageLayout->setContentsMargins(0, 0, 0, 0);
   pageLayout->setSpacing(20);
 
-  QLabel *title = new QLabel("Lịch Hẹn Khám & Điều Trị", m_appointmentsPage);
+  QHBoxLayout *headerLayout = new QHBoxLayout();
+  QLabel *title = new QLabel("Lịch Hẹn Khám", m_appointmentsPage);
   title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;");
-  pageLayout->addWidget(title);
+  
+  QLabel *lblFilter = new QLabel("Ngày:", m_appointmentsPage);
+  lblFilter->setStyleSheet("font-size: 14px; font-weight: bold; color: #374151;");
+
+  m_apptDateFilter = new QDateEdit(QDate::currentDate(), m_appointmentsPage);
+  m_apptDateFilter->setCalendarPopup(true);
+  m_apptDateFilter->setDisplayFormat("dd/MM/yyyy");
+  m_apptDateFilter->setCursor(Qt::PointingHandCursor);
+  m_apptDateFilter->setStyleSheet(
+      "QDateEdit { background-color: #FFFFFF; color: #1E293B; border: 1px solid #CBD5E1; "
+      "border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 600; min-width: 130px; }"
+      "QDateEdit:hover { border-color: #2563EB; }"
+      "QDateEdit::drop-down { subcontrol-origin: padding; subcontrol-position: top right; width: 26px; "
+      "border-left-width: 1px; border-left-color: #CBD5E1; border-left-style: solid; border-top-right-radius: 6px; border-bottom-right-radius: 6px; background-color: #F8FAFC; }"
+      "QDateEdit::drop-down:hover { background-color: #EFF6FF; }"
+  );
+  connect(m_apptDateFilter, &QDateEdit::dateChanged, this, &DoctorDashboardWidget::refreshAppointmentsTables);
+
+  QPushButton *btnRefresh = new QPushButton("Tải lại", m_appointmentsPage);
+  btnRefresh->setCursor(Qt::PointingHandCursor);
+  btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 6px 14px; border-radius: 6px; } QPushButton:hover { background-color: #DBEAFE; }");
+  connect(btnRefresh, &QPushButton::clicked, this, &DoctorDashboardWidget::refreshAppointmentsTables);
+
+  headerLayout->addWidget(title);
+  headerLayout->addStretch();
+  headerLayout->addWidget(lblFilter);
+  headerLayout->addWidget(m_apptDateFilter);
+  headerLayout->addSpacing(10);
+  headerLayout->addWidget(btnRefresh);
+  pageLayout->addLayout(headerLayout);
 
   m_appointmentsTable = new QTableWidget(m_appointmentsPage);
   m_appointmentsTable->setColumnCount(7);
@@ -472,11 +504,19 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
   cardLayout->setContentsMargins(20, 15, 20, 15);
   cardLayout->setSpacing(10);
 
-  QLabel *tblTitle =
-      new QLabel("Danh sách bệnh nhân hẹn khám hôm nay", tableCard);
-  tblTitle->setStyleSheet(
-      "font-size: 16px; font-weight: bold; color: #111827;");
-  cardLayout->addWidget(tblTitle);
+  QHBoxLayout *tblHeaderLayout = new QHBoxLayout();
+  QLabel *tblTitle = new QLabel("Danh sách bệnh nhân đang khám hôm nay", tableCard);
+  tblTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
+  
+  QPushButton *btnRefresh = new QPushButton("Tải lại", tableCard);
+  btnRefresh->setCursor(Qt::PointingHandCursor);
+  btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 4px 12px; border-radius: 6px; } QPushButton:hover { background-color: #DBEAFE; }");
+  connect(btnRefresh, &QPushButton::clicked, this, &DoctorDashboardWidget::refreshAppointmentsTables);
+
+  tblHeaderLayout->addWidget(tblTitle);
+  tblHeaderLayout->addStretch();
+  tblHeaderLayout->addWidget(btnRefresh);
+  cardLayout->addLayout(tblHeaderLayout);
 
   m_patientTable = new QTableWidget(tableCard);
   m_patientTable->setColumnCount(5);
@@ -529,11 +569,17 @@ void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
 
   if (activeBtn)
     activeBtn->setChecked(true);
+
+  if (index == 0 || index == 2) {
+    refreshAppointmentsTables();
+  } else if (index == 1 && m_patientsPage) {
+    m_patientsPage->loadPatientsData();
+  }
 }
 
 void DoctorDashboardWidget::buildClinicalExamPage() {
   m_clinicalExamPage = new ClinicalExamWidget(m_medicalRecordService, this);
-  m_clinicalExamPage->setServices(m_pharmacyService, m_basePatientService, m_baseAppointmentService);
+  m_clinicalExamPage->setServices(m_pharmacyService, m_basePatientService, m_baseAppointmentService, m_serviceRequestService);
   m_stackedWidget->addWidget(m_clinicalExamPage);
 
   connect(m_clinicalExamPage, &ClinicalExamWidget::backToDashboardRequested,
@@ -586,6 +632,10 @@ void DoctorDashboardWidget::openClinicalExamWithIds(
     const QString &time, const QString &reason) {
   if (!m_clinicalExamPage || !m_stackedWidget)
     return;
+
+  if (m_baseAppointmentService && appointmentId > 0) {
+    m_baseAppointmentService->updateAppointmentStatus(appointmentId, AppointmentStatusText::STARTED);
+  }
 
   m_clinicalExamPage->loadPatientInfo(patientId, appointmentId, name, code, time, reason);
 
@@ -658,23 +708,22 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
   if (m_patientTable) {
     auto records =
-        m_baseAppointmentService->getDoctorAppointments(docId, today);
+        m_baseAppointmentService ? m_baseAppointmentService->getDoctorAppointments(docId, today) : QList<AppointmentRecordDTO>();
     m_rowApptMeta.clear();
     m_patientTable->setRowCount(0);
     int rowIdx = 0;
     for (const auto &rec : records) {
-      QString statusText = AppointmentStatusText::toVi(rec.status);
-      QString statusColor = "#3C4043";
+      // Chỉ hiển thị bệnh nhân Đã check-in (chờ khám) và Đang khám
+      if (rec.status != AppointmentStatusText::CHECKED_IN && 
+          rec.status != AppointmentStatusText::STARTED) {
+        continue;
+      }
 
-      if (rec.status == AppointmentStatusText::SCHEDULED ||
-          rec.status == AppointmentStatusText::CHECKED_IN) {
-        statusColor = "#1A73E8";
-      } else if (rec.status == AppointmentStatusText::COMPLETED) {
-        statusColor = "#059669";
-      } else if (rec.status == AppointmentStatusText::CANCELLED) {
-        statusColor = "#D93025";
-      } else if (rec.status == AppointmentStatusText::STARTED) {
-        statusColor = "#F29900";
+      QString statusText = AppointmentStatusText::toVi(rec.status);
+      QString statusColor = "#2563EB";
+
+      if (rec.status == AppointmentStatusText::STARTED) {
+        statusColor = "#EAB308";
       }
 
       m_patientTable->insertRow(rowIdx);
@@ -686,6 +735,7 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       QTableWidgetItem *statusItem = new QTableWidgetItem(statusText);
 
       statusItem->setForeground(QBrush(QColor(statusColor)));
+      statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
 
       m_patientTable->setItem(rowIdx, 0, nameItem);
       m_patientTable->setItem(rowIdx, 1, codeItem);
@@ -701,23 +751,27 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
   }
 
   if (m_appointmentsTable) {
-    auto records = m_baseAppointmentService ? m_baseAppointmentService->getDoctorAppointments(docId) : QList<AppointmentRecordDTO>();
+    QDate filterDate = m_apptDateFilter ? m_apptDateFilter->date() : today;
+    auto records = m_baseAppointmentService ? m_baseAppointmentService->getDoctorAppointments(docId, filterDate) : QList<AppointmentRecordDTO>();
     m_apptPageMeta.clear();
     m_appointmentsTable->setRowCount(0);
     int rowIdx = 0;
     for (const auto &rec : records) {
-      QString statusText = AppointmentStatusText::toVi(rec.status);
-      QString statusColor = "#3C4043";
+      // Hiển thị tất cả lịch hẹn chưa hủy/chưa vắng mặt (bao gồm Đã hẹn, Đã check-in, Đang khám, Đã khám)
+      if (rec.status == AppointmentStatusText::CANCELLED || 
+          rec.status == AppointmentStatusText::NO_SHOW) {
+        continue;
+      }
 
-      if (rec.status == AppointmentStatusText::SCHEDULED ||
-          rec.status == AppointmentStatusText::CHECKED_IN) {
-        statusColor = "#1A73E8";
-      } else if (rec.status == AppointmentStatusText::COMPLETED) {
-        statusColor = "#059669";
-      } else if (rec.status == AppointmentStatusText::CANCELLED) {
-        statusColor = "#D93025";
+      QString statusText = AppointmentStatusText::toVi(rec.status);
+      QString statusColor = "#2563EB"; // Blue for SCHEDULED
+
+      if (rec.status == AppointmentStatusText::CHECKED_IN) {
+        statusColor = "#059669"; // Green for CHECKED_IN
       } else if (rec.status == AppointmentStatusText::STARTED) {
-        statusColor = "#F29900";
+        statusColor = "#D97706"; // Amber for STARTED
+      } else if (rec.status == AppointmentStatusText::COMPLETED) {
+        statusColor = "#6B7280"; // Gray for COMPLETED
       }
 
       m_appointmentsTable->insertRow(rowIdx);

@@ -37,9 +37,9 @@ void ManageLeaveWidget::setupUi() {
 
     QTabWidget* tabWidget = new QTabWidget(this);
     tabWidget->setStyleSheet(
-        "QTabWidget::pane { border: 1px solid #DADCE0; border-radius: 8px; background: white; }"
-        "QTabBar::tab { padding: 10px 20px; font-weight: bold; color: #5F6368; background: #F1F3F4; border: 1px solid #DADCE0; border-bottom: none; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-right: 2px; }"
-        "QTabBar::tab:selected { color: #1A73E8; background: white; }"
+        "QTabWidget::pane { border: 1px solid #E2E8F0; border-radius: 8px; background: white; }"
+        "QTabBar::tab { padding: 10px 20px; font-weight: bold; color: #475569; background: #F8FAFC; border: 1px solid #E2E8F0; border-bottom: none; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-right: 2px; }"
+        "QTabBar::tab:selected { color: #2563EB; background: white; border-bottom: 2px solid #2563EB; }"
     );
     
     // Tab 1: Duyệt đơn
@@ -56,15 +56,16 @@ void ManageLeaveWidget::setupUi() {
     header->setSectionResizeMode(6, QHeaderView::Fixed); // Action column fixed size
     m_tablePendingLeaves->setColumnWidth(6, 160); // Enough for 2 buttons
     header->setStretchLastSection(false); // don't stretch the fixed action column
-    // Let the reason column stretch instead
     header->setSectionResizeMode(4, QHeaderView::Stretch);
+    m_tablePendingLeaves->verticalHeader()->setDefaultSectionSize(46);
+    m_tablePendingLeaves->verticalHeader()->setVisible(false);
     
     m_tablePendingLeaves->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tablePendingLeaves->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tablePendingLeaves->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tablePendingLeaves->setStyleSheet(
-        "QTableWidget { border: 1px solid #DADCE0; border-radius: 4px; color: #202124; background-color: white; }"
-        "QHeaderView::section { background-color: #F1F3F4; color: #5F6368; font-weight: bold; padding: 4px; border: 1px solid #DADCE0; }"
+        "QTableWidget { border: 1px solid #E2E8F0; border-radius: 4px; color: #0F172A; background-color: white; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #1E293B; font-weight: bold; padding: 8px; border: 1px solid #E2E8F0; }"
     );
     layApprove->addWidget(m_tablePendingLeaves);
     

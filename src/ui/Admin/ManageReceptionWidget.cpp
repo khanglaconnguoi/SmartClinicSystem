@@ -28,7 +28,7 @@ void ManageReceptionWidget::buildUI() {
     
     headerLayout->addStretch();
     
-    QPushButton* btnAddNew = new QPushButton("+ Thêm Lễ tân");
+    QPushButton* btnAddNew = new QPushButton("Thêm Lễ tân");
     btnAddNew->setCursor(Qt::PointingHandCursor);
     btnAddNew->setStyleSheet("QPushButton { background-color: #2563EB; color: white; border-radius: 6px; padding: 8px 16px; font-weight: bold; font-size: 14px; } QPushButton:hover { background-color: #1D4ED8; }");
     headerLayout->addWidget(btnAddNew);
@@ -45,16 +45,16 @@ void ManageReceptionWidget::buildUI() {
     m_tblReception->setHorizontalHeaderLabels({"Mã NV", "Họ Tên", "Ca làm việc", "SĐT", "Trạng thái", "Thao tác"});
     m_tblReception->horizontalHeader()->setStretchLastSection(true);
     m_tblReception->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    m_tblReception->verticalHeader()->setDefaultSectionSize(50);
+    m_tblReception->verticalHeader()->setDefaultSectionSize(46);
     m_tblReception->verticalHeader()->setVisible(false);
     m_tblReception->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblReception->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblReception->setStyleSheet(
-        "QTableWidget { border: none; gridline-color: #EAEAEA; font-size: 13px; "
-        "background-color: white; }"
-        "QHeaderView::section { background-color: #F8FAFC; padding: 8px; "
-        "font-weight: bold; border: none; border-bottom: 1px solid #EAEAEA; "
-        "color: #111827; }");
+        "QTableWidget { border: none; gridline-color: #E2E8F0; font-size: 13px; "
+        "background-color: white; color: #0F172A; }"
+        "QHeaderView::section { background-color: #F8FAFC; padding: 10px; "
+        "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
+        "color: #1E293B; }");
 
     cardLayout->addWidget(m_tblReception);
     pageLayout->addWidget(tableCard);
