@@ -80,7 +80,7 @@ private:
     QPushButton* m_btnFinish;          // Hoàn Tất Khám
     QPushButton* m_btnCancel;          // Hủy Khám
     QPushButton* m_btnHistory;
-    QPushButton* m_btnCallPatient;
+    QPushButton* m_btnCallPatient = nullptr;
     QPushButton* m_btnPrint;
 
     // --- SUB-SIDEBAR (KHÁM BỆNH MENU) ---
