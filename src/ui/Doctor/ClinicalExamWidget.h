@@ -103,7 +103,7 @@ private:
     QComboBox* m_cbDiagnosis;
     QComboBox* m_cbSeverity;
     QLineEdit* m_txtMainDisease;
-    QLineEdit* m_txtSubDisease;
+    QLineEdit* m_txtSubDisease = nullptr;
     QComboBox* m_cbDirection;
     QComboBox* m_cbAction;
     QComboBox* m_cbService;
