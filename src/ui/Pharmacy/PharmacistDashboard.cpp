@@ -249,10 +249,10 @@ void PharmacistDashboardWidget::refreshOverviewStats() {
         QTableWidgetItem* statusItem = new QTableWidgetItem(alert.second);
         if (alert.second == "Sắp hết hàng") {
             statusItem->setForeground(QBrush(QColor("#E53E3E")));
-            statusItem->setFont(QFont("Arial", -1, QFont::Bold));
+            statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
         } else {
             statusItem->setForeground(QBrush(QColor("#DD6B20")));
-            statusItem->setFont(QFont("Arial", -1, QFont::Bold));
+            statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
         }
         m_tblOverviewAlerts->setItem(row, 4, statusItem);
         row++;
@@ -381,7 +381,7 @@ void PharmacistDashboardWidget::performInventorySearch() {
         
         QTableWidgetItem* statusItem = new QTableWidgetItem(statusText);
         statusItem->setForeground(QBrush(statusColor));
-        statusItem->setFont(QFont("Arial", -1, QFont::Bold));
+        statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
         m_tblInventory->setItem(row, 6, statusItem);
 
         QPushButton* btnEdit = new QPushButton("Chỉnh sửa", m_tblInventory);
@@ -569,7 +569,7 @@ void PharmacistDashboardWidget::performPrescriptionSearch() {
         if (presc.status == PrescriptionStatus::Pending) statItem->setForeground(QBrush(QColor("#DD6B20")));
         else if (presc.status == PrescriptionStatus::Dispensed) statItem->setForeground(QBrush(QColor("#2F855A")));
         else statItem->setForeground(QBrush(QColor("#A0AEC0")));
-        statItem->setFont(QFont("Arial", -1, QFont::Bold));
+        statItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
 
         idItem->setData(Qt::UserRole, presc.recordId);
         idItem->setData(Qt::UserRole + 1, presc.patientName);
@@ -970,7 +970,7 @@ void PharmacistDashboardWidget::performInvoiceSearch() {
         
         QTableWidgetItem* statItem = new QTableWidgetItem(statusVi);
         statItem->setForeground(QBrush(statusColor));
-        statItem->setFont(QFont("Arial", -1, QFont::Bold));
+        statItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
 
         codeItem->setData(Qt::UserRole, inv.invoiceId);
         codeItem->setData(Qt::UserRole + 1, inv.recordId.has_value() ? inv.recordId.value() : -1);

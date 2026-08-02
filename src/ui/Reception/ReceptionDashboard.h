@@ -1,25 +1,19 @@
 #pragma once
 
-#include "ui/BaseDashboard.h"
-#include "model/IAuthenticatable.h"
-#include "service/StaffService.h"
-#include "service/PatientService.h"
-#include "service/AppointmentService.h"
+#include "../BaseDashboard.h"
 #include <QString>
-#include <QStackedWidget>
-#include <QPushButton>
-#include <QWidget>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
-#include <QComboBox>
-#include <QDateEdit>
-#include <QTableWidget>
-#include <QFrame>
-#include <QLabel>
-#include <QLineEdit>
-#include <QScrollArea>
 #include <memory>
+
+class IAuthenticatable;
+class StaffService;
+class QStackedWidget;
+class QPushButton;
+class QWidget;
+class QVBoxLayout;
+class QHBoxLayout;
+class QComboBox;
+class QDateEdit;
+class QTableWidget;
 
 class ReceptionDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT
@@ -56,10 +50,10 @@ private:
   QWidget *m_roomQueuePage = nullptr;
 
   // Room Queue Page UI
-  QGridLayout *m_roomQueueLayout = nullptr;
+  class QGridLayout *m_roomQueueLayout = nullptr;
 
   // Registration UI elements
-  QFrame *m_apptCard = nullptr;
+  class QFrame *m_apptCard = nullptr;
   QLineEdit *m_txtPatientPhone = nullptr;
   QLineEdit *m_txtPatientCitizenId = nullptr;
   QPushButton *m_btnContinue = nullptr;
@@ -71,7 +65,7 @@ private:
   QDateEdit *m_dateEdit = nullptr;
 
   // New UI Elements for Doctor Cards
-  QScrollArea *m_scrollArea = nullptr;
+  class QScrollArea *m_scrollArea = nullptr;
   QVBoxLayout *m_doctorListLayout = nullptr;
 
   // State variables for selection
@@ -80,8 +74,8 @@ private:
   QPushButton *m_selectedSlotButton = nullptr;
 
   // Overview UI elements
-  QLabel *m_lblRevenue = nullptr;
-  QLabel *m_lblPatientNum = nullptr;
+  class QLabel *m_lblRevenue = nullptr;
+  class QLabel *m_lblPatientNum = nullptr;
 
   // Management UI
   QTableWidget *m_appointmentsTable = nullptr;
@@ -96,7 +90,7 @@ private:
   void buildRoomQueuePage();
   void onPatientTypeSelected(bool isNew);
 
-  QFrame *makeCard(QWidget *parent = nullptr);
+  class QFrame *makeCard(QWidget *parent = nullptr);
 
   // Helpers
   void clearLayout(QLayout *layout);

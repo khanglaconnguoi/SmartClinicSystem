@@ -598,10 +598,28 @@ PatientRepository::getPatientById(int patientId) {
       NULL AS reason, e.injury_cause, e.injury_description
     FROM patients p JOIN emergency_patients e ON p.patient_id = e.patient_id
     WHERE p.patient_id = ?
+
+    UNION ALL
+
+    SELECT
+      p.patient_id, p.patient_code, p.full_name, p.date_of_birth, p.gender,
+      p.citizen_id, p.phone_number, p.email, p.address, p.blood_type,
+      p.default_patient_type, p.emergency_contact_name,
+      p.emergency_contact_phone, p.is_deleted, p.created_at, p.updated_at,
+
+      'OUTPATIENT' AS current_type, 'ACTIVE' AS status,
+      NULL AS room_id, NULL AS doctor_id,
+      NULL AS admission_date, NULL AS discharge_date,
+      NULL AS reason, NULL AS injury_cause, NULL AS injury_description
+    FROM patients p
+    WHERE p.patient_id = ?
+      AND NOT EXISTS (SELECT 1 FROM out_patients WHERE patient_id = p.patient_id)
+      AND NOT EXISTS (SELECT 1 FROM in_patients WHERE patient_id = p.patient_id)
+      AND NOT EXISTS (SELECT 1 FROM emergency_patients WHERE patient_id = p.patient_id)
   )";
 
   QSqlQuery query = DatabaseManager::getInstance().selectQuery(
-      sql, {patientId, patientId, patientId});
+      sql, {patientId, patientId, patientId, patientId});
 
   if (!query.next())
     return std::nullopt;

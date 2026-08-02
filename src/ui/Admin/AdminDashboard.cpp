@@ -20,11 +20,12 @@ AdminDashboardWidget::AdminDashboardWidget(
     std::shared_ptr<StaffService> staffService,
     std::shared_ptr<PatientService> patientService,
     std::shared_ptr<AppointmentService> appointmentService,
+    std::shared_ptr<AnalyticService> analyticService,
     QWidget *parent)
     : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent), m_staffService(staffService),
-      m_patientService(patientService), m_manageDoctorsPage(nullptr),
+      m_patientService(patientService), m_analyticService(analyticService), m_manageDoctorsPage(nullptr),
       m_manageNursesPage(nullptr), m_managePatientsPage(nullptr),
-      m_manageReceptionPage(nullptr), m_managePharmacistsPage(nullptr) {
+      m_manageReceptionPage(nullptr), m_managePharmacistsPage(nullptr), m_analyticsPage(nullptr) {
   initializeDashboard();
 }
 
@@ -46,6 +47,8 @@ void AdminDashboardWidget::fillDashboardData() {
       new QPushButton("Quản lý Dược sĩ", m_sidebarFrame);
   m_btnManageLeaves =
       new QPushButton("Quản lý Nghỉ phép", m_sidebarFrame);
+  m_btnAnalytics =
+      new QPushButton("Thống kê & Báo cáo", m_sidebarFrame);
 
   auto setSidebarBtnStyle = [](QPushButton *btn) {
     btn->setCursor(Qt::PointingHandCursor);
@@ -63,6 +66,7 @@ void AdminDashboardWidget::fillDashboardData() {
   setSidebarBtnStyle(btnManageReception);
   setSidebarBtnStyle(btnManagePharmacists);
   setSidebarBtnStyle(m_btnManageLeaves);
+  setSidebarBtnStyle(m_btnAnalytics);
 
   // Default active style
   btnManageDoctors->setStyleSheet(
@@ -76,6 +80,7 @@ void AdminDashboardWidget::fillDashboardData() {
   m_sidebarLayout->addWidget(btnManageReception);
   m_sidebarLayout->addWidget(btnManagePharmacists);
   m_sidebarLayout->addWidget(m_btnManageLeaves);
+  m_sidebarLayout->addWidget(m_btnAnalytics);
   m_sidebarLayout->addStretch(); // Đẩy menu lên trên
 
   m_btnLogout = new QPushButton("Đăng xuất", m_sidebarFrame);
@@ -99,12 +104,12 @@ void AdminDashboardWidget::fillDashboardData() {
 
   // Khởi tạo các trang quản lý bằng widget độc lập
   m_manageDoctorsPage = new ManageDoctorsWidget(m_staffService, m_baseAppointmentService, this);
-
   m_manageNursesPage = new ManageNursesWidget(m_staffService, this);
   m_managePatientsPage = new ManagePatientsWidget(m_patientService, m_stackedWidget);
   m_manageReceptionPage = new ManageReceptionWidget(m_staffService, this);
   m_managePharmacistsPage = new ManagePharmacistsWidget(m_staffService, this);
   m_manageLeavesPage = new ManageLeaveWidget(m_staffService, m_baseAppointmentService, this);
+  m_analyticsPage = new AdminAnalyticsWidget(m_analyticService, this);
 
   m_stackedWidget->addWidget(m_manageDoctorsPage);
   m_stackedWidget->addWidget(m_manageNursesPage);
@@ -112,6 +117,7 @@ void AdminDashboardWidget::fillDashboardData() {
   m_stackedWidget->addWidget(m_manageReceptionPage);
   m_stackedWidget->addWidget(m_managePharmacistsPage);
   m_stackedWidget->addWidget(m_manageLeavesPage);
+  m_stackedWidget->addWidget(m_analyticsPage);
 
   // Mặc định hiển thị trang Quản lý Bác sĩ
   m_stackedWidget->setCurrentWidget(m_manageDoctorsPage);
@@ -127,6 +133,7 @@ void AdminDashboardWidget::fillDashboardData() {
       btnManageReception->setStyleSheet(activeBtn == btnManageReception ? activeStyle : inactiveStyle);
       btnManagePharmacists->setStyleSheet(activeBtn == btnManagePharmacists ? activeStyle : inactiveStyle);
       m_btnManageLeaves->setStyleSheet(activeBtn == m_btnManageLeaves ? activeStyle : inactiveStyle);
+      m_btnAnalytics->setStyleSheet(activeBtn == m_btnAnalytics ? activeStyle : inactiveStyle);
   };
 
   connect(btnManageDoctors, &QPushButton::clicked, this, [=]() {
@@ -162,5 +169,11 @@ void AdminDashboardWidget::fillDashboardData() {
   connect(m_btnManageLeaves, &QPushButton::clicked, this, [=]() {
       m_stackedWidget->setCurrentWidget(m_manageLeavesPage);
       setActiveMenu(m_btnManageLeaves);
+  });
+
+  connect(m_btnAnalytics, &QPushButton::clicked, this, [=]() {
+      m_stackedWidget->setCurrentWidget(m_analyticsPage);
+      m_analyticsPage->loadAnalyticsData();
+      setActiveMenu(m_btnAnalytics);
   });
 }

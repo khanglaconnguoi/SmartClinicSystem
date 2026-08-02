@@ -14,6 +14,7 @@
 #include "service/PharmacyService.h"
 #include "service/BillingService.h"
 #include "service/ServiceRequestService.h"
+#include "service/AnalyticService.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -27,6 +28,7 @@ public:
                         std::shared_ptr<PharmacyService> pharmacyService = nullptr,
                         std::shared_ptr<BillingService> billingService = nullptr,
                         std::shared_ptr<ServiceRequestService> serviceRequestService = nullptr,
+                        std::shared_ptr<AnalyticService> analyticService = nullptr,
                         QWidget *parent = nullptr);
     ~MainWindow() override;
 
@@ -52,4 +54,5 @@ private:
     std::shared_ptr<PharmacyService> m_pharmacyService;
     std::shared_ptr<BillingService> m_billingService;
     std::shared_ptr<ServiceRequestService> m_serviceRequestService;
+    std::shared_ptr<AnalyticService> m_analyticService;
 };

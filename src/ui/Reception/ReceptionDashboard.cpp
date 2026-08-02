@@ -30,8 +30,6 @@
 #include <QDebug>
 #include <QTextCharFormat>
 #include "../../model/CommonEnums.h"
-#include "../utils/UIValidationUtils.h"
-#include "../../service/Validation.h"
 
 ReceptionDashboardWidget::ReceptionDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
@@ -367,18 +365,13 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   connect(btnAddPatient, &QPushButton::clicked, this, [this]() {
     PatientRegistrationDialog dialog(m_basePatientService, this);
     connect(&dialog, &PatientRegistrationDialog::saved, this,
-            [this](QString phone, QString citizenId, QString /*name*/) {
-              auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId(phone, citizenId);
+            [this](QString citizenId, QString /*name*/) {
+              auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId("", citizenId);
               if (patientOpt) {
                 m_currentPatientId = patientOpt->patientId;
                 m_txtPatientPhone->setText(patientOpt->phone);
-                m_txtPatientCitizenId->setText(citizenId);
-              } else {
-                QMessageBox::warning(this, "Lỗi",
-                                     "Không tìm thấy bệnh nhân vừa tạo. Vui lòng thử lại.");
-                return;
+                // m_txtPatientCitizenId->setText(patientOpt->citizenId); // patientRecord doesn't have citizenId, UI already has it
               }
-
               m_txtPatientPhone->setReadOnly(true);
               m_txtPatientCitizenId->setReadOnly(true);
 
@@ -558,21 +551,6 @@ void ReceptionDashboardWidget::buildRegisterPage() {
     updateDoctorList();
   });
 
-  // --- UI Validation Hooks ---
-  UIValidationUtils::attachPrimitiveValidators(m_txtPatientCitizenId, m_txtPatientPhone);
-
-  connect(m_txtPatientPhone, &QLineEdit::editingFinished, this, [this]() {
-      QString text = m_txtPatientPhone->text().trimmed();
-      QString err = text.isEmpty() ? "" : Validation::validatePhoneNumber(text);
-      UIValidationUtils::applyFieldValidationStyle(m_txtPatientPhone, err);
-  });
-
-  connect(m_txtPatientCitizenId, &QLineEdit::editingFinished, this, [this]() {
-      QString text = m_txtPatientCitizenId->text().trimmed();
-      QString err = text.isEmpty() ? "" : Validation::validateCitizenId(text);
-      UIValidationUtils::applyFieldValidationStyle(m_txtPatientCitizenId, err);
-  });
-
   mainScroll->setWidget(contentWidget);
   m_registerPage = mainScroll;
 
@@ -598,9 +576,7 @@ void ReceptionDashboardWidget::updateDoctorList() {
   DoctorSearchCriteria docCriteria;
   docCriteria.specialty = specialty;
   docCriteria.onlyActive = true;
-  docCriteria.includeDeleted = false;
-  auto doctors = m_staffService->searchDoctorsPaged(docCriteria).items;
-
+  auto doctors = m_staffService ? m_staffService->searchDoctorsPaged(docCriteria).items : QList<std::shared_ptr<SystemUser>>();
 
   if (doctors.isEmpty()) {
       QLabel* lblEmpty = new QLabel("Không có bác sĩ nào cho chuyên khoa này.");
@@ -731,8 +707,7 @@ void ReceptionDashboardWidget::buildPatientsPage() {
   layout->addWidget(table);
 
   PatientSearchCriteria criteria;
-  auto patients = m_basePatientService->searchPatientsPaged(criteria).items;
-
+  auto patients = m_basePatientService ? m_basePatientService->searchPatientsPaged(criteria).items : QList<PatientSearchResultDTO>();
   table->setRowCount(patients.size());
   for (int i = 0; i < patients.size(); ++i) {
       const auto& p = patients[i];
@@ -752,8 +727,10 @@ void ReceptionDashboardWidget::buildPatientsPage() {
       btnHistory->setStyleSheet("QPushButton { background-color: #1A73E8; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; min-width: 95px; }"
                                 "QPushButton:hover { background-color: #1557B0; }");
                                 
-      connect(btnHistory, &QPushButton::clicked, this, [this, patientId = p.patientId, patientName = p.fullName]() {
-          showPatientHistoryDialog(patientId, patientName);
+      int pId = p.patientId;
+      QString pName = p.fullName;
+      connect(btnHistory, &QPushButton::clicked, this, [this, pId, pName]() {
+          showPatientHistoryDialog(pId, pName);
       });
       
       actionLayout->addWidget(btnHistory);
@@ -846,7 +823,7 @@ void ReceptionDashboardWidget::updateAppointmentsTable() {
         QDate apptDate = QDate::fromString(a.appointmentDate, "yyyy-MM-dd");
         QDate todayDate = QDate::currentDate();
 
-        if (a.status == AppointmentStatusText::SCHEDULED && apptDate >= todayDate) {
+        if (a.status == "SCHEDULED" && apptDate >= todayDate) {
             QWidget* widget = new QWidget();
             QHBoxLayout* l = new QHBoxLayout(widget);
             l->setContentsMargins(4, 4, 4, 4);
@@ -1088,7 +1065,7 @@ void ReceptionDashboardWidget::showPatientHistoryDialog(int patientId, const QSt
         QDate apptDate = QDate::fromString(a.appointmentDate, "yyyy-MM-dd");
         QDate todayDate = QDate::currentDate();
 
-        if (a.status == AppointmentStatusText::SCHEDULED && apptDate >= todayDate) {
+        if (a.status == "SCHEDULED" && apptDate >= todayDate) {
             QWidget* widget = new QWidget();
             QHBoxLayout* l = new QHBoxLayout(widget);
             l->setContentsMargins(4, 4, 4, 4);

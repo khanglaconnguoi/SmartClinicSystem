@@ -11,6 +11,7 @@
 #include "repository/PrescriptionRepository.h"
 #include "repository/BillingRepository.h"
 #include "repository/ServiceRequestRepository.h"
+#include "repository/AnalyticRepository.h"
 
 #include "service/AuthService.h"
 #include "service/StaffService.h"
@@ -20,6 +21,7 @@
 #include "service/PharmacyService.h"
 #include "service/BillingService.h"
 #include "service/ServiceRequestService.h"
+#include "service/AnalyticService.h"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -122,6 +124,7 @@ int main(int argc, char *argv[]) {
     auto prescriptionRepo = std::make_shared<PrescriptionRepository>();
     auto billingRepo = std::make_shared<BillingRepository>();
     auto serviceRequestRepo = std::make_shared<ServiceRequestRepository>();
+    auto analyticRepo = std::make_shared<AnalyticRepository>();
 
     // Create Services
     auto authService = std::make_shared<AuthService>(staffRepo);
@@ -132,9 +135,10 @@ int main(int argc, char *argv[]) {
     auto pharmacyService = std::make_shared<PharmacyService>(medicationRepo, prescriptionRepo);
     auto billingService = std::make_shared<BillingService>(billingRepo);
     auto serviceRequestService = std::make_shared<ServiceRequestService>(serviceRequestRepo);
+    auto analyticService = std::make_shared<AnalyticService>(analyticRepo);
 
     // Create MainWindow
-    MainWindow mainWindow(authService, staffService, patientService, appointmentService, medicalRecordService, pharmacyService, billingService, serviceRequestService);
+    MainWindow mainWindow(authService, staffService, patientService, appointmentService, medicalRecordService, pharmacyService, billingService, serviceRequestService, analyticService);
     mainWindow.show();
 
     return app.exec();

@@ -30,13 +30,14 @@ public:
     void loadPatientInfo(int patientId, int appointmentId, const QString& name, const QString& id, const QString& time, const QString& specialty);
     void loadPatientInfo(const PatientDetailDTO& patient, int appointmentId, const QString& time = "", const QString& specialty = "");
     void clearExamForm();
+    int currentAppointmentId() const { return m_currentAppointmentId; }
 
 signals:
     // Tín hiệu yêu cầu quay lại màn hình Dashboard chính
     void backToDashboardRequested();
     void finishExamRequested();
     void viewAppointmentsListRequested();
-    void callPatientRequested();
+    void callPatientRequested(int appointmentId = 0);
 
 private slots:
     void onSaveClicked();
@@ -116,27 +117,12 @@ private:
     QTextEdit* m_txtClsSummary;
 
     // --- UI Setup & Helpers ---
-    /** @brief Khởi tạo và kết nối toàn bộ layout giao diện màn hình khám lâm sàng */
     void setupUi();
-
-    /** @brief Tạo thanh Tab điều hướng chính trên cùng (Danh sách, Khám lâm sàng, Đăng ký khám, Thu tiền) */
     QHBoxLayout* setupTopTabBar();
-
-    /** @brief Tạo Thẻ thông tin bệnh nhân & Thanh nút thao tác nhanh (Lưu, Kết thúc khám, Gọi khám...) */
     QFrame* setupPatientInfoCard();
-
-    /** @brief Tạo Thanh menu chức năng con bên trái (Khám lâm sàng, Chỉ định dịch vụ, Đơn thuốc...) */
     QFrame* setupSubSidebar();
-
-    /** @brief Tạo Form nhập liệu chính ở giữa (Nhập mẫu, Sinh hiệu, BMI, Lý do khám, Chẩn đoán, Lời dặn) */
     QWidget* setupMainExamForm();
-
-    /** @brief Tạo Panel ghi chú chuyên môn bên phải (Tiền sử bệnh, Bệnh sử lâm sàng, Khám toàn thân, Kết quả CLS) */
     QFrame* setupMedicalHistoryPanel();
-
-    /** @brief Khởi tạo đường kẻ phân cách giao diện */
     QFrame* createSeparator();
-
-    /** @brief Tự động tính toán chỉ số BMI dựa theo cân nặng và chiều cao nhập vào */
     void updateBmi();
 };

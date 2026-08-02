@@ -91,8 +91,14 @@ private:
             const QString& specialty,
             int rowIndex,
             bool isFromTodayList = true);
+    void openClinicalExamWithIds(int patientId,
+            int appointmentId,
+            const QString& name,
+            const QString& code,
+            const QString& time,
+            const QString& reason);
     void handlePatientExamFinished();
-    void handleCallPatientRequested();
+    void handleCallPatientRequested(int apptId = -1);
     void refreshAppointmentsTables();
 
    private slots:

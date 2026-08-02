@@ -33,6 +33,7 @@ MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
                        std::shared_ptr<PharmacyService> pharmacyService, 
                        std::shared_ptr<BillingService> billingService,
                        std::shared_ptr<ServiceRequestService> serviceRequestService,
+                       std::shared_ptr<AnalyticService> analyticService,
                        QWidget *parent) : 
   QMainWindow(parent), 
   m_authService(std::move(authService)), 
@@ -42,7 +43,8 @@ MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
   m_medicalRecordService(std::move(medicalRecordService)), 
   m_pharmacyService(std::move(pharmacyService)),
   m_billingService(std::move(billingService)),
-  m_serviceRequestService(std::move(serviceRequestService)) {
+  m_serviceRequestService(std::move(serviceRequestService)),
+  m_analyticService(std::move(analyticService)) {
   setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
   setWindowTitle("Hệ thống Quản lý Phòng khám Thông minh");
   this->setMinimumSize(800, 500);
@@ -135,7 +137,7 @@ void MainWindow::switchToAdminDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   try {
     auto dashboard = new AdminDashboardWidget(
-        user, m_staffService, m_patientService, m_appointmentService, this);
+        user, m_staffService, m_patientService, m_appointmentService, m_analyticService, this);
     registerDashboardPage(dashboard);
   } catch (const std::exception &e) {
     QMessageBox::critical(this, "Lỗi", QString("Exception: %1").arg(e.what()));

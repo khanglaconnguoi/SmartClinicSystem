@@ -19,6 +19,8 @@
 #include <QGraphicsDropShadowEffect>
 #include <QDateEdit>
 #include "service/PatientService.h"
+#include "service/PharmacyService.h"
+#include "service/MedicalRecordService.h"
 #include <memory>
 
 class PatientWidget : public QWidget {
@@ -29,12 +31,15 @@ public:
     ~PatientWidget() override;
 
     void setPatientService(std::shared_ptr<PatientService> patientService);
+    void setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<MedicalRecordService> medicalRecordService) {
+        m_pharmacyService = pharmacyService;
+        m_medicalRecordService = medicalRecordService;
+    }
     void loadPatientsData();
 
 private slots:
     void handlePatientSelected(int row, int column);
     void showPatientList();
-    //void onAddMedicationClicked();
 
 private:
     void setupUi();
@@ -42,6 +47,8 @@ private:
     void createDetailView();
 
     std::shared_ptr<PatientService> m_patientService;
+    std::shared_ptr<PharmacyService> m_pharmacyService;
+    std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     QList<PatientSearchResultDTO> m_patientList;
 
     QVBoxLayout* m_mainLayout;
@@ -56,6 +63,7 @@ private:
     QWidget* m_infoSubPage;
     
     QPushButton* m_btnInfo;
+    QPushButton* m_btnHistoryInfo;
     QPushButton* m_btnBack;
     
     QLineEdit* txtPatientID;
@@ -64,8 +72,6 @@ private:
     QLineEdit* txtPhone;
     QLineEdit* txtAddress;
     QTextEdit* txtNotes;
-    QPushButton* m_btnEditInfo;
-    QPushButton* m_btnDeleteInfo;
     QLineEdit* txtCitizenID;
     QLineEdit* txtEmail;
     QComboBox* cbBloodType;
@@ -74,4 +80,6 @@ private:
     QLineEdit* txtEmergencyName;
     QLineEdit* txtEmergencyPhone;
     QComboBox* cbGender;
+
+    QLineEdit* m_searchBar;
 };

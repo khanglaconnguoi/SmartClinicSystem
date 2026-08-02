@@ -28,6 +28,7 @@ class PatientRecordHistoryDialog : public QDialog {
 public:
     explicit PatientRecordHistoryDialog(
         std::shared_ptr<PharmacyService> pharmacyService = nullptr,
+        std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr,
         QWidget *parent = nullptr
     );
     virtual ~PatientRecordHistoryDialog() override = default;
@@ -44,7 +45,10 @@ private:
     void setupUI();
 
     std::shared_ptr<PharmacyService> m_pharmacyService;
+    std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     int m_currentPatientId = 0;
+    QList<MedicalRecordResultDTO> m_records;
+    QList<PrescriptionResultDTO> m_prescriptions;
 
     // Header info labels
     QLabel       *lblPatientHeader;

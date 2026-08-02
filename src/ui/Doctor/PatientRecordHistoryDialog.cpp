@@ -5,8 +5,9 @@
 
 PatientRecordHistoryDialog::PatientRecordHistoryDialog(
     std::shared_ptr<PharmacyService> pharmacyService,
+    std::shared_ptr<MedicalRecordService> medicalRecordService,
     QWidget *parent)
-    : QDialog(parent), m_pharmacyService(pharmacyService) {
+    : QDialog(parent), m_pharmacyService(pharmacyService), m_medicalRecordService(medicalRecordService) {
     setWindowTitle("Lịch Sử Bệnh Án & Đơn Thuốc Bệnh Nhân");
     setMinimumSize(950, 650);
     setStyleSheet("QDialog { background-color: #F8FAFC; font-family: 'Segoe UI'; }");
@@ -24,23 +25,23 @@ void PatientRecordHistoryDialog::setupUI() {
     lblPatientHeader->setStyleSheet("font-size: 18px; font-weight: bold; color: #0F172A;");
     mainLayout->addWidget(lblPatientHeader);
 
-    // 2. Workspace Cột Trái (Danh sách đơn/ca khám) + Cột Phải (Chi tiết)
+    // 2. Workspace Cột Trái (Danh sách ca khám / đơn) + Cột Phải (Chi tiết)
     QHBoxLayout *workspaceLayout = new QHBoxLayout();
     workspaceLayout->setSpacing(14);
 
-    // Cột Trái: Bảng đơn thuốc / ca khám
+    // Cột Trái: Bảng ca khám
     QFrame *leftFrame = new QFrame(this);
     leftFrame->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; }");
     QVBoxLayout *leftLayout = new QVBoxLayout(leftFrame);
     leftLayout->setContentsMargins(12, 12, 12, 12);
 
-    QLabel *lblListTitle = new QLabel("Danh sách ca khám / Đơn thuốc:", leftFrame);
+    QLabel *lblListTitle = new QLabel("Danh sách ca khám quá khứ:", leftFrame);
     lblListTitle->setStyleSheet("font-weight: bold; color: #334155; border: none;");
     leftLayout->addWidget(lblListTitle);
 
     tblRecordList = new QTableWidget(leftFrame);
-    tblRecordList->setColumnCount(4);
-    tblRecordList->setHorizontalHeaderLabels({"Mã Đơn", "Ngày Kê", "Bác Sĩ", "Trạng Thái"});
+    tblRecordList->setColumnCount(3);
+    tblRecordList->setHorizontalHeaderLabels({"Mã Bệnh Án", "Thời Gian Khám", "Lý Do Khám"});
     tblRecordList->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     tblRecordList->setSelectionBehavior(QAbstractItemView::SelectRows);
     tblRecordList->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -62,26 +63,26 @@ void PatientRecordHistoryDialog::setupUI() {
     rightLayout->setSpacing(8);
 
     QHBoxLayout *r1 = new QHBoxLayout();
-    r1->addWidget(new QLabel("Ngày kê:", rightFrame));
+    r1->addWidget(new QLabel("Ngày khám:", rightFrame));
     txtRecordDate = new QLineEdit(rightFrame); txtRecordDate->setReadOnly(true);
     r1->addWidget(txtRecordDate);
-    r1->addWidget(new QLabel("Bác sĩ:", rightFrame));
+    r1->addWidget(new QLabel("Mã Bác sĩ:", rightFrame));
     txtDoctorName = new QLineEdit(rightFrame); txtDoctorName->setReadOnly(true);
     r1->addWidget(txtDoctorName);
     rightLayout->addLayout(r1);
 
     QHBoxLayout *r2 = new QHBoxLayout();
-    r2->addWidget(new QLabel("Chẩn đoán:", rightFrame));
+    r2->addWidget(new QLabel("Chẩn đoán ICD:", rightFrame));
     txtDiagnosis = new QLineEdit(rightFrame); txtDiagnosis->setReadOnly(true);
     r2->addWidget(txtDiagnosis);
     rightLayout->addLayout(r2);
 
-    rightLayout->addWidget(new QLabel("Ghi chú / Lời dặn:", rightFrame));
+    rightLayout->addWidget(new QLabel("Diễn biến & Hướng điều trị:", rightFrame));
     txtTreatmentAdvice = new QTextEdit(rightFrame); txtTreatmentAdvice->setReadOnly(true);
     txtTreatmentAdvice->setFixedHeight(50);
     rightLayout->addWidget(txtTreatmentAdvice);
 
-    rightLayout->addWidget(new QLabel("Chi tiết đơn thuốc cũ:", rightFrame));
+    rightLayout->addWidget(new QLabel("Chi tiết đơn thuốc đã kê:", rightFrame));
     tblOldPrescription = new QTableWidget(rightFrame);
     tblOldPrescription->setColumnCount(6);
     tblOldPrescription->setHorizontalHeaderLabels({"Tên Thuốc", "Đơn Giá", "Số Lượng", "Liều Lượng", "Tần Suất", "Số Ngày"});
@@ -111,62 +112,98 @@ void PatientRecordHistoryDialog::loadPatientHistory(int patientId, const QString
     m_currentPatientId = patientId;
     lblPatientHeader->setText(QString("LỊCH SỬ KHÁM BỆNH - %1 (%2)").arg(patientName, patientCode));
 
-    if (!m_pharmacyService) return;
+    m_records.clear();
+    m_prescriptions.clear();
 
-    auto prescriptions = m_pharmacyService->getPrescriptionsByPatient(patientId);
-    tblRecordList->setRowCount(0);
-
-    for (int i = 0; i < prescriptions.size(); ++i) {
-        const auto &p = prescriptions[i];
-        tblRecordList->insertRow(i);
-
-        QTableWidgetItem *itemCode = new QTableWidgetItem(QString("DT%1").arg(p.prescriptionId, 6, 10, QChar('0')));
-        itemCode->setData(Qt::UserRole, p.prescriptionId);
-        itemCode->setData(Qt::UserRole + 1, p.recordId);
-        
-        QTableWidgetItem *itemDate = new QTableWidgetItem(p.prescribedAt.toString("yyyy-MM-dd HH:mm"));
-        QTableWidgetItem *itemDoc = new QTableWidgetItem(p.doctorName);
-        QTableWidgetItem *itemStatus = new QTableWidgetItem(prescriptionStatusToVi(p.status));
-
-        tblRecordList->setItem(i, 0, itemCode);
-        tblRecordList->setItem(i, 1, itemDate);
-        tblRecordList->setItem(i, 2, itemDoc);
-        tblRecordList->setItem(i, 3, itemStatus);
+    if (m_medicalRecordService) {
+        m_records = m_medicalRecordService->getMedicalHistory(patientId);
+    }
+    if (m_pharmacyService) {
+        m_prescriptions = m_pharmacyService->getPrescriptionsByPatient(patientId);
     }
 
-    if (!prescriptions.isEmpty()) {
+    tblRecordList->setRowCount(0);
+
+    if (!m_records.isEmpty()) {
+        for (int i = 0; i < m_records.size(); ++i) {
+            const auto &rec = m_records[i];
+            tblRecordList->insertRow(i);
+
+            QTableWidgetItem *itemCode = new QTableWidgetItem(QString("BA%1").arg(rec.recordId, 6, 10, QChar('0')));
+            QTableWidgetItem *itemDate = new QTableWidgetItem(rec.visitDateTime.toString("yyyy-MM-dd HH:mm"));
+            QTableWidgetItem *itemReason = new QTableWidgetItem(rec.chiefComplaint);
+
+            tblRecordList->setItem(i, 0, itemCode);
+            tblRecordList->setItem(i, 1, itemDate);
+            tblRecordList->setItem(i, 2, itemReason);
+        }
+        tblRecordList->selectRow(0);
+        onRecordSelected(0, 0);
+    } else if (!m_prescriptions.isEmpty()) {
+        for (int i = 0; i < m_prescriptions.size(); ++i) {
+            const auto &p = m_prescriptions[i];
+            tblRecordList->insertRow(i);
+
+            QTableWidgetItem *itemCode = new QTableWidgetItem(QString("DT%1").arg(p.prescriptionId, 6, 10, QChar('0')));
+            QTableWidgetItem *itemDate = new QTableWidgetItem(p.prescribedAt.toString("yyyy-MM-dd HH:mm"));
+            QTableWidgetItem *itemReason = new QTableWidgetItem(p.diagnosis);
+
+            tblRecordList->setItem(i, 0, itemCode);
+            tblRecordList->setItem(i, 1, itemDate);
+            tblRecordList->setItem(i, 2, itemReason);
+        }
         tblRecordList->selectRow(0);
         onRecordSelected(0, 0);
     }
 }
 
 void PatientRecordHistoryDialog::onRecordSelected(int row, int /*column*/) {
-    if (row < 0 || !tblRecordList->item(row, 0)) return;
+    if (!m_records.isEmpty() && row >= 0 && row < m_records.size()) {
+        const auto &rec = m_records[row];
+        txtRecordDate->setText(rec.visitDateTime.toString("dd/MM/yyyy HH:mm"));
+        txtDoctorName->setText(QString("BS ID: %1").arg(rec.doctorId));
 
-    int recordId = tblRecordList->item(row, 0)->data(Qt::UserRole + 1).toInt();
-    if (!m_pharmacyService) return;
+        QStringList diagList;
+        for (const auto &d : rec.diagnoses) {
+            diagList.append(QString("%1: %2").arg(d.icdCode, d.description));
+        }
+        txtDiagnosis->setText(diagList.isEmpty() ? "---" : diagList.join("; "));
+        txtTreatmentAdvice->setText(QString("Diễn biến: %1 | Hướng điều trị: %2").arg(rec.clinicalNotes, rec.treatment));
 
-    PrescriptionSearchCriteria criteria;
-    criteria.recordId = recordId;
-    auto list = m_pharmacyService->searchPrescriptionsPaged(criteria).items;
+        // Load matching prescription if any
+        tblOldPrescription->setRowCount(0);
+        for (const auto &p : m_prescriptions) {
+            if (p.recordId == rec.recordId) {
+                for (int i = 0; i < p.items.size(); ++i) {
+                    const auto &item = p.items[i];
+                    tblOldPrescription->insertRow(i);
+                    tblOldPrescription->setItem(i, 0, new QTableWidgetItem(item.brandName));
+                    tblOldPrescription->setItem(i, 1, new QTableWidgetItem(QString("%1 đ").arg(item.unitPrice, 0, 'f', 0)));
+                    tblOldPrescription->setItem(i, 2, new QTableWidgetItem(QString::number(item.quantity)));
+                    tblOldPrescription->setItem(i, 3, new QTableWidgetItem(item.dosage));
+                    tblOldPrescription->setItem(i, 4, new QTableWidgetItem(item.frequency));
+                    tblOldPrescription->setItem(i, 5, new QTableWidgetItem(QString("%1 ngày").arg(item.durationDays)));
+                }
+                break;
+            }
+        }
+    } else if (!m_prescriptions.isEmpty() && row >= 0 && row < m_prescriptions.size()) {
+        const auto &p = m_prescriptions[row];
+        txtRecordDate->setText(p.prescribedAt.toString("dd/MM/yyyy HH:mm"));
+        txtDoctorName->setText(p.doctorName);
+        txtDiagnosis->setText(p.diagnosis.isEmpty() ? "---" : p.diagnosis);
+        txtTreatmentAdvice->setText(p.notes.isEmpty() ? "Không có ghi chú" : p.notes);
 
-    if (list.isEmpty()) return;
-
-    const auto &p = list.first();
-    txtRecordDate->setText(p.prescribedAt.toString("dd/MM/yyyy HH:mm"));
-    txtDoctorName->setText(p.doctorName);
-    txtDiagnosis->setText(p.diagnosis.isEmpty() ? "---" : p.diagnosis);
-    txtTreatmentAdvice->setText(p.notes.isEmpty() ? "Không có ghi chú" : p.notes);
-
-    tblOldPrescription->setRowCount(0);
-    for (int i = 0; i < p.items.size(); ++i) {
-        const auto &item = p.items[i];
-        tblOldPrescription->insertRow(i);
-        tblOldPrescription->setItem(i, 0, new QTableWidgetItem(item.brandName));
-        tblOldPrescription->setItem(i, 1, new QTableWidgetItem(QString("%1 đ").arg(item.unitPrice, 0, 'f', 0)));
-        tblOldPrescription->setItem(i, 2, new QTableWidgetItem(QString::number(item.quantity)));
-        tblOldPrescription->setItem(i, 3, new QTableWidgetItem(item.dosage));
-        tblOldPrescription->setItem(i, 4, new QTableWidgetItem(item.frequency));
-        tblOldPrescription->setItem(i, 5, new QTableWidgetItem(QString("%1 ngày").arg(item.durationDays)));
+        tblOldPrescription->setRowCount(0);
+        for (int i = 0; i < p.items.size(); ++i) {
+            const auto &item = p.items[i];
+            tblOldPrescription->insertRow(i);
+            tblOldPrescription->setItem(i, 0, new QTableWidgetItem(item.brandName));
+            tblOldPrescription->setItem(i, 1, new QTableWidgetItem(QString("%1 đ").arg(item.unitPrice, 0, 'f', 0)));
+            tblOldPrescription->setItem(i, 2, new QTableWidgetItem(QString::number(item.quantity)));
+            tblOldPrescription->setItem(i, 3, new QTableWidgetItem(item.dosage));
+            tblOldPrescription->setItem(i, 4, new QTableWidgetItem(item.frequency));
+            tblOldPrescription->setItem(i, 5, new QTableWidgetItem(QString("%1 ngày").arg(item.durationDays)));
+        }
     }
 }
