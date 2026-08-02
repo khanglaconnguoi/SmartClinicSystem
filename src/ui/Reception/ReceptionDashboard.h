@@ -78,6 +78,7 @@ private:
   class QLabel *m_lblPatientNum = nullptr;
 
   // Management UI
+  QTableWidget *m_patientsTable = nullptr;
   QTableWidget *m_appointmentsTable = nullptr;
   QDateEdit *m_apptDateEdit = nullptr;
 
@@ -86,6 +87,7 @@ private:
   void buildOverviewPage();
   void buildRegisterPage();
   void buildPatientsPage();
+  void refreshPatientsTable();
   void buildAppointmentsPage();
   void buildRoomQueuePage();
   void onPatientTypeSelected(bool isNew);

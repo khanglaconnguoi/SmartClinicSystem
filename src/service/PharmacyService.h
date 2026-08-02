@@ -268,4 +268,9 @@ public:
      *        Dùng để kiểm tra tiền sử dùng thuốc — hỗ trợ cảnh báo dị ứng.
      */
     QList<PrescriptionResultDTO> getPrescriptionsByPatient(int patientId) const;
+
+    /**
+     * @brief Báo cáo số lượng & giá trị sử dụng thuốc định kỳ trong khoảng thời gian [from, to].
+     */
+    MedicationUsageReportDTO getMedicationUsageReport(const QDateTime& from, const QDateTime& to) const;
 };

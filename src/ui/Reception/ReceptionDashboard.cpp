@@ -9,6 +9,7 @@
 #include "../view/Profile.h"
 #include "RoomQueueWidget.h"
 #include "RoomQueueDialog.h"
+#include "PatientEditDialog.h"
 #include <QComboBox>
 #include <QDateEdit>
 #include <QCalendarWidget>
@@ -704,28 +705,36 @@ void ReceptionDashboardWidget::buildPatientsPage() {
   lblTitle->setStyleSheet("font-size: 24px; font-weight: bold; color: #202124;");
   layout->addWidget(lblTitle);
 
-  QTableWidget* table = new QTableWidget(0, 6, m_patientsPage);
-  table->setHorizontalHeaderLabels({"Mã BN", "Họ Tên", "Giới Tính", "Điện Thoại", "Ngày Sinh", "Lịch sử khám"});
-  table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  table->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
-  table->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
+  m_patientsTable = new QTableWidget(0, 6, m_patientsPage);
+  m_patientsTable->setHorizontalHeaderLabels({"Mã BN", "Họ Tên", "Giới Tính", "Điện Thoại", "Ngày Sinh", "Thao tác"});
+  m_patientsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  m_patientsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+  m_patientsTable->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
                        "QHeaderView::section { background-color: #F1F3F4; font-weight: bold; border: none; padding: 10px; color: #5F6368; }"
                        "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; }");
-  table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  table->setSelectionBehavior(QAbstractItemView::SelectRows);
-  table->verticalHeader()->setDefaultSectionSize(45); // Tăng chiều cao hàng để nút bấm hiển thị rõ chữ
-  layout->addWidget(table);
+  m_patientsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_patientsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_patientsTable->verticalHeader()->setDefaultSectionSize(45);
+  layout->addWidget(m_patientsTable);
+  layout->addStretch();
+
+  refreshPatientsTable();
+}
+
+void ReceptionDashboardWidget::refreshPatientsTable() {
+  if (!m_patientsTable) return;
+  m_patientsTable->setRowCount(0);
 
   PatientSearchCriteria criteria;
   auto patients = m_basePatientService ? m_basePatientService->searchPatientsPaged(criteria).items : QList<PatientSearchResultDTO>();
-  table->setRowCount(patients.size());
+  m_patientsTable->setRowCount(patients.size());
   for (int i = 0; i < patients.size(); ++i) {
       const auto& p = patients[i];
-      table->setItem(i, 0, new QTableWidgetItem(p.patientCode));
-      table->setItem(i, 1, new QTableWidgetItem(p.fullName));
-      table->setItem(i, 2, new QTableWidgetItem(GenderText::toVi(p.gender)));
-      table->setItem(i, 3, new QTableWidgetItem(p.phone));
-      table->setItem(i, 4, new QTableWidgetItem(p.dateOfBirth.toString("dd/MM/yyyy")));
+      m_patientsTable->setItem(i, 0, new QTableWidgetItem(p.patientCode));
+      m_patientsTable->setItem(i, 1, new QTableWidgetItem(p.fullName));
+      m_patientsTable->setItem(i, 2, new QTableWidgetItem(GenderText::toVi(p.gender)));
+      m_patientsTable->setItem(i, 3, new QTableWidgetItem(p.phone));
+      m_patientsTable->setItem(i, 4, new QTableWidgetItem(p.dateOfBirth.toString("dd/MM/yyyy")));
 
       QWidget* actionWidget = new QWidget();
       QHBoxLayout* actionLayout = new QHBoxLayout(actionWidget);
@@ -736,18 +745,31 @@ void ReceptionDashboardWidget::buildPatientsPage() {
       btnHistory->setCursor(Qt::PointingHandCursor);
       btnHistory->setStyleSheet("QPushButton { background-color: #1A73E8; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; min-width: 95px; }"
                                 "QPushButton:hover { background-color: #1557B0; }");
+
+      QPushButton* btnEdit = new QPushButton("Sửa");
+      btnEdit->setCursor(Qt::PointingHandCursor);
+      btnEdit->setStyleSheet("QPushButton { background-color: #F59E0B; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; min-width: 55px; }"
+                                "QPushButton:hover { background-color: #D97706; }");
                                 
       int pId = p.patientId;
       QString pName = p.fullName;
       connect(btnHistory, &QPushButton::clicked, this, [this, pId, pName]() {
           showPatientHistoryDialog(pId, pName);
       });
+
+      connect(btnEdit, &QPushButton::clicked, this, [this, pId]() {
+          PatientEditDialog dialog(pId, m_basePatientService, this);
+          connect(&dialog, &PatientEditDialog::patientUpdated, this, [this]() {
+              refreshPatientsTable();
+          });
+          dialog.exec();
+      });
       
       actionLayout->addWidget(btnHistory);
+      actionLayout->addWidget(btnEdit);
       actionLayout->setAlignment(Qt::AlignCenter);
-      table->setCellWidget(i, 5, actionWidget);
+      m_patientsTable->setCellWidget(i, 5, actionWidget);
   }
-  layout->addStretch();
 }
 
 void ReceptionDashboardWidget::buildAppointmentsPage() {

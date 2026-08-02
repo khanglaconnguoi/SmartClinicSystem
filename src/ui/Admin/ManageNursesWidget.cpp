@@ -171,6 +171,13 @@ void ManageNursesWidget::loadNursesList() {
             "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
             "{ background-color: #EBF5FF; }");
 
+        QPushButton *btnResetPwd = new QPushButton("Reset MK");
+        btnResetPwd->setCursor(Qt::PointingHandCursor);
+        btnResetPwd->setStyleSheet(
+            "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 4px "
+            "8px; border-radius: 4px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "{ background-color: #FEF3C7; }");
+
         QPushButton *btnDeactivate = new QPushButton(nurse->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
         btnDeactivate->setCursor(Qt::PointingHandCursor);
         if (nurse->isActive()) {
@@ -186,8 +193,28 @@ void ManageNursesWidget::loadNursesList() {
         }
 
         actionLayout->addWidget(btnEdit);
+        actionLayout->addWidget(btnResetPwd);
         actionLayout->addWidget(btnDeactivate);
         m_tblNurses->setCellWidget(i, 6, actionWidget);
+
+        connect(btnEdit, &QPushButton::clicked, this,
+                [this, nurse]() { showEditNurseDialog(nurse); });
+
+        connect(btnResetPwd, &QPushButton::clicked, this, [this, nurse]() {
+            auto confirm = QMessageBox::question(this, "Xác nhận Reset Mật khẩu",
+                QString("Bạn có chắc chắn muốn reset mật khẩu cho Y tá %1 (%2)?").arg(nurse->getFullName(), nurse->getStaffCode()),
+                QMessageBox::Yes | QMessageBox::No);
+            if (confirm == QMessageBox::Yes) {
+                auto res = m_staffService->resetPassword(nurse->getAccountId());
+                if (res.result) {
+                    QMessageBox::information(this, "Reset Mật khẩu thành công",
+                        QString("Mật khẩu mới cho Y tá %1 (%2) là:\n\n%3\n\nTài khoản sẽ yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo.")
+                        .arg(nurse->getFullName(), nurse->getStaffCode(), res.newPassword));
+                } else {
+                    QMessageBox::warning(this, "Lỗi", "Không thể reset mật khẩu cho Y tá này.");
+                }
+            }
+        });
 
         connect(btnEdit, &QPushButton::clicked, this,
                 [this, nurse]() { showEditNurseDialog(nurse); });

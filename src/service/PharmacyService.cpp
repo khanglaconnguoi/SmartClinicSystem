@@ -579,5 +579,51 @@ PagedResult<PrescriptionResultDTO> PharmacyService::searchPrescriptionsPaged(
   return m_prescriptionRepo->searchPaged(criteria);
 }
 
+MedicationUsageReportDTO PharmacyService::getMedicationUsageReport(const QDateTime& from, const QDateTime& to) const {
+  MedicationUsageReportDTO report;
+  report.fromDate = from;
+  report.toDate = to;
+
+  PrescriptionSearchCriteria criteria;
+  criteria.fromDate = from;
+  criteria.toDate = to;
+  criteria.status = "DISPENSED";
+  criteria.pageSize = 10000;
+
+  QList<PrescriptionResultDTO> prescriptions = searchPrescriptions(criteria);
+
+  QMap<QString, MedicationUsageReportItemDTO> usageMap;
+
+  for (const auto& presc : prescriptions) {
+    for (const auto& item : presc.items) {
+      auto& rItem = usageMap[item.brandName];
+      rItem.brandName = item.brandName;
+      rItem.totalQuantity += item.quantity;
+      rItem.unitPrice = item.unitPrice;
+      rItem.totalValue += item.quantity * item.unitPrice;
+      rItem.prescriptionCount += 1;
+      
+      if (m_medicationRepo) {
+        auto medPtr = m_medicationRepo->findById(item.medicationId);
+        if (medPtr && !medPtr->getUnit().isEmpty()) {
+          rItem.unit = medPtr->getUnit();
+        }
+      }
+    }
+  }
+
+  for (auto it = usageMap.begin(); it != usageMap.end(); ++it) {
+    report.items.append(it.value());
+    report.totalQuantity += it.value().totalQuantity;
+    report.totalValue += it.value().totalValue;
+  }
+
+  std::sort(report.items.begin(), report.items.end(), [](const MedicationUsageReportItemDTO& a, const MedicationUsageReportItemDTO& b) {
+    return a.totalQuantity > b.totalQuantity;
+  });
+
+  return report;
+}
+
 
 

@@ -1320,7 +1320,8 @@ void PharmacistDashboardWidget::buildReportsPage() {
     m_dateReportTo->setDate(QDate::currentDate());
 
     QPushButton* btnGenerate = new QPushButton("Tạo Báo Cáo", m_reportsPage);
-    btnGenerate->setStyleSheet("background-color: #4B94F2; color: white; padding: 6px 16px; border-radius: 4px; border: none; font-weight: bold;");
+    btnGenerate->setCursor(Qt::PointingHandCursor);
+    btnGenerate->setStyleSheet("QPushButton { background-color: #2563EB; color: white; padding: 6px 16px; border-radius: 4px; border: none; font-weight: bold; } QPushButton:hover { background-color: #1D4ED8; }");
 
     rangeLayout->addWidget(new QLabel("Từ ngày:"));
     rangeLayout->addWidget(m_dateReportFrom);
@@ -1331,13 +1332,24 @@ void PharmacistDashboardWidget::buildReportsPage() {
     mainLayout->addLayout(rangeLayout);
 
     QHBoxLayout* kpiLay = new QHBoxLayout();
+    kpiLay->setSpacing(16);
+
     QFrame* kpi1 = makeCard(m_reportsPage);
     QVBoxLayout* kpi1Lay = new QVBoxLayout(kpi1);
-    kpi1Lay->addWidget(new QLabel("Tổng lượng thuốc đã cấp phát (Đơn vị)", kpi1));
+    kpi1Lay->addWidget(new QLabel("Tổng lượng thuốc cấp phát", kpi1));
     m_lblReportTotalQty = new QLabel("0", kpi1);
-    m_lblReportTotalQty->setStyleSheet("font-size: 20px; font-weight: bold; color: #2B6CB0;");
+    m_lblReportTotalQty->setStyleSheet("font-size: 22px; font-weight: bold; color: #2563EB;");
     kpi1Lay->addWidget(m_lblReportTotalQty);
     kpiLay->addWidget(kpi1);
+
+    QFrame* kpi2 = makeCard(m_reportsPage);
+    QVBoxLayout* kpi2Lay = new QVBoxLayout(kpi2);
+    kpi2Lay->addWidget(new QLabel("Tổng giá trị tiêu thụ (VNĐ)", kpi2));
+    m_lblReportTotalValue = new QLabel("0 VNĐ", kpi2);
+    m_lblReportTotalValue->setStyleSheet("font-size: 22px; font-weight: bold; color: #059669;");
+    kpi2Lay->addWidget(m_lblReportTotalValue);
+    kpiLay->addWidget(kpi2);
+
     mainLayout->addLayout(kpiLay);
 
     QHBoxLayout* workLayout = new QHBoxLayout();
@@ -1346,13 +1358,13 @@ void PharmacistDashboardWidget::buildReportsPage() {
     QFrame* tableCard = makeCard(m_reportsPage);
     QVBoxLayout* tableCardLayout = new QVBoxLayout(tableCard);
     
-    QLabel* lblTblTitle = new QLabel("CHI TIẾT TIÊU THỤ THUỐC", tableCard);
-    lblTblTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #4A5568;");
+    QLabel* lblTblTitle = new QLabel("CHI TIẾT TIÊU THỤ THUỐC ĐỊNH KỲ", tableCard);
+    lblTblTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #374151;");
     tableCardLayout->addWidget(lblTblTitle);
 
     m_tblReportUsage = new QTableWidget(tableCard);
-    m_tblReportUsage->setColumnCount(3);
-    m_tblReportUsage->setHorizontalHeaderLabels({"Tên thuốc", "Tổng lượng sử dụng", "Đơn vị tính"});
+    m_tblReportUsage->setColumnCount(5);
+    m_tblReportUsage->setHorizontalHeaderLabels({"Tên thuốc", "Số lượng", "Đơn vị", "Đơn giá (VNĐ)", "Tổng giá trị (VNĐ)"});
     m_tblReportUsage->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tblReportUsage->setEditTriggers(QAbstractItemView::NoEditTriggers);
     tableCardLayout->addWidget(m_tblReportUsage);
@@ -1362,7 +1374,7 @@ void PharmacistDashboardWidget::buildReportsPage() {
     QVBoxLayout* chartLayout = new QVBoxLayout(chartCard);
     
     QLabel* lblChartTitle = new QLabel("TOP 5 THUỐC SỬ DỤNG NHIỀU NHẤT", chartCard);
-    lblChartTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #4A5568;");
+    lblChartTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #374151;");
     chartLayout->addWidget(lblChartTitle);
 
     m_chartView = new QChartView(chartCard);
@@ -1377,47 +1389,32 @@ void PharmacistDashboardWidget::buildReportsPage() {
 }
 
 void PharmacistDashboardWidget::generateReport() {
+    if (!m_tblReportUsage || !m_pharmacyService) return;
     m_tblReportUsage->setRowCount(0);
 
     QDateTime from(m_dateReportFrom->date(), QTime(0, 0, 0));
     QDateTime to(m_dateReportTo->date(), QTime(23, 59, 59));
 
-    PrescriptionSearchCriteria criteria;
-    criteria.fromDate = from;
-    criteria.toDate = to;
-    criteria.status = "DISPENSED";
-    
-    QList<PrescriptionResultDTO> prescriptions = m_pharmacyService->searchPrescriptions(criteria);
-    QMap<QString, int> usage;
-    for (const auto& presc : prescriptions) {
-        for (const auto& item : presc.items) {
-            usage[item.brandName] += item.quantity;
-        }
-    }
+    MedicationUsageReportDTO report = m_pharmacyService->getMedicationUsageReport(from, to);
 
-    int totalQty = 0;
+    QLocale locale(QLocale::Vietnamese, QLocale::Vietnam);
+
     int row = 0;
-    QList<QPair<QString, int>> sortedList;
-
-    for (auto it = usage.begin(); it != usage.end(); ++it) {
+    for (const auto& item : report.items) {
         m_tblReportUsage->insertRow(row);
-        m_tblReportUsage->setItem(row, 0, new QTableWidgetItem(it.key()));
-        m_tblReportUsage->setItem(row, 1, new QTableWidgetItem(QString::number(it.value())));
-        m_tblReportUsage->setItem(row, 2, new QTableWidgetItem("Đơn vị"));
-
-        totalQty += it.value();
-        sortedList.append({it.key(), it.value()});
+        m_tblReportUsage->setItem(row, 0, new QTableWidgetItem(item.brandName));
+        m_tblReportUsage->setItem(row, 1, new QTableWidgetItem(locale.toString(item.totalQuantity)));
+        m_tblReportUsage->setItem(row, 2, new QTableWidgetItem(item.unit));
+        m_tblReportUsage->setItem(row, 3, new QTableWidgetItem(locale.toString((qlonglong)item.unitPrice)));
+        m_tblReportUsage->setItem(row, 4, new QTableWidgetItem(locale.toString((qlonglong)item.totalValue)));
         row++;
     }
 
-    m_lblReportTotalQty->setText(QString::number(totalQty));
-
-    std::sort(sortedList.begin(), sortedList.end(), [](const QPair<QString, int>& a, const QPair<QString, int>& b) {
-        return a.second > b.second;
-    });
+    m_lblReportTotalQty->setText(QString("%1 đơn vị").arg(locale.toString(report.totalQuantity)));
+    m_lblReportTotalValue->setText(QString("%1 VNĐ").arg(locale.toString((qlonglong)report.totalValue)));
 
     QChart* chart = new QChart();
-    chart->setTitle("Tần suất sử dụng thuốc (Đơn vị tính)");
+    chart->setTitle("Tần suất sử dụng thuốc");
     chart->setAnimationOptions(QChart::SeriesAnimations);
 
     QBarSeries* series = new QBarSeries();
@@ -1426,12 +1423,12 @@ void PharmacistDashboardWidget::generateReport() {
     QStringList categories;
     int maxVal = 0;
     
-    int topCount = qMin(5, sortedList.size());
+    int topCount = qMin(5, report.items.size());
     for (int i = 0; i < topCount; ++i) {
-        *barSet << sortedList[i].second;
-        categories << sortedList[i].first;
-        if (sortedList[i].second > maxVal) {
-            maxVal = sortedList[i].second;
+        *barSet << report.items[i].totalQuantity;
+        categories << report.items[i].brandName;
+        if (report.items[i].totalQuantity > maxVal) {
+            maxVal = report.items[i].totalQuantity;
         }
     }
 

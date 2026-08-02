@@ -116,3 +116,21 @@ struct PrescriptionResultDTO {
       cancelledInfo; // Có giá trị nếu status == "CANCELLED" (đã gồm lý do hủy
                      // bên trong)
 };
+
+struct MedicationUsageReportItemDTO {
+  QString brandName;
+  int totalQuantity = 0;
+  QString unit = "Viên";
+  double unitPrice = 0.0;
+  double totalValue = 0.0;
+  int prescriptionCount = 0;
+};
+
+struct MedicationUsageReportDTO {
+  QDateTime fromDate;
+  QDateTime toDate;
+  int totalQuantity = 0;
+  double totalValue = 0.0;
+  QList<MedicationUsageReportItemDTO> items;
+};
+

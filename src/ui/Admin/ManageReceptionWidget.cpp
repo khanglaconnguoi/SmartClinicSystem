@@ -155,6 +155,13 @@ void ManageReceptionWidget::loadReceptionList() {
             "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
             "{ background-color: #EBF5FF; }");
 
+        QPushButton *btnResetPwd = new QPushButton("Reset MK");
+        btnResetPwd->setCursor(Qt::PointingHandCursor);
+        btnResetPwd->setStyleSheet(
+            "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 4px "
+            "8px; border-radius: 4px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "{ background-color: #FEF3C7; }");
+
         QPushButton *btnDeactivate = new QPushButton(receptionist->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
         btnDeactivate->setCursor(Qt::PointingHandCursor);
         if (receptionist->isActive()) {
@@ -170,11 +177,28 @@ void ManageReceptionWidget::loadReceptionList() {
         }
 
         actionLayout->addWidget(btnEdit);
+        actionLayout->addWidget(btnResetPwd);
         actionLayout->addWidget(btnDeactivate);
         m_tblReception->setCellWidget(i, 5, actionWidget);
 
         connect(btnEdit, &QPushButton::clicked, this,
                 [this, receptionist]() { showEditReceptionDialog(receptionist); });
+
+        connect(btnResetPwd, &QPushButton::clicked, this, [this, receptionist]() {
+            auto confirm = QMessageBox::question(this, "Xác nhận Reset Mật khẩu",
+                QString("Bạn có chắc chắn muốn reset mật khẩu cho Lễ tân %1 (%2)?").arg(receptionist->getFullName(), receptionist->getStaffCode()),
+                QMessageBox::Yes | QMessageBox::No);
+            if (confirm == QMessageBox::Yes) {
+                auto res = m_staffService->resetPassword(receptionist->getAccountId());
+                if (res.result) {
+                    QMessageBox::information(this, "Reset Mật khẩu thành công",
+                        QString("Mật khẩu mới cho Lễ tân %1 (%2) là:\n\n%3\n\nTài khoản sẽ yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo.")
+                        .arg(receptionist->getFullName(), receptionist->getStaffCode(), res.newPassword));
+                } else {
+                    QMessageBox::warning(this, "Lỗi", "Không thể reset mật khẩu cho Lễ tân này.");
+                }
+            }
+        });
                 
         connect(btnDeactivate, &QPushButton::clicked, this, [this, receptionist]() {
             if (receptionist->isActive()) {

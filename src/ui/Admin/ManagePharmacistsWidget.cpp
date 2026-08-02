@@ -147,6 +147,13 @@ void ManagePharmacistsWidget::loadPharmacistsList() {
         "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
         "{ background-color: #EBF5FF; }");
 
+    QPushButton *btnResetPwd = new QPushButton("Reset MK");
+    btnResetPwd->setCursor(Qt::PointingHandCursor);
+    btnResetPwd->setStyleSheet(
+        "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 4px "
+        "8px; border-radius: 4px; background-color: white; font-weight: bold; } QPushButton:hover "
+        "{ background-color: #FEF3C7; }");
+
     QPushButton *btnDeactivate = new QPushButton(doc->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
     btnDeactivate->setCursor(Qt::PointingHandCursor);
     if (doc->isActive()) {
@@ -162,11 +169,28 @@ void ManagePharmacistsWidget::loadPharmacistsList() {
     }
 
     actionLayout->addWidget(btnEdit);
+    actionLayout->addWidget(btnResetPwd);
     actionLayout->addWidget(btnDeactivate);
     m_tblPharmacists->setCellWidget(row, 6, actionWidget);
 
     connect(btnEdit, &QPushButton::clicked, this,
             [this, doc]() { showEditPharmacistDialog(doc); });
+
+    connect(btnResetPwd, &QPushButton::clicked, this, [this, doc]() {
+        auto confirm = QMessageBox::question(this, "Xác nhận Reset Mật khẩu",
+            QString("Bạn có chắc chắn muốn reset mật khẩu cho Dược sĩ %1 (%2)?").arg(doc->getFullName(), doc->getStaffCode()),
+            QMessageBox::Yes | QMessageBox::No);
+        if (confirm == QMessageBox::Yes) {
+            auto res = m_staffService->resetPassword(doc->getAccountId());
+            if (res.result) {
+                QMessageBox::information(this, "Reset Mật khẩu thành công",
+                    QString("Mật khẩu mới cho Dược sĩ %1 (%2) là:\n\n%3\n\nTài khoản sẽ yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo.")
+                    .arg(doc->getFullName(), doc->getStaffCode(), res.newPassword));
+            } else {
+                QMessageBox::warning(this, "Lỗi", "Không thể reset mật khẩu cho Dược sĩ này.");
+            }
+        }
+    });
             
     connect(btnDeactivate, &QPushButton::clicked, this, [this, doc]() {
         if (doc->isActive()) {

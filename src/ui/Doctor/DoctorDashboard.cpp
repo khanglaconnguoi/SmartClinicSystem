@@ -24,6 +24,7 @@
 #include "ClinicalExamWidget.h"
 #include "PatientWidget.h"
 #include "PatientRecordHistoryDialog.h"
+#include "ScheduleFollowUpDialog.h"
 #include "model/CommonEnums.h"
 #include "model/IAuthenticatable.h"
 #include "model/SystemUser.h"
@@ -799,7 +800,12 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       QWidget *actWidget = new QWidget(m_appointmentsTable);
       QHBoxLayout *actLayout = new QHBoxLayout(actWidget);
       actLayout->setContentsMargins(4, 3, 4, 3);
-      actLayout->setSpacing(6);
+      int captureApptId = rec.appointmentId;
+      int capturePatientId = rec.patientId;
+      QString captureName = rec.patientName;
+      QString captureCode = rec.patientCode;
+      QString captureTime = rec.startTime;
+      QString captureReason = rec.reason;
 
       QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
       btnCall->setCursor(Qt::PointingHandCursor);
@@ -808,16 +814,6 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
           "QPushButton { background-color: #2563EB; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 16px; border: none; }"
           "QPushButton:hover { background-color: #1D4ED8; }"
       );
-
-      actLayout->addWidget(btnCall);
-      actLayout->setAlignment(Qt::AlignCenter);
-
-      int captureApptId = rec.appointmentId;
-      int capturePatientId = rec.patientId;
-      QString captureName = rec.patientName;
-      QString captureCode = rec.patientCode;
-      QString captureTime = rec.startTime;
-      QString captureReason = rec.reason;
 
       connect(btnCall, &QPushButton::clicked, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
           if (!m_baseAppointmentService) return;
@@ -830,6 +826,27 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
               refreshAppointmentsTables();
           });
       });
+
+      if (rec.status == AppointmentStatusText::COMPLETED) {
+          QPushButton *btnFollowUp = new QPushButton("Tái khám", actWidget);
+          btnFollowUp->setCursor(Qt::PointingHandCursor);
+          btnFollowUp->setMinimumHeight(32);
+          btnFollowUp->setStyleSheet(
+              "QPushButton { background-color: #D97706; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 14px; border: none; }"
+              "QPushButton:hover { background-color: #B45309; }"
+          );
+          connect(btnFollowUp, &QPushButton::clicked, this, [this, capturePatientId, captureName, docId]() {
+              ScheduleFollowUpDialog dialog(capturePatientId, captureName, docId, m_baseAppointmentService, this);
+              connect(&dialog, &ScheduleFollowUpDialog::appointmentScheduled, this, [this]() {
+                  refreshAppointmentsTables();
+              });
+              dialog.exec();
+          });
+          actLayout->addWidget(btnFollowUp);
+      } else {
+          actLayout->addWidget(btnCall);
+      }
+      actLayout->setAlignment(Qt::AlignCenter);
 
       m_appointmentsTable->setCellWidget(rowIdx, 6, actWidget);
       m_appointmentsTable->setRowHeight(rowIdx, 54);
