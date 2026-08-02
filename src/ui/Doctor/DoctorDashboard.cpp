@@ -741,39 +741,21 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       m_appointmentsTable->setItem(rowIdx, 4, roomItem);
       m_appointmentsTable->setItem(rowIdx, 5, statusItem);
 
-      // Action Buttons Widget (Larger & clearer styling)
+      // Action Buttons Widget (Single Call Patient Button)
       QWidget *actWidget = new QWidget(m_appointmentsTable);
       QHBoxLayout *actLayout = new QHBoxLayout(actWidget);
       actLayout->setContentsMargins(4, 3, 4, 3);
       actLayout->setSpacing(6);
 
-      QPushButton *btnCall = new QPushButton("📢 Gọi khám", actWidget);
+      QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
       btnCall->setCursor(Qt::PointingHandCursor);
       btnCall->setMinimumHeight(32);
       btnCall->setStyleSheet(
-          "QPushButton { background-color: #7C3AED; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 12px; border: none; }"
-          "QPushButton:hover { background-color: #6D28D9; }"
-      );
-
-      QPushButton *btnExam = new QPushButton("🩺 Khám bệnh", actWidget);
-      btnExam->setCursor(Qt::PointingHandCursor);
-      btnExam->setMinimumHeight(32);
-      btnExam->setStyleSheet(
-          "QPushButton { background-color: #059669; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 12px; border: none; }"
-          "QPushButton:hover { background-color: #047857; }"
-      );
-
-      QPushButton *btnHist = new QPushButton("⏳ Lịch sử", actWidget);
-      btnHist->setCursor(Qt::PointingHandCursor);
-      btnHist->setMinimumHeight(32);
-      btnHist->setStyleSheet(
-          "QPushButton { background-color: #0284C7; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 12px; border: none; }"
-          "QPushButton:hover { background-color: #0369A1; }"
+          "QPushButton { background-color: #2563EB; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 16px; border: none; }"
+          "QPushButton:hover { background-color: #1D4ED8; }"
       );
 
       actLayout->addWidget(btnCall);
-      actLayout->addWidget(btnExam);
-      actLayout->addWidget(btnHist);
       actLayout->setAlignment(Qt::AlignCenter);
 
       int captureApptId = rec.appointmentId;
@@ -793,18 +775,6 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
               openClinicalExamWithIds(capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason);
               refreshAppointmentsTables();
           });
-      });
-
-      connect(btnExam, &QPushButton::clicked, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
-          QTimer::singleShot(0, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
-              openClinicalExamWithIds(capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason);
-          });
-      });
-
-      connect(btnHist, &QPushButton::clicked, this, [this, capturePatientId, captureName, captureCode]() {
-          PatientRecordHistoryDialog dialog(m_pharmacyService, m_medicalRecordService, this);
-          dialog.loadPatientHistory(capturePatientId, captureName, captureCode);
-          dialog.exec();
       });
 
       m_appointmentsTable->setCellWidget(rowIdx, 6, actWidget);

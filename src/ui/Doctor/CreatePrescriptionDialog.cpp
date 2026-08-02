@@ -225,7 +225,7 @@ void CreatePrescriptionDialog::onSaveClicked() {
     if (m_pharmacyService) {
         QString errorMsg = m_pharmacyService->createPrescription(dto);
         if (errorMsg.isEmpty()) {
-            QMessageBox::information(this, QString::fromUtf8("Thành công"), QString::fromUtf8("Đã tạo đơn thuốc và trừ tồn kho thành công."));
+            QMessageBox::information(this, QString::fromUtf8("Thành công"), QString::fromUtf8("Đã tạo đơn thuốc thành công và tự động chuyển đơn sang Hàng đợi Dược sĩ để cấp phát!"));
             accept();
         } else {
             QMessageBox::critical(this, QString::fromUtf8("Lỗi"), QString("Không thể tạo đơn thuốc: %1").arg(errorMsg));

@@ -65,6 +65,8 @@ public:
   bool updatePatient(const PatientUpdateDTO &dto);
 
   std::optional<PatientShortDTO> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
+  bool existsByCitizenId(const QString &citizenId, int excludePatientId = -1) const;
+  bool existsByPhoneNumber(const QString &phone, int excludePatientId = -1) const;
 
   /**
    * @brief Cập nhật thông tin bệnh nhân ngoại trú (bảng `out_patients`).
@@ -180,4 +182,9 @@ public:
    * @return nullopt nếu bệnh nhân chưa có bảo hiểm.
    */
   std::optional<InsuranceResultDTO> getInsuranceByPatientId(int patientId);
+
+  /**
+   * @brief Lấy mã bệnh nhân mới nhất có tiền tố chỉ định.
+   */
+  std::optional<QString> getLatestPatientCode(const QString &prefixWithDate) const;
 };

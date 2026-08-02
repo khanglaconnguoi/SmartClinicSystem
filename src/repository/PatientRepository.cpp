@@ -1108,3 +1108,45 @@ PatientRepository::getPatientByPhoneOrCitizenId(
   }
   return std::nullopt;
 }
+
+bool PatientRepository::existsByCitizenId(const QString &citizenId, int excludePatientId) const {
+  if (citizenId.trimmed().isEmpty()) return false;
+  QString sql = "SELECT COUNT(*) FROM patients WHERE citizen_id = ? AND is_deleted = 0";
+  QVariantList params = {citizenId.trimmed()};
+  if (excludePatientId > 0) {
+    sql += " AND patient_id != ?";
+    params << excludePatientId;
+  }
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+  return query.next() && query.value(0).toInt() > 0;
+}
+
+bool PatientRepository::existsByPhoneNumber(const QString &phone, int excludePatientId) const {
+  if (phone.trimmed().isEmpty()) return false;
+  QString sql = "SELECT COUNT(*) FROM patients WHERE phone_number = ? AND is_deleted = 0";
+  QVariantList params = {phone.trimmed()};
+  if (excludePatientId > 0) {
+    sql += " AND patient_id != ?";
+    params << excludePatientId;
+  }
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
+  return query.next() && query.value(0).toInt() > 0;
+}
+
+std::optional<QString> PatientRepository::getLatestPatientCode(const QString &prefixWithDate) const {
+  QString sql = R"(
+        SELECT patient_code
+        FROM patients
+        WHERE patient_code LIKE ?
+        ORDER BY patient_code DESC
+        LIMIT 1
+    )";
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {prefixWithDate + "%"});
+  if (!query.next())
+    return std::nullopt;
+
+  QVariant val = query.value("patient_code");
+  if (val.isNull())
+    return std::nullopt;
+  return val.toString();
+}

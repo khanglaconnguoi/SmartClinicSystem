@@ -138,7 +138,7 @@ void MedicalRecordService::normalizeSearchCriteria(
   criteria.searchKey = criteria.searchKey.simplified();
 }
 
-QString MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
+QString MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto, int *outRecordId) {
   normalizeMedicalRecordInput(dto);
 
   QString err;
@@ -163,8 +163,13 @@ QString MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto) {
     return err;
   }
 
-  if (m_recordRepository->insertMedicalRecord(dto) <= 0) {
+  int recId = m_recordRepository->insertMedicalRecord(dto);
+  if (recId <= 0) {
     return "Lỗi hệ thống khi lưu hồ sơ khám. Vui lòng thử lại.";
+  }
+
+  if (outRecordId) {
+    *outRecordId = recId;
   }
 
   if (!dto.newAllergies.isEmpty()) {

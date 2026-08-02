@@ -17,6 +17,8 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QApplication>
+#include <QScreen>
 #include <QVBoxLayout>
 
 PharmacistRegistrationDialog::PharmacistRegistrationDialog(
@@ -25,7 +27,11 @@ PharmacistRegistrationDialog::PharmacistRegistrationDialog(
   setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
   setWindowTitle("Thêm Dược sĩ");
   setMinimumWidth(650);
-  resize(650, 750);
+  const QRect avail = QApplication::primaryScreen()->availableGeometry();
+  const int dlgW = qMin(700, avail.width() - 40);
+  const int dlgH = qMin(780, avail.height() - 40);
+  setMinimumHeight(qMin(580, dlgH));
+  resize(dlgW, dlgH);
   setupUi();
 }
 

@@ -38,6 +38,7 @@ private:
     QLineEdit *m_txtAddress;
     QComboBox *m_cbDepartment;
     QComboBox *m_cbShift;
+    QDateEdit *m_dtHireDate;
 
     QPushButton* m_btnSave;
     QPushButton* m_btnCancel;

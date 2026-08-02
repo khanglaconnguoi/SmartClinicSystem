@@ -19,6 +19,8 @@
 #include <QScrollArea>
 #include <QSpinBox>
 #include <QTextEdit>
+#include <QApplication>
+#include <QScreen>
 #include <QVBoxLayout>
 
 DoctorRegistrationDialog::DoctorRegistrationDialog(
@@ -29,8 +31,11 @@ DoctorRegistrationDialog::DoctorRegistrationDialog(
   setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
   setWindowTitle("Thêm Bác sĩ");
   setMinimumWidth(700);
-  setMinimumHeight(760);
-  resize(720, 820);
+  const QRect avail = QApplication::primaryScreen()->availableGeometry();
+  const int dlgW = qMin(720, avail.width() - 40);
+  const int dlgH = qMin(820, avail.height() - 40);
+  setMinimumHeight(qMin(600, dlgH));
+  resize(dlgW, dlgH);
   setupUi();
 }
 

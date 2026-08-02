@@ -6,6 +6,7 @@
 #include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGraphicsDropShadowEffect>
 #include <QGroupBox>
@@ -14,443 +15,510 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QApplication>
+#include <QScreen>
 #include <QScrollArea>
 #include <QVBoxLayout>
-#include <QDoubleSpinBox>
 
 PatientRegistrationDialog::PatientRegistrationDialog(
     std::shared_ptr<PatientService> patientService, QWidget *parent)
     : QDialog(parent), m_patientService(patientService)
 {
-  setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
-  setWindowTitle("Thêm Bệnh nhân");
-  setMinimumWidth(650);
-  resize(650, 800);
-  setupUi();
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    setWindowTitle("Đăng Ký Bệnh Nhân Mới");
+    setMinimumWidth(700);
+    const QRect avail = QApplication::primaryScreen()->availableGeometry();
+    const int dlgW = qMin(720, avail.width() - 40);
+    const int dlgH = qMin(900, avail.height() - 40);
+    setMinimumHeight(qMin(600, dlgH));
+    resize(dlgW, dlgH);
+    setupUi();
 }
 
 void PatientRegistrationDialog::setupUi()
 {
-  this->setAttribute(Qt::WA_TranslucentBackground);
-  this->setStyleSheet("QDialog { background-color: transparent; } "
-                      "QLabel { color: #333333; }");
+    this->setAttribute(Qt::WA_TranslucentBackground);
+    this->setStyleSheet("QDialog { background-color: transparent; } "
+                        "QLabel { color: #333333; }");
 
-  QVBoxLayout *mainLayout = new QVBoxLayout(this);
-  mainLayout->setContentsMargins(20, 20, 20, 20);
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(20, 20, 20, 20);
 
-  QFrame *container = new QFrame(this);
-  container->setObjectName("mainContainer");
-  container->setStyleSheet(
-      "#mainContainer { background-color: #FFFFFF; border-radius: 12px; }");
+    QFrame *container = new QFrame(this);
+    container->setObjectName("mainContainer");
+    container->setStyleSheet(
+        "#mainContainer { background-color: #FFFFFF; border-radius: 14px; }");
 
-  QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(this);
-  shadow->setBlurRadius(20);
-  shadow->setColor(QColor(0, 0, 0, 60));
-  shadow->setOffset(0, 5);
-  container->setGraphicsEffect(shadow);
+    QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(this);
+    shadow->setBlurRadius(20);
+    shadow->setColor(QColor(0, 0, 0, 60));
+    shadow->setOffset(0, 5);
+    container->setGraphicsEffect(shadow);
 
-  QVBoxLayout *containerLayout = new QVBoxLayout(container);
-  containerLayout->setContentsMargins(0, 0, 0, 0);
-  containerLayout->setSpacing(0);
+    QVBoxLayout *containerLayout = new QVBoxLayout(container);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    containerLayout->setSpacing(0);
 
-  QFrame *headerFrame = new QFrame(container);
-  headerFrame->setStyleSheet(
-      "background-color: transparent; border-bottom: 1px solid #EAEAEA;");
-  QVBoxLayout *headerLayout = new QVBoxLayout(headerFrame);
-  headerLayout->setContentsMargins(24, 20, 24, 20);
+    // --- Header ---
+    QFrame *headerFrame = new QFrame(container);
+    headerFrame->setStyleSheet(
+        "background-color: transparent; border-bottom: 1px solid #EAEAEA;");
+    QVBoxLayout *headerLayout = new QVBoxLayout(headerFrame);
+    headerLayout->setContentsMargins(24, 20, 24, 20);
 
-  QLabel *lblPageTitle = new QLabel("ĐĂNG KÝ BỆNH NHÂN", headerFrame);
-  lblPageTitle->setStyleSheet(
-      "font-size: 20px; font-weight: bold; color: #111827;");
-  lblPageTitle->setAlignment(Qt::AlignCenter);
-  headerLayout->addWidget(lblPageTitle);
+    QLabel *lblPageTitle = new QLabel("ĐĂNG KÝ BỆNH NHÂN", headerFrame);
+    lblPageTitle->setStyleSheet(
+        "font-size: 22px; font-weight: bold; color: #1F2937;");
+    lblPageTitle->setAlignment(Qt::AlignCenter);
+    headerLayout->addWidget(lblPageTitle);
+    containerLayout->addWidget(headerFrame);
 
-  containerLayout->addWidget(headerFrame);
+    // --- Scroll Area ---
+    QScrollArea *scrollArea = new QScrollArea(container);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setStyleSheet(
+        "QScrollArea { background-color: transparent; border: none; }");
 
-  QScrollArea *scrollArea = new QScrollArea(container);
-  scrollArea->setWidgetResizable(true);
-  scrollArea->setFrameShape(QFrame::NoFrame);
-  scrollArea->setStyleSheet(
-      "QScrollArea { background-color: transparent; border: none; }");
+    QFrame *formCard = new QFrame(scrollArea);
+    formCard->setStyleSheet(
+        "QFrame { background-color: #FFFFFF; border: none; } "
+        "QLabel { color: #374151; font-size: 13px; font-weight: 600; }");
 
-  QFrame *formCard = new QFrame(scrollArea);
-  formCard->setStyleSheet("QFrame { background-color: #FFFFFF; border: none; } "
-                          "QLabel { color: #333333; font-weight: bold; }");
+    QVBoxLayout *cardLayout = new QVBoxLayout(formCard);
+    cardLayout->setContentsMargins(24, 20, 24, 24);
+    cardLayout->setSpacing(18);
 
-  QVBoxLayout *cardLayout = new QVBoxLayout(formCard);
-  cardLayout->setContentsMargins(24, 24, 24, 24);
-  cardLayout->setSpacing(20);
+    QString groupBoxStyle =
+        "QGroupBox { "
+        "border: 1px solid #E5E7EB; border-radius: 10px; "
+        "margin-top: 16px; padding-top: 8px; font-weight: 700; color: #374151; "
+        "background-color: #FCFDFF; } "
+        "QGroupBox::title { "
+        "subcontrol-origin: margin; subcontrol-position: top left; "
+        "left: 12px; padding: 0 8px; color: #2563EB; font-size: 14px; }";
 
-  QString groupBoxStyle =
-      "QGroupBox { "
-      "border: 1px solid #D0D0D0; border-radius: 6px; "
-      "margin-top: 15px; font-weight: bold; color: #333333; background-color: "
-      "transparent; } "
-      "QGroupBox::title { "
-      "subcontrol-origin: margin; subcontrol-position: top left; "
-      "padding: 0 5px; color: #1A73E8; }";
+    QString extraInputStyle =
+        "QLineEdit, QComboBox, QDateEdit, QDoubleSpinBox { "
+        "border: 1px solid #D1D5DB; border-radius: 8px; padding: 8px 12px; "
+        "font-size: 13px; color: #111827; background: #FFFFFF; min-height: 36px; "
+        "} "
+        "QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QDoubleSpinBox:focus { "
+        "border: 1px solid #4B94F2; background-color: #F8FBFF; } "
+        "QComboBox QAbstractItemView { "
+        "background-color: #FFFFFF; color: #111827; selection-background-color: "
+        "#4B94F2; selection-color: white; }";
 
-  QString extraInputStyle =
-      "QLineEdit, QComboBox, QDateEdit { "
-      "border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; "
-      "font-size: 13px; color: #111827; background: #FFFFFF; min-height: 30px; "
-      "} "
-      "QLineEdit:focus, QComboBox:focus, QDateEdit:focus { "
-      "border: 1px solid #4B94F2; } "
-      "QComboBox QAbstractItemView { "
-      "background-color: #FFFFFF; color: #111827; selection-background-color: "
-      "#4B94F2; selection-color: white; }";
+    // --- Loại bệnh nhân (ngoài GroupBox để dễ thấy) ---
+    QGroupBox *gbPatientType = new QGroupBox("Loại Bệnh Nhân", formCard);
+    gbPatientType->setStyleSheet(groupBoxStyle);
+    QFormLayout *formType = new QFormLayout(gbPatientType);
+    formType->setContentsMargins(16, 18, 16, 16);
+    formType->setSpacing(12);
+    formType->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-  //-- -Loại Bệnh nhân-- -
-      m_cbPatientType = new QComboBox(formCard);
-  for (const auto &item : patientTypeList)
-    m_cbPatientType->addItem(item.viText, item.enText);
-  m_cbPatientType->setStyleSheet(extraInputStyle);
+    m_cbPatientType = new QComboBox(gbPatientType);
+    m_cbPatientType->setStyleSheet(extraInputStyle);
+    for (const auto &item : patientTypeList)
+        m_cbPatientType->addItem(item.viText, item.enText);
+    formType->addRow("Loại bệnh nhân (*):", m_cbPatientType);
 
-  QHBoxLayout *typeLayout = new QHBoxLayout();
-  QLabel *lblType = new QLabel("Loại Bệnh nhân:");
-  typeLayout->addWidget(lblType);
-  typeLayout->addWidget(m_cbPatientType, 1);
-  cardLayout->addLayout(typeLayout);
+    cardLayout->addWidget(gbPatientType);
 
-  //-- -Group 1 : Thông tin Cá nhân-- -
-      QGroupBox *gbPersonalInfo = new QGroupBox("Thông tin Cơ bản", formCard);
-  gbPersonalInfo->setStyleSheet(groupBoxStyle);
-  QFormLayout *form1 = new QFormLayout(gbPersonalInfo);
-  form1->setContentsMargins(15, 25, 15, 15);
-  form1->setSpacing(12);
+    // --- Nhóm 1: Thông tin cá nhân ---
+    QGroupBox *gbPersonalInfo = new QGroupBox("Thông tin cá nhân", formCard);
+    gbPersonalInfo->setStyleSheet(groupBoxStyle);
+    QFormLayout *form1 = new QFormLayout(gbPersonalInfo);
+    form1->setContentsMargins(16, 18, 16, 16);
+    form1->setSpacing(12);
+    form1->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-  m_txtFullName = new QLineEdit(gbPersonalInfo);
-  m_txtFullName->setStyleSheet(extraInputStyle);
-  form1->addRow("Họ và Tên (*):", m_txtFullName);
+    m_txtFullName = new QLineEdit(gbPersonalInfo);
+    m_txtFullName->setStyleSheet(extraInputStyle);
+    m_txtFullName->setPlaceholderText("VD: Nguyễn Văn A");
+    form1->addRow("Họ và tên (*):", m_txtFullName);
 
-  m_txtCitizenId = new QLineEdit(gbPersonalInfo);
-  m_txtCitizenId->setStyleSheet(extraInputStyle);
-  form1->addRow("CCCD (*):", m_txtCitizenId);
+    m_dtDateOfBirth = new QDateEdit(QDate(1990, 1, 1), gbPersonalInfo);
+    m_dtDateOfBirth->setCalendarPopup(true);
+    m_dtDateOfBirth->setDisplayFormat("dd/MM/yyyy");
+    m_dtDateOfBirth->setStyleSheet(extraInputStyle);
+    form1->addRow("Ngày sinh (*):", m_dtDateOfBirth);
 
-  m_cbGender = new QComboBox(gbPersonalInfo);
-  for (const auto &pair : GenderText::getList())
-    m_cbGender->addItem(pair.second, pair.first);
-  m_cbGender->setStyleSheet(extraInputStyle);
-  form1->addRow("Giới tính:", m_cbGender);
+    m_cbGender = new QComboBox(gbPersonalInfo);
+    m_cbGender->setStyleSheet(extraInputStyle);
+    for (const auto &pair : GenderText::getList())
+        m_cbGender->addItem(pair.second, pair.first);
+    form1->addRow("Giới tính (*):", m_cbGender);
 
-  m_dtDateOfBirth =
-      new QDateEdit(QDate::currentDate().addYears(-30), gbPersonalInfo);
-  m_dtDateOfBirth->setCalendarPopup(true);
-  m_dtDateOfBirth->setDisplayFormat("dd/MM/yyyy");
-  m_dtDateOfBirth->setStyleSheet(extraInputStyle);
-  form1->addRow("Ngày sinh:", m_dtDateOfBirth);
+    m_txtCitizenId = new QLineEdit(gbPersonalInfo);
+    m_txtCitizenId->setStyleSheet(extraInputStyle);
+    m_txtCitizenId->setPlaceholderText("Nhập 12 chữ số hợp lệ");
+    form1->addRow("Số CCCD (*):", m_txtCitizenId);
 
-  cardLayout->addWidget(gbPersonalInfo);
+    m_cbBloodType = new QComboBox(gbPersonalInfo);
+    m_cbBloodType->setStyleSheet(extraInputStyle);
+    for (const auto &pair : BloodTypeText::getList())
+        m_cbBloodType->addItem(pair.second, pair.first);
+    form1->addRow("Nhóm máu:", m_cbBloodType);
 
-  //-- -Group 2 : Liên hệ-- -
-      QGroupBox *gbContactInfo = new QGroupBox("Thông tin Liên hệ", formCard);
-  gbContactInfo->setStyleSheet(groupBoxStyle);
-  QFormLayout *form2 = new QFormLayout(gbContactInfo);
-  form2->setContentsMargins(15, 25, 15, 15);
-  form2->setSpacing(12);
+    m_txtAllergies = new QLineEdit(gbPersonalInfo);
+    m_txtAllergies->setStyleSheet(extraInputStyle);
+    m_txtAllergies->setPlaceholderText("VD: Penicillin, Hải sản (cách nhau bởi dấu phẩy)");
+    form1->addRow("Dị ứng:", m_txtAllergies);
 
-  m_txtPhone = new QLineEdit(gbContactInfo);
-  m_txtPhone->setStyleSheet(extraInputStyle);
-  form2->addRow("Số điện thoại (*):", m_txtPhone);
+    cardLayout->addWidget(gbPersonalInfo);
 
-  m_txtEmail = new QLineEdit(gbContactInfo);
-  m_txtEmail->setStyleSheet(extraInputStyle);
-  form2->addRow("Email:", m_txtEmail);
+    // --- Nhóm 2: Thông tin liên hệ ---
+    QGroupBox *gbContactInfo = new QGroupBox("Thông tin liên hệ", formCard);
+    gbContactInfo->setStyleSheet(groupBoxStyle);
+    QFormLayout *form2 = new QFormLayout(gbContactInfo);
+    form2->setContentsMargins(16, 18, 16, 16);
+    form2->setSpacing(12);
+    form2->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-  m_txtAddress = new QLineEdit(gbContactInfo);
-  m_txtAddress->setStyleSheet(extraInputStyle);
-  form2->addRow("Địa chỉ:", m_txtAddress);
+    m_txtPhone = new QLineEdit(gbContactInfo);
+    m_txtPhone->setStyleSheet(extraInputStyle);
+    m_txtPhone->setPlaceholderText("VD: 0901234567");
+    form2->addRow("Số điện thoại (*):", m_txtPhone);
 
-  m_txtEmergencyContactName = new QLineEdit(gbContactInfo);
-  m_txtEmergencyContactName->setStyleSheet(extraInputStyle);
-  form2->addRow("Tên người nhà:", m_txtEmergencyContactName);
+    m_txtEmail = new QLineEdit(gbContactInfo);
+    m_txtEmail->setStyleSheet(extraInputStyle);
+    m_txtEmail->setPlaceholderText("VD: patient@example.com");
+    form2->addRow("Email:", m_txtEmail);
 
-  m_txtEmergencyContactPhone = new QLineEdit(gbContactInfo);
-  m_txtEmergencyContactPhone->setStyleSheet(extraInputStyle);
-  form2->addRow("SĐT người nhà:", m_txtEmergencyContactPhone);
+    m_txtAddress = new QLineEdit(gbContactInfo);
+    m_txtAddress->setStyleSheet(extraInputStyle);
+    m_txtAddress->setPlaceholderText("VD: TP. Hồ Chí Minh");
+    form2->addRow("Địa chỉ (*):", m_txtAddress);
 
-  cardLayout->addWidget(gbContactInfo);
+    m_txtEmergencyContactName = new QLineEdit(gbContactInfo);
+    m_txtEmergencyContactName->setStyleSheet(extraInputStyle);
+    m_txtEmergencyContactName->setPlaceholderText("Họ tên người thân");
+    form2->addRow("Tên người thân (*):", m_txtEmergencyContactName);
 
-  //-- -Group 3 : Thông tin Y tế cơ bản-- -
-      QGroupBox *gbMedicalInfo = new QGroupBox("Thông tin Y tế", formCard);
-  gbMedicalInfo->setStyleSheet(groupBoxStyle);
-  QFormLayout *form3 = new QFormLayout(gbMedicalInfo);
-  form3->setContentsMargins(15, 25, 15, 15);
-  form3->setSpacing(12);
+    m_txtEmergencyContactPhone = new QLineEdit(gbContactInfo);
+    m_txtEmergencyContactPhone->setStyleSheet(extraInputStyle);
+    m_txtEmergencyContactPhone->setPlaceholderText("SĐT người thân (không trùng SĐT bệnh nhân)");
+    form2->addRow("SĐT người thân (*):", m_txtEmergencyContactPhone);
 
-  m_cbBloodType = new QComboBox(gbMedicalInfo);
-  for (const auto &pair : BloodTypeText::getList())
-    m_cbBloodType->addItem(pair.second, pair.first);
-  m_cbBloodType->setStyleSheet(extraInputStyle);
-  form3->addRow("Nhóm máu:", m_cbBloodType);
+    cardLayout->addWidget(gbContactInfo);
 
-  m_txtAllergies = new QLineEdit(gbMedicalInfo);
-  m_txtAllergies->setPlaceholderText(
-      "Cách nhau bởi dấu phẩy (vd: Penicillin, Hải sản)");
-  m_txtAllergies->setStyleSheet(extraInputStyle);
-  form3->addRow("Dị ứng:", m_txtAllergies);
+    // --- Nhóm 3: Bảo hiểm y tế ---
+    QGroupBox *gbInsuranceInfo = new QGroupBox("Thông tin Bảo hiểm Y tế", formCard);
+    gbInsuranceInfo->setStyleSheet(groupBoxStyle);
+    QFormLayout *form3 = new QFormLayout(gbInsuranceInfo);
+    form3->setContentsMargins(16, 18, 16, 16);
+    form3->setSpacing(12);
+    form3->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-  //-- -Group 4 : Thông tin Bảo hiểm Y tế-- -
-      QGroupBox *gbInsuranceInfo = new QGroupBox("Thông tin Bảo hiểm Y tế", formCard);
-  gbInsuranceInfo->setStyleSheet(groupBoxStyle);
-  QFormLayout *form4 = new QFormLayout(gbInsuranceInfo);
-  form4->setContentsMargins(15, 25, 15, 15);
-  form4->setSpacing(12);
+    m_cbInsuranceType = new QComboBox(gbInsuranceInfo);
+    m_cbInsuranceType->setStyleSheet(extraInputStyle);
+    m_cbInsuranceType->addItem("Không có", "NONE");
+    for (const auto &pair : InsuranceTypeText::getList())
+        m_cbInsuranceType->addItem(pair.second, pair.first);
+    form3->addRow("Loại bảo hiểm:", m_cbInsuranceType);
 
-  m_cbInsuranceType = new QComboBox(gbInsuranceInfo);
-  m_cbInsuranceType->addItem("Không có", "NONE");
-  for (const auto &pair : InsuranceTypeText::getList())
-    m_cbInsuranceType->addItem(pair.second, pair.first);
-  m_cbInsuranceType->setStyleSheet(extraInputStyle);
-  form4->addRow("Loại bảo hiểm:", m_cbInsuranceType);
+    m_txtInsuranceProvider = new QLineEdit(gbInsuranceInfo);
+    m_txtInsuranceProvider->setStyleSheet(extraInputStyle);
+    m_txtInsuranceProvider->setPlaceholderText("Tên công ty / Nơi cấp");
+    form3->addRow("Nơi cấp:", m_txtInsuranceProvider);
 
-  m_txtInsuranceProvider = new QLineEdit(gbInsuranceInfo);
-  m_txtInsuranceProvider->setPlaceholderText("Tên công ty / Nơi cấp...");
-  m_txtInsuranceProvider->setStyleSheet(extraInputStyle);
-  form4->addRow("Nơi cấp:", m_txtInsuranceProvider);
+    m_txtInsurancePolicy = new QLineEdit(gbInsuranceInfo);
+    m_txtInsurancePolicy->setStyleSheet(extraInputStyle);
+    m_txtInsurancePolicy->setPlaceholderText("Mã thẻ / Số hợp đồng");
+    form3->addRow("Mã thẻ:", m_txtInsurancePolicy);
 
-  m_txtInsurancePolicy = new QLineEdit(gbInsuranceInfo);
-  m_txtInsurancePolicy->setPlaceholderText("Mã thẻ / Hợp đồng...");
-  m_txtInsurancePolicy->setStyleSheet(extraInputStyle);
-  form4->addRow("Mã thẻ:", m_txtInsurancePolicy);
+    m_spinInsuranceCoverage = new QDoubleSpinBox(gbInsuranceInfo);
+    m_spinInsuranceCoverage->setStyleSheet(extraInputStyle);
+    m_spinInsuranceCoverage->setRange(0.0, 100.0);
+    m_spinInsuranceCoverage->setValue(80.0);
+    m_spinInsuranceCoverage->setSuffix(" %");
+    form3->addRow("Mức chi trả:", m_spinInsuranceCoverage);
 
-  m_spinInsuranceCoverage = new QDoubleSpinBox(gbInsuranceInfo);
-  m_spinInsuranceCoverage->setRange(0.0, 100.0);
-  m_spinInsuranceCoverage->setValue(80.0);
-  m_spinInsuranceCoverage->setSuffix(" %");
-  m_spinInsuranceCoverage->setStyleSheet(extraInputStyle);
-  form4->addRow("Mức chi trả:", m_spinInsuranceCoverage);
+    m_dateInsuranceFrom = new QDateEdit(QDate::currentDate(), gbInsuranceInfo);
+    m_dateInsuranceFrom->setCalendarPopup(true);
+    m_dateInsuranceFrom->setDisplayFormat("dd/MM/yyyy");
+    m_dateInsuranceFrom->setStyleSheet(extraInputStyle);
+    form3->addRow("Hiệu lực từ:", m_dateInsuranceFrom);
 
-  m_dateInsuranceFrom = new QDateEdit(QDate::currentDate(), gbInsuranceInfo);
-  m_dateInsuranceFrom->setCalendarPopup(true);
-  m_dateInsuranceFrom->setDisplayFormat("dd/MM/yyyy");
-  m_dateInsuranceFrom->setStyleSheet(extraInputStyle);
-  form4->addRow("Hiệu lực từ:", m_dateInsuranceFrom);
+    m_dateInsuranceTo = new QDateEdit(QDate::currentDate().addYears(1), gbInsuranceInfo);
+    m_dateInsuranceTo->setCalendarPopup(true);
+    m_dateInsuranceTo->setDisplayFormat("dd/MM/yyyy");
+    m_dateInsuranceTo->setStyleSheet(extraInputStyle);
+    form3->addRow("Hiệu lực đến:", m_dateInsuranceTo);
 
-  m_dateInsuranceTo = new QDateEdit(QDate::currentDate().addYears(1), gbInsuranceInfo);
-  m_dateInsuranceTo->setCalendarPopup(true);
-  m_dateInsuranceTo->setDisplayFormat("dd/MM/yyyy");
-  m_dateInsuranceTo->setStyleSheet(extraInputStyle);
-  form4->addRow("Hiệu lực đến:", m_dateInsuranceTo);
+    cardLayout->addWidget(gbInsuranceInfo);
 
-  cardLayout->addWidget(gbMedicalInfo);
-  cardLayout->addWidget(gbInsuranceInfo);
+    scrollArea->setWidget(formCard);
+    containerLayout->addWidget(scrollArea);
 
-  scrollArea->setWidget(formCard);
-  containerLayout->addWidget(scrollArea);
+    // --- Nút Lưu và Trở lại ---
+    QFrame *bottomFrame = new QFrame(container);
+    bottomFrame->setStyleSheet(
+        "background-color: transparent; border-top: 1px solid #E5E7EB;");
+    QHBoxLayout *btnLayout = new QHBoxLayout(bottomFrame);
+    btnLayout->setContentsMargins(20, 15, 20, 15);
 
-  //-- -Nút Lưu và Trở lại-- -
-      QFrame *bottomFrame = new QFrame(container);
-  bottomFrame->setStyleSheet(
-      "background-color: transparent; border-top: 1px solid #EAEAEA;");
-  QHBoxLayout *btnLayout = new QHBoxLayout(bottomFrame);
-  btnLayout->setContentsMargins(20, 15, 20, 15);
+    btnLayout->addStretch();
+    m_btnCancel = new QPushButton("Hủy", bottomFrame);
+    m_btnCancel->setCursor(Qt::PointingHandCursor);
+    m_btnCancel->setFixedSize(100, 40);
+    m_btnCancel->setStyleSheet(
+        "QPushButton { background-color: #EAEAEA; color: "
+        "#333; font-size: 13px; font-weight: 600; "
+        "border-radius: 8px; border: none; padding: 0 10px; }"
+        "QPushButton:hover { background-color: #D6D6D6; }");
+    btnLayout->addWidget(m_btnCancel);
 
-  btnLayout->addStretch();
-  m_btnCancel = new QPushButton("Hủy", bottomFrame);
-  m_btnCancel->setCursor(Qt::PointingHandCursor);
-  m_btnCancel->setFixedSize(100, 40);
-  m_btnCancel->setStyleSheet(
-      "QPushButton { background-color: #EAEAEA; color: "
-      "#333; font-size: 14px; font-weight: bold; "
-      "border-radius: 4px; border: none; }"
-      "QPushButton:hover { background-color: #D6D6D6; }");
-  btnLayout->addWidget(m_btnCancel);
+    m_btnSave = new QPushButton("Lưu bệnh nhân", bottomFrame);
+    m_btnSave->setCursor(Qt::PointingHandCursor);
+    m_btnSave->setFixedSize(150, 40);
+    m_btnSave->setStyleSheet(
+        "QPushButton { background-color: #34A853; color: white; font-size: 13px; "
+        "font-weight: 600; border-radius: 8px; border: none; padding: 0 10px; }"
+        "QPushButton:hover { background-color: #2C8E46; }");
+    btnLayout->addWidget(m_btnSave);
 
-  m_btnSave = new QPushButton("Lưu bệnh nhân", bottomFrame);
-  m_btnSave->setCursor(Qt::PointingHandCursor);
-  m_btnSave->setFixedSize(140, 40);
-  m_btnSave->setStyleSheet(
-      "QPushButton { background-color: #34A853; color: white; font-size: 14px; "
-      "font-weight: bold; border-radius: 4px; border: none; }"
-      "QPushButton:hover { background-color: #2C8E46; }");
-  btnLayout->addWidget(m_btnSave);
+    containerLayout->addWidget(bottomFrame);
+    mainLayout->addWidget(container);
 
-  containerLayout->addWidget(bottomFrame);
-  mainLayout->addWidget(container);
+    connect(m_btnSave, &QPushButton::clicked, this,
+            &PatientRegistrationDialog::handleSave);
+    connect(m_btnCancel, &QPushButton::clicked, this, [this]() {
+        emit cancelled();
+        reject();
+    });
 
-  connect(m_btnSave, &QPushButton::clicked, this,
-          &PatientRegistrationDialog::handleSave);
-  connect(m_btnCancel, &QPushButton::clicked, this, [this]()
-          {
-    emit cancelled();
-    reject(); });
+    // --- UI Validation ---
+    UIValidationUtils::attachPrimitiveValidators(m_txtCitizenId, m_txtPhone);
+    if (m_txtEmergencyContactPhone) {
+        m_txtEmergencyContactPhone->setValidator(
+            new QRegularExpressionValidator(
+                QRegularExpression("^0\\d{0,10}$"), m_txtEmergencyContactPhone));
+    }
 
-  // --- UI Validation (Step 1 & 2) ---
-  UIValidationUtils::attachPrimitiveValidators(m_txtCitizenId, m_txtPhone);
-  if (m_txtEmergencyContactPhone) {
-      m_txtEmergencyContactPhone->setValidator(new QRegularExpressionValidator(QRegularExpression("^0\\d{0,10}$"), m_txtEmergencyContactPhone));
-  }
-
-  connect(m_txtPhone, &QLineEdit::editingFinished, this, [this]() {
-      QString err = Validation::validatePhoneNumber(m_txtPhone->text());
-      UIValidationUtils::applyFieldValidationStyle(m_txtPhone, err);
-  });
-  connect(m_txtEmergencyContactPhone, &QLineEdit::editingFinished, this, [this]() {
-      QString text = m_txtEmergencyContactPhone->text().trimmed();
-      QString err = text.isEmpty() ? "" : Validation::validatePhoneNumber(text);
-      UIValidationUtils::applyFieldValidationStyle(m_txtEmergencyContactPhone, err);
-  });
-  connect(m_txtCitizenId, &QLineEdit::editingFinished, this, [this]() {
-      QString err = Validation::validateCitizenId(m_txtCitizenId->text());
-      UIValidationUtils::applyFieldValidationStyle(m_txtCitizenId, err);
-  });
-  connect(m_txtEmail, &QLineEdit::editingFinished, this, [this]() {
-      QString text = m_txtEmail->text().trimmed();
-      QString err = text.isEmpty() ? "" : Validation::validateEmail(text);
-      UIValidationUtils::applyFieldValidationStyle(m_txtEmail, err);
-  });
-  connect(m_txtFullName, &QLineEdit::editingFinished, this, [this]() {
-      QString err = Validation::validateFullName(m_txtFullName->text());
-      UIValidationUtils::applyFieldValidationStyle(m_txtFullName, err);
-  });
+    connect(m_txtPhone, &QLineEdit::editingFinished, this, [this]() {
+        QString err = Validation::validatePhoneNumber(m_txtPhone->text());
+        UIValidationUtils::applyFieldValidationStyle(m_txtPhone, err);
+    });
+    connect(m_txtEmergencyContactPhone, &QLineEdit::editingFinished, this, [this]() {
+        QString text = m_txtEmergencyContactPhone->text().trimmed();
+        QString err = text.isEmpty() ? "" : Validation::validatePhoneNumber(text);
+        UIValidationUtils::applyFieldValidationStyle(m_txtEmergencyContactPhone, err);
+    });
+    connect(m_txtCitizenId, &QLineEdit::editingFinished, this, [this]() {
+        QString err = Validation::validateCitizenId(m_txtCitizenId->text());
+        UIValidationUtils::applyFieldValidationStyle(m_txtCitizenId, err);
+    });
+    connect(m_txtEmail, &QLineEdit::editingFinished, this, [this]() {
+        QString text = m_txtEmail->text().trimmed();
+        QString err = text.isEmpty() ? "" : Validation::validateEmail(text);
+        UIValidationUtils::applyFieldValidationStyle(m_txtEmail, err);
+    });
+    connect(m_txtFullName, &QLineEdit::editingFinished, this, [this]() {
+        QString err = Validation::validateFullName(m_txtFullName->text());
+        UIValidationUtils::applyFieldValidationStyle(m_txtFullName, err);
+    });
 }
 
 void PatientRegistrationDialog::handleSave()
 {
-  if (!m_patientService)
-  {
-    QMessageBox::critical(this, "Lỗi", "Service không khả dụng.");
-    return;
-  }
-
-  QString fullName = m_txtFullName->text().trimmed();
-  QString citizenId = m_txtCitizenId->text().trimmed();
-  QString phone = m_txtPhone->text().trimmed();
-
-  if (fullName.isEmpty() || citizenId.isEmpty() || phone.isEmpty())
-  {
-    QMessageBox::warning(this, "Thiếu thông tin",
-                         "Vui lòng nhập đầy đủ các trường bắt buộc (*)");
-    return;
-  }
-
-  QString genderText = m_cbGender->currentText();
-  QString gender = GenderText::toEn(genderText);
-
-  QDate dob = m_dtDateOfBirth->date();
-  QString email = m_txtEmail->text().trimmed();
-  QString address = m_txtAddress->text().trimmed();
-
-  PatientType type = patientTypeFromVi(m_cbPatientType->currentText());
-
-  QString bloodType = BloodTypeText::toEn(m_cbBloodType->currentText());
-
-  QString allergies = m_txtAllergies->text().trimmed();
-
-  QString insuranceTypeStr = m_cbInsuranceType->currentText();
-  bool hasInsurance = (insuranceTypeStr != "Không có");
-  QString insuranceTypeEn = InsuranceTypeText::toEn(insuranceTypeStr);
-  QString insuranceProvider = m_txtInsuranceProvider->text().trimmed();
-  QString insurancePolicy = m_txtInsurancePolicy->text().trimmed();
-  double insuranceCoverage = m_spinInsuranceCoverage->value();
-  QDate insuranceFrom = m_dateInsuranceFrom->date();
-  QDate insuranceTo = m_dateInsuranceTo->date();
-
-  QString emerName = m_txtEmergencyContactName->text().trimmed();
-  QString emerPhone = m_txtEmergencyContactPhone->text().trimmed();
-
-  QString errorMsg;
-  if (type == PatientType::Outpatient)
-  {
-    OutPatientInputDTO dto;
-    dto.fullName = fullName;
-    dto.dateOfBirth = dob;
-    dto.gender = gender;
-    dto.citizenId = citizenId;
-    dto.phone = phone;
-    dto.email = email;
-    dto.address = address;
-    dto.bloodType = bloodType;
-    if (hasInsurance)
+    if (!m_patientService)
     {
-      InsuranceInputDTO insDto;
-      insDto.policyNumber = insurancePolicy;
-      insDto.providerName = insuranceProvider;
-      insDto.insuranceType = insuranceTypeEn;
-      insDto.coveragePercent = insuranceCoverage;
-      insDto.validFrom = insuranceFrom;
-      insDto.validTo = insuranceTo;
-      dto.insurance = insDto;
+        QMessageBox::critical(this, "Lỗi", "Service không khả dụng.");
+        return;
     }
-    dto.type = type;
-    dto.emergencyContactName = emerName;
-    dto.emergencyContactPhone = emerPhone;
 
-    errorMsg = m_patientService->addOutPatient(dto);
-  }
-  else if (type == PatientType::Inpatient)
-  {
-    InPatientInputDTO dto;
-    dto.fullName = fullName;
-    dto.dateOfBirth = dob;
-    dto.gender = gender;
-    dto.citizenId = citizenId;
-    dto.phone = phone;
-    dto.email = email;
-    dto.address = address;
-    dto.bloodType = bloodType;
-    if (hasInsurance)
+    QString fullName = m_txtFullName->text().trimmed();
+    QString citizenId = m_txtCitizenId->text().trimmed();
+    QString phone = m_txtPhone->text().trimmed();
+
+    if (fullName.isEmpty() || citizenId.isEmpty() || phone.isEmpty())
     {
-      InsuranceInputDTO insDto;
-      insDto.policyNumber = insurancePolicy;
-      insDto.providerName = insuranceProvider;
-      insDto.insuranceType = insuranceTypeEn;
-      insDto.coveragePercent = insuranceCoverage;
-      insDto.validFrom = insuranceFrom;
-      insDto.validTo = insuranceTo;
-      dto.insurance = insDto;
+        QMessageBox::warning(this, "Thiếu thông tin",
+                             "Vui lòng nhập đầy đủ các trường bắt buộc (*)");
+        return;
     }
-    dto.type = type;
-    dto.emergencyContactName = emerName;
-    dto.emergencyContactPhone = emerPhone;
-    dto.admissionDate = QDate::currentDate();
-    dto.dischargeDate = std::nullopt;
-    dto.reason = "Chưa xác định";
 
-    errorMsg = m_patientService->addInPatient(dto);
-  }
-  else if (type == PatientType::Emergency)
-  {
-    EmergencyPatientInputDTO dto;
-    dto.fullName = fullName;
-    dto.dateOfBirth = dob;
-    dto.gender = gender;
-    dto.citizenId = citizenId;
-    dto.phone = phone;
-    dto.email = email;
-    dto.address = address;
-    dto.bloodType = bloodType;
-    if (hasInsurance)
+    // 1. Kiểm tra trùng lặp Số CCCD cá nhân
+    if (!citizenId.isEmpty() && m_patientService) {
+        auto existCitizen = m_patientService->getPatientByPhoneOrCitizenId("", citizenId);
+        if (existCitizen.has_value()) {
+            const auto &p = existCitizen.value();
+            QMessageBox msgBox(this);
+            msgBox.setWindowTitle("Trùng Lặp Thông Tin CCCD");
+            msgBox.setText(
+                QString("Không thể đăng ký bệnh nhân mới!\n\n"
+                        "Số CCCD [%1] ĐÃ TỒN TẠI trên hệ thống.\n\n"
+                        "Thông tin bệnh nhân trùng khớp:\n"
+                        "• Họ tên: %2\n"
+                        "• Mã bệnh nhân: %3\n"
+                        "• SĐT cá nhân: %4\n\n"
+                        "Vui lòng kiểm tra lại thông tin hoặc chọn bệnh nhân đã có để tiếp tục.")
+                    .arg(citizenId, p.fullName, p.patientCode, p.phone));
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setStyleSheet(
+                "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+                "QLabel { color: #111827; font-size: 14px; font-weight: bold; }"
+                "QPushButton { background-color: #EF4444; color: white; "
+                "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+                "6px; border: none; font-size: 14px; }"
+                "QPushButton:hover { background-color: #DC2828; }");
+            msgBox.exec();
+            return;
+        }
+    }
+
+    // 2. Kiểm tra trùng lặp Số điện thoại cá nhân (KHÔNG kiểm tra SĐT người thân)
+    if (!phone.isEmpty() && m_patientService) {
+        auto existPhone = m_patientService->getPatientByPhoneOrCitizenId(phone, "");
+        if (existPhone.has_value()) {
+            const auto &p = existPhone.value();
+            QMessageBox msgBox(this);
+            msgBox.setWindowTitle("Trùng Lặp Số Điện Thoại Cá Nhân");
+            msgBox.setText(
+                QString("Không thể đăng ký bệnh nhân mới!\n\n"
+                        "Số điện thoại cá nhân [%1] ĐÃ TỒN TẠI trên hệ thống.\n\n"
+                        "Thông tin bệnh nhân trùng khớp:\n"
+                        "• Họ tên: %2\n"
+                        "• Mã bệnh nhân: %3\n"
+                        "• SĐT cá nhân: %4\n\n"
+                        "Vui lòng kiểm tra lại thông tin hoặc chọn bệnh nhân đã có để tiếp tục.")
+                    .arg(phone, p.fullName, p.patientCode, p.phone));
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setStyleSheet(
+                "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+                "QLabel { color: #111827; font-size: 14px; font-weight: bold; }"
+                "QPushButton { background-color: #EF4444; color: white; "
+                "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+                "6px; border: none; font-size: 14px; }"
+                "QPushButton:hover { background-color: #DC2828; }");
+            msgBox.exec();
+            return;
+        }
+    }
+
+    QString gender = GenderText::toEn(m_cbGender->currentText());
+    QDate dob = m_dtDateOfBirth->date();
+    QString email = m_txtEmail->text().trimmed();
+    QString address = m_txtAddress->text().trimmed();
+
+    PatientType type = patientTypeFromVi(m_cbPatientType->currentText());
+    QString bloodType = BloodTypeText::toEn(m_cbBloodType->currentText());
+    QString allergies = m_txtAllergies->text().trimmed();
+
+    QString insuranceTypeStr = m_cbInsuranceType->currentText();
+    bool hasInsurance = (insuranceTypeStr != "Không có");
+    QString insuranceTypeEn = InsuranceTypeText::toEn(insuranceTypeStr);
+    QString insuranceProvider = m_txtInsuranceProvider->text().trimmed();
+    QString insurancePolicy = m_txtInsurancePolicy->text().trimmed();
+    double insuranceCoverage = m_spinInsuranceCoverage->value();
+    QDate insuranceFrom = m_dateInsuranceFrom->date();
+    QDate insuranceTo = m_dateInsuranceTo->date();
+
+    QString emerName = m_txtEmergencyContactName->text().trimmed();
+    QString emerPhone = m_txtEmergencyContactPhone->text().trimmed();
+
+    QString errorMsg;
+
+    auto fillInsurance = [&](InsuranceInputDTO &insDto) {
+        insDto.policyNumber = insurancePolicy;
+        insDto.providerName = insuranceProvider;
+        insDto.insuranceType = insuranceTypeEn;
+        insDto.coveragePercent = insuranceCoverage;
+        insDto.validFrom = insuranceFrom;
+        insDto.validTo = insuranceTo;
+    };
+
+    if (type == PatientType::Outpatient)
     {
-      InsuranceInputDTO insDto;
-      insDto.policyNumber = insurancePolicy;
-      insDto.providerName = insuranceProvider;
-      insDto.insuranceType = insuranceTypeEn;
-      insDto.coveragePercent = insuranceCoverage;
-      insDto.validFrom = insuranceFrom;
-      insDto.validTo = insuranceTo;
-      dto.insurance = insDto;
+        OutPatientInputDTO dto;
+        dto.fullName = fullName;
+        dto.dateOfBirth = dob;
+        dto.gender = gender;
+        dto.citizenId = citizenId;
+        dto.phone = phone;
+        dto.email = email;
+        dto.address = address;
+        dto.bloodType = bloodType;
+        dto.type = type;
+        dto.emergencyContactName = emerName;
+        dto.emergencyContactPhone = emerPhone;
+        if (hasInsurance) { fillInsurance(dto.insurance); }
+        errorMsg = m_patientService->addOutPatient(dto);
     }
-    dto.type = type;
-    dto.emergencyContactName = emerName;
-    dto.emergencyContactPhone = emerPhone;
-    dto.injuryCause = "Chưa xác định";
-    dto.injuryDescription = "Chưa xác định";
-    dto.admissionDate = QDate::currentDate();
-    dto.dischargeDate = std::nullopt;
+    else if (type == PatientType::Inpatient)
+    {
+        InPatientInputDTO dto;
+        dto.fullName = fullName;
+        dto.dateOfBirth = dob;
+        dto.gender = gender;
+        dto.citizenId = citizenId;
+        dto.phone = phone;
+        dto.email = email;
+        dto.address = address;
+        dto.bloodType = bloodType;
+        dto.type = type;
+        dto.emergencyContactName = emerName;
+        dto.emergencyContactPhone = emerPhone;
+        if (hasInsurance) { fillInsurance(dto.insurance); }
+        dto.admissionDate = QDate::currentDate();
+        dto.dischargeDate = std::nullopt;
+        dto.reason = "Chưa xác định";
+        errorMsg = m_patientService->addInPatient(dto);
+    }
+    else if (type == PatientType::Emergency)
+    {
+        EmergencyPatientInputDTO dto;
+        dto.fullName = fullName;
+        dto.dateOfBirth = dob;
+        dto.gender = gender;
+        dto.citizenId = citizenId;
+        dto.phone = phone;
+        dto.email = email;
+        dto.address = address;
+        dto.bloodType = bloodType;
+        dto.type = type;
+        dto.emergencyContactName = emerName;
+        dto.emergencyContactPhone = emerPhone;
+        if (hasInsurance) { fillInsurance(dto.insurance); }
+        dto.injuryCause = "Chưa xác định";
+        dto.injuryDescription = "Chưa xác định";
+        dto.admissionDate = QDate::currentDate();
+        dto.dischargeDate = std::nullopt;
+        errorMsg = m_patientService->addEmergencyPatient(dto);
+    }
 
-    errorMsg = m_patientService->addEmergencyPatient(dto);
-  }
+    if (!errorMsg.isEmpty())
+    {
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("Lỗi");
+        msgBox.setText(errorMsg);
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setStyleSheet(
+            "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+            "QLabel { color: #111827; font-size: 14px; font-weight: bold; }"
+            "QPushButton { background-color: #EF4444; color: white; "
+            "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+            "6px; border: none; font-size: 14px; }"
+            "QPushButton:hover { background-color: #DC2828; }");
+        msgBox.exec();
+        return;
+    }
 
-  if (!errorMsg.isEmpty())
-  {
-    QMessageBox::warning(this, "Lỗi kiểm tra dữ liệu", errorMsg);
-    return;
-  }
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Thành công");
+    msgBox.setText("Đăng ký bệnh nhân thành công!");
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setStyleSheet(
+        "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
+        "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+        "QPushButton { background-color: #34A853; color: white; "
+        "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
+        "6px; border: none; font-size: 14px; }"
+        "QPushButton:hover { background-color: #2C8E46; }");
+    msgBox.exec();
 
-  QMessageBox::information(this, "Thành công", "Đăng ký bệnh nhân thành công!");
-  emit saved(phone, citizenId, fullName);
-  accept();
+    emit saved(phone, citizenId, fullName);
+    accept();
 }

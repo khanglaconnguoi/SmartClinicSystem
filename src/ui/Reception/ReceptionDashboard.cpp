@@ -365,23 +365,33 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   connect(btnAddPatient, &QPushButton::clicked, this, [this]() {
     PatientRegistrationDialog dialog(m_basePatientService, this);
     connect(&dialog, &PatientRegistrationDialog::saved, this,
-            [this](QString citizenId, QString /*name*/) {
-              auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId("", citizenId);
-              if (patientOpt) {
+            [this](const QString &phone, const QString &citizenId, const QString &name) {
+              Q_UNUSED(name);
+              if (!m_basePatientService) return;
+              auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId(phone, citizenId);
+              if (patientOpt.has_value()) {
                 m_currentPatientId = patientOpt->patientId;
-                m_txtPatientPhone->setText(patientOpt->phone);
-                // m_txtPatientCitizenId->setText(patientOpt->citizenId); // patientRecord doesn't have citizenId, UI already has it
+                if (m_txtPatientPhone) m_txtPatientPhone->setText(patientOpt->phone);
+                if (m_txtPatientCitizenId) m_txtPatientCitizenId->setText(citizenId);
+
+                QMessageBox::information(this, "Xác Nhận Thông Tin Bệnh Nhân",
+                    QString("Đã xác nhận bệnh nhân thành công!\n\n"
+                            "Họ tên: %1\nMã bệnh nhân: %2\nSố điện thoại: %3\nCCCD: %4\n\n"
+                            "Vui lòng chọn Chuyên khoa và Bác sĩ bên dưới để hoàn tất Đăng ký khám.")
+                        .arg(patientOpt->fullName, patientOpt->patientCode, patientOpt->phone, citizenId));
               }
-              m_txtPatientPhone->setReadOnly(true);
-              m_txtPatientCitizenId->setReadOnly(true);
+              if (m_txtPatientPhone) m_txtPatientPhone->setReadOnly(true);
+              if (m_txtPatientCitizenId) m_txtPatientCitizenId->setReadOnly(true);
 
-              m_btnContinue->setText("Đã xác nhận");
-              m_btnContinue->setEnabled(false);
-              m_btnContinue->setStyleSheet(
-                  "background-color: #EAEAEA; color: #999; padding: 10px 25px; "
-                  "border-radius: 6px; font-size: 15px; font-weight: bold;");
+              if (m_btnContinue) {
+                m_btnContinue->setText("Đã xác nhận");
+                m_btnContinue->setEnabled(false);
+                m_btnContinue->setStyleSheet(
+                    "background-color: #EAEAEA; color: #999; padding: 10px 25px; "
+                    "border-radius: 6px; font-size: 15px; font-weight: bold;");
+              }
 
-              m_apptCard->setVisible(true);
+              if (m_apptCard) m_apptCard->setVisible(true);
             });
     dialog.exec();
   });

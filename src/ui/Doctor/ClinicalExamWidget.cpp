@@ -19,22 +19,44 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
     // Kết nối các tín hiệu chuyển hướng về Dashboard
     connect(m_tabAppointmentsList, &QPushButton::clicked, this, &ClinicalExamWidget::viewAppointmentsListRequested);
     connect(m_btnCancel, &QPushButton::clicked, this, &ClinicalExamWidget::backToDashboardRequested);
-    connect(m_btnFinish, &QPushButton::clicked, this, &ClinicalExamWidget::finishExamRequested);
-    connect(m_btnCallPatient, &QPushButton::clicked, this, [this]() {
+    connect(m_btnFinish, &QPushButton::clicked, this, &ClinicalExamWidget::onFinishExamClicked);
+    if (m_btnCallPatient) {
+        connect(m_btnCallPatient, &QPushButton::clicked, this, [this]() {
             emit callPatientRequested(m_currentAppointmentId);
         });
+    }
 
     if (m_btnSave) {
         connect(m_btnSave, &QPushButton::clicked, this, &ClinicalExamWidget::onSaveClicked);
     }
 
-    if (m_subPrescription) {
-        connect(m_subPrescription, &QPushButton::clicked, this, [this]() {
-            CreatePrescriptionDialog dialog(m_pharmacyService, this);
-            dialog.setRecordId(m_lblPatientCodeVal ? m_lblPatientCodeVal->text() : "");
-            dialog.exec();
-        });
-    }
+    auto openPrescriptionAction = [this]() {
+        if (m_currentMedicalRecordId <= 0) {
+            QMessageBox::warning(this, "Chưa lưu bệnh án", "Vui lòng 'Viết Hồ Sơ Bệnh Án' và lưu thành công trước khi kê đơn thuốc!");
+            return;
+        }
+        CreatePrescriptionDialog dialog(m_pharmacyService, this);
+        dialog.setRecordId(QString::number(m_currentMedicalRecordId));
+        int doctorId = 1;
+        QString doctorName = "Bác sĩ";
+        if (UserSession::getInstance().isLoggedIn() && UserSession::getInstance().getCurrentAccount()) {
+            doctorId = UserSession::getInstance().getCurrentAccount()->getAccountId();
+            doctorName = UserSession::getInstance().getCurrentAccount()->getFullName();
+        }
+        dialog.setDoctorId(QString::number(doctorId));
+        dialog.setDoctorName(doctorName);
+        dialog.exec();
+    };
+
+    if (m_btnPrescription) connect(m_btnPrescription, &QPushButton::clicked, this, openPrescriptionAction);
+    if (m_subPrescription) connect(m_subPrescription, &QPushButton::clicked, this, openPrescriptionAction);
+
+    auto openServiceOrderAction = [this]() {
+        QMessageBox::information(this, "Yêu Cầu Xét Nghiệm", "Đã khởi tạo yêu cầu xét nghiệm / cận lâm sàng cho bệnh nhân.");
+    };
+
+    if (m_btnServiceOrder) connect(m_btnServiceOrder, &QPushButton::clicked, this, openServiceOrderAction);
+    if (m_subServiceOrder) connect(m_subServiceOrder, &QPushButton::clicked, this, openServiceOrderAction);
 
     auto openHistoryAction = [this]() {
         PatientRecordHistoryDialog dialog(m_pharmacyService, m_medicalRecordService, this);
@@ -196,23 +218,22 @@ QFrame* ClinicalExamWidget::setupPatientInfoCard() {
     QHBoxLayout* actionButtonsLayout = new QHBoxLayout();
     actionButtonsLayout->setSpacing(6);
 
-    m_btnNew = new QPushButton("➕ THÊM MỚI", infoCard);
-    m_btnSave = new QPushButton("💾 LƯU (F4)", infoCard);
-    m_btnFinish = new QPushButton("🟢 KẾT THÚC KHÁM", infoCard);
-    m_btnCancel = new QPushButton("🔴 HỦY KHÁM", infoCard);
-    m_btnHistory = new QPushButton("⏳ LỊCH SỬ", infoCard);
-    m_btnCallPatient = new QPushButton("📢 GỌI KHÁM", infoCard);
-    m_btnPrint = new QPushButton("🖨️ IN PHIẾU", infoCard);
+    m_btnSave = new QPushButton("Viết Hồ Sơ Bệnh Án", infoCard);
+    m_btnPrescription = new QPushButton("Kê Đơn Thuốc", infoCard);
+    m_btnServiceOrder = new QPushButton("Yêu Cầu Xét Nghiệm", infoCard);
+    m_btnFinish = new QPushButton("Hoàn Tất Khám", infoCard);
+    m_btnCancel = new QPushButton("Hủy Khám", infoCard);
+    m_btnHistory = new QPushButton("Lịch Sử Khám", infoCard);
 
-    QPushButton* actionBtns[] = { m_btnNew, m_btnSave, m_btnFinish, m_btnCancel, m_btnHistory, m_btnCallPatient, m_btnPrint };
-    QString colors[] = { "#4B94F2", "#2563EB", "#059669", "#DC2626", "#4B5563", "#7C3AED", "#0891B2" };
+    QPushButton* actionBtns[] = { m_btnSave, m_btnPrescription, m_btnServiceOrder, m_btnFinish, m_btnCancel, m_btnHistory };
+    QString colors[] = { "#2563EB", "#7C3AED", "#0891B2", "#059669", "#DC2626", "#4B5563" };
 
-    for (int i = 0; i < 7; ++i) {
+    for (int i = 0; i < 6; ++i) {
         actionBtns[i]->setCursor(Qt::PointingHandCursor);
-        actionBtns[i]->setFixedHeight(32);
+        actionBtns[i]->setFixedHeight(34);
         actionBtns[i]->setStyleSheet(QString(
-            "QPushButton { background-color: %1; color: white; border: none; font-size: 11px; font-weight: bold; border-radius: 6px; padding: 0 10px; }"
-            "QPushButton:hover { background-color: black; }"
+            "QPushButton { background-color: %1; color: white; border: none; font-size: 11px; font-weight: bold; border-radius: 6px; padding: 0 12px; }"
+            "QPushButton:hover { opacity: 0.9; background-color: #1E293B; }"
         ).arg(colors[i]));
         actionButtonsLayout->addWidget(actionBtns[i]);
     }
@@ -224,10 +245,10 @@ QFrame* ClinicalExamWidget::setupPatientInfoCard() {
     infoCardLayout->addWidget(createSeparator());
     QHBoxLayout* metaRow = new QHBoxLayout();
     metaRow->setSpacing(24);
-    QLabel* m1 = new QLabel("🏥 Phòng khám: Phòng khám nội nhi", infoCard);
-    QLabel* m2 = new QLabel("🕓 Bắt đầu: 13:00", infoCard);
-    QLabel* m3 = new QLabel("📋 Bệnh chính: --", infoCard);
-    QLabel* m4 = new QLabel("📋 Bệnh phụ: --", infoCard);
+    QLabel* m1 = new QLabel("Phòng khám: Phòng khám nội nhi", infoCard);
+    QLabel* m2 = new QLabel("Bắt đầu: 13:00", infoCard);
+    QLabel* m3 = new QLabel("Bệnh chính: --", infoCard);
+    QLabel* m4 = new QLabel("Bệnh phụ: --", infoCard);
 
     QLabel* metas[] = { m1, m2, m3, m4 };
     for (auto* m : metas) {
@@ -455,6 +476,7 @@ void ClinicalExamWidget::loadPatientInfo(int patientId, int appointmentId, const
     clearExamForm();
     m_currentPatientId = patientId;
     m_currentAppointmentId = appointmentId;
+    m_currentMedicalRecordId = 0;
 
     if (m_lblPatientNameVal) m_lblPatientNameVal->setText(name.toUpper());
     if (m_lblPatientCodeVal) m_lblPatientCodeVal->setText(id);
@@ -710,7 +732,7 @@ void ClinicalExamWidget::onSaveClicked() {
     dto.nextVisitDate = std::nullopt;
     dto.diagnoses = getDiagnosesFromUi();
 
-    QString err = m_medicalRecordService->createMedicalRecord(dto);
+    QString err = m_medicalRecordService->createMedicalRecord(dto, &m_currentMedicalRecordId);
     if (!err.isEmpty()) {
         QMessageBox::warning(this, "Lỗi kiểm tra dữ liệu", err);
         
@@ -736,4 +758,12 @@ void ClinicalExamWidget::onSaveClicked() {
     m_txtReason->setStyleSheet(textEditStyle);
     m_cbDiagnosis->setStyleSheet(comboStyle);
     m_txtMainDisease->setStyleSheet(lineEditStyle);
+}
+
+void ClinicalExamWidget::onFinishExamClicked() {
+    if (m_currentMedicalRecordId <= 0) {
+        QMessageBox::warning(this, "Chưa lưu bệnh án", "Hồ sơ bệnh án chưa được khởi tạo hoặc lưu. Vui lòng nhấn 'Viết Hồ Sơ Bệnh Án' để lưu trước khi hoàn tất khám!");
+        return;
+    }
+    emit finishExamRequested();
 }

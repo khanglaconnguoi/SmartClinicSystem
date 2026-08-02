@@ -48,7 +48,7 @@ public:
       std::shared_ptr<MedicalRecordRepository> recordRepo,
       std::shared_ptr<PatientService> patientService);
 
-  QString createMedicalRecord(MedicalRecordInsertDTO &dto);
+  QString createMedicalRecord(MedicalRecordInsertDTO &dto, int *outRecordId = nullptr);
 //   bool updateMedicalRecord(MedicalRecordUpdateDTO &dto);
   bool softDeleteMedicalRecord(int recordId);
   QList<MedicalRecordResultDTO> getMedicalHistory(int patientId);

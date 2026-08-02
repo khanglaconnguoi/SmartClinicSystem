@@ -49,8 +49,8 @@ public:
    * @brief Kiểm tra toàn bộ trường cơ bản của bảng `patients`.
    *        Dùng thông tin từ PatientInputDTO.
    */
-  static QString validateBaseInput(const PatientInputDTO &dto,
-                                   const QString &patientCode = "");
+  QString validateBaseInput(const PatientInputDTO &dto,
+                            const QString &patientCode = "");
 
   /**
    * @brief Kiểm tra trường đặc thù của bệnh nhân nội trú (`in_patients`).
@@ -230,5 +230,6 @@ public:
   std::optional<InsuranceResultDTO> getInsurance(int patientId) const;
 
   std::optional<PatientShortDTO> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
-
+  QString validateCitizenIdUnique(const QString &citizenId, int excludePatientId = -1) const;
+  QString validatePhoneNumberUnique(const QString &phone, int excludePatientId = -1) const;
 };

@@ -18,32 +18,31 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 QString PatientService::generatePatientCode(PatientType type) {
-  static int outSeq = 1;
-  static int inSeq = 1;
-  static int emerSeq = 1;
-
   QString prefix;
-  int *seqPtr;
-
   if (type == PatientType::Outpatient) {
     prefix = "OP";
-    seqPtr = &outSeq;
   } else if (type == PatientType::Inpatient) {
     prefix = "IP";
-    seqPtr = &inSeq;
   } else if (type == PatientType::Emergency) {
     prefix = "EP";
-    seqPtr = &emerSeq;
   } else {
     prefix = "PT";
-    static int defSeq = 1;
-    seqPtr = &defSeq;
   }
 
   QString dateStr = QDateTime::currentDateTime().toString("yyyyMMdd");
-  QString code = QString("%1%2%3").arg(prefix).arg(dateStr).arg(*seqPtr, 4, 10,
-                                                                QChar('0'));
-  (*seqPtr)++;
+  QString prefixWithDate = prefix + dateStr;
+
+  int seq = 1;
+  if (m_patientRepository) {
+    auto result = m_patientRepository->getLatestPatientCode(prefixWithDate);
+    if (result.has_value()) {
+      QString latestCode = result.value();
+      QString countCode = latestCode.right(4);
+      seq = countCode.toInt() + 1;
+    }
+  }
+
+  QString code = QString("%1%2%3").arg(prefix).arg(dateStr).arg(seq, 4, 10, QChar('0'));
   return code;
 }
 
@@ -395,11 +394,13 @@ QString PatientService::validateBaseInput(const PatientInputDTO &dto,
   if (!(err = Validation::validateTrimmedNotEmpty(dto.address, "Address is required.")).isEmpty())
     return err;
 
+  if (!(err = validateCitizenIdUnique(dto.citizenId)).isEmpty()) return err;
+  if (!(err = validatePhoneNumberUnique(dto.phone)).isEmpty()) return err;
+
   if (!(err = validateBloodType(dto.bloodType)).isEmpty()) return err;
   if (!(err = Validation::validateTrimmedNotEmpty(dto.emergencyContactName, "Người liên hệ khẩn cấp không được để trống.")).isEmpty()) return err;
   if (!(err = Validation::validatePhoneNumber(dto.emergencyContactPhone)).isEmpty()) return err;
 
-//   if (!(err = validateAllergyInputList(dto.allergies)).isEmpty()) return err;
   if (!(err = validateInsuranceInput(dto.insurance)).isEmpty()) return err;
 
   return "";
@@ -638,6 +639,32 @@ std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) co
 
 std::optional<PatientShortDTO> PatientService::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
     return m_patientRepository->getPatientByPhoneOrCitizenId(phone, citizenId);
+}
+
+QString PatientService::validateCitizenIdUnique(const QString &citizenId, int excludePatientId) const {
+  if (citizenId.trimmed().isEmpty()) return "";
+  if (m_patientRepository && m_patientRepository->existsByCitizenId(citizenId.trimmed(), excludePatientId)) {
+    auto exist = m_patientRepository->getPatientByPhoneOrCitizenId("", citizenId.trimmed());
+    if (exist.has_value()) {
+      return QString("Số CCCD [%1] đã tồn tại trên hệ thống (Bệnh nhân: %2 - Mã: %3).")
+          .arg(citizenId.trimmed(), exist->fullName, exist->patientCode);
+    }
+    return QString("Số CCCD [%1] đã tồn tại trên hệ thống.").arg(citizenId.trimmed());
+  }
+  return "";
+}
+
+QString PatientService::validatePhoneNumberUnique(const QString &phone, int excludePatientId) const {
+  if (phone.trimmed().isEmpty()) return "";
+  if (m_patientRepository && m_patientRepository->existsByPhoneNumber(phone.trimmed(), excludePatientId)) {
+    auto exist = m_patientRepository->getPatientByPhoneOrCitizenId(phone.trimmed(), "");
+    if (exist.has_value()) {
+      return QString("Số điện thoại cá nhân [%1] đã tồn tại trên hệ thống (Bệnh nhân: %2 - Mã: %3).")
+          .arg(phone.trimmed(), exist->fullName, exist->patientCode);
+    }
+    return QString("Số điện thoại cá nhân [%1] đã tồn tại trên hệ thống.").arg(phone.trimmed());
+  }
+  return "";
 }
 
 // std::optional<DatabaseManager::PatientRecord>

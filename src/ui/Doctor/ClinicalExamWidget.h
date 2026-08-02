@@ -41,6 +41,7 @@ signals:
 
 private slots:
     void onSaveClicked();
+    void onFinishExamClicked();
     void validateTemperatureInput();
     void validateHeartRateInput();
     void validateWeightInput();
@@ -55,6 +56,7 @@ private:
     std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     int m_currentPatientId = 0;
     int m_currentAppointmentId = 0;
+    int m_currentMedicalRecordId = 0;
 
     QList<Diagnosis> getDiagnosesFromUi() const;
 
@@ -72,10 +74,11 @@ private:
     QLabel* m_lblPatientAgeVal;
 
     // --- QUICK ACTION BUTTONS ---
-    QPushButton* m_btnNew;
-    QPushButton* m_btnSave;
-    QPushButton* m_btnFinish;
-    QPushButton* m_btnCancel;
+    QPushButton* m_btnSave;            // Viết Hồ Sơ Bệnh Án
+    QPushButton* m_btnPrescription;    // Kê Đơn Thuốc
+    QPushButton* m_btnServiceOrder;    // Yêu Cầu Xét Nghiệm
+    QPushButton* m_btnFinish;          // Hoàn Tất Khám
+    QPushButton* m_btnCancel;          // Hủy Khám
     QPushButton* m_btnHistory;
     QPushButton* m_btnCallPatient;
     QPushButton* m_btnPrint;
