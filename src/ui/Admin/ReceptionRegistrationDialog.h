@@ -36,6 +36,7 @@ private:
     QDateEdit *m_dtDateOfBirth;
     QLineEdit *m_txtEmail;
     QLineEdit *m_txtAddress;
+    QComboBox *m_cbDepartment;
     QComboBox *m_cbShift;
 
     QPushButton* m_btnSave;

@@ -1,13 +1,20 @@
 #include "LoginDialog.h"
 #include <QApplication>
+#include <QDialog>
 #include <QGraphicsDropShadowEffect>
+#include <QHBoxLayout>
 #include <QMessageBox>
+#include <QVBoxLayout>
 #include "service/AuthService.h"
 #include "model/IAuthenticatable.h"
+#include "model/SystemUser.h"
 #include "service/UserSession.h"
+#include "service/Validation.h"
 
-LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *parent)
-    : QWidget(parent), m_authService(authService)
+LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
+                         std::shared_ptr<StaffService> staffService,
+                         QWidget *parent)
+    : QWidget(parent), m_authService(authService), m_staffService(staffService)
 {
     setAttribute(Qt::WA_StyledBackground, true);
     setStyleSheet("background-color: #4B94F2;");
@@ -108,7 +115,7 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService, QWidget *pare
     rightContainer->setGeometry(440, 0, 480, 560);
     rightContainer->setStyleSheet(
         "QWidget { "
-        "   background-color: #F0F6FF; "
+        "   background-color: #FFFFFF; "
         "   border-top-right-radius: 12px; "
         "   border-bottom-right-radius: 12px; "
         "   border-top-left-radius: 0px; "
@@ -143,10 +150,114 @@ void LoginDialog::handleLogin()
         return;
     }
 
-    if (!m_authService->login(username, password).isLoginSuccess) {
+    LoginResult result = m_authService->login(username, password);
+    if (!result.isLoginSuccess) {
         QMessageBox::critical(this, "Lỗi đăng nhập", "Tài khoản hoặc mật khẩu không chính xác.");
-    } else {
-        emit loginSucceeded(UserSession::getInstance().getCurrentAccount());
+        return;
+    }
+
+    auto currentUser = UserSession::getInstance().getCurrentAccount();
+    if (result.mustChangePassword) {
+        showPasswordChangeDialog(currentUser);
+        return;
+    }
+
+    emit loginSucceeded(currentUser);
+}
+
+void LoginDialog::showPasswordChangeDialog(std::shared_ptr<IAuthenticatable> user)
+{
+    if (!m_staffService || !user) {
+        emit loginSucceeded(user);
+        return;
+    }
+
+    auto staffUser = std::dynamic_pointer_cast<SystemUser>(user);
+    if (!staffUser) {
+        emit loginSucceeded(user);
+        return;
+    }
+
+    QDialog dialog(this);
+    dialog.setWindowTitle("Đổi mật khẩu lần đầu");
+    dialog.setModal(true);
+    dialog.resize(460, 320);
+    dialog.setStyleSheet(
+        "QDialog { background-color: #FFFFFF; }"
+        "QLabel { color: #111827; }"
+        "QLineEdit { padding: 10px 12px; border: 1px solid #D1D5DB; border-radius: 8px; background-color: #FFFFFF; color: #111827; }"
+        "QLineEdit:focus { border: 1px solid #4B94F2; }"
+        "QPushButton { padding: 8px 16px; border-radius: 8px; font-weight: 600; }"
+    );
+
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(14);
+    layout->setContentsMargins(24, 24, 24, 24);
+
+    QLabel *titleLabel = new QLabel("Bạn cần đổi mật khẩu trước AAA khi tiếp tục", &dialog);
+    titleLabel->setStyleSheet("font-size: 17px; font-weight: bold; color: #111827;");
+    layout->addWidget(titleLabel);
+
+    QLabel *hintLabel = new QLabel("Vui lòng nhập mật khẩu mới có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.", &dialog);
+    hintLabel->setWordWrap(true);
+    hintLabel->setStyleSheet("font-size: 12px; color: #6B7280; line-height: 1.4;");
+    layout->addWidget(hintLabel);
+
+    QLineEdit *newPasswordEdit = new QLineEdit(&dialog);
+    newPasswordEdit->setEchoMode(QLineEdit::Password);
+    newPasswordEdit->setPlaceholderText("Mật khẩu mới");
+    layout->addWidget(newPasswordEdit);
+
+    QLineEdit *confirmPasswordEdit = new QLineEdit(&dialog);
+    confirmPasswordEdit->setEchoMode(QLineEdit::Password);
+    confirmPasswordEdit->setPlaceholderText("Nhập lại mật khẩu mới");
+    layout->addWidget(confirmPasswordEdit);
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+
+    QPushButton *cancelButton = new QPushButton("Hủy", &dialog);
+    cancelButton->setStyleSheet("QPushButton { background-color: #F3F4F6; color: #374151; border: 1px solid #E5E7EB; }"
+                                "QPushButton:hover { background-color: #E5E7EB; }");
+    QPushButton *confirmButton = new QPushButton("Xác nhận", &dialog);
+    confirmButton->setStyleSheet("QPushButton { background-color: #4B94F2; color: white; border: none; }"
+                                 "QPushButton:hover { background-color: #357AE8; }");
+    buttonLayout->addWidget(cancelButton);
+    buttonLayout->addWidget(confirmButton);
+    layout->addLayout(buttonLayout);
+
+    connect(cancelButton, &QPushButton::clicked, &dialog, &QDialog::reject);
+    connect(confirmButton, &QPushButton::clicked, &dialog, [&]() {
+        QString newPassword = newPasswordEdit->text();
+        QString confirmPassword = confirmPasswordEdit->text();
+
+        if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            QMessageBox::warning(&dialog, "Thông báo", "Vui lòng nhập đầy đủ mật khẩu mới.");
+            return;
+        }
+
+        if (newPassword != confirmPassword) {
+            QMessageBox::warning(&dialog, "Thông báo", "Mật khẩu xác nhận không khớp.");
+            return;
+        }
+
+        QString validationError = Validation::validatePlainPassword(newPassword);
+        if (!validationError.isEmpty()) {
+            QMessageBox::warning(&dialog, "Thông báo", validationError);
+            return;
+        }
+
+        if (!m_staffService->changePassword(staffUser->getAccountId(), newPassword)) {
+            QMessageBox::critical(&dialog, "Lỗi", "Không thể đổi mật khẩu. Vui lòng thử lại.");
+            return;
+        }
+
+        dialog.accept();
+    });
+    connect(confirmPasswordEdit, &QLineEdit::returnPressed, confirmButton, &QPushButton::click);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        emit loginSucceeded(user);
     }
 }
 

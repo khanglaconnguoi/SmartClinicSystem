@@ -61,7 +61,7 @@ MainWindow::MainWindow(std::shared_ptr<AuthService> authService,
   m_stackedWidget = new QStackedWidget(this);
   setCentralWidget(m_stackedWidget);
 
-  m_loginWidget = new LoginDialog(m_authService, this);
+  m_loginWidget = new LoginDialog(m_authService, m_staffService, this);
   m_stackedWidget->addWidget(m_loginWidget);
 
   connect(m_loginWidget, &LoginDialog::loginSucceeded, this,

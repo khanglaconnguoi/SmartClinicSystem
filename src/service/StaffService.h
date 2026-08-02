@@ -109,7 +109,6 @@ private:
     
     
     // -- Field chung cho moi role ────────────────────────────────────
-    static QString validatePlainPassword(const QString& plainPassword);
     static QString validateDateOfBirth(const QDate& dateOfBirth);
     //static QString validateShift(const QString& shift);
  

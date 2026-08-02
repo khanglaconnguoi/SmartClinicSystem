@@ -451,6 +451,6 @@ void PatientRegistrationDialog::handleSave()
   }
 
   QMessageBox::information(this, "Thành công", "Đăng ký bệnh nhân thành công!");
-  emit saved(phone, fullName);
+  emit saved(phone, citizenId, fullName);
   accept();
 }

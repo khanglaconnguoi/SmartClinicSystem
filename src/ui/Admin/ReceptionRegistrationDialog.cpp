@@ -161,6 +161,12 @@ void ReceptionRegistrationDialog::setupUi()
 	form3->setContentsMargins(15, 25, 15, 15);
 	form3->setSpacing(12);
 
+	m_cbDepartment = new QComboBox(gbJobInfo);
+	m_cbDepartment->setStyleSheet(extraInputStyle);
+	for (const auto &pair : DepartmentText::getList())
+		m_cbDepartment->addItem(pair.second, pair.first);
+	form3->addRow("Phòng ban (*):", m_cbDepartment);
+
 	m_cbShift = new QComboBox(gbJobInfo);
 	for (const auto &pair : ShiftText::getList())
 		m_cbShift->addItem(pair.second, pair.first);
@@ -242,6 +248,13 @@ void ReceptionRegistrationDialog::loadReceptionistData(StaffProfileDTO* receptio
     m_cbGender->setCurrentText(genderText);
     
     m_dtDateOfBirth->setDate(receptionist->dateOfBirth);
+    for (int i = 0; i < m_cbDepartment->count(); ++i) {
+        if (m_cbDepartment->itemText(i).startsWith(
+                QString::number(receptionist->departmentId) + " -")) {
+            m_cbDepartment->setCurrentIndex(i);
+            break;
+        }
+    }
     m_cbShift->setCurrentText(ShiftText::toVi(receptionist->shift));
 }
 
@@ -271,6 +284,7 @@ void ReceptionRegistrationDialog::handleSave()
 	QString address = m_txtAddress->text().trimmed();
 
 	QString shift = ShiftText::toEn(m_cbShift->currentText());
+	int departmentId = m_cbDepartment->currentText().split(" - ").first().toInt();
     
     QPixmap avatar = m_avatarPicker->getAvatarPixmap();
 
@@ -283,6 +297,7 @@ void ReceptionRegistrationDialog::handleSave()
 	dto.phoneNumber = phone;
 	dto.email = email;
 	dto.address = address;
+	dto.departmentId = departmentId;
 	dto.shift = shift;
 
     QString errorMsg;

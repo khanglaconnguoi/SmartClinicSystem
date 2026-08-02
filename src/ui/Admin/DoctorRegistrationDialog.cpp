@@ -28,8 +28,9 @@ DoctorRegistrationDialog::DoctorRegistrationDialog(
 
   setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
   setWindowTitle("Thêm Bác sĩ");
-  setMinimumWidth(650);
-  resize(650, 850);
+  setMinimumWidth(700);
+  setMinimumHeight(760);
+  resize(720, 820);
   setupUi();
 }
 
@@ -44,7 +45,7 @@ void DoctorRegistrationDialog::setupUi() {
   QFrame *container = new QFrame(this);
   container->setObjectName("mainContainer");
   container->setStyleSheet(
-      "#mainContainer { background-color: #FFFFFF; border-radius: 12px; }");
+      "#mainContainer { background-color: #FFFFFF; border-radius: 14px; }");
 
   QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(this);
   shadow->setBlurRadius(20);
@@ -64,7 +65,7 @@ void DoctorRegistrationDialog::setupUi() {
 
   QLabel *lblPageTitle = new QLabel("THÔNG TIN BÁC SĨ", headerFrame);
   lblPageTitle->setStyleSheet(
-      "font-size: 20px; font-weight: bold; color: #111827;");
+      "font-size: 22px; font-weight: bold; color: #1F2937;");
   lblPageTitle->setAlignment(Qt::AlignCenter);
   headerLayout->addWidget(lblPageTitle);
 
@@ -77,30 +78,31 @@ void DoctorRegistrationDialog::setupUi() {
       "QScrollArea { background-color: transparent; border: none; }");
 
   QFrame *formCard = new QFrame(scrollArea);
-  formCard->setStyleSheet("QFrame { background-color: #FFFFFF; border: none; } "
-                          "QLabel { color: #333333; font-weight: bold; }");
+  formCard->setStyleSheet(
+      "QFrame { background-color: #FFFFFF; border: none; } "
+      "QLabel { color: #374151; font-size: 13px; font-weight: 600; }");
 
   QVBoxLayout *cardLayout = new QVBoxLayout(formCard);
-  cardLayout->setContentsMargins(24, 24, 24, 24);
-  cardLayout->setSpacing(20);
+  cardLayout->setContentsMargins(24, 20, 24, 24);
+  cardLayout->setSpacing(18);
 
   QString groupBoxStyle =
       "QGroupBox { "
-      "border: 1px solid #D0D0D0; border-radius: 6px; "
-      "margin-top: 15px; font-weight: bold; color: #333333; background-color: "
-      "transparent; } "
+      "border: 1px solid #E5E7EB; border-radius: 10px; "
+      "margin-top: 16px; padding-top: 8px; font-weight: 700; color: #374151; "
+      "background-color: #FCFDFF; } "
       "QGroupBox::title { "
       "subcontrol-origin: margin; subcontrol-position: top left; "
-      "padding: 0 5px; color: #1A73E8; }";
+      "left: 12px; padding: 0 8px; color: #2563EB; font-size: 14px; }";
 
   QString extraInputStyle =
       "QLineEdit, QComboBox, QDateEdit, QSpinBox, QTextEdit { "
-      "border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; "
-      "font-size: 13px; color: #111827; background: #FFFFFF; min-height: 30px; "
+      "border: 1px solid #D1D5DB; border-radius: 8px; padding: 8px 12px; "
+      "font-size: 13px; color: #111827; background: #FFFFFF; min-height: 36px; "
       "} "
       "QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QSpinBox:focus, "
       "QTextEdit:focus { "
-      "border: 1px solid #4B94F2; } "
+      "border: 1px solid #4B94F2; background-color: #F8FBFF; } "
       "QComboBox QAbstractItemView { "
       "background-color: #FFFFFF; color: #111827; selection-background-color: "
       "#4B94F2; selection-color: white; }";
@@ -109,8 +111,8 @@ void DoctorRegistrationDialog::setupUi() {
   QGroupBox *gbPersonalInfo = new QGroupBox("Thông tin cá nhân", formCard);
   gbPersonalInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form1 = new QFormLayout(gbPersonalInfo);
-  form1->setContentsMargins(15, 20, 15, 15);
-  form1->setSpacing(10);
+  form1->setContentsMargins(16, 18, 16, 16);
+  form1->setSpacing(12);
   form1->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
   m_avatarPicker = new AvatarPickerWidget(gbPersonalInfo);
@@ -123,6 +125,7 @@ void DoctorRegistrationDialog::setupUi() {
 
   m_dtDateOfBirth = new QDateEdit(QDate(1990, 1, 1), gbPersonalInfo);
   m_dtDateOfBirth->setCalendarPopup(true);
+  m_dtDateOfBirth->setDisplayFormat("dd/MM/yyyy");
   m_dtDateOfBirth->setStyleSheet(extraInputStyle);
   form1->addRow("Ngày sinh (*):", m_dtDateOfBirth);
 
@@ -155,11 +158,11 @@ void DoctorRegistrationDialog::setupUi() {
 
   // --- Nhóm 2: Thông tin công việc & Tài khoản ---
   QGroupBox *gbWorkInfo =
-      new QGroupBox("Thông tin công việc & Tài khoản", formCard);
+      new QGroupBox("Thông tin công việc", formCard);
   gbWorkInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form2 = new QFormLayout(gbWorkInfo);
-  form2->setContentsMargins(15, 20, 15, 15);
-  form2->setSpacing(10);
+  form2->setContentsMargins(16, 18, 16, 16);
+  form2->setSpacing(12);
   form2->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
   m_cbDepartment = new QComboBox(gbWorkInfo);
@@ -186,6 +189,7 @@ void DoctorRegistrationDialog::setupUi() {
 
   m_dtHireDate = new QDateEdit(QDate::currentDate(), gbWorkInfo);
   m_dtHireDate->setCalendarPopup(true);
+  m_dtHireDate->setDisplayFormat("dd/MM/yyyy");
   m_dtHireDate->setStyleSheet(extraInputStyle);
   form2->addRow("Ngày vào làm (*):", m_dtHireDate);
 
@@ -195,8 +199,8 @@ void DoctorRegistrationDialog::setupUi() {
   QGroupBox *gbMedicalInfo = new QGroupBox("Thông tin chuyên môn", formCard);
   gbMedicalInfo->setStyleSheet(groupBoxStyle);
   QFormLayout *form3 = new QFormLayout(gbMedicalInfo);
-  form3->setContentsMargins(15, 20, 15, 15);
-  form3->setSpacing(10);
+  form3->setContentsMargins(16, 18, 16, 16);
+  form3->setSpacing(12);
   form3->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
   m_cbSpecialty = new QComboBox(gbMedicalInfo);
@@ -223,7 +227,7 @@ void DoctorRegistrationDialog::setupUi() {
 
   m_txtBio = new QTextEdit(gbMedicalInfo);
   m_txtBio->setStyleSheet(extraInputStyle);
-  m_txtBio->setFixedHeight(60);
+  m_txtBio->setFixedHeight(82);
   form3->addRow("Tiểu sử / giới thiệu:", m_txtBio);
 
   cardLayout->addWidget(gbMedicalInfo);
@@ -234,7 +238,7 @@ void DoctorRegistrationDialog::setupUi() {
   // --- Nút Lưu và Trở lại ---
   QFrame *bottomFrame = new QFrame(container);
   bottomFrame->setStyleSheet(
-      "background-color: transparent; border-top: 1px solid #EAEAEA;");
+      "background-color: transparent; border-top: 1px solid #E5E7EB;");
   QHBoxLayout *btnLayout = new QHBoxLayout(bottomFrame);
   btnLayout->setContentsMargins(20, 15, 20, 15);
 
@@ -244,8 +248,8 @@ void DoctorRegistrationDialog::setupUi() {
   m_btnCancel->setFixedSize(100, 40);
   m_btnCancel->setStyleSheet(
       "QPushButton { background-color: #EAEAEA; color: "
-      "#333; font-size: 14px; font-weight: bold; "
-      "border-radius: 4px; border: none; }"
+      "#333; font-size: 13px; font-weight: 600; "
+      "border-radius: 8px; border: none; padding: 0 10px; }"
       "QPushButton:hover { background-color: #D6D6D6; }");
   btnLayout->addWidget(m_btnCancel);
 
@@ -253,8 +257,8 @@ void DoctorRegistrationDialog::setupUi() {
   m_btnSave->setCursor(Qt::PointingHandCursor);
   m_btnSave->setFixedSize(140, 40);
   m_btnSave->setStyleSheet(
-      "QPushButton { background-color: #34A853; color: white; font-size: 14px; "
-      "font-weight: bold; border-radius: 4px; border: none; }"
+      "QPushButton { background-color: #34A853; color: white; font-size: 13px; "
+      "font-weight: 600; border-radius: 8px; border: none; padding: 0 10px; }"
       "QPushButton:hover { background-color: #2C8E46; }");
   btnLayout->addWidget(m_btnSave);
 

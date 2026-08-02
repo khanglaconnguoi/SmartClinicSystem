@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "service/AuthService.h"
+#include "service/StaffService.h"
 #include "model/IAuthenticatable.h"
 
 class LoginDialog : public QWidget
@@ -15,7 +16,9 @@ class LoginDialog : public QWidget
     Q_OBJECT
 
 public:
-    explicit LoginDialog(std::shared_ptr<AuthService> authService, QWidget *parent = nullptr);
+    explicit LoginDialog(std::shared_ptr<AuthService> authService,
+                         std::shared_ptr<StaffService> staffService,
+                         QWidget *parent = nullptr);
     ~LoginDialog();
 
     void clearFields();
@@ -27,7 +30,10 @@ private slots:
     void handleLogin();
 
 private:
+    void showPasswordChangeDialog(std::shared_ptr<IAuthenticatable> user);
+
     std::shared_ptr<AuthService> m_authService;
+    std::shared_ptr<StaffService> m_staffService;
 
     // UI members
     QLabel      *lblLeftLogo;

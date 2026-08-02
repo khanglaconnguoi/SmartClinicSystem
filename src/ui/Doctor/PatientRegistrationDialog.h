@@ -19,7 +19,7 @@ public:
 
 signals:
   void cancelled();
-  void saved(QString phone, QString name);
+  void saved(QString phone, QString citizenId, QString name);
 
 private slots:
   void handleSave();

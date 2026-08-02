@@ -367,13 +367,18 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   connect(btnAddPatient, &QPushButton::clicked, this, [this]() {
     PatientRegistrationDialog dialog(m_basePatientService, this);
     connect(&dialog, &PatientRegistrationDialog::saved, this,
-            [this](QString citizenId, QString /*name*/) {
-              auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId("", citizenId);
+            [this](QString phone, QString citizenId, QString /*name*/) {
+              auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId(phone, citizenId);
               if (patientOpt) {
                 m_currentPatientId = patientOpt->patientId;
                 m_txtPatientPhone->setText(patientOpt->phone);
-                // m_txtPatientCitizenId->setText(patientOpt->citizenId); // patientRecord doesn't have citizenId, UI already has it
+                m_txtPatientCitizenId->setText(citizenId);
+              } else {
+                QMessageBox::warning(this, "Lỗi",
+                                     "Không tìm thấy bệnh nhân vừa tạo. Vui lòng thử lại.");
+                return;
               }
+
               m_txtPatientPhone->setReadOnly(true);
               m_txtPatientCitizenId->setReadOnly(true);
 

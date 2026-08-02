@@ -30,46 +30,89 @@
 #include <QVariant>
 #include <QtDebug>
 
+namespace {
+
+bool tableHasColumn(const QString &tableName, const QString &columnName) {
+  QSqlQuery query(DatabaseManager::getInstance().database());
+  if (!query.exec(QString("PRAGMA table_info(%1)").arg(tableName))) {
+    qWarning() << "PatientRepository - unable to inspect columns for table"
+               << tableName << ":" << query.lastError().text();
+    return false;
+  }
+
+  while (query.next()) {
+    if (query.value(1).toString().compare(columnName, Qt::CaseInsensitive) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+QString safeTextValue(const QString &value, const QString &fallback = QStringLiteral("N/A")) {
+  const QString trimmed = value.trimmed();
+  return trimmed.isEmpty() ? fallback : trimmed;
+}
+
+} // namespace
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Private helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool PatientRepository::insertBasePatient(const PatientInsertDTO &dto,
                                           int &patientId) {
-  const QString sql = R"(
-    INSERT INTO patients (
-        patient_code,
-        full_name,
-        date_of_birth,
-        gender,
-        citizen_id,
-        phone_number,
-        email,
-        address,
-        blood_type,
-        default_patient_type,
-        emergency_contact_name,
-        emergency_contact_phone
-    )
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-  )";
+  QStringList columns;
+  QVariantList params;
+  QStringList placeholders;
 
-  const QVariantList params = {
-      dto.patientCode,
-      dto.fullName,
-      dto.dateOfBirth,
-      dto.gender,
-      dto.citizenId.isEmpty() ? QVariant() : dto.citizenId,
-      dto.phone.isEmpty() ? QVariant() : dto.phone,
-      dto.email.isEmpty() ? QVariant() : dto.email,
-      dto.address.isEmpty() ? QVariant() : dto.address,
-      dto.bloodType,
-      dto.type,
-      dto.emergencyContactName.isEmpty() ? QVariant()
-                                         : dto.emergencyContactName,
-      dto.emergencyContactPhone.isEmpty() ? QVariant()
-                                          : dto.emergencyContactPhone,
+  auto addColumn = [&](const QString &column, const QVariant &value) {
+    columns << column;
+    params << value;
+    placeholders << "?";
   };
+
+  addColumn("patient_code", dto.patientCode);
+  addColumn("full_name", dto.fullName);
+  addColumn("date_of_birth", dto.dateOfBirth);
+  addColumn("gender", dto.gender);
+
+  if (tableHasColumn("patients", "citizen_id")) {
+    addColumn("citizen_id",
+              dto.citizenId.isEmpty() ? QVariant() : dto.citizenId);
+  }
+  if (tableHasColumn("patients", "phone_number")) {
+    addColumn("phone_number",
+              dto.phone.isEmpty() ? QVariant() : dto.phone);
+  }
+  if (tableHasColumn("patients", "email")) {
+    addColumn("email", safeTextValue(dto.email, "unknown@example.com"));
+  }
+  if (tableHasColumn("patients", "address")) {
+    addColumn("address", safeTextValue(dto.address, "N/A"));
+  }
+  if (tableHasColumn("patients", "blood_type")) {
+    addColumn("blood_type", dto.bloodType);
+  }
+  if (tableHasColumn("patients", "default_patient_type")) {
+    addColumn("default_patient_type", dto.type);
+  }
+  if (tableHasColumn("patients", "emergency_contact_name")) {
+    addColumn("emergency_contact_name",
+              safeTextValue(dto.emergencyContactName, "N/A"));
+  }
+  if (tableHasColumn("patients", "emergency_contact_phone")) {
+    addColumn("emergency_contact_phone",
+              safeTextValue(dto.emergencyContactPhone, "N/A"));
+  }
+
+  if (columns.isEmpty()) {
+    qWarning() << "PatientRepository::insertBasePatient - không có cột nào để insert";
+    return false;
+  }
+
+  const QString sql = QString("INSERT INTO patients (%1) VALUES (%2)")
+                          .arg(columns.join(", "))
+                          .arg(placeholders.join(", "));
 
   // Dùng QSqlQuery trực tiếp để lấy lastInsertId() ngay sau exec()
   // tránh race condition khi tạo QSqlQuery mới reset last_insert_rowid()
@@ -891,24 +934,49 @@ bool PatientRepository::insertInsurance(int patientId,
     return true;
   }
 
-  const QString sql = R"(
-    INSERT INTO patient_insurance (
-        patient_id, provider_name, policy_number, insurance_type,
-        coverage_percent, valid_from, valid_to, notes, is_active
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-  )";
+  QStringList columns;
+  QVariantList params;
+  QStringList placeholders;
 
-  const QVariantList params = {
-      patientId,
-      dto.providerName,
-      dto.policyNumber,
-      dto.insuranceType,
-      dto.coveragePercent,
-      dto.validFrom.isEmpty() ? QVariant() : dto.validFrom,
-      dto.validTo.isEmpty() ? QVariant() : dto.validTo,
-      dto.notes.isEmpty() ? QVariant() : dto.notes,
+  auto addColumn = [&](const QString &column, const QVariant &value) {
+    columns << column;
+    params << value;
+    placeholders << "?";
   };
+
+  addColumn("patient_id", patientId);
+  if (tableHasColumn("patient_insurance", "provider_name")) {
+    addColumn("provider_name", dto.providerName);
+  }
+  if (tableHasColumn("patient_insurance", "policy_number")) {
+    addColumn("policy_number", dto.policyNumber);
+  }
+  if (tableHasColumn("patient_insurance", "insurance_type")) {
+    addColumn("insurance_type", dto.insuranceType);
+  }
+  if (tableHasColumn("patient_insurance", "coverage_percent")) {
+    addColumn("coverage_percent", dto.coveragePercent);
+  }
+  if (tableHasColumn("patient_insurance", "valid_from")) {
+    addColumn("valid_from", dto.validFrom.isEmpty() ? QVariant() : dto.validFrom);
+  }
+  if (tableHasColumn("patient_insurance", "valid_to")) {
+    addColumn("valid_to", dto.validTo.isEmpty() ? QVariant() : dto.validTo);
+  }
+  if (tableHasColumn("patient_insurance", "notes")) {
+    addColumn("notes", dto.notes.isEmpty() ? QVariant() : dto.notes);
+  }
+  if (tableHasColumn("patient_insurance", "is_active")) {
+    addColumn("is_active", 1);
+  }
+
+  if (columns.isEmpty()) {
+    return true;
+  }
+
+  const QString sql = QString("INSERT INTO patient_insurance (%1) VALUES (%2)")
+                          .arg(columns.join(", "))
+                          .arg(placeholders.join(", "));
 
   if (!DatabaseManager::getInstance().executeQuery(sql, params).isActive()) {
     qWarning() << "PatientRepository::insertInsurance - INSERT thất bại cho "
