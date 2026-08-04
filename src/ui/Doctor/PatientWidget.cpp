@@ -1,6 +1,8 @@
 // PatientWidget.cpp
 #include "PatientWidget.h"
 #include "ui/Doctor/PatientRecordHistoryDialog.h"
+#include "ui/Doctor/ScheduleFollowUpDialog.h"
+#include <QMessageBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -438,7 +440,7 @@ void PatientWidget::loadPatientsData() {
         QWidget* actWidget = new QWidget(m_patientTable);
         QHBoxLayout* actLayout = new QHBoxLayout(actWidget);
         actLayout->setContentsMargins(4, 3, 4, 3);
-        actLayout->setSpacing(6);
+        actLayout->setSpacing(12);
 
         QPushButton* btnHist = new QPushButton("Xem Lịch Sử Khám", actWidget);
         btnHist->setCursor(Qt::PointingHandCursor);
@@ -448,7 +450,16 @@ void PatientWidget::loadPatientsData() {
             "QPushButton:hover { background-color: #0369A1; }"
         );
 
+        QPushButton* btnFollowUp = new QPushButton("Tái khám", actWidget);
+        btnFollowUp->setCursor(Qt::PointingHandCursor);
+        btnFollowUp->setMinimumHeight(32);
+        btnFollowUp->setStyleSheet(
+            "QPushButton { background-color: #D97706; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 14px; border: none; }"
+            "QPushButton:hover { background-color: #B45309; }"
+        );
+
         actLayout->addWidget(btnHist);
+        actLayout->addWidget(btnFollowUp);
         actLayout->setAlignment(Qt::AlignCenter);
 
         int patId = p.patientId;
@@ -458,6 +469,15 @@ void PatientWidget::loadPatientsData() {
         connect(btnHist, &QPushButton::clicked, this, [this, patId, patName, patCode]() {
             PatientRecordHistoryDialog dialog(m_pharmacyService, m_medicalRecordService, this);
             dialog.loadPatientHistory(patId, patName, patCode);
+            dialog.exec();
+        });
+
+        connect(btnFollowUp, &QPushButton::clicked, this, [this, patId, patName]() {
+            if (!m_appointmentService) {
+                QMessageBox::warning(this, "Lỗi", "Dịch vụ cuộc hẹn chưa được khởi tạo.");
+                return;
+            }
+            ScheduleFollowUpDialog dialog(patId, patName, m_doctorId, m_appointmentService, this);
             dialog.exec();
         });
 

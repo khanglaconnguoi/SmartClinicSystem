@@ -106,23 +106,19 @@ void ReceptionDashboardWidget::buildSidebar() {
   layout->addWidget(lblTitle);
 
   m_btnOverview = new QPushButton("Tổng quan", sidebar);
-  m_btnOverview->setCheckable(true);
   m_btnOverview->setCursor(Qt::PointingHandCursor);
+  m_btnOverview->setObjectName("activeBtn"); // Default active
 
   m_btnRegister = new QPushButton("Đăng ký khám", sidebar);
-  m_btnRegister->setCheckable(true);
   m_btnRegister->setCursor(Qt::PointingHandCursor);
 
   m_btnPatients = new QPushButton("DS Bệnh nhân", sidebar);
-  m_btnPatients->setCheckable(true);
   m_btnPatients->setCursor(Qt::PointingHandCursor);
 
   m_btnManageAppts = new QPushButton("Quản lý Lịch hẹn", sidebar);
-  m_btnManageAppts->setCheckable(true);
   m_btnManageAppts->setCursor(Qt::PointingHandCursor);
 
   m_btnRoomQueue = new QPushButton("Hàng đợi Phòng khám", sidebar);
-  m_btnRoomQueue->setCheckable(true);
   m_btnRoomQueue->setCursor(Qt::PointingHandCursor);
 
 
@@ -166,13 +162,23 @@ void ReceptionDashboardWidget::buildSidebar() {
 }
 
 void ReceptionDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
+  if (!m_stackedWidget) return;
   m_stackedWidget->setCurrentIndex(index);
-  m_btnOverview->setChecked(false);
-  m_btnRegister->setChecked(false);
-  m_btnPatients->setChecked(false);
-  m_btnManageAppts->setChecked(false);
-  if (m_btnRoomQueue) m_btnRoomQueue->setChecked(false);
-  activeBtn->setChecked(true);
+
+  QPushButton* buttons[] = { m_btnOverview, m_btnRegister, m_btnPatients, m_btnManageAppts, m_btnRoomQueue };
+  for (auto* btn : buttons) {
+    if (btn) {
+      btn->setObjectName("");
+      btn->style()->unpolish(btn);
+      btn->style()->polish(btn);
+    }
+  }
+
+  if (activeBtn) {
+    activeBtn->setObjectName("activeBtn");
+    activeBtn->style()->unpolish(activeBtn);
+    activeBtn->style()->polish(activeBtn);
+  }
 }
 
 void ReceptionDashboardWidget::buildOverviewPage() {

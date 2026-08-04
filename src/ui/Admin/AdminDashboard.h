@@ -55,4 +55,9 @@ private:
 
   QPushButton *m_btnManageLeaves;
   QPushButton *m_btnAnalytics;
+  QPushButton *m_btnManageDoctors;
+  QPushButton *m_btnManageNurses;
+  QPushButton *m_btnManagePatients;
+  QPushButton *m_btnManageReception;
+  QPushButton *m_btnManagePharmacists;
 };

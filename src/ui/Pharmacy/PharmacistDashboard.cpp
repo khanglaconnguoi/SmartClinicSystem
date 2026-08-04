@@ -522,6 +522,7 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     actLayout->addWidget(m_btnCancelPrescAction);
     actLayout->addWidget(m_btnPrintReceiptAction);
     detLayout->addLayout(actLayout);
+    detLayout->setContentsMargins(10, 10, 10, 25);
 
     mainLayout->addWidget(detCard, 4);
     m_stackedWidget->addWidget(m_dispensingPage);

@@ -55,7 +55,7 @@ void NurseDashboardWidget::fillDashboardData() {
     m_mainContentLayout->addWidget(m_stackedWidget);
 
     loadLabRooms();
-    updateOverviewData();
+    switchPage(0, m_btnOverview);
     updateQueueTable();
 }
 
@@ -64,15 +64,8 @@ void NurseDashboardWidget::buildSidebar() {
     m_btnLabQueue = new QPushButton("Phòng xét nghiệm", m_sidebarFrame);
     QPushButton *btnLogout = new QPushButton("Đăng xuất", m_sidebarFrame);
 
-    QString btnStyle =
-        "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; font-weight: 600; "
-        "border: none; border-radius: 6px; color: #475569; background-color: transparent; } "
-        "QPushButton:hover { background-color: #F1F5F9; color: #1E293B; } "
-        "QPushButton:checked { background-color: #EFF6FF; color: #2563EB; }";
+    m_btnOverview->setObjectName("activeBtn"); // Default active
 
-    m_btnOverview->setStyleSheet(btnStyle);
-    m_btnLabQueue->setStyleSheet(btnStyle);
-    
     btnLogout->setCursor(Qt::PointingHandCursor);
     btnLogout->setStyleSheet(
         "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; font-weight: 600; "
@@ -80,27 +73,17 @@ void NurseDashboardWidget::buildSidebar() {
         "QPushButton:hover { background-color: #FEE2E2; color: #991B1B; }"
     );
 
-    m_btnOverview->setCheckable(true);
-    m_btnLabQueue->setCheckable(true);
-    m_btnOverview->setChecked(true);
-
     m_sidebarLayout->addWidget(m_btnOverview);
     m_sidebarLayout->addWidget(m_btnLabQueue);
     m_sidebarLayout->addStretch();
     m_sidebarLayout->addWidget(btnLogout);
 
     connect(m_btnOverview, &QPushButton::clicked, this, [this]() {
-        m_btnOverview->setChecked(true);
-        m_btnLabQueue->setChecked(false);
-        m_stackedWidget->setCurrentIndex(0);
-        updateOverviewData();
+        switchPage(0, m_btnOverview);
     });
 
     connect(m_btnLabQueue, &QPushButton::clicked, this, [this]() {
-        m_btnOverview->setChecked(false);
-        m_btnLabQueue->setChecked(true);
-        m_stackedWidget->setCurrentIndex(1);
-        updateQueueTable();
+        switchPage(1, m_btnLabQueue);
     });
 
     connect(btnLogout, &QPushButton::clicked, this, &NurseDashboardWidget::logoutRequested);
@@ -474,5 +457,31 @@ void NurseDashboardWidget::onCancelClicked() {
         updateQueueTable();
     } else {
         QMessageBox::warning(this, "Lỗi", "Không thể hủy yêu cầu này.");
+    }
+}
+
+void NurseDashboardWidget::switchPage(int index, QPushButton* activeBtn) {
+    if (!m_stackedWidget) return;
+    m_stackedWidget->setCurrentIndex(index);
+
+    QPushButton* buttons[] = { m_btnOverview, m_btnLabQueue };
+    for (auto* btn : buttons) {
+        if (btn) {
+            btn->setObjectName("");
+            btn->style()->unpolish(btn);
+            btn->style()->polish(btn);
+        }
+    }
+
+    if (activeBtn) {
+        activeBtn->setObjectName("activeBtn");
+        activeBtn->style()->unpolish(activeBtn);
+        activeBtn->style()->polish(activeBtn);
+    }
+
+    if (index == 0) {
+        updateOverviewData();
+    } else if (index == 1) {
+        updateQueueTable();
     }
 }

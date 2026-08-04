@@ -35,7 +35,7 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     // FORM BÊN TRÁI
     // =========================================================
     QWidget *leftForm = new QWidget(cardWidget);
-    leftForm->setGeometry(0, 100, 440, 460);
+    leftForm->setGeometry(0, 50, 440, 460);
     leftForm->setStyleSheet("background: transparent;");
 
     lblLeftLogo = new QLabel(leftForm);

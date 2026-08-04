@@ -230,7 +230,8 @@ void DoctorDashboardWidget::buildPatientsPage() {
   if (m_basePatientService) {
     m_patientsPage->setPatientService(m_basePatientService);
   }
-  m_patientsPage->setServices(m_pharmacyService, m_medicalRecordService);
+  int docId = m_currentUser ? m_currentUser->getAccountId() : -1;
+  m_patientsPage->setServices(m_pharmacyService, m_medicalRecordService, m_baseAppointmentService, docId);
   m_stackedWidget->addWidget(m_patientsPage);
 }
 
@@ -561,15 +562,20 @@ void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
     return;
   m_stackedWidget->setCurrentIndex(index);
 
-  m_btnDash->setChecked(false);
-  m_btnPatients->setChecked(false);
-  m_btnAppoint->setChecked(false);
-  if (m_btnLeaveManage)
-    m_btnLeaveManage->setChecked(false);
-  m_btnSetting->setChecked(false);
+  QPushButton* buttons[] = { m_btnDash, m_btnPatients, m_btnAppoint, m_btnLeaveManage, m_btnSetting };
+  for (auto* btn : buttons) {
+    if (btn) {
+      btn->setObjectName("");
+      btn->style()->unpolish(btn);
+      btn->style()->polish(btn);
+    }
+  }
 
-  if (activeBtn)
-    activeBtn->setChecked(true);
+  if (activeBtn) {
+    activeBtn->setObjectName("activeBtn");
+    activeBtn->style()->unpolish(activeBtn);
+    activeBtn->style()->polish(activeBtn);
+  }
 
   if (index == 0 || index == 2) {
     refreshAppointmentsTables();
@@ -807,43 +813,26 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       QString captureTime = rec.startTime;
       QString captureReason = rec.reason;
 
-      QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
-      btnCall->setCursor(Qt::PointingHandCursor);
-      btnCall->setMinimumHeight(32);
-      btnCall->setStyleSheet(
-          "QPushButton { background-color: #2563EB; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 16px; border: none; }"
-          "QPushButton:hover { background-color: #1D4ED8; }"
-      );
-
-      connect(btnCall, &QPushButton::clicked, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
-          if (!m_baseAppointmentService) return;
-          auto res = m_baseAppointmentService->callSpecificPatient(captureApptId);
-          if (res.first > 0) {
-              QMessageBox::information(this, "Gọi Khám Thành Công", QString("Đã gọi bệnh nhân: %1 (Vé: %2)").arg(res.second).arg(res.first));
-          }
-          QTimer::singleShot(0, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
-              openClinicalExamWithIds(capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason);
-              refreshAppointmentsTables();
-          });
-      });
-
-      if (rec.status == AppointmentStatusText::COMPLETED) {
-          QPushButton *btnFollowUp = new QPushButton("Tái khám", actWidget);
-          btnFollowUp->setCursor(Qt::PointingHandCursor);
-          btnFollowUp->setMinimumHeight(32);
-          btnFollowUp->setStyleSheet(
-              "QPushButton { background-color: #D97706; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 14px; border: none; }"
-              "QPushButton:hover { background-color: #B45309; }"
+      if (rec.status != AppointmentStatusText::COMPLETED) {
+          QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
+          btnCall->setCursor(Qt::PointingHandCursor);
+          btnCall->setMinimumHeight(32);
+          btnCall->setStyleSheet(
+              "QPushButton { background-color: #2563EB; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 16px; border: none; }"
+              "QPushButton:hover { background-color: #1D4ED8; }"
           );
-          connect(btnFollowUp, &QPushButton::clicked, this, [this, capturePatientId, captureName, docId]() {
-              ScheduleFollowUpDialog dialog(capturePatientId, captureName, docId, m_baseAppointmentService, this);
-              connect(&dialog, &ScheduleFollowUpDialog::appointmentScheduled, this, [this]() {
+
+          connect(btnCall, &QPushButton::clicked, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
+              if (!m_baseAppointmentService) return;
+              auto res = m_baseAppointmentService->callSpecificPatient(captureApptId);
+              if (res.first > 0) {
+                  QMessageBox::information(this, "Gọi Khám Thành Công", QString("Đã gọi bệnh nhân: %1 (Vé: %2)").arg(res.second).arg(res.first));
+              }
+              QTimer::singleShot(0, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
+                  openClinicalExamWithIds(capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason);
                   refreshAppointmentsTables();
               });
-              dialog.exec();
           });
-          actLayout->addWidget(btnFollowUp);
-      } else {
           actLayout->addWidget(btnCall);
       }
       actLayout->setAlignment(Qt::AlignCenter);

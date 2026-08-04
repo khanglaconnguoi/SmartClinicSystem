@@ -21,6 +21,7 @@
 #include "service/PatientService.h"
 #include "service/PharmacyService.h"
 #include "service/MedicalRecordService.h"
+#include "service/AppointmentService.h"
 #include <memory>
 
 class PatientWidget : public QWidget {
@@ -31,9 +32,14 @@ public:
     ~PatientWidget() override;
 
     void setPatientService(std::shared_ptr<PatientService> patientService);
-    void setServices(std::shared_ptr<PharmacyService> pharmacyService, std::shared_ptr<MedicalRecordService> medicalRecordService) {
+    void setServices(std::shared_ptr<PharmacyService> pharmacyService, 
+                     std::shared_ptr<MedicalRecordService> medicalRecordService,
+                     std::shared_ptr<AppointmentService> appointmentService = nullptr,
+                     int doctorId = -1) {
         m_pharmacyService = pharmacyService;
         m_medicalRecordService = medicalRecordService;
+        m_appointmentService = appointmentService;
+        m_doctorId = doctorId;
     }
     void loadPatientsData();
 
@@ -49,6 +55,8 @@ private:
     std::shared_ptr<PatientService> m_patientService;
     std::shared_ptr<PharmacyService> m_pharmacyService;
     std::shared_ptr<MedicalRecordService> m_medicalRecordService;
+    std::shared_ptr<AppointmentService> m_appointmentService;
+    int m_doctorId = -1;
     QList<PatientSearchResultDTO> m_patientList;
 
     QVBoxLayout* m_mainLayout;

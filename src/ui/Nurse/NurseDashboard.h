@@ -81,6 +81,7 @@ private:
     void updateOverviewData();
     void updateQueueTable();
     void loadLabRooms();
+    void switchPage(int index, QPushButton* activeBtn);
 
 private slots:
     void onRoomChanged(int index);

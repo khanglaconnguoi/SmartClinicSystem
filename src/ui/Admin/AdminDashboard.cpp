@@ -37,51 +37,37 @@ void AdminDashboardWidget::fillDashboardData() {
   // --- Sidebar Menu ---
   m_btnAnalytics =
       new QPushButton("Thống kê & Báo cáo", m_sidebarFrame);
-  QPushButton *btnManageDoctors =
+  m_btnManageDoctors =
       new QPushButton("Quản lý Bác sĩ", m_sidebarFrame);
-  QPushButton *btnManageNurses =
+  m_btnManageNurses =
       new QPushButton("Quản lý Y tá", m_sidebarFrame);
-  QPushButton *btnManagePatients =
+  m_btnManagePatients =
       new QPushButton("Quản lý Bệnh nhân", m_sidebarFrame);
-  QPushButton *btnManageReception =
+  m_btnManageReception =
       new QPushButton("Quản lý Lễ tân", m_sidebarFrame);
-  QPushButton *btnManagePharmacists =
+  m_btnManagePharmacists =
       new QPushButton("Quản lý Dược sĩ", m_sidebarFrame);
   m_btnManageLeaves =
       new QPushButton("Quản lý Nghỉ phép", m_sidebarFrame);
 
-  auto setSidebarBtnStyle = [](QPushButton *btn) {
-    btn->setCursor(Qt::PointingHandCursor);
-    btn->setFixedSize(220, 48);
-    btn->setStyleSheet(
-        "QPushButton { background-color: transparent; color: #475569; "
-        "font-size: 14px; font-weight: bold; border-radius: 8px; border: none; "
-        "text-align: left; padding-left: 15px; }"
-        "QPushButton:hover { background-color: #F1F5F9; color: #1E293B; }");
-  };
+  m_btnAnalytics->setCursor(Qt::PointingHandCursor);
+  m_btnManageDoctors->setCursor(Qt::PointingHandCursor);
+  m_btnManageNurses->setCursor(Qt::PointingHandCursor);
+  m_btnManagePatients->setCursor(Qt::PointingHandCursor);
+  m_btnManageReception->setCursor(Qt::PointingHandCursor);
+  m_btnManagePharmacists->setCursor(Qt::PointingHandCursor);
+  m_btnManageLeaves->setCursor(Qt::PointingHandCursor);
 
-  setSidebarBtnStyle(m_btnAnalytics);
-  setSidebarBtnStyle(btnManageDoctors);
-  setSidebarBtnStyle(btnManageNurses);
-  setSidebarBtnStyle(btnManagePatients);
-  setSidebarBtnStyle(btnManageReception);
-  setSidebarBtnStyle(btnManagePharmacists);
-  setSidebarBtnStyle(m_btnManageLeaves);
-
-  // Default active style
-  m_btnAnalytics->setStyleSheet(
-      "QPushButton { background-color: #EFF6FF; color: #2563EB; font-size: "
-      "14px; font-weight: bold; border-radius: 8px; border: none; text-align: "
-      "left; padding-left: 15px; }");
+  m_btnAnalytics->setObjectName("activeBtn"); // Default active
 
   m_sidebarLayout->addWidget(m_btnAnalytics);
-  m_sidebarLayout->addWidget(btnManageDoctors);
-  m_sidebarLayout->addWidget(btnManageNurses);
-  m_sidebarLayout->addWidget(btnManagePatients);
-  m_sidebarLayout->addWidget(btnManageReception);
-  m_sidebarLayout->addWidget(btnManagePharmacists);
+  m_sidebarLayout->addWidget(m_btnManageDoctors);
+  m_sidebarLayout->addWidget(m_btnManageNurses);
+  m_sidebarLayout->addWidget(m_btnManagePatients);
+  m_sidebarLayout->addWidget(m_btnManageReception);
+  m_sidebarLayout->addWidget(m_btnManagePharmacists);
   m_sidebarLayout->addWidget(m_btnManageLeaves);
-  m_sidebarLayout->addStretch(); 
+  m_sidebarLayout->addStretch();
 
   m_btnLogout = new QPushButton("Đăng xuất", m_sidebarFrame);
   m_btnLogout->setStyleSheet(
@@ -90,7 +76,9 @@ void AdminDashboardWidget::fillDashboardData() {
       "transparent; font-weight: bold; }"
       "QPushButton:hover { background-color: #FEE2E2; }");
   m_btnLogout->setCursor(Qt::PointingHandCursor);
+  m_sidebarLayout->addStretch(1);
   m_sidebarLayout->addWidget(m_btnLogout);
+  m_sidebarLayout->setContentsMargins(10, 10, 10, 65);
   connect(m_btnLogout, &QPushButton::clicked, this,
           &BaseDashboardWidget::logoutRequested);
 
@@ -124,16 +112,19 @@ void AdminDashboardWidget::fillDashboardData() {
 
   // Events cho menu
   auto setActiveMenu = [=](QPushButton *activeBtn) {
-      QString activeStyle = "QPushButton { background-color: #EFF6FF; color: #2563EB; font-size: 14px; font-weight: bold; border-radius: 8px; border: none; text-align: left; padding-left: 15px; }";
-      QString inactiveStyle = "QPushButton { background-color: transparent; color: #475569; font-size: 14px; font-weight: bold; border-radius: 8px; border: none; text-align: left; padding-left: 15px; } QPushButton:hover { background-color: #F1F5F9; color: #1E293B; }";
-      
-      m_btnAnalytics->setStyleSheet(activeBtn == m_btnAnalytics ? activeStyle : inactiveStyle);
-      btnManageDoctors->setStyleSheet(activeBtn == btnManageDoctors ? activeStyle : inactiveStyle);
-      btnManageNurses->setStyleSheet(activeBtn == btnManageNurses ? activeStyle : inactiveStyle);
-      btnManagePatients->setStyleSheet(activeBtn == btnManagePatients ? activeStyle : inactiveStyle);
-      btnManageReception->setStyleSheet(activeBtn == btnManageReception ? activeStyle : inactiveStyle);
-      btnManagePharmacists->setStyleSheet(activeBtn == btnManagePharmacists ? activeStyle : inactiveStyle);
-      m_btnManageLeaves->setStyleSheet(activeBtn == m_btnManageLeaves ? activeStyle : inactiveStyle);
+      QPushButton* buttons[] = { m_btnAnalytics, m_btnManageDoctors, m_btnManageNurses, m_btnManagePatients, m_btnManageReception, m_btnManagePharmacists, m_btnManageLeaves };
+      for (auto* btn : buttons) {
+          if (btn) {
+              btn->setObjectName("");
+              btn->style()->unpolish(btn);
+              btn->style()->polish(btn);
+          }
+      }
+      if (activeBtn) {
+          activeBtn->setObjectName("activeBtn");
+          activeBtn->style()->unpolish(activeBtn);
+          activeBtn->style()->polish(activeBtn);
+      }
   };
 
   connect(m_btnAnalytics, &QPushButton::clicked, this, [=]() {
@@ -142,34 +133,34 @@ void AdminDashboardWidget::fillDashboardData() {
       setActiveMenu(m_btnAnalytics);
   });
 
-  connect(btnManageDoctors, &QPushButton::clicked, this, [=]() {
+  connect(m_btnManageDoctors, &QPushButton::clicked, this, [=]() {
       m_stackedWidget->setCurrentWidget(m_manageDoctorsPage);
       m_manageDoctorsPage->loadDoctorsList();
-      setActiveMenu(btnManageDoctors);
+      setActiveMenu(m_btnManageDoctors);
   });
 
-  connect(btnManageNurses, &QPushButton::clicked, this, [=]() {
+  connect(m_btnManageNurses, &QPushButton::clicked, this, [=]() {
       m_stackedWidget->setCurrentWidget(m_manageNursesPage);
       m_manageNursesPage->loadNursesList();
-      setActiveMenu(btnManageNurses);
+      setActiveMenu(m_btnManageNurses);
   });
 
-  connect(btnManagePatients, &QPushButton::clicked, this, [=]() {
+  connect(m_btnManagePatients, &QPushButton::clicked, this, [=]() {
       m_stackedWidget->setCurrentWidget(m_managePatientsPage);
       m_managePatientsPage->loadPatientsList();
-      setActiveMenu(btnManagePatients);
+      setActiveMenu(m_btnManagePatients);
   });
 
-  connect(btnManageReception, &QPushButton::clicked, this, [=]() {
+  connect(m_btnManageReception, &QPushButton::clicked, this, [=]() {
       m_stackedWidget->setCurrentWidget(m_manageReceptionPage);
       m_manageReceptionPage->loadReceptionList();
-      setActiveMenu(btnManageReception);
+      setActiveMenu(m_btnManageReception);
   });
   
-  connect(btnManagePharmacists, &QPushButton::clicked, this, [=]() {
+  connect(m_btnManagePharmacists, &QPushButton::clicked, this, [=]() {
       m_stackedWidget->setCurrentWidget(m_managePharmacistsPage);
       m_managePharmacistsPage->loadPharmacistsList();
-      setActiveMenu(btnManagePharmacists);
+      setActiveMenu(m_btnManagePharmacists);
   });
 
   connect(m_btnManageLeaves, &QPushButton::clicked, this, [=]() {

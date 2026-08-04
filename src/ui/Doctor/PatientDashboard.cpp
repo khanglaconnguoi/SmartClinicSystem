@@ -697,13 +697,15 @@ void PatientDashboardWidget::setActiveSidebarBtn(QPushButton *btn) {
   QPushButton *allBtns[] = {m_btnOverview,  m_btnMyAppoint, m_btnMedRecord,
                             m_btnLabResult, m_btnPrescript, m_btnProfile};
   for (auto *b : allBtns) {
-    if (b)
+    if (b) {
       b->setObjectName("");
+      b->style()->unpolish(b);
+      b->style()->polish(b);
+    }
   }
-  if (btn)
+  if (btn) {
     btn->setObjectName("activeBtn");
-
-  // Refresh style
-  if (m_sidebarFrame)
-    m_sidebarFrame->setStyleSheet(m_sidebarFrame->styleSheet());
+    btn->style()->unpolish(btn);
+    btn->style()->polish(btn);
+  }
 }
