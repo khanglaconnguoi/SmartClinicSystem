@@ -24,6 +24,9 @@
 #include <QInputDialog>
 #include <QDoubleSpinBox>
 #include <QLocale>
+#include <QFileDialog>
+#include <QPdfWriter>
+#include <QTextDocument>
 
 PharmacistDashboardWidget::PharmacistDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
@@ -797,7 +800,7 @@ void PharmacistDashboardWidget::handlePrintReceipt() {
     prevLay->addWidget(view);
     
     QHBoxLayout* btnLay = new QHBoxLayout();
-    QPushButton* btnPrint = new QPushButton("In Phiếu", &previewDlg);
+    QPushButton* btnPrint = new QPushButton("Xuất PDF / In", &previewDlg);
     btnPrint->setStyleSheet("background-color: #4B94F2; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-weight: bold;");
     QPushButton* btnClose = new QPushButton("Đóng", &previewDlg);
     btnLay->addWidget(btnPrint);
@@ -805,8 +808,23 @@ void PharmacistDashboardWidget::handlePrintReceipt() {
     prevLay->addLayout(btnLay);
     
     connect(btnClose, &QPushButton::clicked, &previewDlg, &QDialog::reject);
-    connect(btnPrint, &QPushButton::clicked, &previewDlg, [&previewDlg]() {
-        QMessageBox::information(&previewDlg, "Thông báo", "Lệnh in đã được gửi đến máy in mặc định.");
+    connect(btnPrint, &QPushButton::clicked, &previewDlg, [this, html, presc, &previewDlg]() {
+        QString fileName = QFileDialog::getSaveFileName(&previewDlg, 
+            QString::fromUtf8("Xuất PDF Phiếu Xuất Kho"), 
+            QString("PhieuXuatKho_%1.pdf").arg(presc.prescriptionId), 
+            "PDF Files (*.pdf)");
+        if (fileName.isEmpty()) return;
+
+        QPdfWriter writer(fileName);
+        writer.setPageSize(QPageSize(QPageSize::A4));
+        writer.setPageMargins(QMarginsF(15, 15, 15, 15));
+
+        QTextDocument doc;
+        doc.setHtml(html);
+        doc.print(&writer);
+
+        QMessageBox::information(&previewDlg, QString::fromUtf8("Thành công"), 
+            QString::fromUtf8("Đã xuất phiếu xuất kho ra file PDF thành công:\n%1").arg(fileName));
         previewDlg.accept();
     });
     
@@ -1283,7 +1301,7 @@ void PharmacistDashboardWidget::handlePrintInvoice() {
     prevLay->addWidget(view);
     
     QHBoxLayout* btnLay = new QHBoxLayout();
-    QPushButton* btnPrint = new QPushButton("In hóa đơn", &previewDlg);
+    QPushButton* btnPrint = new QPushButton("Xuất PDF / In", &previewDlg);
     btnPrint->setStyleSheet("background-color: #4B94F2; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-weight: bold;");
     QPushButton* btnClose = new QPushButton("Đóng", &previewDlg);
     btnLay->addWidget(btnPrint);
@@ -1291,8 +1309,23 @@ void PharmacistDashboardWidget::handlePrintInvoice() {
     prevLay->addLayout(btnLay);
     
     connect(btnClose, &QPushButton::clicked, &previewDlg, &QDialog::reject);
-    connect(btnPrint, &QPushButton::clicked, &previewDlg, [&previewDlg]() {
-        QMessageBox::information(&previewDlg, "Thông báo", "Lệnh in hóa đơn đã được gửi đến máy in mặc định.");
+    connect(btnPrint, &QPushButton::clicked, &previewDlg, [this, html, inv, &previewDlg]() {
+        QString fileName = QFileDialog::getSaveFileName(&previewDlg, 
+            QString::fromUtf8("Xuất PDF Hóa Đơn"), 
+            QString("HoaDonViPhi_%1.pdf").arg(inv.invoiceCode), 
+            "PDF Files (*.pdf)");
+        if (fileName.isEmpty()) return;
+
+        QPdfWriter writer(fileName);
+        writer.setPageSize(QPageSize(QPageSize::A4));
+        writer.setPageMargins(QMarginsF(15, 15, 15, 15));
+
+        QTextDocument doc;
+        doc.setHtml(html);
+        doc.print(&writer);
+
+        QMessageBox::information(&previewDlg, QString::fromUtf8("Thành công"), 
+            QString::fromUtf8("Đã xuất hóa đơn ra file PDF thành công:\n%1").arg(fileName));
         previewDlg.accept();
     });
     

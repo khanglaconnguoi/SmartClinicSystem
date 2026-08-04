@@ -571,7 +571,6 @@ void CreatePrescriptionDialog::onExportPdfClicked() {
     writer.setPageSize(QPageSize(QPageSize::A4));
     writer.setPageMargins(QMarginsF(15, 15, 15, 15));
 
-    QPainter painter(&writer);
     QTextDocument doc;
 
     QString html = QString(R"(
@@ -619,7 +618,7 @@ void CreatePrescriptionDialog::onExportPdfClicked() {
 
     html += R"(</table>)";
     doc.setHtml(html);
-    doc.drawContents(&painter);
+    doc.print(&writer);
 
     QMessageBox::information(this, QString::fromUtf8("Thành Công"), QString::fromUtf8("Đã xuất đơn thuốc ra file PDF thành công:\n%1").arg(fileName));
 }
