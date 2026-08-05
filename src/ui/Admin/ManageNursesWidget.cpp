@@ -106,7 +106,7 @@ void ManageNursesWidget::buildUI() {
       "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
       "white; }"
       "QComboBox:focus { border: 1px solid #2563EB; }");
-  m_cbStatusFilter->addItem("Đang làm việc", true);
+  m_cbStatusFilter->addItem("Hoạt động", true);
   m_cbStatusFilter->addItem("Tất cả trạng thái", false);
 
   m_btnResetFilters = new QPushButton("Đặt lại", filterCard);

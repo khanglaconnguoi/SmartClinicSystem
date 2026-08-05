@@ -91,6 +91,15 @@ private:
 
   // Management UI
   QTableWidget *m_patientsTable = nullptr;
+  QLineEdit *m_txtPatientSearchKey = nullptr;
+  QComboBox *m_cbPatientTypeFilter = nullptr;
+  QPushButton *m_btnResetPatientFilters = nullptr;
+  QPushButton *m_btnPatientPrevPage = nullptr;
+  QPushButton *m_btnPatientNextPage = nullptr;
+  class QLabel *m_lblPatientPageInfo = nullptr;
+  int m_patientCurrentPage = 1;
+  int m_patientTotalPages = 1;
+
   QTableWidget *m_appointmentsTable = nullptr;
   QDateEdit *m_apptDateEdit = nullptr;
 
@@ -101,6 +110,10 @@ private:
   void buildRegisterPage();
   void buildPatientsPage();
   void refreshPatientsTable();
+  void handlePatientFilterChanged();
+  void handlePatientResetFilters();
+  void handlePatientPrevPage();
+  void handlePatientNextPage();
   void buildAppointmentsPage();
   void buildRoomQueuePage();
   void onPatientTypeSelected(bool isNew);
