@@ -22,8 +22,9 @@ PatientDashboardWidget::PatientDashboardWidget(
     std::shared_ptr<StaffService> staffService,
     std::shared_ptr<PatientService> patientService,
     std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : BaseDashboardWidget(user, staffService, patientService,
-                          appointmentService, parent) {
+    : BaseDashboardWidget(user, staffService, parent),
+      m_patientService(patientService),
+      m_appointmentService(appointmentService) {
   initializeDashboard();
 }
 
@@ -104,10 +105,10 @@ void PatientDashboardWidget::buildPatientSidebar() {
 // =============================================================================
 void PatientDashboardWidget::buildTopbar() {
   // --- Tên người dùng ---
-  if (m_currentUser && m_docNameLabel) {
+  if (m_currentUser && m_nameLabel) {
     QString name = m_currentUser->getFullName();
-    m_docNameLabel->setText(name.isEmpty() ? "Bệnh Nhân" : name);
-    m_docNameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: "
+    m_nameLabel->setText(name.isEmpty() ? "Bệnh Nhân" : name);
+    m_nameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: "
                                   "#3C4043; font-family: 'Segoe UI';");
   }
 
@@ -118,7 +119,7 @@ void PatientDashboardWidget::buildTopbar() {
   }
 
   // --- Avatar ---
-  if (m_docAvatarBtn && m_currentUser) {
+  if (m_avatarBtn && m_currentUser) {
     QPixmap raw = m_currentUser->getAvatar();
     if (raw.isNull()) {
       raw = QPixmap(36, 36);
@@ -126,7 +127,7 @@ void PatientDashboardWidget::buildTopbar() {
     }
 
     const int sz = 36;
-    m_docAvatarBtn->setFixedSize(sz, sz);
+    m_avatarBtn->setFixedSize(sz, sz);
 
     QPixmap scaled = raw.scaled(sz, sz, Qt::KeepAspectRatioByExpanding,
                                 Qt::SmoothTransformation);
@@ -141,11 +142,11 @@ void PatientDashboardWidget::buildTopbar() {
     p.drawPixmap(0, 0, scaled);
     p.end();
 
-    m_docAvatarBtn->setIconSize(QSize(sz, sz));
-    m_docAvatarBtn->setIcon(QIcon(target));
-    m_docAvatarBtn->setStyleSheet("QPushButton { background:transparent; "
+    m_avatarBtn->setIconSize(QSize(sz, sz));
+    m_avatarBtn->setIcon(QIcon(target));
+    m_avatarBtn->setStyleSheet("QPushButton { background:transparent; "
                                   "border:none; padding:0; margin:0; }");
-    m_docAvatarBtn->update();
+    m_avatarBtn->update();
   }
 }
 
@@ -325,7 +326,7 @@ void PatientDashboardWidget::createUpcomingAppointments() {
   vl->addWidget(sep);
 
   // Gọi Service để lấy dữ liệu lịch hẹn thực tế
-  auto records = m_baseAppointmentService->getPatientAppointments(
+  auto records = m_appointmentService->getPatientAppointments(
       m_currentUser->getAccountId());
 
   if (records.isEmpty()) {
@@ -440,7 +441,7 @@ void PatientDashboardWidget::createUpcomingAppointments() {
 void PatientDashboardWidget::onCancelAppointmentClicked(int appointmentId) {
     QMessageBox::StandardButton reply = QMessageBox::question(this, "Xác nhận hủy lịch", "Bạn có chắc chắn muốn hủy lịch khám này không?", QMessageBox::Yes | QMessageBox::No);
     if (reply == QMessageBox::Yes) {
-        QString errorMsg = m_baseAppointmentService->cancelAppointment(appointmentId);
+        QString errorMsg = m_appointmentService->cancelAppointment(appointmentId);
         if (errorMsg.isEmpty()) {
             QMessageBox::information(this, "Thành công", "Đã hủy lịch hẹn thành công.");
             // Refresh dashboard

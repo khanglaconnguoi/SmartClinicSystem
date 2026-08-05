@@ -12,16 +12,14 @@
 NurseDashboardWidget::NurseDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
     std::shared_ptr<StaffService> staffService,
-    std::shared_ptr<PatientService> patientService,
-    std::shared_ptr<AppointmentService> appointmentService,
     std::shared_ptr<ServiceRequestService> serviceRequestService,
     QWidget *parent)
-    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent),
+    : BaseDashboardWidget(user, staffService, parent),
       m_serviceRequestService(serviceRequestService) {
     
     // Read Nurse Room ID from user profile if available
-    if (m_baseStaffService && m_currentUser) {
-        auto profile = m_baseStaffService->getOwnProfile(m_currentUser->getAccountId());
+    if (m_staffService && m_currentUser) {
+        auto profile = m_staffService->getOwnProfile(m_currentUser->getAccountId());
         if (auto nurseProfile = dynamic_cast<NurseProfileDTO*>(profile.get())) {
             m_nurseRoomId = nurseProfile->roomId;
         }
@@ -273,22 +271,11 @@ void NurseDashboardWidget::buildLabQueuePage() {
 }
 
 void NurseDashboardWidget::loadLabRooms() {
-    if (!m_baseAppointmentService) return;
     m_comboRooms->clear();
     m_comboRooms->addItem("--- Tất cả phòng ---", -1);
-
-    auto rooms = m_baseAppointmentService->getRoomsByType("LAB");
-    int selectIdx = 0;
-
-    for (int i = 0; i < rooms.size(); ++i) {
-        m_comboRooms->addItem(rooms[i].second, rooms[i].first);
-        if (rooms[i].first == m_nurseRoomId) {
-            selectIdx = i + 1; // +1 because item 0 is "--- Tất cả phòng ---"
-        }
-    }
-
-    if (selectIdx > 0) {
-        m_comboRooms->setCurrentIndex(selectIdx);
+    if (m_nurseRoomId > 0) {
+        m_comboRooms->addItem(QString("Phòng %1").arg(m_nurseRoomId), m_nurseRoomId);
+        m_comboRooms->setCurrentIndex(1);
     }
 }
 

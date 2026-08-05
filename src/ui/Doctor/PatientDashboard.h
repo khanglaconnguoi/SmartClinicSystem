@@ -27,6 +27,8 @@ protected:
   virtual void fillDashboardData() override;
 
 private:
+  std::shared_ptr<PatientService> m_patientService;
+  std::shared_ptr<AppointmentService> m_appointmentService;
 
 
   // Sidebar buttons dành riêng cho bệnh nhân

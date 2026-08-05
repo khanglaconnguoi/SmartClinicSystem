@@ -150,7 +150,8 @@ void MainWindow::switchToAdminDashboard(
 void MainWindow::switchToReceptionDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   auto dashboard = new ReceptionDashboardWidget(
-      user, m_staffService, m_patientService, m_appointmentService, this);
+      user, m_staffService, m_patientService, m_appointmentService,
+      m_analyticService, this);
   registerDashboardPage(dashboard);
 }
 
@@ -164,14 +165,14 @@ void MainWindow::switchToPatientDashboard(
 void MainWindow::switchToPharmacistDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   auto dashboard = new PharmacistDashboardWidget(
-      user, m_staffService, m_patientService, m_appointmentService, m_medicalRecordService, m_pharmacyService, m_billingService, this);
+      user, m_staffService, m_medicalRecordService, m_pharmacyService, m_billingService, this);
   registerDashboardPage(dashboard);
 }
 
 void MainWindow::switchToNurseDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   auto dashboard = new NurseDashboardWidget(
-      user, m_staffService, m_patientService, m_appointmentService, m_serviceRequestService, this);
+      user, m_staffService, m_serviceRequestService, this);
   registerDashboardPage(dashboard);
 }
 

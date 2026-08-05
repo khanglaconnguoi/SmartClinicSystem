@@ -7,8 +7,8 @@
 #include "view/Profile.h"
 
 
-BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user, std::shared_ptr<StaffService> staffService, std::shared_ptr<PatientService> patientService, std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : QWidget(parent), m_sidebarFrame(nullptr), m_mainContentWidget(nullptr), m_currentUser(user ? user : UserSession::getInstance().getCurrentAccount()), m_baseStaffService(std::move(staffService)), m_basePatientService(std::move(patientService)), m_baseAppointmentService(std::move(appointmentService))
+BaseDashboardWidget::BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user, std::shared_ptr<StaffService> staffService, QWidget *parent)
+    : QWidget(parent), m_sidebarFrame(nullptr), m_mainContentWidget(nullptr), m_currentUser(user ? user : UserSession::getInstance().getCurrentAccount()), m_staffService(std::move(staffService))
 {
     m_globalLayout = new QHBoxLayout(this);
     m_globalLayout->setContentsMargins(0, 0, 0, 0);
@@ -69,19 +69,19 @@ void BaseDashboardWidget::setupMainContentFrame() {
     QHBoxLayout* userInfoLayout = new QHBoxLayout();
     userInfoLayout->setSpacing(10); 
 
-    m_docNameLabel = new ClickableLabel(m_mainContentWidget);
-    m_docNameLabel->setText(m_currentUser ? m_currentUser->getFullName() : "Loading...");
-    m_docNameLabel->setCursor(Qt::PointingHandCursor);
-    m_docNameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #1E293B; font-family: 'Arial';");
+    m_nameLabel = new ClickableLabel(m_mainContentWidget);
+    m_nameLabel->setText(m_currentUser ? m_currentUser->getFullName() : "Loading...");
+    m_nameLabel->setCursor(Qt::PointingHandCursor);
+    m_nameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #1E293B; font-family: 'Arial';");
 
-    m_docAvatarBtn = new QPushButton(m_mainContentWidget);
-    m_docAvatarBtn->setFixedSize(36, 36);
-    m_docAvatarBtn->setCursor(Qt::PointingHandCursor);
+    m_avatarBtn = new QPushButton(m_mainContentWidget);
+    m_avatarBtn->setFixedSize(36, 36);
+    m_avatarBtn->setCursor(Qt::PointingHandCursor);
     if (m_currentUser && !m_currentUser->getAvatar().isNull()) {
-        m_docAvatarBtn->setIcon(QIcon(m_currentUser->getAvatar()));
-        m_docAvatarBtn->setIconSize(QSize(36, 36));
+        m_avatarBtn->setIcon(QIcon(m_currentUser->getAvatar()));
+        m_avatarBtn->setIconSize(QSize(36, 36));
     }
-    m_docAvatarBtn->setStyleSheet(
+    m_avatarBtn->setStyleSheet(
         "QPushButton { "
         "   background-color: #EFF6FF; "
         "   color: #2563EB; "
@@ -94,11 +94,11 @@ void BaseDashboardWidget::setupMainContentFrame() {
         "}"
     );
 
-    QObject::connect(m_docNameLabel, &ClickableLabel::clicked, this, &BaseDashboardWidget::handleAvatarClicked);
-    QObject::connect(m_docAvatarBtn, &QPushButton::clicked, this, &BaseDashboardWidget::handleAvatarClicked);
+    QObject::connect(m_nameLabel, &ClickableLabel::clicked, this, &BaseDashboardWidget::handleAvatarClicked);
+    QObject::connect(m_avatarBtn, &QPushButton::clicked, this, &BaseDashboardWidget::handleAvatarClicked);
 
-    userInfoLayout->addWidget(m_docNameLabel);
-    userInfoLayout->addWidget(m_docAvatarBtn);
+    userInfoLayout->addWidget(m_nameLabel);
+    userInfoLayout->addWidget(m_avatarBtn);
 
     topbarLayout->addWidget(m_searchInput);
     topbarLayout->addStretch();
@@ -114,12 +114,12 @@ void BaseDashboardWidget::handleAvatarClicked() {
         qWarning() << "Không có thông tin người dùng hiện tại để xem hồ sơ.";
         return;
     }
-    if (!m_baseStaffService) {
+    if (!m_staffService) {
         qWarning() << "Thiếu StaffService để hiển thị hồ sơ.";
         return;
     }
 
-    auto* profileDialog = new ProfileWidget(m_baseStaffService, this);
+    auto* profileDialog = new ProfileWidget(m_staffService, this);
     profileDialog->setAttribute(Qt::WA_DeleteOnClose);
     profileDialog->loadProfile(m_currentUser->getAccountId());
     profileDialog->show();

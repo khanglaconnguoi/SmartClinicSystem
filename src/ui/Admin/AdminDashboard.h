@@ -38,8 +38,8 @@ protected:
 private:
   void buildSidebar();
 
-  std::shared_ptr<StaffService> m_staffService;
   std::shared_ptr<PatientService> m_patientService;
+  std::shared_ptr<AppointmentService> m_appointmentService;
   std::shared_ptr<AnalyticService> m_analyticService;
 
 
@@ -47,17 +47,15 @@ private:
   QStackedWidget *m_stackedWidget;
   ManageDoctorsWidget *m_manageDoctorsPage;
   ManageNursesWidget *m_manageNursesPage;
-  ManagePatientsWidget *m_managePatientsPage;
   ManageReceptionWidget *m_manageReceptionPage;
   ManageLeaveWidget *m_manageLeavesPage;
   ManagePharmacistsWidget *m_managePharmacistsPage;
   AdminAnalyticsWidget *m_analyticsPage;
 
-  QPushButton *m_btnManageLeaves;
   QPushButton *m_btnAnalytics;
   QPushButton *m_btnManageDoctors;
   QPushButton *m_btnManageNurses;
-  QPushButton *m_btnManagePatients;
   QPushButton *m_btnManageReception;
   QPushButton *m_btnManagePharmacists;
+  QPushButton *m_btnManageLeaves;
 };

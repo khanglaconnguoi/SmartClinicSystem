@@ -15,6 +15,8 @@ class QComboBox;
 class QDateEdit;
 class QTableWidget;
 
+class AnalyticService;
+
 class ReceptionDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT
 
@@ -24,6 +26,7 @@ public:
       std::shared_ptr<StaffService> staffService = nullptr,
       std::shared_ptr<PatientService> patientService = nullptr,
       std::shared_ptr<AppointmentService> appointmentService = nullptr,
+      std::shared_ptr<AnalyticService> analyticService = nullptr,
       QWidget *parent = nullptr);
   virtual ~ReceptionDashboardWidget() override = default;
 
@@ -32,7 +35,9 @@ protected:
 
 private:
 
-  std::shared_ptr<StaffService> m_staffService;
+  std::shared_ptr<PatientService> m_patientService;
+  std::shared_ptr<AppointmentService> m_appointmentService;
+  std::shared_ptr<AnalyticService> m_analyticService;
 
   // Sidebar buttons and stacked widget
   QStackedWidget *m_stackedWidget = nullptr;
@@ -76,6 +81,7 @@ private:
   // Overview UI elements
   class QLabel *m_lblRevenue = nullptr;
   class QLabel *m_lblPatientNum = nullptr;
+  QTableWidget *m_recentActivityTable = nullptr;
 
   // Management UI
   QTableWidget *m_patientsTable = nullptr;
@@ -85,6 +91,7 @@ private:
   // Build functions
   void buildSidebar();
   void buildOverviewPage();
+  void refreshRecentActivity();
   void buildRegisterPage();
   void buildPatientsPage();
   void refreshPatientsTable();

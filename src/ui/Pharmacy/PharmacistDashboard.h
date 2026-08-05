@@ -22,9 +22,7 @@
 #include <QtCharts/QValueAxis>
 
 #include "model/IAuthenticatable.h"
-#include "service/AppointmentService.h"
 #include "service/MedicalRecordService.h"
-#include "service/PatientService.h"
 #include "service/PharmacyService.h"
 #include "service/StaffService.h"
 #include "service/BillingService.h"
@@ -37,8 +35,6 @@ public:
     explicit PharmacistDashboardWidget(
         std::shared_ptr<IAuthenticatable> user = nullptr, 
         std::shared_ptr<StaffService> staffService = nullptr, 
-        std::shared_ptr<PatientService> patientService = nullptr, 
-        std::shared_ptr<AppointmentService> appointmentService = nullptr, 
         std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr, 
         std::shared_ptr<PharmacyService> pharmacyService = nullptr, 
         std::shared_ptr<BillingService> billingService = nullptr,

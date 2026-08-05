@@ -35,7 +35,10 @@ class BaseDashboardWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit BaseDashboardWidget(std::shared_ptr<IAuthenticatable> user = nullptr, std::shared_ptr<StaffService> staffService = nullptr, std::shared_ptr<PatientService> patientService = nullptr, std::shared_ptr<AppointmentService> appointmentService = nullptr, QWidget *parent = nullptr);
+    explicit BaseDashboardWidget(
+        std::shared_ptr<IAuthenticatable> user = nullptr, 
+        std::shared_ptr<StaffService> staffService = nullptr, 
+        QWidget *parent = nullptr);
     virtual ~BaseDashboardWidget() override = default;
 
     void initializeDashboard();
@@ -57,12 +60,10 @@ protected:
     QWidget*      m_mainContentWidget  = nullptr;
     QVBoxLayout*  m_mainContentLayout  = nullptr;
     QLineEdit*    m_searchInput        = nullptr;
-    ClickableLabel* m_docNameLabel     = nullptr;
-    QPushButton*  m_docAvatarBtn       = nullptr;
+    ClickableLabel* m_nameLabel     = nullptr;
+    QPushButton*  m_avatarBtn       = nullptr;
     std::shared_ptr<IAuthenticatable> m_currentUser;
-    std::shared_ptr<StaffService> m_baseStaffService;
-    std::shared_ptr<PatientService> m_basePatientService;
-    std::shared_ptr<AppointmentService> m_baseAppointmentService;
+    std::shared_ptr<StaffService> m_staffService;
 
 private:
     QHBoxLayout* m_globalLayout = nullptr;

@@ -44,7 +44,9 @@ protected:
   virtual void fillDashboardData() override;
 
 private:
-    std::shared_ptr<MedicalRecordService> m_medicalRecordService;
+    std::shared_ptr<PatientService> m_patientService = nullptr;
+    std::shared_ptr<AppointmentService> m_appointmentService = nullptr;
+    std::shared_ptr<MedicalRecordService> m_medicalRecordService = nullptr;
     int m_currentExaminingRow = -1;
     std::shared_ptr<PharmacyService> m_pharmacyService = nullptr;
     std::shared_ptr<ServiceRequestService> m_serviceRequestService = nullptr;
@@ -103,6 +105,10 @@ private:
     void handlePatientExamFinished();
     void handleCallPatientRequested(int apptId = -1);
     void refreshAppointmentsTables();
+    void refreshOverviewCards();
+
+    QLabel* m_lblCardAppointments = nullptr;
+    QLabel* m_lblCardRevenue = nullptr;
 
    private slots:
     void onLeaveTabSelected();

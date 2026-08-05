@@ -3,8 +3,6 @@
 #include "ui/BaseDashboard.h"
 #include "model/IAuthenticatable.h"
 #include "service/StaffService.h"
-#include "service/PatientService.h"
-#include "service/AppointmentService.h"
 #include "service/ServiceRequestService.h"
 #include <QString>
 #include <QStackedWidget>
@@ -28,8 +26,6 @@ public:
     explicit NurseDashboardWidget(
         std::shared_ptr<IAuthenticatable> user = nullptr,
         std::shared_ptr<StaffService> staffService = nullptr,
-        std::shared_ptr<PatientService> patientService = nullptr,
-        std::shared_ptr<AppointmentService> appointmentService = nullptr,
         std::shared_ptr<ServiceRequestService> serviceRequestService = nullptr,
         QWidget *parent = nullptr);
 

@@ -22,16 +22,16 @@ AdminDashboardWidget::AdminDashboardWidget(
     std::shared_ptr<AppointmentService> appointmentService,
     std::shared_ptr<AnalyticService> analyticService,
     QWidget *parent)
-    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent), m_staffService(staffService),
-      m_patientService(patientService), m_analyticService(analyticService), m_manageDoctorsPage(nullptr),
-      m_manageNursesPage(nullptr), m_managePatientsPage(nullptr),
+    : BaseDashboardWidget(user, staffService, parent),
+      m_patientService(patientService), m_appointmentService(appointmentService), m_analyticService(analyticService), m_manageDoctorsPage(nullptr),
+      m_manageNursesPage(nullptr),
       m_manageReceptionPage(nullptr), m_managePharmacistsPage(nullptr), m_analyticsPage(nullptr) {
   initializeDashboard();
 }
 
 void AdminDashboardWidget::fillDashboardData() {
-  if (m_currentUser && m_docNameLabel) {
-    m_docNameLabel->setText("Admin: " + m_currentUser->getFullName());
+  if (m_currentUser && m_nameLabel) {
+    m_nameLabel->setText("Admin: " + m_currentUser->getFullName());
   }
 
   // --- Sidebar Menu ---
@@ -41,8 +41,6 @@ void AdminDashboardWidget::fillDashboardData() {
       new QPushButton("Quản lý Bác sĩ", m_sidebarFrame);
   m_btnManageNurses =
       new QPushButton("Quản lý Y tá", m_sidebarFrame);
-  m_btnManagePatients =
-      new QPushButton("Quản lý Bệnh nhân", m_sidebarFrame);
   m_btnManageReception =
       new QPushButton("Quản lý Lễ tân", m_sidebarFrame);
   m_btnManagePharmacists =
@@ -53,7 +51,6 @@ void AdminDashboardWidget::fillDashboardData() {
   m_btnAnalytics->setCursor(Qt::PointingHandCursor);
   m_btnManageDoctors->setCursor(Qt::PointingHandCursor);
   m_btnManageNurses->setCursor(Qt::PointingHandCursor);
-  m_btnManagePatients->setCursor(Qt::PointingHandCursor);
   m_btnManageReception->setCursor(Qt::PointingHandCursor);
   m_btnManagePharmacists->setCursor(Qt::PointingHandCursor);
   m_btnManageLeaves->setCursor(Qt::PointingHandCursor);
@@ -63,7 +60,6 @@ void AdminDashboardWidget::fillDashboardData() {
   m_sidebarLayout->addWidget(m_btnAnalytics);
   m_sidebarLayout->addWidget(m_btnManageDoctors);
   m_sidebarLayout->addWidget(m_btnManageNurses);
-  m_sidebarLayout->addWidget(m_btnManagePatients);
   m_sidebarLayout->addWidget(m_btnManageReception);
   m_sidebarLayout->addWidget(m_btnManagePharmacists);
   m_sidebarLayout->addWidget(m_btnManageLeaves);
@@ -92,17 +88,15 @@ void AdminDashboardWidget::fillDashboardData() {
 
   // Khởi tạo các trang quản lý bằng widget độc lập
   m_analyticsPage = new AdminAnalyticsWidget(m_analyticService, this);
-  m_manageDoctorsPage = new ManageDoctorsWidget(m_staffService, m_baseAppointmentService, this);
+  m_manageDoctorsPage = new ManageDoctorsWidget(m_staffService, m_appointmentService, this);
   m_manageNursesPage = new ManageNursesWidget(m_staffService, this);
-  m_managePatientsPage = new ManagePatientsWidget(m_patientService, m_stackedWidget);
   m_manageReceptionPage = new ManageReceptionWidget(m_staffService, this);
   m_managePharmacistsPage = new ManagePharmacistsWidget(m_staffService, this);
-  m_manageLeavesPage = new ManageLeaveWidget(m_staffService, m_baseAppointmentService, this);
+  m_manageLeavesPage = new ManageLeaveWidget(m_staffService, m_appointmentService, this);
 
   m_stackedWidget->addWidget(m_analyticsPage);
   m_stackedWidget->addWidget(m_manageDoctorsPage);
   m_stackedWidget->addWidget(m_manageNursesPage);
-  m_stackedWidget->addWidget(m_managePatientsPage);
   m_stackedWidget->addWidget(m_manageReceptionPage);
   m_stackedWidget->addWidget(m_managePharmacistsPage);
   m_stackedWidget->addWidget(m_manageLeavesPage);
@@ -112,7 +106,7 @@ void AdminDashboardWidget::fillDashboardData() {
 
   // Events cho menu
   auto setActiveMenu = [=](QPushButton *activeBtn) {
-      QPushButton* buttons[] = { m_btnAnalytics, m_btnManageDoctors, m_btnManageNurses, m_btnManagePatients, m_btnManageReception, m_btnManagePharmacists, m_btnManageLeaves };
+      QPushButton* buttons[] = { m_btnAnalytics, m_btnManageDoctors, m_btnManageNurses, m_btnManageReception, m_btnManagePharmacists, m_btnManageLeaves };
       for (auto* btn : buttons) {
           if (btn) {
               btn->setObjectName("");
@@ -143,12 +137,6 @@ void AdminDashboardWidget::fillDashboardData() {
       m_stackedWidget->setCurrentWidget(m_manageNursesPage);
       m_manageNursesPage->loadNursesList();
       setActiveMenu(m_btnManageNurses);
-  });
-
-  connect(m_btnManagePatients, &QPushButton::clicked, this, [=]() {
-      m_stackedWidget->setCurrentWidget(m_managePatientsPage);
-      m_managePatientsPage->loadPatientsList();
-      setActiveMenu(m_btnManagePatients);
   });
 
   connect(m_btnManageReception, &QPushButton::clicked, this, [=]() {

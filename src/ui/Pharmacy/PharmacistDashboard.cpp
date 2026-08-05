@@ -31,13 +31,11 @@
 PharmacistDashboardWidget::PharmacistDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
     std::shared_ptr<StaffService> staffService,
-    std::shared_ptr<PatientService> patientService,
-    std::shared_ptr<AppointmentService> appointmentService,
     std::shared_ptr<MedicalRecordService> medicalRecordService,
     std::shared_ptr<PharmacyService> pharmacyService,
     std::shared_ptr<BillingService> billingService,
     QWidget *parent)
-    : BaseDashboardWidget(user, staffService, patientService, appointmentService, parent),
+    : BaseDashboardWidget(user, staffService, parent),
       m_medicalRecordService(medicalRecordService),
       m_pharmacyService(pharmacyService),
       m_billingService(billingService) {
@@ -47,8 +45,8 @@ PharmacistDashboardWidget::PharmacistDashboardWidget(
 void PharmacistDashboardWidget::fillDashboardData() {
     buildSidebar();
 
-    if (m_currentUser && m_docNameLabel) {
-        m_docNameLabel->setText(m_currentUser->getFullName() + " (Dược sĩ)");
+    if (m_currentUser && m_nameLabel) {
+        m_nameLabel->setText(m_currentUser->getFullName() + " (Dược sĩ)");
     }
 
     m_stackedWidget = new QStackedWidget(m_mainContentWidget);
@@ -280,7 +278,9 @@ void PharmacistDashboardWidget::buildInventoryPage() {
 
     m_cbInvCategory = new QComboBox(m_inventoryPage);
     m_cbInvCategory->addItem("Tất cả danh mục", "");
-    m_cbInvCategory->addItems({"Kháng sinh", "Giảm đau", "Kháng viêm", "Hạ sốt", "Tim mạch", "Tiêu hóa", "Khác"});
+    for (const auto &pair : MedicationCategoryText::getList()) {
+        m_cbInvCategory->addItem(pair.second, pair.first);
+    }
 
     m_cbInvStatus = new QComboBox(m_inventoryPage);
     m_cbInvStatus->addItems({"Tất cả trạng thái", "Còn hàng", "Hết hàng", "Sắp hết hàng", "Sắp hết hạn"});

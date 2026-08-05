@@ -2,6 +2,7 @@
 #include "../../model/Doctor.h"
 #include "../../model/IAuthenticatable.h"
 
+#include "../../service/AnalyticService.h"
 #include "../../service/AppointmentService.h"
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
@@ -36,10 +37,12 @@ ReceptionDashboardWidget::ReceptionDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
     std::shared_ptr<StaffService> staffService,
     std::shared_ptr<PatientService> patientService,
-    std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : BaseDashboardWidget(user, staffService, patientService,
-                          appointmentService, parent),
-      m_staffService(staffService) {
+    std::shared_ptr<AppointmentService> appointmentService,
+    std::shared_ptr<AnalyticService> analyticService, QWidget *parent)
+    : BaseDashboardWidget(user, staffService, parent),
+      m_patientService(patientService),
+      m_appointmentService(appointmentService),
+      m_analyticService(analyticService) {
 
   initializeDashboard();
 
@@ -66,13 +69,23 @@ ReceptionDashboardWidget::ReceptionDashboardWidget(
 }
 
 void ReceptionDashboardWidget::fillDashboardData() {
-  // Fake data for UI preview
-  if (m_lblRevenue) {
-    m_lblRevenue->setText("125,500,000 VND");
+  if (m_analyticService) {
+    QDate today = QDate::currentDate();
+    QDate startOfMonth = QDate(today.year(), today.month(), 1);
+
+    IncomeStatsDTO incomeStats = m_analyticService->getIncomeStats(startOfMonth, today);
+    if (m_lblRevenue) {
+      m_lblRevenue->setText(
+          QLocale(QLocale::Vietnamese).toCurrencyString(incomeStats.total, "₫"));
+    }
+
+    PatientStatsDTO patientStats = m_analyticService->getPatientStats(startOfMonth, today);
+    if (m_lblPatientNum) {
+      m_lblPatientNum->setText(QString("%1 lượt khám").arg(patientStats.total));
+    }
   }
-  if (m_lblPatientNum) {
-    m_lblPatientNum->setText("428 bệnh nhân");
-  }
+
+  refreshRecentActivity();
 }
 
 QFrame *ReceptionDashboardWidget::makeCard(QWidget *parent) {
@@ -179,6 +192,10 @@ void ReceptionDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
     activeBtn->style()->unpolish(activeBtn);
     activeBtn->style()->polish(activeBtn);
   }
+
+  if (index == 0) {
+    refreshRecentActivity();
+  }
 }
 
 void ReceptionDashboardWidget::buildOverviewPage() {
@@ -230,16 +247,38 @@ void ReceptionDashboardWidget::buildOverviewPage() {
       "font-size: 18px; font-weight: bold; color: #202124; margin-top: 20px;");
   layout->addWidget(lblSubTitle);
 
-  QTableWidget *mockTable = new QTableWidget(3, 4, m_overviewPage);
-  mockTable->setHorizontalHeaderLabels(
+  m_recentActivityTable = new QTableWidget(0, 4, m_overviewPage);
+  m_recentActivityTable->setHorizontalHeaderLabels(
       {"Thời gian", "Bệnh nhân", "Bác sĩ", "Trạng thái"});
-  mockTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  mockTable->setStyleSheet("QTableWidget { background-color: white; "
-                           "border-radius: 8px; border: 1px solid #EAEAEA; }"
+  m_recentActivityTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  m_recentActivityTable->setStyleSheet("QTableWidget { background-color: white; "
+                           "border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
                            "QHeaderView::section { background-color: #F1F3F4; "
-                           "font-weight: bold; border: none; padding: 8px; }");
-  layout->addWidget(mockTable);
+                           "font-weight: bold; border: none; padding: 8px; color: #5F6368; }");
+  m_recentActivityTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_recentActivityTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  layout->addWidget(m_recentActivityTable);
   layout->addStretch();
+}
+
+void ReceptionDashboardWidget::refreshRecentActivity() {
+  if (!m_recentActivityTable || !m_appointmentService) return;
+
+  auto appts = m_appointmentService->getAppointmentsByDate(QDate::currentDate());
+  int showCount = qMin<int>(appts.size(), 10);
+
+  m_recentActivityTable->setRowCount(showCount);
+  for (int i = 0; i < showCount; ++i) {
+    const auto &a = appts[i];
+    QString timeStr = a.startTime;
+    if (!a.endTime.isEmpty()) timeStr += " - " + a.endTime;
+
+    m_recentActivityTable->setItem(i, 0, new QTableWidgetItem(timeStr));
+    m_recentActivityTable->setItem(i, 1, new QTableWidgetItem(a.patientName));
+    m_recentActivityTable->setItem(i, 2, new QTableWidgetItem(a.doctorName));
+    m_recentActivityTable->setItem(i, 3,
+        new QTableWidgetItem(AppointmentStatusText::toVi(a.status)));
+  }
 }
 
 void ReceptionDashboardWidget::onContinueClicked() {
@@ -252,7 +291,7 @@ void ReceptionDashboardWidget::onContinueClicked() {
   }
 
   auto patientOpt =
-      m_basePatientService->getPatientByPhoneOrCitizenId(phone, citizenId);
+      m_patientService->getPatientByPhoneOrCitizenId(phone, citizenId);
   if (patientOpt) {
     m_currentPatientId = patientOpt->patientId;
     m_txtPatientPhone->setText(patientOpt->phone);
@@ -309,7 +348,7 @@ void ReceptionDashboardWidget::onConfirmClicked() {
   input.endTime = endTime;
   input.reason = "Khám bệnh";
 
-  QString errorMsg = m_baseAppointmentService->createAppointment(input);
+  QString errorMsg = m_appointmentService->createAppointment(input);
   if (errorMsg.isEmpty()) {
     QMessageBox::information(this, "Thành công",
                              "Đăng ký lịch khám thành công!");
@@ -370,12 +409,12 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   layout->addLayout(titleLayout);
 
   connect(btnAddPatient, &QPushButton::clicked, this, [this]() {
-    PatientRegistrationDialog dialog(m_basePatientService, this);
+    PatientRegistrationDialog dialog(m_patientService, this);
     connect(&dialog, &PatientRegistrationDialog::saved, this,
             [this](const QString &phone, const QString &citizenId, const QString &name) {
               Q_UNUSED(name);
-              if (!m_basePatientService) return;
-              auto patientOpt = m_basePatientService->getPatientByPhoneOrCitizenId(phone, citizenId);
+              if (!m_patientService) return;
+              auto patientOpt = m_patientService->getPatientByPhoneOrCitizenId(phone, citizenId);
               if (patientOpt.has_value()) {
                 m_currentPatientId = patientOpt->patientId;
                 if (m_txtPatientPhone) m_txtPatientPhone->setText(patientOpt->phone);
@@ -477,7 +516,7 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   QLabel *lblSpecialty = new QLabel("Chuyên khoa:", m_apptCard);
   lblSpecialty->setStyleSheet("font-weight: bold; color: #555;");
   m_comboSpecialty = new QComboBox(m_apptCard);
-  m_comboSpecialty->addItems({"Tất cả", "Nội khoa", "Ngoại khoa", "Nhi khoa", "Da liễu", "Răng Hàm Mặt", "Tai Mũi Họng"});
+  m_comboSpecialty->addItem("Tất cả");
   m_comboSpecialty->setStyleSheet(inputStyle);
   colSpecialty->addWidget(lblSpecialty);
   colSpecialty->addWidget(m_comboSpecialty);
@@ -585,15 +624,47 @@ void ReceptionDashboardWidget::updateDoctorList() {
   m_selectedTimeSlot = "";
   m_selectedSlotButton = nullptr;
 
+  DoctorSearchCriteria allCriteria;
+  allCriteria.onlyActive = true;
+  auto allDoctors = m_staffService ? m_staffService->searchDoctorsPaged(allCriteria).items : QList<std::shared_ptr<SystemUser>>();
+
+  // Rebuild specialty combo dynamically from active doctor list
+  QString savedSpecialty = m_comboSpecialty->currentText();
+  m_comboSpecialty->blockSignals(true);
+  m_comboSpecialty->clear();
+  m_comboSpecialty->addItem("Tất cả");
+
+  QStringList knownSpecialties;
+  for (const auto &doc : allDoctors) {
+      auto docModel = std::dynamic_pointer_cast<Doctor>(doc);
+      if (!docModel) continue;
+      QString sp = docModel->getSpecialty().trimmed();
+      if (!sp.isEmpty() && !knownSpecialties.contains(sp)) {
+          knownSpecialties.append(sp);
+          m_comboSpecialty->addItem(sp);
+      }
+  }
+
+  int idx = m_comboSpecialty->findText(savedSpecialty);
+  m_comboSpecialty->setCurrentIndex(idx >= 0 ? idx : 0);
+  m_comboSpecialty->blockSignals(false);
+
   QString specialty = m_comboSpecialty->currentText();
   if (specialty == "Tất cả") specialty = "";
-  
+
   QDate date = m_dateEdit->date();
 
-  DoctorSearchCriteria docCriteria;
-  docCriteria.specialty = specialty;
-  docCriteria.onlyActive = true;
-  auto doctors = m_staffService ? m_staffService->searchDoctorsPaged(docCriteria).items : QList<std::shared_ptr<SystemUser>>();
+  QList<std::shared_ptr<SystemUser>> doctors;
+  if (specialty.isEmpty()) {
+      doctors = allDoctors;
+  } else {
+      for (const auto &doc : allDoctors) {
+          auto docModel = std::dynamic_pointer_cast<Doctor>(doc);
+          if (docModel && docModel->getSpecialty().trimmed() == specialty) {
+              doctors.append(doc);
+          }
+      }
+  }
 
   if (doctors.isEmpty()) {
       QLabel* lblEmpty = new QLabel("Không có bác sĩ nào cho chuyên khoa này.");
@@ -657,7 +728,7 @@ void ReceptionDashboardWidget::updateDoctorList() {
     lblDateHeader->setStyleSheet("color: #2E7D32; font-weight: bold; font-size: 14px; border: none; margin-top: 5px;");
     cardLayout->addWidget(lblDateHeader);
 
-    QStringList timeSlots = m_baseAppointmentService->getAvailableTimeSlots(doctorId, date);
+    QStringList timeSlots = m_appointmentService->getAvailableTimeSlots(doctorId, date);
     
     if (timeSlots.isEmpty()) {
         QString emptyMsg = "ĐÃ HẾT SỐ ĐẶT TRƯỚC";
@@ -732,7 +803,7 @@ void ReceptionDashboardWidget::refreshPatientsTable() {
   m_patientsTable->setRowCount(0);
 
   PatientSearchCriteria criteria;
-  auto patients = m_basePatientService ? m_basePatientService->searchPatientsPaged(criteria).items : QList<PatientSearchResultDTO>();
+  auto patients = m_patientService ? m_patientService->searchPatientsPaged(criteria).items : QList<PatientSearchResultDTO>();
   m_patientsTable->setRowCount(patients.size());
   for (int i = 0; i < patients.size(); ++i) {
       const auto& p = patients[i];
@@ -764,7 +835,7 @@ void ReceptionDashboardWidget::refreshPatientsTable() {
       });
 
       connect(btnEdit, &QPushButton::clicked, this, [this, pId]() {
-          PatientEditDialog dialog(pId, m_basePatientService, this);
+          PatientEditDialog dialog(pId, m_patientService, this);
           connect(&dialog, &PatientEditDialog::patientUpdated, this, [this]() {
               refreshPatientsTable();
           });
@@ -841,9 +912,9 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
 }
 
 void ReceptionDashboardWidget::updateAppointmentsTable() {
-    if (!m_appointmentsTable || !m_baseAppointmentService) return;
+    if (!m_appointmentsTable || !m_appointmentService) return;
     QDate date = m_apptDateEdit->date();
-    auto appts = m_baseAppointmentService->getAppointmentsByDate(date);
+    auto appts = m_appointmentService->getAppointmentsByDate(date);
     m_appointmentsTable->setRowCount(appts.size());
     for (int i = 0; i < appts.size(); ++i) {
         const auto& a = appts[i];
@@ -897,7 +968,7 @@ void ReceptionDashboardWidget::updateAppointmentsTable() {
                                              "QPushButton { background-color: #4B94F2; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
                                              "QPushButton:hover { background-color: #3b82f6; }");
                     if (confirmBox.exec() == QMessageBox::Yes) {
-                        auto result = m_baseAppointmentService->checkInPatient(apptId);
+                        auto result = m_appointmentService->checkInPatient(apptId);
                         if (result.second > 0) {
                             QMessageBox msgBox(this);
                             msgBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -941,7 +1012,7 @@ void ReceptionDashboardWidget::updateAppointmentsTable() {
                                          "QPushButton { background-color: #F59E0B; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
                                          "QPushButton:hover { background-color: #D97706; }");
                 if (confirmBox.exec() == QMessageBox::Yes) {
-                    QString err = m_baseAppointmentService->cancelAppointment(apptId);
+                    QString err = m_appointmentService->cancelAppointment(apptId);
                     if (err.isEmpty()) {
                         QMessageBox okBox(this);
                         okBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -1011,7 +1082,7 @@ void ReceptionDashboardWidget::buildRoomQueuePage() {
 }
 
 void ReceptionDashboardWidget::onRefreshRoomQueue() {
-    if (!m_roomQueueLayout || !m_baseAppointmentService) return;
+    if (!m_roomQueueLayout || !m_appointmentService) return;
 
     // Clear existing items
     QLayoutItem *child;
@@ -1023,7 +1094,7 @@ void ReceptionDashboardWidget::onRefreshRoomQueue() {
     }
 
     QDate today = QDate::currentDate();
-    auto statuses = m_baseAppointmentService->getRoomQueueStatuses(today);
+    auto statuses = m_appointmentService->getRoomQueueStatuses(today);
 
     int row = 0;
     int col = 0;
@@ -1032,7 +1103,7 @@ void ReceptionDashboardWidget::onRefreshRoomQueue() {
     for (const auto& st : statuses) {
         auto *card = new RoomQueueWidget(st.roomId, st.roomNumber, st.doctorId, st.doctorName, st.currentTicketNumber, st.nextTicketNumber, this);
         connect(card, &RoomQueueWidget::clicked, this, [this](int rId, int dId) {
-            auto items = m_baseAppointmentService->getDoctorQueue(dId, QDate::currentDate());
+            auto items = m_appointmentService->getDoctorQueue(dId, QDate::currentDate());
             auto *dialog = new RoomQueueDialog(rId, "Phòng khám", items, this);
             dialog->exec();
             dialog->deleteLater();
@@ -1084,7 +1155,7 @@ void ReceptionDashboardWidget::showPatientHistoryDialog(int patientId, const QSt
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     
-    auto appts = m_baseAppointmentService->getPatientAppointments(patientId);
+    auto appts = m_appointmentService->getPatientAppointments(patientId);
     table->setRowCount(appts.size());
     
     for (int i = 0; i < appts.size(); ++i) {
@@ -1140,7 +1211,7 @@ void ReceptionDashboardWidget::showPatientHistoryDialog(int patientId, const QSt
                                              "QPushButton { background-color: #4B94F2; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
                                              "QPushButton:hover { background-color: #3b82f6; }");
                     if (confirmBox.exec() == QMessageBox::Yes) {
-                        auto result = m_baseAppointmentService->checkInPatient(apptId);
+                        auto result = m_appointmentService->checkInPatient(apptId);
                         if (result.second > 0) {
                             QMessageBox msgBox(dlgPtr);
                             msgBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -1187,7 +1258,7 @@ void ReceptionDashboardWidget::showPatientHistoryDialog(int patientId, const QSt
                                          "QPushButton { background-color: #F59E0B; color: white; border-radius: 4px; padding: 6px 16px; font-weight: bold; }"
                                          "QPushButton:hover { background-color: #D97706; }");
                 if (confirmBox.exec() == QMessageBox::Yes) {
-                    QString err = m_baseAppointmentService->cancelAppointment(apptId);
+                    QString err = m_appointmentService->cancelAppointment(apptId);
                     if (err.isEmpty()) {
                         QMessageBox okBox(dlgPtr);
                         okBox.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
