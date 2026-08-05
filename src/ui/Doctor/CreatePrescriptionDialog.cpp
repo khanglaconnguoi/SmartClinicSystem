@@ -82,6 +82,9 @@ void CreatePrescriptionDialog::setupUI() {
     tblSearchResults->setSelectionBehavior(QAbstractItemView::SelectRows);
     tblSearchResults->setSelectionMode(QAbstractItemView::SingleSelection);
     tblSearchResults->verticalHeader()->setVisible(false);
+    tblSearchResults->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    tblSearchResults->setFocusPolicy(Qt::NoFocus);
+    tblSearchResults->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     leftLayout->addWidget(tblSearchResults);
 
     QHBoxLayout *paginationLayout = new QHBoxLayout();
@@ -185,6 +188,8 @@ void CreatePrescriptionDialog::setupUI() {
     tblPrescription->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);
     tblPrescription->setColumnWidth(7, 40);
     tblPrescription->verticalHeader()->setVisible(false);
+    tblPrescription->setFocusPolicy(Qt::NoFocus);
+    tblPrescription->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     rightLayout->addWidget(tblPrescription);
 
     QHBoxLayout *bottomLayout = new QHBoxLayout();

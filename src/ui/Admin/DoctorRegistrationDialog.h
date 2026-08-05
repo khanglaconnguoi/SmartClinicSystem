@@ -24,6 +24,7 @@ public:
   ~DoctorRegistrationDialog() override = default;
 
   void loadDoctorData(DoctorProfileDTO *doctor);
+  void setReadOnlyMode(bool readOnly);
 
 private slots:
   void handleSave();
@@ -57,5 +58,7 @@ private:
 
   QPushButton *m_btnSave;
   QPushButton *m_btnCancel;
+  bool m_isReadOnly = false;
+  QLabel *m_lblPageTitle = nullptr;
 };
 

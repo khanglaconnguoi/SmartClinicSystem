@@ -132,6 +132,8 @@ void ActiveIngredientSearchDialog::setupUI() {
     m_resultsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_resultsTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_resultsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_resultsTable->setFocusPolicy(Qt::NoFocus);
+    m_resultsTable->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     mainLayout->addWidget(m_resultsTable);
 
     QHBoxLayout* pagingLayout = new QHBoxLayout();
@@ -276,6 +278,8 @@ void AddMedicationDialog::setupUI() {
     m_ingredientsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     m_ingredientsTable->verticalHeader()->setDefaultSectionSize(40);
     m_ingredientsTable->setMinimumHeight(180); // Đảm bảo bảng hoạt chất có chiều cao cố định để cuộn mượt mà
+    m_ingredientsTable->setFocusPolicy(Qt::NoFocus);
+    m_ingredientsTable->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     layIngredients->addWidget(m_ingredientsTable);
 
     QHBoxLayout* btnIngredientsLayout = new QHBoxLayout();

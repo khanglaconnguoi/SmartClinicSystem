@@ -18,6 +18,7 @@ public:
     ~PharmacistRegistrationDialog() override = default;
 
     void loadPharmacistData(PharmacistProfileDTO* pharmacist);
+    void setReadOnlyMode(bool readOnly);
 
 private slots:
     void handleSave();
@@ -48,4 +49,6 @@ private:
 
     QPushButton* m_btnCancel;
     QPushButton* m_btnSave;
+    bool m_isReadOnly = false;
+    QLabel* m_lblPageTitle = nullptr;
 };

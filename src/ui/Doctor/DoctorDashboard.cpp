@@ -286,15 +286,17 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
        "Trạng Thái", "Thao Tác"});
   m_appointmentsTable->setStyleSheet(
       "QTableWidget { background-color: #FFFFFF; border: 1px solid #EAEAEA; "
-      "border-radius: 8px; gridline-color: #F1F3F4; }"
+      "border-radius: 8px; gridline-color: #F1F3F4; outline: none; }"
       "QHeaderView::section { background-color: #F8F9FA; padding: 10px; "
       "font-weight: bold; border: none; border-bottom: 2px solid #EAEAEA; "
       "color: #5F6368; }"
-      "QTableWidget::item { padding: 12px; color: #3C4043; }");
+      "QTableWidget::item { padding: 12px; color: #3C4043; outline: none; }"
+      "QTableWidget::item:focus { outline: none; border: none; }");
   m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
       QHeaderView::Stretch);
   m_appointmentsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_appointmentsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_appointmentsTable->setFocusPolicy(Qt::NoFocus);
   m_appointmentsTable->verticalHeader()->setVisible(false);
 
   connect(m_appointmentsTable, &QTableWidget::cellClicked, this,
@@ -549,12 +551,13 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
 
   m_patientTable->setStyleSheet(
       "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: "
-      "#F3F4F6; }"
+      "#F3F4F6; outline: none; }"
       "QHeaderView::section { background-color: #F9FAFB; padding: 12px; "
       "font-weight: bold; border: none; border-bottom: 2px solid #E5E7EB; "
       "color: #6B7280; }"
       "QTableWidget::item { padding: 12px; color: #111827; border-bottom: 1px "
-      "solid #F3F4F6; }");
+      "solid #F3F4F6; outline: none; }"
+      "QTableWidget::item:focus { outline: none; border: none; }");
 
   cardLayout->addWidget(m_patientTable);
   pageLayout->addWidget(tableCard);
@@ -563,6 +566,7 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
       QHeaderView::Stretch);
   m_patientTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_patientTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_patientTable->setFocusPolicy(Qt::NoFocus);
   m_patientTable->verticalHeader()->setVisible(false);
 
   connect(m_patientTable, &QTableWidget::cellClicked, this,
@@ -1019,9 +1023,12 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
   m_tableLeaveHistory->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_tableLeaveHistory->setSelectionMode(QAbstractItemView::SingleSelection);
   m_tableLeaveHistory->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_tableLeaveHistory->setFocusPolicy(Qt::NoFocus);
   m_tableLeaveHistory->setStyleSheet(
       "QTableWidget { border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#202124; background-color: white; }"
+      "#202124; background-color: white; outline: none; }"
+      "QTableWidget::item { outline: none; border: none; }"
+      "QTableWidget::item:focus { outline: none; border: none; }"
       "QHeaderView::section { background-color: #F1F3F4; color: #5F6368; "
       "font-weight: bold; padding: 4px; border: 1px solid #DADCE0; }");
 

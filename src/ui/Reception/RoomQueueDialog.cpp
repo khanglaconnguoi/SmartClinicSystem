@@ -41,9 +41,11 @@ void RoomQueueDialog::setupUi() {
     m_tableQueue->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tableQueue->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tableQueue->setAlternatingRowColors(true);
+    m_tableQueue->setFocusPolicy(Qt::NoFocus);
     m_tableQueue->setStyleSheet(
-        "QTableWidget { border: 1px solid #E5E7EB; border-radius: 4px; background-color: #FFFFFF; color: #111827; }"
-        "QTableWidget::item { padding: 4px; color: #111827; }"
+        "QTableWidget { border: 1px solid #E5E7EB; border-radius: 4px; background-color: #FFFFFF; color: #111827; outline: none; }"
+        "QTableWidget::item { padding: 4px; color: #111827; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
         "QHeaderView::section { background-color: #3B82F6; color: white; padding: 6px; font-weight: bold; border: none; border-bottom: 1px solid #E5E7EB; }"
     );
     layout->addWidget(m_tableQueue);

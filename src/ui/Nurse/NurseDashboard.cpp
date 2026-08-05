@@ -137,10 +137,12 @@ void NurseDashboardWidget::buildOverviewPage() {
     m_overviewTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_overviewTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_overviewTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_overviewTable->setFocusPolicy(Qt::NoFocus);
     m_overviewTable->setStyleSheet(
-        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: #F4F5F7; color: #172B4D; } "
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: #F4F5F7; color: #172B4D; outline: none; } "
         "QHeaderView::section { background-color: #F4F5F7; color: #5E6C84; font-weight: bold; border: none; padding: 8px; } "
-        "QTableWidget::item { color: #172B4D; background-color: #FFFFFF; padding: 6px; } "
+        "QTableWidget::item { color: #172B4D; background-color: #FFFFFF; padding: 6px; outline: none; } "
+        "QTableWidget::item:focus { outline: none; border: none; } "
         "QTableWidget::item:selected { background-color: #DEEBFF; color: #0052CC; }"
     );
 
@@ -216,10 +218,12 @@ void NurseDashboardWidget::buildLabQueuePage() {
     m_queueTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_queueTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_queueTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_queueTable->setFocusPolicy(Qt::NoFocus);
     m_queueTable->setStyleSheet(
-        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: #F4F5F7; color: #172B4D; } "
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: #F4F5F7; color: #172B4D; outline: none; } "
         "QHeaderView::section { background-color: #F4F5F7; color: #5E6C84; font-weight: bold; border: none; padding: 8px; } "
-        "QTableWidget::item { color: #172B4D; background-color: #FFFFFF; padding: 6px; } "
+        "QTableWidget::item { color: #172B4D; background-color: #FFFFFF; padding: 6px; outline: none; } "
+        "QTableWidget::item:focus { outline: none; border: none; } "
         "QTableWidget::item:selected { background-color: #DEEBFF; color: #0052CC; }"
     );
 

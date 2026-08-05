@@ -53,7 +53,8 @@ void ManagePatientsWidget::buildUI() {
     m_tblPatients->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblPatients->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblPatients->setAlternatingRowColors(true);
-    m_tblPatients->setStyleSheet("QTableWidget { border: none; background-color: white; alternate-background-color: #F8FAFC; color: #0F172A; } QHeaderView::section { background-color: #F8FAFC; padding: 10px; font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; color: #1E293B; } QTableWidget::item { padding: 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A; }");
+    m_tblPatients->setFocusPolicy(Qt::NoFocus);
+    m_tblPatients->setStyleSheet("QTableWidget { border: none; outline: none; background-color: white; alternate-background-color: #F8FAFC; color: #0F172A; } QHeaderView::section { background-color: #F8FAFC; padding: 10px; font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; color: #1E293B; } QTableWidget::item { padding: 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A; outline: none; } QTableWidget::item:focus { outline: none; border: none; }");
 
     cardLayout->addWidget(m_tblPatients);
     pageLayout->addWidget(tableCard);

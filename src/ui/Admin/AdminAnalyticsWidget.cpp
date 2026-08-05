@@ -137,7 +137,10 @@ void AdminAnalyticsWidget::setupUI() {
     m_tblDoctorKpi = new QTableWidget(this);
     m_tblDoctorKpi->setColumnCount(5);
     m_tblDoctorKpi->setHorizontalHeaderLabels({"Tên Bác Sĩ", "Lượt Khám", "Doanh Thu Khám (VNĐ)", "KPI %", "Đánh Giá Hiệu Suất"});
-    styleTable(m_tblDoctorKpi);
+    m_tblDoctorKpi->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblDoctorKpi->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tblDoctorKpi->setFocusPolicy(Qt::NoFocus);
+    m_tblDoctorKpi->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     m_tblDoctorKpi->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tblDoctorKpi->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     m_tblDoctorKpi->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
@@ -149,7 +152,10 @@ void AdminAnalyticsWidget::setupUI() {
     m_tblSpeciality = new QTableWidget(this);
     m_tblSpeciality->setColumnCount(3);
     m_tblSpeciality->setHorizontalHeaderLabels({"Chuyên Khoa", "Số Lượt Khám", "Tỷ Lệ Phần Trăm"});
-    styleTable(m_tblSpeciality);
+    m_tblSpeciality->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblSpeciality->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tblSpeciality->setFocusPolicy(Qt::NoFocus);
+    m_tblSpeciality->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     m_tblSpeciality->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tblSpeciality->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     m_tblSpeciality->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
@@ -159,7 +165,10 @@ void AdminAnalyticsWidget::setupUI() {
     m_tblDailyTrend = new QTableWidget(this);
     m_tblDailyTrend->setColumnCount(4);
     m_tblDailyTrend->setHorizontalHeaderLabels({"Ngày", "Số Lượt Khám", "Doanh Thu Hóa Đơn (VNĐ)", "Thời Gian Chờ TB (Phút)"});
-    styleTable(m_tblDailyTrend);
+    m_tblDailyTrend->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblDailyTrend->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tblDailyTrend->setFocusPolicy(Qt::NoFocus);
+    m_tblDailyTrend->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     m_tblDailyTrend->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tblDailyTrend->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     m_tblDailyTrend->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);

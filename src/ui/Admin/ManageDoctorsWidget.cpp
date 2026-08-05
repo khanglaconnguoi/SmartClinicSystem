@@ -1,19 +1,21 @@
 #include "ManageDoctorsWidget.h"
 #include "../../dto/StaffDTOs.h"
-#include "DoctorRegistrationDialog.h"
 #include "../../model/CommonEnums.h"
+#include "DoctorRegistrationDialog.h"
+#include <QCoreApplication>
+#include <QDir>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QCoreApplication>
 
 ManageDoctorsWidget::ManageDoctorsWidget(
     std::shared_ptr<StaffService> staffService,
     std::shared_ptr<AppointmentService> appointmentService, QWidget *parent)
-    : QWidget(parent), m_staffService(staffService), m_appointmentService(appointmentService), m_tblDoctors(nullptr) {
+    : QWidget(parent), m_staffService(staffService),
+      m_appointmentService(appointmentService), m_tblDoctors(nullptr) {
   buildUI();
 }
 
@@ -61,39 +63,50 @@ void ManageDoctorsWidget::buildUI() {
   m_txtSearchKey = new QLineEdit(filterCard);
   m_txtSearchKey->setPlaceholderText("Mã NV, Họ tên...");
   m_txtSearchKey->setStyleSheet(
-      "QLineEdit { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QLineEdit { padding: 6px 12px; border: 1px solid #D1D5DB; "
+      "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
+      "white; }"
       "QLineEdit:focus { border: 1px solid #2563EB; }");
   m_txtSearchKey->setFixedWidth(160);
 
   m_cbSpecialtyFilter = new QComboBox(filterCard);
   m_cbSpecialtyFilter->setStyleSheet(
-      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; "
+      "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
+      "white; }"
       "QComboBox:focus { border: 1px solid #2563EB; }");
   m_cbSpecialtyFilter->addItem("Tất cả chuyên khoa", "");
-  m_cbSpecialtyFilter->addItems({"Nội khoa", "Ngoại khoa", "Nhi khoa", "Da liễu", "Răng Hàm Mặt"});
+  m_cbSpecialtyFilter->addItems(
+      {"Nội khoa", "Ngoại khoa", "Nhi khoa", "Da liễu", "Răng Hàm Mặt"});
 
   m_cbDepartmentFilter = new QComboBox(filterCard);
   m_cbDepartmentFilter->setStyleSheet(
-      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; "
+      "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
+      "white; }"
       "QComboBox:focus { border: 1px solid #2563EB; }");
   m_cbDepartmentFilter->addItem("Tất cả khoa", -1);
-  for (const auto& pair : DepartmentText::getList()) {
-      int depId = pair.second.split(" - ").first().toInt();
-      m_cbDepartmentFilter->addItem(pair.second, depId);
+  for (const auto &pair : DepartmentText::getList()) {
+    int depId = pair.second.split(" - ").first().toInt();
+    m_cbDepartmentFilter->addItem(pair.second, depId);
   }
 
   m_cbShiftFilter = new QComboBox(filterCard);
   m_cbShiftFilter->setStyleSheet(
-      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; "
+      "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
+      "white; }"
       "QComboBox:focus { border: 1px solid #2563EB; }");
   m_cbShiftFilter->addItem("Tất cả ca trực", "");
-  for (const auto& pair : ShiftText::getList()) {
-      m_cbShiftFilter->addItem(pair.second, pair.first);
+  for (const auto &pair : ShiftText::getList()) {
+    m_cbShiftFilter->addItem(pair.second, pair.first);
   }
 
   m_cbStatusFilter = new QComboBox(filterCard);
   m_cbStatusFilter->setStyleSheet(
-      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; "
+      "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
+      "white; }"
       "QComboBox:focus { border: 1px solid #2563EB; }");
   m_cbStatusFilter->addItem("Đang làm việc", true);
   m_cbStatusFilter->addItem("Tất cả trạng thái", false);
@@ -101,23 +114,11 @@ void ManageDoctorsWidget::buildUI() {
   m_btnResetFilters = new QPushButton("Đặt lại", filterCard);
   m_btnResetFilters->setCursor(Qt::PointingHandCursor);
   m_btnResetFilters->setStyleSheet(
-      "QPushButton { background-color: #EF4444; color: white; border-radius: 6px; padding: 6px 15px; font-weight: bold; border: none; min-height: 32px; }"
+      "QPushButton { background-color: #EF4444; color: white; border-radius: "
+      "6px; padding: 6px 15px; font-weight: bold; border: none; min-height: "
+      "32px; }"
       "QPushButton:hover { background-color: #DC2626; }");
 
-  QLabel *lblSearchIcon = new QLabel(filterCard);
-#ifdef PROJECT_ROOT_DIR
-  QString searchIconPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/icons/search_icon.png";
-#else
-  QString searchIconPath = QCoreApplication::applicationDirPath() + "/assets/icons/search_icon.png";
-#endif
-  QPixmap searchPix(searchIconPath);
-  if (!searchPix.isNull()) {
-    lblSearchIcon->setPixmap(searchPix.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-  } else {
-    lblSearchIcon->setText("Tìm kiếm:");
-  }
-
-  filterLayout->addWidget(lblSearchIcon);
   filterLayout->addWidget(m_txtSearchKey);
   filterLayout->addWidget(m_cbSpecialtyFilter);
   filterLayout->addWidget(m_cbDepartmentFilter);
@@ -138,21 +139,25 @@ void ManageDoctorsWidget::buildUI() {
   m_tblDoctors->horizontalHeader()->setStretchLastSection(false);
   m_tblDoctors->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
   m_tblDoctors->horizontalHeader()->resizeSection(0, 150);
-  m_tblDoctors->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+  m_tblDoctors->horizontalHeader()->setSectionResizeMode(1,
+                                                         QHeaderView::Stretch);
   m_tblDoctors->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
   m_tblDoctors->horizontalHeader()->resizeSection(2, 180);
   m_tblDoctors->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
   m_tblDoctors->horizontalHeader()->resizeSection(3, 150);
   m_tblDoctors->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
-  m_tblDoctors->horizontalHeader()->resizeSection(4, 300);
+  m_tblDoctors->horizontalHeader()->resizeSection(4, 320);
 
   m_tblDoctors->verticalHeader()->setDefaultSectionSize(46);
   m_tblDoctors->verticalHeader()->setVisible(false);
   m_tblDoctors->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_tblDoctors->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_tblDoctors->setFocusPolicy(Qt::NoFocus);
   m_tblDoctors->setStyleSheet(
-      "QTableWidget { border: none; gridline-color: #E2E8F0; font-size: 13px; "
+      "QTableWidget { border: none; outline: none; gridline-color: #E2E8F0; font-size: 13px; "
       "background-color: white; color: #0F172A; }"
+      "QTableWidget::item { outline: none; border: none; }"
+      "QTableWidget::item:focus { outline: none; border: none; }"
       "QHeaderView::section { background-color: #F8FAFC; padding: 10px; "
       "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
       "color: #1E293B; }");
@@ -160,21 +165,28 @@ void ManageDoctorsWidget::buildUI() {
   // Pagination layout
   QHBoxLayout *paginationLayout = new QHBoxLayout();
   paginationLayout->setContentsMargins(15, 10, 15, 15);
-  
+
   m_btnPrevPage = new QPushButton("Trang trước", tableCard);
   m_btnPrevPage->setCursor(Qt::PointingHandCursor);
   m_btnPrevPage->setStyleSheet(
-      "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: 6px; padding: 6px 12px; font-weight: bold; border: none; min-height: 32px; }"
+      "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: "
+      "6px; padding: 6px 12px; font-weight: bold; border: none; min-height: "
+      "32px; }"
       "QPushButton:hover { background-color: #CBD5E1; }"
       "QPushButton:disabled { background-color: #F1F5F9; color: #94A3B8; }");
 
-  m_lblPageInfo = new QLabel("Trang 1 / 1", tableCard);
-  m_lblPageInfo->setStyleSheet("font-size: 13px; font-weight: bold; color: #475569;");
+  m_lblPageInfo = new QLabel(
+      QString("%1 / %2").arg(m_currentPage).arg(m_totalPages), tableCard);
+  m_lblPageInfo->setStyleSheet(
+      "background: transparent; border: none; font-size: 13px; font-weight: "
+      "bold; color: #475569;");
 
   m_btnNextPage = new QPushButton("Trang sau", tableCard);
   m_btnNextPage->setCursor(Qt::PointingHandCursor);
   m_btnNextPage->setStyleSheet(
-      "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: 6px; padding: 6px 12px; font-weight: bold; border: none; min-height: 32px; }"
+      "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: "
+      "6px; padding: 6px 12px; font-weight: bold; border: none; min-height: "
+      "32px; }"
       "QPushButton:hover { background-color: #CBD5E1; }"
       "QPushButton:disabled { background-color: #F1F5F9; color: #94A3B8; }");
 
@@ -189,15 +201,26 @@ void ManageDoctorsWidget::buildUI() {
   pageLayout->addWidget(tableCard);
 
   // Connections
-  connect(btnAddNew, &QPushButton::clicked, this, &ManageDoctorsWidget::showAddDoctorDialog);
-  connect(m_txtSearchKey, &QLineEdit::textChanged, this, &ManageDoctorsWidget::handleFilterChanged);
-  connect(m_cbSpecialtyFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManageDoctorsWidget::handleFilterChanged);
-  connect(m_cbDepartmentFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManageDoctorsWidget::handleFilterChanged);
-  connect(m_cbShiftFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManageDoctorsWidget::handleFilterChanged);
-  connect(m_cbStatusFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManageDoctorsWidget::handleFilterChanged);
-  connect(m_btnResetFilters, &QPushButton::clicked, this, &ManageDoctorsWidget::handleResetFilters);
-  connect(m_btnPrevPage, &QPushButton::clicked, this, &ManageDoctorsWidget::handlePrevPage);
-  connect(m_btnNextPage, &QPushButton::clicked, this, &ManageDoctorsWidget::handleNextPage);
+  connect(btnAddNew, &QPushButton::clicked, this,
+          &ManageDoctorsWidget::showAddDoctorDialog);
+  connect(m_txtSearchKey, &QLineEdit::textChanged, this,
+          &ManageDoctorsWidget::handleFilterChanged);
+  connect(m_cbSpecialtyFilter,
+          QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+          &ManageDoctorsWidget::handleFilterChanged);
+  connect(m_cbDepartmentFilter,
+          QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+          &ManageDoctorsWidget::handleFilterChanged);
+  connect(m_cbShiftFilter, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &ManageDoctorsWidget::handleFilterChanged);
+  connect(m_cbStatusFilter, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &ManageDoctorsWidget::handleFilterChanged);
+  connect(m_btnResetFilters, &QPushButton::clicked, this,
+          &ManageDoctorsWidget::handleResetFilters);
+  connect(m_btnPrevPage, &QPushButton::clicked, this,
+          &ManageDoctorsWidget::handlePrevPage);
+  connect(m_btnNextPage, &QPushButton::clicked, this,
+          &ManageDoctorsWidget::handleNextPage);
 
   // Load data
   loadDoctorsList();
@@ -214,12 +237,12 @@ void ManageDoctorsWidget::loadDoctorsList() {
 
   DoctorSearchCriteria criteria;
   criteria.searchKey = m_txtSearchKey->text().trimmed();
-  
+
   criteria.specialty = m_cbSpecialtyFilter->currentText();
   if (criteria.specialty == "Tất cả chuyên khoa") {
-      criteria.specialty = "";
+    criteria.specialty = "";
   }
-  
+
   criteria.departmentId = m_cbDepartmentFilter->currentData().toInt();
   criteria.shift = m_cbShiftFilter->currentData().toString();
   criteria.onlyActive = m_cbStatusFilter->currentData().toBool();
@@ -231,8 +254,10 @@ void ManageDoctorsWidget::loadDoctorsList() {
   QList<std::shared_ptr<SystemUser>> doctors = result.items;
 
   m_totalPages = result.totalPages();
-  if (m_totalPages < 1) m_totalPages = 1;
-  m_lblPageInfo->setText(QString("%1 / %2").arg(m_currentPage).arg(m_totalPages));
+  if (m_totalPages < 1)
+    m_totalPages = 1;
+  m_lblPageInfo->setText(
+      QString("%1 / %2").arg(m_currentPage).arg(m_totalPages));
   m_btnPrevPage->setEnabled(result.hasPrev());
   m_btnNextPage->setEnabled(result.hasNext());
 
@@ -267,36 +292,44 @@ void ManageDoctorsWidget::loadDoctorsList() {
     m_tblDoctors->setItem(row, 3, itemStatus);
 
     QWidget *actionWidget = new QWidget();
+    actionWidget->setStyleSheet("background: transparent;");
     QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
     actionLayout->setContentsMargins(4, 4, 4, 4);
     actionLayout->setSpacing(8);
 
-    QPushButton *btnEdit = new QPushButton("Sửa");
+    QPushButton *btnEdit = new QPushButton("Xem chi tiết");
     btnEdit->setCursor(Qt::PointingHandCursor);
     btnEdit->setStyleSheet(
         "QPushButton { color: #2563EB; border: 1px solid #2563EB; padding: 6px "
-        "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+        "12px; border-radius: 6px; background-color: white; font-weight: bold; "
+        "} QPushButton:hover "
         "{ background-color: #EFF6FF; }");
 
     QPushButton *btnResetPwd = new QPushButton("Reset MK");
     btnResetPwd->setCursor(Qt::PointingHandCursor);
     btnResetPwd->setStyleSheet(
         "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 6px "
-        "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+        "12px; border-radius: 6px; background-color: white; font-weight: bold; "
+        "} QPushButton:hover "
         "{ background-color: #FEF3C7; }");
 
-    QPushButton *btnDeactivate = new QPushButton(doc->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
+    QPushButton *btnDeactivate =
+        new QPushButton(doc->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
     btnDeactivate->setCursor(Qt::PointingHandCursor);
     if (doc->isActive()) {
-        btnDeactivate->setStyleSheet(
-            "QPushButton { color: #DC2626; border: 1px solid #DC2626; padding: 6px "
-            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
-            "{ background-color: #FEE2E2; }");
+      btnDeactivate->setStyleSheet(
+          "QPushButton { color: #DC2626; border: 1px solid #DC2626; padding: "
+          "6px "
+          "12px; border-radius: 6px; background-color: white; font-weight: "
+          "bold; } QPushButton:hover "
+          "{ background-color: #FEE2E2; }");
     } else {
-        btnDeactivate->setStyleSheet(
-            "QPushButton { color: #22C55E; border: 1px solid #22C55E; padding: 6px "
-            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
-            "{ background-color: #DCFCE7; }");
+      btnDeactivate->setStyleSheet(
+          "QPushButton { color: #22C55E; border: 1px solid #22C55E; padding: "
+          "6px "
+          "12px; border-radius: 6px; background-color: white; font-weight: "
+          "bold; } QPushButton:hover "
+          "{ background-color: #DCFCE7; }");
     }
 
     actionLayout->addWidget(btnEdit);
@@ -308,35 +341,42 @@ void ManageDoctorsWidget::loadDoctorsList() {
             [this, doc]() { showEditDoctorDialog(doc); });
 
     connect(btnResetPwd, &QPushButton::clicked, this, [this, doc]() {
-        auto confirm = QMessageBox::question(this, "Xác nhận Reset Mật khẩu",
-            QString("Bạn có chắc chắn muốn reset mật khẩu cho Bác sĩ %1 (%2)?").arg(doc->getFullName(), doc->getStaffCode()),
-            QMessageBox::Yes | QMessageBox::No);
-        if (confirm == QMessageBox::Yes) {
-            auto res = m_staffService->resetPassword(doc->getAccountId());
-            if (res.result) {
-                QMessageBox::information(this, "Reset Mật khẩu thành công",
-                    QString("Mật khẩu mới cho Bác sĩ %1 (%2) là:\n\n%3\n\nTài khoản sẽ yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo.")
-                    .arg(doc->getFullName(), doc->getStaffCode(), res.newPassword));
-            } else {
-                QMessageBox::warning(this, "Lỗi", "Không thể reset mật khẩu cho Bác sĩ này.");
-            }
-        }
-    });
-            
-    connect(btnDeactivate, &QPushButton::clicked, this, [this, doc]() {
-        if (doc->isActive()) {
-            if (m_staffService->deactivateStaff(doc->getAccountId())) {
-                loadDoctorsList();
-            } else {
-                QMessageBox::warning(this, "Lỗi", "Không thể vô hiệu hóa Bác sĩ này.");
-            }
+      auto confirm = QMessageBox::question(
+          this, "Xác nhận Reset Mật khẩu",
+          QString("Bạn có chắc chắn muốn reset mật khẩu cho Bác sĩ %1 (%2)?")
+              .arg(doc->getFullName(), doc->getStaffCode()),
+          QMessageBox::Yes | QMessageBox::No);
+      if (confirm == QMessageBox::Yes) {
+        auto res = m_staffService->resetPassword(doc->getAccountId());
+        if (res.result) {
+          QMessageBox::information(
+              this, "Reset Mật khẩu thành công",
+              QString("Mật khẩu mới cho Bác sĩ %1 (%2) là:\n\n%3\n\nTài khoản "
+                      "sẽ yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo.")
+                  .arg(doc->getFullName(), doc->getStaffCode(),
+                       res.newPassword));
         } else {
-            if (m_staffService->reactivateStaff(doc->getAccountId())) {
-                loadDoctorsList();
-            } else {
-                QMessageBox::warning(this, "Lỗi", "Không thể kích hoạt Bác sĩ này.");
-            }
+          QMessageBox::warning(this, "Lỗi",
+                               "Không thể reset mật khẩu cho Bác sĩ này.");
         }
+      }
+    });
+
+    connect(btnDeactivate, &QPushButton::clicked, this, [this, doc]() {
+      if (doc->isActive()) {
+        if (m_staffService->deactivateStaff(doc->getAccountId())) {
+          loadDoctorsList();
+        } else {
+          QMessageBox::warning(this, "Lỗi",
+                               "Không thể vô hiệu hóa Bác sĩ này.");
+        }
+      } else {
+        if (m_staffService->reactivateStaff(doc->getAccountId())) {
+          loadDoctorsList();
+        } else {
+          QMessageBox::warning(this, "Lỗi", "Không thể kích hoạt Bác sĩ này.");
+        }
+      }
     });
   }
 }

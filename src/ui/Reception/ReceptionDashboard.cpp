@@ -252,11 +252,14 @@ void ReceptionDashboardWidget::buildOverviewPage() {
       {"Thời gian", "Bệnh nhân", "Bác sĩ", "Trạng thái"});
   m_recentActivityTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   m_recentActivityTable->setStyleSheet("QTableWidget { background-color: white; "
-                           "border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
+                           "border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; outline: none; }"
+                           "QTableWidget::item { outline: none; border: none; }"
+                           "QTableWidget::item:focus { outline: none; border: none; }"
                            "QHeaderView::section { background-color: #F1F3F4; "
                            "font-weight: bold; border: none; padding: 8px; color: #5F6368; }");
   m_recentActivityTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_recentActivityTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_recentActivityTable->setFocusPolicy(Qt::NoFocus);
   layout->addWidget(m_recentActivityTable);
   layout->addStretch();
 }
@@ -786,11 +789,13 @@ void ReceptionDashboardWidget::buildPatientsPage() {
   m_patientsTable->setHorizontalHeaderLabels({"Mã BN", "Họ Tên", "Giới Tính", "Điện Thoại", "Ngày Sinh", "Thao tác"});
   m_patientsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   m_patientsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
-  m_patientsTable->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
+  m_patientsTable->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; outline: none; }"
                        "QHeaderView::section { background-color: #F1F3F4; font-weight: bold; border: none; padding: 10px; color: #5F6368; }"
-                       "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; }");
+                       "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; outline: none; }"
+                       "QTableWidget::item:focus { outline: none; border: none; }");
   m_patientsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_patientsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_patientsTable->setFocusPolicy(Qt::NoFocus);
   m_patientsTable->verticalHeader()->setDefaultSectionSize(45);
   layout->addWidget(m_patientsTable);
   layout->addStretch();
@@ -901,11 +906,13 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
   m_appointmentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   m_appointmentsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
   m_appointmentsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
-  m_appointmentsTable->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
+  m_appointmentsTable->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; outline: none; }"
                        "QHeaderView::section { background-color: #F1F3F4; font-weight: bold; border: none; padding: 10px; color: #5F6368; }"
-                       "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; }");
+                       "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; outline: none; }"
+                       "QTableWidget::item:focus { outline: none; border: none; }");
   m_appointmentsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_appointmentsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_appointmentsTable->setFocusPolicy(Qt::NoFocus);
   layout->addWidget(m_appointmentsTable);
 
   updateAppointmentsTable();
@@ -1149,11 +1156,13 @@ void ReceptionDashboardWidget::showPatientHistoryDialog(int patientId, const QSt
     table->setHorizontalHeaderLabels({"Ngày khám", "Giờ khám", "Bác sĩ", "Phòng", "Trạng thái", "Thao tác"});
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     table->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
-    table->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; }"
+    table->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; outline: none; }"
                          "QHeaderView::section { background-color: #F1F3F4; font-weight: bold; border: none; padding: 10px; color: #5F6368; }"
-                         "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; }");
+                         "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; outline: none; }"
+                         "QTableWidget::item:focus { outline: none; border: none; }");
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setFocusPolicy(Qt::NoFocus);
     
     auto appts = m_appointmentService->getPatientAppointments(patientId);
     table->setRowCount(appts.size());

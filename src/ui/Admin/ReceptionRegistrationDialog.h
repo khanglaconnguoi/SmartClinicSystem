@@ -16,6 +16,7 @@ public:
     ~ReceptionRegistrationDialog() override = default;
 
     void loadReceptionistData(StaffProfileDTO* receptionist);
+    void setReadOnlyMode(bool readOnly);
 
 private slots:
     void handleSave();
@@ -42,4 +43,6 @@ private:
 
     QPushButton* m_btnSave;
     QPushButton* m_btnCancel;
+    bool m_isReadOnly = false;
+    QLabel* m_lblPageTitle = nullptr;
 };

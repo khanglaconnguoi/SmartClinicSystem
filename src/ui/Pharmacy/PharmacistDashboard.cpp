@@ -197,8 +197,9 @@ void PharmacistDashboardWidget::buildOverviewPage() {
     m_tblOverviewAlerts = new QTableWidget(tableCard);
     m_tblOverviewAlerts->setColumnCount(5);
     m_tblOverviewAlerts->setHorizontalHeaderLabels({"Tên thuốc", "Tồn kho", "Đơn vị", "Hạn dùng", "Cảnh báo"});
-    m_tblOverviewAlerts->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_tblOverviewAlerts->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblOverviewAlerts->setFocusPolicy(Qt::NoFocus);
+    m_tblOverviewAlerts->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     tableCardLayout->addWidget(m_tblOverviewAlerts);
 
     mainLayout->addWidget(tableCard, 1);
@@ -305,8 +306,9 @@ void PharmacistDashboardWidget::buildInventoryPage() {
     m_tblInventory = new QTableWidget(tblCard);
     m_tblInventory->setColumnCount(8);
     m_tblInventory->setHorizontalHeaderLabels({"Mã", "Tên thương hiệu", "Đơn vị", "Đơn giá", "Tồn kho", "Hạn sử dụng", "Trạng thái", "Hành động"});
-    m_tblInventory->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_tblInventory->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblInventory->setFocusPolicy(Qt::NoFocus);
+    m_tblInventory->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     tblLayout->addWidget(m_tblInventory);
 
     QHBoxLayout* pageLayout = new QHBoxLayout();
@@ -455,6 +457,8 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     m_tblPrescriptions->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblPrescriptions->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tblPrescriptions->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblPrescriptions->setFocusPolicy(Qt::NoFocus);
+    m_tblPrescriptions->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     tblLayout->addWidget(m_tblPrescriptions);
 
     QHBoxLayout* pageLayout = new QHBoxLayout();
@@ -493,6 +497,8 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     m_tblDetItems->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     m_tblDetItems->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     m_tblDetItems->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblDetItems->setFocusPolicy(Qt::NoFocus);
+    m_tblDetItems->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     detLayout->addWidget(m_tblDetItems);
 
     m_lblDetTotalCost = new QLabel("Tổng giá trị thuốc: 0 VND", detCard);
@@ -872,6 +878,8 @@ void PharmacistDashboardWidget::buildBillingPage() {
     m_tblInvoices->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblInvoices->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tblInvoices->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblInvoices->setFocusPolicy(Qt::NoFocus);
+    m_tblInvoices->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     leftBill->addWidget(m_tblInvoices);
     tabListLayout->addLayout(leftBill, 6);
 
@@ -894,6 +902,8 @@ void PharmacistDashboardWidget::buildBillingPage() {
     m_tblBillItems->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tblBillItems->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     m_tblBillItems->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblBillItems->setFocusPolicy(Qt::NoFocus);
+    m_tblBillItems->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     rightBill->addWidget(m_tblBillItems);
 
     m_lblBillTotalAmount = new QLabel("Tổng thanh toán: 0 VND", billDetCard);
@@ -936,6 +946,8 @@ void PharmacistDashboardWidget::buildBillingPage() {
     m_tblPendingBilling->setHorizontalHeaderLabels({"Bệnh nhân", "Chẩn đoán", "Bác sĩ", "Ngày kê", "Tiền thuốc dự kiến", "Hành động"});
     m_tblPendingBilling->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_tblPendingBilling->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblPendingBilling->setFocusPolicy(Qt::NoFocus);
+    m_tblPendingBilling->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     tabPendingLayout->addWidget(m_tblPendingBilling);
     m_tabBillingContainer->addTab(tabPending, "Chờ xuất hóa đơn");
 
@@ -1401,6 +1413,8 @@ void PharmacistDashboardWidget::buildReportsPage() {
     m_tblReportUsage->setHorizontalHeaderLabels({"Tên thuốc", "Số lượng", "Đơn vị", "Đơn giá (VNĐ)", "Tổng giá trị (VNĐ)"});
     m_tblReportUsage->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tblReportUsage->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblReportUsage->setFocusPolicy(Qt::NoFocus);
+    m_tblReportUsage->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     tableCardLayout->addWidget(m_tblReportUsage);
     workLayout->addWidget(tableCard, 6);
 

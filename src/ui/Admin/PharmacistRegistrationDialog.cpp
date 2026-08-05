@@ -65,11 +65,11 @@ void PharmacistRegistrationDialog::setupUi() {
   QVBoxLayout *headerLayout = new QVBoxLayout(headerFrame);
   headerLayout->setContentsMargins(24, 20, 24, 20);
 
-  QLabel *lblPageTitle = new QLabel("THÔNG TIN DƯỢC SĨ", headerFrame);
-  lblPageTitle->setStyleSheet(
+  m_lblPageTitle = new QLabel("THÔNG TIN DƯỢC SĨ", headerFrame);
+  m_lblPageTitle->setStyleSheet(
       "font-size: 22px; font-weight: bold; color: #1F2937;");
-  lblPageTitle->setAlignment(Qt::AlignCenter);
-  headerLayout->addWidget(lblPageTitle);
+  m_lblPageTitle->setAlignment(Qt::AlignCenter);
+  headerLayout->addWidget(m_lblPageTitle);
 
   containerLayout->addWidget(headerFrame);
 
@@ -301,9 +301,61 @@ void PharmacistRegistrationDialog::loadPharmacistData(PharmacistProfileDTO *phar
   m_txtLicenseNumber->setText(pharmacist->licenseNumber);
   m_txtPharmacySection->setText(pharmacist->pharmacySection);
   m_sbExperienceYears->setValue(pharmacist->experienceYears);
+
+  setReadOnlyMode(true);
+}
+
+void PharmacistRegistrationDialog::setReadOnlyMode(bool readOnly) {
+  m_isReadOnly = readOnly;
+
+  m_txtFullName->setReadOnly(readOnly);
+  m_txtCitizenId->setReadOnly(readOnly);
+  m_txtPhone->setReadOnly(readOnly);
+  m_txtEmail->setReadOnly(readOnly);
+  m_txtAddress->setReadOnly(readOnly);
+  m_txtLicenseNumber->setReadOnly(readOnly);
+  m_txtPharmacySection->setReadOnly(readOnly);
+
+  m_dtDateOfBirth->setEnabled(!readOnly);
+  m_dtHireDate->setEnabled(!readOnly);
+  m_cbGender->setEnabled(!readOnly);
+  m_cbDepartment->setEnabled(!readOnly);
+  m_cbShift->setEnabled(!readOnly);
+  m_sbExperienceYears->setEnabled(!readOnly);
+  if (m_avatarPicker) m_avatarPicker->setEnabled(!readOnly);
+
+  if (m_lblPageTitle) {
+    m_lblPageTitle->setText(readOnly ? "THÔNG TIN CHI TIẾT DƯỢC SĨ"
+                                     : (m_editStaffId != -1 ? "CHỈNH SỬA THÔNG TIN DƯỢC SĨ" : "THÊM DƯỢC SĨ MỚI"));
+  }
+
+  if (m_btnSave) {
+    if (readOnly) {
+      m_btnSave->setText("Chỉnh sửa");
+      m_btnSave->setStyleSheet(
+          "QPushButton { background-color: #2563EB; color: white; font-size: 13px; "
+          "font-weight: 600; border-radius: 8px; border: none; padding: 0 10px; }"
+          "QPushButton:hover { background-color: #1D4ED8; }");
+    } else {
+      m_btnSave->setText("Lưu thông tin");
+      m_btnSave->setStyleSheet(
+          "QPushButton { background-color: #34A853; color: white; font-size: 13px; "
+          "font-weight: 600; border-radius: 8px; border: none; padding: 0 10px; }"
+          "QPushButton:hover { background-color: #2C8E46; }");
+    }
+  }
+
+  if (m_btnCancel) {
+    m_btnCancel->setText(readOnly ? "Đóng" : "Hủy");
+  }
 }
 
 void PharmacistRegistrationDialog::handleSave() {
+  if (m_isReadOnly) {
+    setReadOnlyMode(false);
+    return;
+  }
+
   if (!m_staffService) {
     QMessageBox::critical(this, "Lỗi", "Service không khả dụng.");
     return;

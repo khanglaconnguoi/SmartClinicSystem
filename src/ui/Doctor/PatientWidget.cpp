@@ -126,9 +126,11 @@ void PatientWidget::createListView() {
     m_patientTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_patientTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     m_patientTable->horizontalHeader()->setFixedHeight(40);
+    m_patientTable->setFocusPolicy(Qt::NoFocus);
     m_patientTable->setStyleSheet(
-        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; }"
-        "QTableWidget::item { padding: 12px 8px; border-bottom: 1px solid #F1F5F9; }"
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
         "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
         "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }"
     );

@@ -45,8 +45,8 @@ void PatientRecordHistoryDialog::setupUI() {
     tblRecordList->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     tblRecordList->setSelectionBehavior(QAbstractItemView::SelectRows);
     tblRecordList->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    tblRecordList->verticalHeader()->setVisible(false);
-    tblRecordList->setStyleSheet("QTableWidget { border: 1px solid #CBD5E1; border-radius: 6px; } QHeaderView::section { background-color: #F1F5F9; font-weight: bold; border: none; padding: 6px; }");
+    tblRecordList->setFocusPolicy(Qt::NoFocus);
+    tblRecordList->setStyleSheet("QTableWidget { border: 1px solid #CBD5E1; border-radius: 6px; outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; } QHeaderView::section { background-color: #F1F5F9; font-weight: bold; border: none; padding: 6px; }");
     leftLayout->addWidget(tblRecordList);
     workspaceLayout->addWidget(leftFrame, 4);
 
@@ -88,8 +88,8 @@ void PatientRecordHistoryDialog::setupUI() {
     tblOldPrescription->setHorizontalHeaderLabels({"Tên Thuốc", "Đơn Giá", "Số Lượng", "Liều Lượng", "Tần Suất", "Số Ngày"});
     tblOldPrescription->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     tblOldPrescription->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    tblOldPrescription->verticalHeader()->setVisible(false);
-    tblOldPrescription->setStyleSheet("QTableWidget { border: 1px solid #CBD5E1; border-radius: 6px; } QHeaderView::section { background-color: #F1F5F9; font-weight: bold; border: none; padding: 6px; }");
+    tblOldPrescription->setFocusPolicy(Qt::NoFocus);
+    tblOldPrescription->setStyleSheet("QTableWidget { border: 1px solid #CBD5E1; border-radius: 6px; outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; } QHeaderView::section { background-color: #F1F5F9; font-weight: bold; border: none; padding: 6px; }");
     rightLayout->addWidget(tblOldPrescription);
 
     workspaceLayout->addWidget(rightFrame, 6);
