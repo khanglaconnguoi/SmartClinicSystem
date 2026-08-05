@@ -9,10 +9,17 @@
 #include <QPushButton>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QCoreApplication>
 
 ManageReceptionWidget::ManageReceptionWidget(std::shared_ptr<StaffService> staffService, QWidget* parent)
     : QWidget(parent), m_staffService(staffService), m_tblReception(nullptr) {
     buildUI();
+}
+
+QFrame* ManageReceptionWidget::makeCard(QWidget* parent) {
+    QFrame* card = new QFrame(parent);
+    card->setStyleSheet("QFrame { background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E5E7EB; }");
+    return card;
 }
 
 void ManageReceptionWidget::buildUI() {
@@ -30,10 +37,80 @@ void ManageReceptionWidget::buildUI() {
     
     QPushButton* btnAddNew = new QPushButton("Thêm Lễ tân");
     btnAddNew->setCursor(Qt::PointingHandCursor);
-    btnAddNew->setStyleSheet("QPushButton { background-color: #2563EB; color: white; border-radius: 6px; padding: 8px 16px; font-weight: bold; font-size: 14px; } QPushButton:hover { background-color: #1D4ED8; }");
+    btnAddNew->setFixedSize(140, 40);
+    btnAddNew->setStyleSheet( "QPushButton { background-color: #2563EB; color: white; font-size: 14px; "
+      "font-weight: bold; border-radius: 6px; border: none; }"
+      "QPushButton:hover { background-color: #1D4ED8; }");
     headerLayout->addWidget(btnAddNew);
     
     pageLayout->addLayout(headerLayout);
+
+    // Filter Bar Card
+    QFrame *filterCard = makeCard(this);
+    QHBoxLayout *filterLayout = new QHBoxLayout(filterCard);
+    filterLayout->setContentsMargins(15, 10, 15, 10);
+    filterLayout->setSpacing(10);
+
+    m_txtSearchKey = new QLineEdit(filterCard);
+    m_txtSearchKey->setPlaceholderText("Mã NV, Họ tên...");
+    m_txtSearchKey->setStyleSheet(
+        "QLineEdit { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+        "QLineEdit:focus { border: 1px solid #2563EB; }");
+    m_txtSearchKey->setFixedWidth(160);
+
+    m_cbDepartmentFilter = new QComboBox(filterCard);
+    m_cbDepartmentFilter->setStyleSheet(
+        "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+        "QComboBox:focus { border: 1px solid #2563EB; }");
+    m_cbDepartmentFilter->addItem("Tất cả khoa", -1);
+    for (const auto& pair : DepartmentText::getList()) {
+        int depId = pair.second.split(" - ").first().toInt();
+        m_cbDepartmentFilter->addItem(pair.second, depId);
+    }
+
+    m_cbShiftFilter = new QComboBox(filterCard);
+    m_cbShiftFilter->setStyleSheet(
+        "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+        "QComboBox:focus { border: 1px solid #2563EB; }");
+    m_cbShiftFilter->addItem("Tất cả ca trực", "");
+    for (const auto& pair : ShiftText::getList()) {
+        m_cbShiftFilter->addItem(pair.second, pair.first);
+    }
+
+    m_cbStatusFilter = new QComboBox(filterCard);
+    m_cbStatusFilter->setStyleSheet(
+        "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+        "QComboBox:focus { border: 1px solid #2563EB; }");
+    m_cbStatusFilter->addItem("Đang làm việc", true);
+    m_cbStatusFilter->addItem("Tất cả trạng thái", false);
+
+    m_btnResetFilters = new QPushButton("Đặt lại", filterCard);
+    m_btnResetFilters->setCursor(Qt::PointingHandCursor);
+    m_btnResetFilters->setStyleSheet(
+        "QPushButton { background-color: #EF4444; color: white; border-radius: 6px; padding: 6px 15px; font-weight: bold; border: none; min-height: 32px; }"
+        "QPushButton:hover { background-color: #DC2626; }");
+
+    QLabel *lblSearchIcon = new QLabel(filterCard);
+#ifdef PROJECT_ROOT_DIR
+    QString searchIconPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/icons/search_icon.png";
+#else
+    QString searchIconPath = QCoreApplication::applicationDirPath() + "/assets/icons/search_icon.png";
+#endif
+    QPixmap searchPix(searchIconPath);
+    if (!searchPix.isNull()) {
+        lblSearchIcon->setPixmap(searchPix.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        lblSearchIcon->setText("Tìm kiếm:");
+    }
+
+    filterLayout->addWidget(lblSearchIcon);
+    filterLayout->addWidget(m_txtSearchKey);
+    filterLayout->addWidget(m_cbDepartmentFilter);
+    filterLayout->addWidget(m_cbShiftFilter);
+    filterLayout->addWidget(m_cbStatusFilter);
+    filterLayout->addWidget(m_btnResetFilters);
+    filterLayout->addStretch();
+    pageLayout->addWidget(filterCard);
 
     // Table Card
     QFrame* tableCard = makeCard(this);
@@ -41,10 +118,17 @@ void ManageReceptionWidget::buildUI() {
     cardLayout->setContentsMargins(0, 0, 0, 0);
 
     m_tblReception = new QTableWidget(tableCard);
-    m_tblReception->setColumnCount(6);
-    m_tblReception->setHorizontalHeaderLabels({"Mã NV", "Họ Tên", "Ca làm việc", "SĐT", "Trạng thái", "Thao tác"});
-    m_tblReception->horizontalHeader()->setStretchLastSection(true);
-    m_tblReception->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblReception->setColumnCount(4);
+    m_tblReception->setHorizontalHeaderLabels({"Mã NV", "Họ Tên", "Trạng thái", "Thao tác"});
+    m_tblReception->horizontalHeader()->setStretchLastSection(false);
+    m_tblReception->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+    m_tblReception->horizontalHeader()->resizeSection(0, 150);
+    m_tblReception->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    m_tblReception->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
+    m_tblReception->horizontalHeader()->resizeSection(2, 150);
+    m_tblReception->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
+    m_tblReception->horizontalHeader()->resizeSection(3, 300);
+
     m_tblReception->verticalHeader()->setDefaultSectionSize(46);
     m_tblReception->verticalHeader()->setVisible(false);
     m_tblReception->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -56,18 +140,48 @@ void ManageReceptionWidget::buildUI() {
         "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
         "color: #1E293B; }");
 
+    // Pagination layout
+    QHBoxLayout *paginationLayout = new QHBoxLayout();
+    paginationLayout->setContentsMargins(15, 10, 15, 15);
+    
+    m_btnPrevPage = new QPushButton("Trang trước", tableCard);
+    m_btnPrevPage->setCursor(Qt::PointingHandCursor);
+    m_btnPrevPage->setStyleSheet(
+        "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: 6px; padding: 6px 12px; font-weight: bold; border: none; min-height: 32px; }"
+        "QPushButton:hover { background-color: #CBD5E1; }"
+        "QPushButton:disabled { background-color: #F1F5F9; color: #94A3B8; }");
+
+    m_lblPageInfo = new QLabel("Trang 1 / 1", tableCard);
+    m_lblPageInfo->setStyleSheet("font-size: 13px; font-weight: bold; color: #475569;");
+
+    m_btnNextPage = new QPushButton("Trang sau", tableCard);
+    m_btnNextPage->setCursor(Qt::PointingHandCursor);
+    m_btnNextPage->setStyleSheet(
+        "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: 6px; padding: 6px 12px; font-weight: bold; border: none; min-height: 32px; }"
+        "QPushButton:hover { background-color: #CBD5E1; }"
+        "QPushButton:disabled { background-color: #F1F5F9; color: #94A3B8; }");
+
+    paginationLayout->addWidget(m_btnPrevPage);
+    paginationLayout->addStretch();
+    paginationLayout->addWidget(m_lblPageInfo);
+    paginationLayout->addStretch();
+    paginationLayout->addWidget(m_btnNextPage);
+
     cardLayout->addWidget(m_tblReception);
+    cardLayout->addLayout(paginationLayout);
     pageLayout->addWidget(tableCard);
 
+    // Connections
     connect(btnAddNew, &QPushButton::clicked, this, &ManageReceptionWidget::showAddReceptionDialog);
+    connect(m_txtSearchKey, &QLineEdit::textChanged, this, &ManageReceptionWidget::handleFilterChanged);
+    connect(m_cbDepartmentFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManageReceptionWidget::handleFilterChanged);
+    connect(m_cbShiftFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManageReceptionWidget::handleFilterChanged);
+    connect(m_cbStatusFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManageReceptionWidget::handleFilterChanged);
+    connect(m_btnResetFilters, &QPushButton::clicked, this, &ManageReceptionWidget::handleResetFilters);
+    connect(m_btnPrevPage, &QPushButton::clicked, this, &ManageReceptionWidget::handlePrevPage);
+    connect(m_btnNextPage, &QPushButton::clicked, this, &ManageReceptionWidget::handleNextPage);
 
     loadReceptionList();
-}
-
-QFrame* ManageReceptionWidget::makeCard(QWidget* parent) {
-    QFrame* card = new QFrame(parent);
-    card->setStyleSheet("QFrame { background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E5E7EB; }");
-    return card;
 }
 
 void ManageReceptionWidget::showAddReceptionDialog() {
@@ -91,7 +205,7 @@ void ManageReceptionWidget::showEditReceptionDialog(std::shared_ptr<SystemUser> 
 }
 
 namespace {
-constexpr int PAGE_SIZE = 20;
+constexpr int PAGE_SIZE = 10;
 }
 
 void ManageReceptionWidget::loadReceptionList() {
@@ -99,14 +213,23 @@ void ManageReceptionWidget::loadReceptionList() {
     m_tblReception->setRowCount(0);
 
     ReceptionistSearchCriteria criteria;
-    criteria.onlyActive = true;
+    criteria.searchKey = m_txtSearchKey->text().trimmed();
+    criteria.departmentId = m_cbDepartmentFilter->currentData().toInt();
+    criteria.shift = m_cbShiftFilter->currentData().toString();
+    criteria.onlyActive = m_cbStatusFilter->currentData().toBool();
     criteria.includeDeleted = false;
+    criteria.page = m_currentPage;
     criteria.pageSize = PAGE_SIZE;
 
-    auto receptionists = m_staffService->searchReceptionistsPaged(criteria).items;
+    auto result = m_staffService->searchReceptionistsPaged(criteria);
+    auto receptionists = result.items;
 
+    m_totalPages = result.totalPages();
+    if (m_totalPages < 1) m_totalPages = 1;
+    m_lblPageInfo->setText(QString("%1 / %2").arg(m_currentPage).arg(m_totalPages));
+    m_btnPrevPage->setEnabled(result.hasPrev());
+    m_btnNextPage->setEnabled(result.hasNext());
 
-    
     for (int i = 0; i < receptionists.size(); ++i) {
         auto receptionist = receptionists[i];
         if (!receptionist) continue;
@@ -119,16 +242,6 @@ void ManageReceptionWidget::loadReceptionList() {
         QTableWidgetItem* itemName = new QTableWidgetItem(receptionist->getFullName());
         itemName->setForeground(QBrush(QColor("#111827")));
         
-        auto profile = m_staffService->getOwnProfile(receptionist->getAccountId());
-        QString shiftStr = ShiftText::toVi(profile ? profile->shift : "");
-        QString phoneStr = profile ? profile->phoneNumber : "---";
-        
-        QTableWidgetItem* itemShift = new QTableWidgetItem(shiftStr);
-        itemShift->setForeground(QBrush(QColor("#111827")));
-        
-        QTableWidgetItem* itemPhone = new QTableWidgetItem(phoneStr);
-        itemPhone->setForeground(QBrush(QColor("#111827")));
-
         QTableWidgetItem *itemStatus =
             new QTableWidgetItem(receptionist->isActive() ? "Hoạt động" : "Nghỉ việc");
         if (receptionist->isActive()) {
@@ -139,9 +252,7 @@ void ManageReceptionWidget::loadReceptionList() {
         
         m_tblReception->setItem(i, 0, itemCode);
         m_tblReception->setItem(i, 1, itemName);
-        m_tblReception->setItem(i, 2, itemShift);
-        m_tblReception->setItem(i, 3, itemPhone);
-        m_tblReception->setItem(i, 4, itemStatus);
+        m_tblReception->setItem(i, 2, itemStatus);
 
         QWidget *actionWidget = new QWidget();
         QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
@@ -151,35 +262,35 @@ void ManageReceptionWidget::loadReceptionList() {
         QPushButton *btnEdit = new QPushButton("Sửa");
         btnEdit->setCursor(Qt::PointingHandCursor);
         btnEdit->setStyleSheet(
-            "QPushButton { color: #4B94F2; border: 1px solid #4B94F2; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-            "{ background-color: #EBF5FF; }");
+            "QPushButton { color: #2563EB; border: 1px solid #2563EB; padding: 6px "
+            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "{ background-color: #EFF6FF; }");
 
         QPushButton *btnResetPwd = new QPushButton("Reset MK");
         btnResetPwd->setCursor(Qt::PointingHandCursor);
         btnResetPwd->setStyleSheet(
-            "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 6px "
+            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
             "{ background-color: #FEF3C7; }");
 
         QPushButton *btnDeactivate = new QPushButton(receptionist->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
         btnDeactivate->setCursor(Qt::PointingHandCursor);
         if (receptionist->isActive()) {
             btnDeactivate->setStyleSheet(
-                "QPushButton { color: #D93025; border: 1px solid #D93025; padding: 4px "
-                "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-                "{ background-color: #FCE8E6; }");
+                "QPushButton { color: #DC2626; border: 1px solid #DC2626; padding: 6px "
+                "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+                "{ background-color: #FEE2E2; }");
         } else {
             btnDeactivate->setStyleSheet(
-                "QPushButton { color: #059669; border: 1px solid #059669; padding: 4px "
-                "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-                "{ background-color: #D1FAE5; }");
+                "QPushButton { color: #22C55E; border: 1px solid #22C55E; padding: 6px "
+                "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+                "{ background-color: #DCFCE7; }");
         }
 
         actionLayout->addWidget(btnEdit);
         actionLayout->addWidget(btnResetPwd);
         actionLayout->addWidget(btnDeactivate);
-        m_tblReception->setCellWidget(i, 5, actionWidget);
+        m_tblReception->setCellWidget(i, 3, actionWidget);
 
         connect(btnEdit, &QPushButton::clicked, this,
                 [this, receptionist]() { showEditReceptionDialog(receptionist); });
@@ -215,5 +326,33 @@ void ManageReceptionWidget::loadReceptionList() {
                 }
             }
         });
+    }
+}
+
+void ManageReceptionWidget::handleFilterChanged() {
+    m_currentPage = 1;
+    loadReceptionList();
+}
+
+void ManageReceptionWidget::handleResetFilters() {
+    m_txtSearchKey->clear();
+    m_cbDepartmentFilter->setCurrentIndex(0);
+    m_cbShiftFilter->setCurrentIndex(0);
+    m_cbStatusFilter->setCurrentIndex(0);
+    m_currentPage = 1;
+    loadReceptionList();
+}
+
+void ManageReceptionWidget::handlePrevPage() {
+    if (m_currentPage > 1) {
+        m_currentPage--;
+        loadReceptionList();
+    }
+}
+
+void ManageReceptionWidget::handleNextPage() {
+    if (m_currentPage < m_totalPages) {
+        m_currentPage++;
+        loadReceptionList();
     }
 }

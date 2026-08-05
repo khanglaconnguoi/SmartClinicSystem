@@ -1,12 +1,14 @@
 #include "ManagePharmacistsWidget.h"
 #include "../../dto/StaffDTOs.h"
 #include "PharmacistRegistrationDialog.h"
+#include "../../model/CommonEnums.h"
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QCoreApplication>
 
 ManagePharmacistsWidget::ManagePharmacistsWidget(
     std::shared_ptr<StaffService> staffService, QWidget *parent)
@@ -43,22 +45,104 @@ void ManagePharmacistsWidget::buildUI() {
   btnAddNew->setCursor(Qt::PointingHandCursor);
   btnAddNew->setFixedSize(140, 40);
   btnAddNew->setStyleSheet(
-      "QPushButton { background-color: #2563EB; color: white; font-size: 14px; "
+       "QPushButton { background-color: #2563EB; color: white; font-size: 14px; "
       "font-weight: bold; border-radius: 6px; border: none; }"
       "QPushButton:hover { background-color: #1D4ED8; }");
   headerLayout->addWidget(btnAddNew);
   pageLayout->addLayout(headerLayout);
+
+  // Filter Bar Card
+  QFrame *filterCard = makeCard(this);
+  QHBoxLayout *filterLayout = new QHBoxLayout(filterCard);
+  filterLayout->setContentsMargins(15, 10, 15, 10);
+  filterLayout->setSpacing(10);
+
+  m_txtSearchKey = new QLineEdit(filterCard);
+  m_txtSearchKey->setPlaceholderText("Mã NV, Họ tên...");
+  m_txtSearchKey->setStyleSheet(
+      "QLineEdit { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QLineEdit:focus { border: 1px solid #2563EB; }");
+  m_txtSearchKey->setFixedWidth(160);
+
+  m_txtSectionFilter = new QLineEdit(filterCard);
+  m_txtSectionFilter->setPlaceholderText("Khu vực thuốc...");
+  m_txtSectionFilter->setStyleSheet(
+      "QLineEdit { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QLineEdit:focus { border: 1px solid #2563EB; }");
+  m_txtSectionFilter->setFixedWidth(140);
+
+  m_cbDepartmentFilter = new QComboBox(filterCard);
+  m_cbDepartmentFilter->setStyleSheet(
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QComboBox:focus { border: 1px solid #2563EB; }");
+  m_cbDepartmentFilter->addItem("Tất cả khoa", -1);
+  for (const auto& pair : DepartmentText::getList()) {
+      int depId = pair.second.split(" - ").first().toInt();
+      m_cbDepartmentFilter->addItem(pair.second, depId);
+  }
+
+  m_cbShiftFilter = new QComboBox(filterCard);
+  m_cbShiftFilter->setStyleSheet(
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QComboBox:focus { border: 1px solid #2563EB; }");
+  m_cbShiftFilter->addItem("Tất cả ca trực", "");
+  for (const auto& pair : ShiftText::getList()) {
+      m_cbShiftFilter->addItem(pair.second, pair.first);
+  }
+
+  m_cbStatusFilter = new QComboBox(filterCard);
+  m_cbStatusFilter->setStyleSheet(
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
+      "QComboBox:focus { border: 1px solid #2563EB; }");
+  m_cbStatusFilter->addItem("Đang làm việc", true);
+  m_cbStatusFilter->addItem("Tất cả trạng thái", false);
+
+  m_btnResetFilters = new QPushButton("Đặt lại", filterCard);
+  m_btnResetFilters->setCursor(Qt::PointingHandCursor);
+  m_btnResetFilters->setStyleSheet(
+      "QPushButton { background-color: #EF4444; color: white; border-radius: 6px; padding: 6px 15px; font-weight: bold; border: none; min-height: 32px; }"
+      "QPushButton:hover { background-color: #DC2626; }");
+
+  QLabel *lblSearchIcon = new QLabel(filterCard);
+#ifdef PROJECT_ROOT_DIR
+  QString searchIconPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/icons/search_icon.png";
+#else
+  QString searchIconPath = QCoreApplication::applicationDirPath() + "/assets/icons/search_icon.png";
+#endif
+  QPixmap searchPix(searchIconPath);
+  if (!searchPix.isNull()) {
+    lblSearchIcon->setPixmap(searchPix.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  } else {
+    lblSearchIcon->setText("Tìm kiếm:");
+  }
+
+  filterLayout->addWidget(lblSearchIcon);
+  filterLayout->addWidget(m_txtSearchKey);
+  filterLayout->addWidget(m_txtSectionFilter);
+  filterLayout->addWidget(m_cbDepartmentFilter);
+  filterLayout->addWidget(m_cbShiftFilter);
+  filterLayout->addWidget(m_cbStatusFilter);
+  filterLayout->addWidget(m_btnResetFilters);
+  filterLayout->addStretch();
+  pageLayout->addWidget(filterCard);
 
   // Card bao bọc Table
   QFrame *tableCard = makeCard(this);
   QVBoxLayout *cardLayout = new QVBoxLayout(tableCard);
   cardLayout->setContentsMargins(0, 0, 0, 0);
 
-  m_tblPharmacists = new QTableWidget(0, 7, tableCard);
+  m_tblPharmacists = new QTableWidget(0, 4, tableCard);
   m_tblPharmacists->setHorizontalHeaderLabels(
-      {"Mã DS", "Họ Tên", "Khu vực NT", "Số CCHN", "SĐT", "Trạng thái", "Thao tác"});
-  m_tblPharmacists->horizontalHeader()->setStretchLastSection(true);
+      {"Mã NV", "Họ Tên", "Trạng thái", "Thao tác"});
+  m_tblPharmacists->horizontalHeader()->setStretchLastSection(false);
+  m_tblPharmacists->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+  m_tblPharmacists->horizontalHeader()->resizeSection(0, 150);
   m_tblPharmacists->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+  m_tblPharmacists->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
+  m_tblPharmacists->horizontalHeader()->resizeSection(2, 150);
+  m_tblPharmacists->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
+  m_tblPharmacists->horizontalHeader()->resizeSection(3, 300);
+
   m_tblPharmacists->verticalHeader()->setDefaultSectionSize(46);
   m_tblPharmacists->verticalHeader()->setVisible(false);
   m_tblPharmacists->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -70,18 +154,54 @@ void ManagePharmacistsWidget::buildUI() {
       "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
       "color: #1E293B; }");
 
+  // Pagination layout
+  QHBoxLayout *paginationLayout = new QHBoxLayout();
+  paginationLayout->setContentsMargins(15, 10, 15, 15);
+  
+  m_btnPrevPage = new QPushButton("Trang trước", tableCard);
+  m_btnPrevPage->setCursor(Qt::PointingHandCursor);
+  m_btnPrevPage->setStyleSheet(
+      "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: 6px; padding: 6px 12px; font-weight: bold; border: none; min-height: 32px; }"
+      "QPushButton:hover { background-color: #CBD5E1; }"
+      "QPushButton:disabled { background-color: #F1F5F9; color: #94A3B8; }");
+
+  m_lblPageInfo = new QLabel("Trang 1 / 1", tableCard);
+  m_lblPageInfo->setStyleSheet("font-size: 13px; font-weight: bold; color: #475569;");
+
+  m_btnNextPage = new QPushButton("Trang sau", tableCard);
+  m_btnNextPage->setCursor(Qt::PointingHandCursor);
+  m_btnNextPage->setStyleSheet(
+      "QPushButton { background-color: #E2E8F0; color: #1E293B; border-radius: 6px; padding: 6px 12px; font-weight: bold; border: none; min-height: 32px; }"
+      "QPushButton:hover { background-color: #CBD5E1; }"
+      "QPushButton:disabled { background-color: #F1F5F9; color: #94A3B8; }");
+
+  paginationLayout->addWidget(m_btnPrevPage);
+  paginationLayout->addStretch();
+  paginationLayout->addWidget(m_lblPageInfo);
+  paginationLayout->addStretch();
+  paginationLayout->addWidget(m_btnNextPage);
+
   cardLayout->addWidget(m_tblPharmacists);
+  cardLayout->addLayout(paginationLayout);
   pageLayout->addWidget(tableCard);
 
-  connect(btnAddNew, &QPushButton::clicked, this,
-          &ManagePharmacistsWidget::showAddPharmacistDialog);
+  // Connections
+  connect(btnAddNew, &QPushButton::clicked, this, &ManagePharmacistsWidget::showAddPharmacistDialog);
+  connect(m_txtSearchKey, &QLineEdit::textChanged, this, &ManagePharmacistsWidget::handleFilterChanged);
+  connect(m_txtSectionFilter, &QLineEdit::textChanged, this, &ManagePharmacistsWidget::handleFilterChanged);
+  connect(m_cbDepartmentFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManagePharmacistsWidget::handleFilterChanged);
+  connect(m_cbShiftFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManagePharmacistsWidget::handleFilterChanged);
+  connect(m_cbStatusFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ManagePharmacistsWidget::handleFilterChanged);
+  connect(m_btnResetFilters, &QPushButton::clicked, this, &ManagePharmacistsWidget::handleResetFilters);
+  connect(m_btnPrevPage, &QPushButton::clicked, this, &ManagePharmacistsWidget::handlePrevPage);
+  connect(m_btnNextPage, &QPushButton::clicked, this, &ManagePharmacistsWidget::handleNextPage);
 
   // Load data
   loadPharmacistsList();
 }
 
 namespace {
-constexpr int PAGE_SIZE = 20;
+constexpr int PAGE_SIZE = 10;
 }
 
 void ManagePharmacistsWidget::loadPharmacistsList() {
@@ -90,12 +210,23 @@ void ManagePharmacistsWidget::loadPharmacistsList() {
   m_tblPharmacists->setRowCount(0);
 
   PharmacistSearchCriteria criteria;
-  criteria.onlyActive = true;
+  criteria.searchKey = m_txtSearchKey->text().trimmed();
+  criteria.pharmacySection = m_txtSectionFilter->text().trimmed();
+  criteria.departmentId = m_cbDepartmentFilter->currentData().toInt();
+  criteria.shift = m_cbShiftFilter->currentData().toString();
+  criteria.onlyActive = m_cbStatusFilter->currentData().toBool();
   criteria.includeDeleted = false;
+  criteria.page = m_currentPage;
   criteria.pageSize = PAGE_SIZE;
 
-  QList<std::shared_ptr<SystemUser>> pharmacists =
-      m_staffService->searchPharmacistsPaged(criteria).items;
+  auto result = m_staffService->searchPharmacistsPaged(criteria);
+  QList<std::shared_ptr<SystemUser>> pharmacists = result.items;
+
+  m_totalPages = result.totalPages();
+  if (m_totalPages < 1) m_totalPages = 1;
+  m_lblPageInfo->setText(QString("%1 / %2").arg(m_currentPage).arg(m_totalPages));
+  m_btnPrevPage->setEnabled(result.hasPrev());
+  m_btnNextPage->setEnabled(result.hasNext());
 
   for (int i = 0; i < pharmacists.size(); ++i) {
     auto doc = std::dynamic_pointer_cast<Pharmacist>(pharmacists[i]);
@@ -111,15 +242,6 @@ void ManagePharmacistsWidget::loadPharmacistsList() {
     QTableWidgetItem *itemName = new QTableWidgetItem(doc->getFullName());
     itemName->setForeground(QBrush(QColor("#111827")));
 
-    QTableWidgetItem *itemSection = new QTableWidgetItem(doc->getPharmacySection());
-    itemSection->setForeground(QBrush(QColor("#111827")));
-
-    QTableWidgetItem *itemLicense = new QTableWidgetItem(doc->getLicenseNumber());
-    itemLicense->setForeground(QBrush(QColor("#111827")));
-    
-    QTableWidgetItem *itemPhone = new QTableWidgetItem("---");
-    itemPhone->setForeground(QBrush(QColor("#111827")));
-
     QTableWidgetItem *itemStatus =
         new QTableWidgetItem(doc->isActive() ? "Hoạt động" : "Nghỉ việc");
     if (doc->isActive()) {
@@ -130,10 +252,7 @@ void ManagePharmacistsWidget::loadPharmacistsList() {
 
     m_tblPharmacists->setItem(row, 0, itemCode);
     m_tblPharmacists->setItem(row, 1, itemName);
-    m_tblPharmacists->setItem(row, 2, itemSection);
-    m_tblPharmacists->setItem(row, 3, itemLicense);
-    m_tblPharmacists->setItem(row, 4, itemPhone);
-    m_tblPharmacists->setItem(row, 5, itemStatus);
+    m_tblPharmacists->setItem(row, 2, itemStatus);
 
     QWidget *actionWidget = new QWidget();
     QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
@@ -143,35 +262,35 @@ void ManagePharmacistsWidget::loadPharmacistsList() {
     QPushButton *btnEdit = new QPushButton("Sửa");
     btnEdit->setCursor(Qt::PointingHandCursor);
     btnEdit->setStyleSheet(
-        "QPushButton { color: #4B94F2; border: 1px solid #4B94F2; padding: 4px "
-        "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-        "{ background-color: #EBF5FF; }");
+        "QPushButton { color: #2563EB; border: 1px solid #2563EB; padding: 6px "
+        "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+        "{ background-color: #EFF6FF; }");
 
     QPushButton *btnResetPwd = new QPushButton("Reset MK");
     btnResetPwd->setCursor(Qt::PointingHandCursor);
     btnResetPwd->setStyleSheet(
-        "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 4px "
-        "8px; border-radius: 4px; background-color: white; font-weight: bold; } QPushButton:hover "
+        "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 6px "
+        "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
         "{ background-color: #FEF3C7; }");
 
     QPushButton *btnDeactivate = new QPushButton(doc->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
     btnDeactivate->setCursor(Qt::PointingHandCursor);
     if (doc->isActive()) {
         btnDeactivate->setStyleSheet(
-            "QPushButton { color: #D93025; border: 1px solid #D93025; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-            "{ background-color: #FCE8E6; }");
+            "QPushButton { color: #DC2626; border: 1px solid #DC2626; padding: 6px "
+            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "{ background-color: #FEE2E2; }");
     } else {
         btnDeactivate->setStyleSheet(
-            "QPushButton { color: #059669; border: 1px solid #059669; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-            "{ background-color: #D1FAE5; }");
+            "QPushButton { color: #22C55E; border: 1px solid #22C55E; padding: 6px "
+            "12px; border-radius: 6px; background-color: white; font-weight: bold; } QPushButton:hover "
+            "{ background-color: #DCFCE7; }");
     }
 
     actionLayout->addWidget(btnEdit);
     actionLayout->addWidget(btnResetPwd);
     actionLayout->addWidget(btnDeactivate);
-    m_tblPharmacists->setCellWidget(row, 6, actionWidget);
+    m_tblPharmacists->setCellWidget(row, 3, actionWidget);
 
     connect(btnEdit, &QPushButton::clicked, this,
             [this, doc]() { showEditPharmacistDialog(doc); });
@@ -207,6 +326,35 @@ void ManagePharmacistsWidget::loadPharmacistsList() {
             }
         }
     });
+  }
+}
+
+void ManagePharmacistsWidget::handleFilterChanged() {
+  m_currentPage = 1;
+  loadPharmacistsList();
+}
+
+void ManagePharmacistsWidget::handleResetFilters() {
+  m_txtSearchKey->clear();
+  m_txtSectionFilter->clear();
+  m_cbDepartmentFilter->setCurrentIndex(0);
+  m_cbShiftFilter->setCurrentIndex(0);
+  m_cbStatusFilter->setCurrentIndex(0);
+  m_currentPage = 1;
+  loadPharmacistsList();
+}
+
+void ManagePharmacistsWidget::handlePrevPage() {
+  if (m_currentPage > 1) {
+    m_currentPage--;
+    loadPharmacistsList();
+  }
+}
+
+void ManagePharmacistsWidget::handleNextPage() {
+  if (m_currentPage < m_totalPages) {
+    m_currentPage++;
+    loadPharmacistsList();
   }
 }
 

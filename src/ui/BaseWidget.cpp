@@ -60,12 +60,6 @@ void BaseDashboardWidget::setupMainContentFrame() {
     m_mainContentLayout->setSpacing(25);
 
     QHBoxLayout* topbarLayout = new QHBoxLayout();
-
-    m_searchInput = new QLineEdit(m_mainContentWidget);
-    m_searchInput->setPlaceholderText("Nhập từ khóa tìm kiếm (bệnh nhân, bác sĩ...)...");
-    m_searchInput->setFixedWidth(350);
-    m_searchInput->setStyleSheet("padding: 10px 15px; border: 1px solid #CBD5E1; border-radius: 8px; background-color: #FFFFFF; font-size: 13px; color: #0F172A;");
-    
     QHBoxLayout* userInfoLayout = new QHBoxLayout();
     userInfoLayout->setSpacing(10); 
 
@@ -100,7 +94,6 @@ void BaseDashboardWidget::setupMainContentFrame() {
     userInfoLayout->addWidget(m_nameLabel);
     userInfoLayout->addWidget(m_avatarBtn);
 
-    topbarLayout->addWidget(m_searchInput);
     topbarLayout->addStretch();
     topbarLayout->addLayout(userInfoLayout); 
 

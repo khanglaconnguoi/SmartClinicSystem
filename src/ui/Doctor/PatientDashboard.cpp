@@ -112,12 +112,6 @@ void PatientDashboardWidget::buildTopbar() {
                                   "#3C4043; font-family: 'Segoe UI';");
   }
 
-  // --- Ẩn thanh search (bệnh nhân không cần search toàn hệ thống) ---
-  if (m_searchInput) {
-    m_searchInput->setPlaceholderText("Tìm kiếm...");
-    m_searchInput->setFixedWidth(280);
-  }
-
   // --- Avatar ---
   if (m_avatarBtn && m_currentUser) {
     QPixmap raw = m_currentUser->getAvatar();

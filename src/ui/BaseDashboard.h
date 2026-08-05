@@ -59,7 +59,6 @@ protected:
 
     QWidget*      m_mainContentWidget  = nullptr;
     QVBoxLayout*  m_mainContentLayout  = nullptr;
-    QLineEdit*    m_searchInput        = nullptr;
     ClickableLabel* m_nameLabel     = nullptr;
     QPushButton*  m_avatarBtn       = nullptr;
     std::shared_ptr<IAuthenticatable> m_currentUser;
