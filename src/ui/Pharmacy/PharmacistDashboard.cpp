@@ -153,36 +153,68 @@ void PharmacistDashboardWidget::buildOverviewPage() {
     QHBoxLayout* cardsLayout = new QHBoxLayout();
     cardsLayout->setSpacing(16);
 
+    // Card 1: Inventory & Valuation
     QFrame* card1 = makeCard(m_overviewPage);
     QVBoxLayout* lay1 = new QVBoxLayout(card1);
-    lay1->addWidget(new QLabel("Tổng số loại thuốc", card1));
-    m_lblStatTotalMeds = new QLabel("0", card1);
-    m_lblStatTotalMeds->setStyleSheet("font-size: 24px; font-weight: bold; color: #2B6CB0;");
+    lay1->setContentsMargins(16, 14, 16, 14);
+    lay1->setSpacing(4);
+    QLabel* lbl1Title = new QLabel("Tổng số loại thuốc", card1);
+    lbl1Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    m_lblStatTotalMeds = new QLabel("0 loại", card1);
+    m_lblStatTotalMeds->setStyleSheet("font-size: 22px; font-weight: bold; color: #2B6CB0;");
+    m_lblStatInventoryValue = new QLabel("Giá trị kho: 0 VNĐ", card1);
+    m_lblStatInventoryValue->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
+    lay1->addWidget(lbl1Title);
     lay1->addWidget(m_lblStatTotalMeds);
+    lay1->addWidget(m_lblStatInventoryValue);
     cardsLayout->addWidget(card1);
 
+    // Card 2: Dispensing Progress
     QFrame* card2 = makeCard(m_overviewPage);
     QVBoxLayout* lay2 = new QVBoxLayout(card2);
-    lay2->addWidget(new QLabel("Thuốc sắp hết hàng", card2));
-    m_lblStatLowStock = new QLabel("0", card2);
-    m_lblStatLowStock->setStyleSheet("font-size: 24px; font-weight: bold; color: #E53E3E;");
-    lay2->addWidget(m_lblStatLowStock);
+    lay2->setContentsMargins(16, 14, 16, 14);
+    lay2->setSpacing(4);
+    QLabel* lbl2Title = new QLabel("Đơn thuốc chờ cấp phát", card2);
+    lbl2Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    m_lblStatPendingPresc = new QLabel("0 đơn", card2);
+    m_lblStatPendingPresc->setStyleSheet("font-size: 22px; font-weight: bold; color: #319795;");
+    m_lblStatDispensedToday = new QLabel("Đã cấp hôm nay: 0 đơn", card2);
+    m_lblStatDispensedToday->setStyleSheet("color: #2F855A; font-size: 12px; font-weight: 500;");
+    lay2->addWidget(lbl2Title);
+    lay2->addWidget(m_lblStatPendingPresc);
+    lay2->addWidget(m_lblStatDispensedToday);
     cardsLayout->addWidget(card2);
 
+    // Card 3: Stock Warning
     QFrame* card3 = makeCard(m_overviewPage);
     QVBoxLayout* lay3 = new QVBoxLayout(card3);
-    lay3->addWidget(new QLabel("Thuốc sắp hết hạn (<30 ngày)", card3));
-    m_lblStatExpiring = new QLabel("0", card3);
-    m_lblStatExpiring->setStyleSheet("font-size: 24px; font-weight: bold; color: #DD6B20;");
-    lay3->addWidget(m_lblStatExpiring);
+    lay3->setContentsMargins(16, 14, 16, 14);
+    lay3->setSpacing(4);
+    QLabel* lbl3Title = new QLabel("Thuốc sắp hết hàng", card3);
+    lbl3Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    m_lblStatLowStock = new QLabel("0 loại", card3);
+    m_lblStatLowStock->setStyleSheet("font-size: 22px; font-weight: bold; color: #DD6B20;");
+    m_lblStatOutOfStock = new QLabel("Đã hết hàng: 0 loại", card3);
+    m_lblStatOutOfStock->setStyleSheet("color: #E53E3E; font-size: 12px; font-weight: 500;");
+    lay3->addWidget(lbl3Title);
+    lay3->addWidget(m_lblStatLowStock);
+    lay3->addWidget(m_lblStatOutOfStock);
     cardsLayout->addWidget(card3);
 
+    // Card 4: Expiry Warning
     QFrame* card4 = makeCard(m_overviewPage);
     QVBoxLayout* lay4 = new QVBoxLayout(card4);
-    lay4->addWidget(new QLabel("Đơn thuốc chờ cấp phát", card4));
-    m_lblStatPendingPresc = new QLabel("0", card4);
-    m_lblStatPendingPresc->setStyleSheet("font-size: 24px; font-weight: bold; color: #319795;");
-    lay4->addWidget(m_lblStatPendingPresc);
+    lay4->setContentsMargins(16, 14, 16, 14);
+    lay4->setSpacing(4);
+    QLabel* lbl4Title = new QLabel("Thuốc sắp hết hạn (<30 ngày)", card4);
+    lbl4Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    m_lblStatExpiring = new QLabel("0 loại", card4);
+    m_lblStatExpiring->setStyleSheet("font-size: 22px; font-weight: bold; color: #C53030;");
+    QLabel* lbl4Sub = new QLabel("Cần ưu tiên xuất trước", card4);
+    lbl4Sub->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
+    lay4->addWidget(lbl4Title);
+    lay4->addWidget(m_lblStatExpiring);
+    lay4->addWidget(lbl4Sub);
     cardsLayout->addWidget(card4);
 
     mainLayout->addLayout(cardsLayout);
@@ -207,22 +239,45 @@ void PharmacistDashboardWidget::buildOverviewPage() {
 }
 
 void PharmacistDashboardWidget::refreshOverviewStats() {
+    if (!m_pharmacyService) return;
+
     auto lowStock = m_pharmacyService->getLowStockMedications();
     auto expiring = m_pharmacyService->getExpiringMedications(30);
 
-    m_lblStatLowStock->setText(QString::number(lowStock.size()));
-    m_lblStatExpiring->setText(QString::number(expiring.size()));
+    m_lblStatLowStock->setText(QString("%1 loại").arg(lowStock.size()));
+    m_lblStatExpiring->setText(QString("%1 loại").arg(expiring.size()));
 
     MedicationSearchCriteria criteria;
     criteria.pageSize = 1;
     auto pagedMeds = m_pharmacyService->searchMedicationsPaged(criteria);
-    m_lblStatTotalMeds->setText(QString::number(pagedMeds.totalCount));
+    m_lblStatTotalMeds->setText(QString("%1 loại").arg(pagedMeds.totalCount));
+
+    double totalVal = m_pharmacyService->getTotalInventoryValue();
+    QLocale viLocale(QLocale::Vietnamese, QLocale::Vietnam);
+    if (m_lblStatInventoryValue) {
+        m_lblStatInventoryValue->setText(QString("Giá trị kho: %1 VNĐ").arg(viLocale.toString((qlonglong)totalVal)));
+    }
+
+    int outOfStockCount = m_pharmacyService->getOutOfStockCount();
+    if (m_lblStatOutOfStock) {
+        m_lblStatOutOfStock->setText(QString("Đã hết hàng: %1 loại").arg(outOfStockCount));
+    }
 
     PrescriptionSearchCriteria pCriteria;
     pCriteria.status = "PENDING";
     pCriteria.pageSize = 1;
     auto pagedPresc = m_pharmacyService->searchPrescriptionsPaged(pCriteria);
-    m_lblStatPendingPresc->setText(QString::number(pagedPresc.totalCount));
+    m_lblStatPendingPresc->setText(QString("%1 đơn").arg(pagedPresc.totalCount));
+
+    PrescriptionSearchCriteria dCriteria;
+    dCriteria.status = "DISPENSED";
+    dCriteria.fromDate = QDateTime(QDate::currentDate(), QTime(0, 0, 0));
+    dCriteria.toDate = QDateTime(QDate::currentDate(), QTime(23, 59, 59));
+    dCriteria.pageSize = 1;
+    auto pagedDispensed = m_pharmacyService->searchPrescriptionsPaged(dCriteria);
+    if (m_lblStatDispensedToday) {
+        m_lblStatDispensedToday->setText(QString("Đã cấp hôm nay: %1 đơn").arg(pagedDispensed.totalCount));
+    }
 
     m_tblOverviewAlerts->setRowCount(0);
     int row = 0;

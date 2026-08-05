@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "model/IAuthenticatable.h"
+#include "service/AnalyticService.h"
 #include "service/AppointmentService.h"
 #include "service/MedicalRecordService.h"
 #include "service/PatientService.h"
@@ -36,6 +37,7 @@ public:
         std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr, 
         std::shared_ptr<PharmacyService> pharmacyService = nullptr, 
         std::shared_ptr<ServiceRequestService> serviceRequestService = nullptr,
+        std::shared_ptr<AnalyticService> analyticService = nullptr,
         QWidget *parent = nullptr
     );
     virtual ~DoctorDashboardWidget() override = default;
@@ -50,6 +52,7 @@ private:
     int m_currentExaminingRow = -1;
     std::shared_ptr<PharmacyService> m_pharmacyService = nullptr;
     std::shared_ptr<ServiceRequestService> m_serviceRequestService = nullptr;
+    std::shared_ptr<AnalyticService> m_analyticService = nullptr;
 
     QStackedWidget* m_stackedWidget = nullptr;
 
@@ -107,8 +110,9 @@ private:
     void refreshAppointmentsTables();
     void refreshOverviewCards();
 
-    QLabel* m_lblCardAppointments = nullptr;
-    QLabel* m_lblCardRevenue = nullptr;
+    QLabel* m_lblCardAppointmentsToday = nullptr;
+    QLabel* m_lblCardAppointmentsMonth = nullptr;
+    QLabel* m_lblCardKpiMonth = nullptr;
 
    private slots:
     void onLeaveTabSelected();

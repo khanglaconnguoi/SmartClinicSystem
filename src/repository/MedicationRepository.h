@@ -37,6 +37,8 @@ public:
   QList<std::shared_ptr<Medication>> findLowStock() const;
   QList<std::shared_ptr<Medication>>
   findExpiringBefore(const QDate &date) const;
+  double getTotalInventoryValue() const;
+  int getOutOfStockCount() const;
 
   //QList<ActiveIngredientDTO> searchIngredients(const QString &keyword) const;
 

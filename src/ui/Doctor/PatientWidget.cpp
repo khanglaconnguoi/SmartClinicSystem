@@ -44,24 +44,6 @@ void PatientWidget::createListView() {
     listLayout->setContentsMargins(16, 12, 16, 16);
     listLayout->setSpacing(16);
 
-    QHBoxLayout* topTabsLayout = new QHBoxLayout();
-    topTabsLayout->setSpacing(4);
-
-    m_patientTabBar = new QTabBar(m_listViewWidget);
-    m_patientTabBar->addTab("Tất cả bệnh nhân");
-    m_patientTabBar->addTab("Ngoại trú");
-    m_patientTabBar->addTab("Nội trú");
-    m_patientTabBar->addTab("Cấp cứu");
-    m_patientTabBar->setCursor(Qt::PointingHandCursor);
-    m_patientTabBar->setStyleSheet(
-        "QTabBar::tab { background-color: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; border-bottom: none; font-size: 13px; font-weight: 600; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 8px 20px; }"
-        "QTabBar::tab:selected { background-color: #0284C7; color: white; border: none; font-weight: bold; }"
-        "QTabBar::tab:hover:!selected { background-color: #E0F2FE; color: #0369A1; }"
-    );
-    topTabsLayout->addWidget(m_patientTabBar);
-    topTabsLayout->addStretch();
-    listLayout->addLayout(topTabsLayout);
-
     QScrollArea* scrollArea = new QScrollArea(m_listViewWidget);
     scrollArea->setFrameShape(QFrame::NoFrame);
     scrollArea->setWidgetResizable(true);
@@ -119,7 +101,6 @@ void PatientWidget::createListView() {
     m_patientTable->setAlternatingRowColors(true);
     m_patientTable->setShowGrid(false);
     m_patientTable->setFocusPolicy(Qt::NoFocus);
-    m_patientTable->setCursor(Qt::PointingHandCursor);
     m_patientTable->verticalHeader()->setVisible(false);
     m_patientTable->verticalHeader()->setDefaultSectionSize(46);
     
@@ -139,11 +120,7 @@ void PatientWidget::createListView() {
     scrollLayout->addWidget(container);
     listLayout->addWidget(scrollArea, 1);
 
-    connect(m_patientTable, &QTableWidget::cellClicked, this, &PatientWidget::handlePatientSelected);
     connect(m_searchBar, &QLineEdit::textChanged, this, [this](const QString &) {
-        loadPatientsData();
-    });
-    connect(m_patientTabBar, &QTabBar::currentChanged, this, [this](int) {
         loadPatientsData();
     });
 }
@@ -416,17 +393,6 @@ void PatientWidget::loadPatientsData() {
     if (m_searchBar) {
         criteria.searchKey = m_searchBar->text().trimmed();
     }
-    
-    if (m_patientTabBar) {
-        int tabIdx = m_patientTabBar->currentIndex();
-        if (tabIdx == 1) {
-            criteria.type = PatientType::Outpatient;
-        } else if (tabIdx == 2) {
-            criteria.type = PatientType::Inpatient;
-        } else if (tabIdx == 3) {
-            criteria.type = PatientType::Emergency;
-        }
-    }
 
     m_patientList = m_patientService->searchPatientsPaged(criteria).items;
     
@@ -444,10 +410,10 @@ void PatientWidget::loadPatientsData() {
         actLayout->setContentsMargins(4, 3, 4, 3);
         actLayout->setSpacing(12);
 
-        QPushButton* btnHist = new QPushButton("Xem Lịch Sử Khám", actWidget);
-        btnHist->setCursor(Qt::PointingHandCursor);
-        btnHist->setMinimumHeight(32);
-        btnHist->setStyleSheet(
+        QPushButton* btnInfo = new QPushButton("Xem thông tin", actWidget);
+        btnInfo->setCursor(Qt::PointingHandCursor);
+        btnInfo->setMinimumHeight(32);
+        btnInfo->setStyleSheet(
             "QPushButton { background-color: #0284C7; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 14px; border: none; }"
             "QPushButton:hover { background-color: #0369A1; }"
         );
@@ -460,7 +426,7 @@ void PatientWidget::loadPatientsData() {
             "QPushButton:hover { background-color: #B45309; }"
         );
 
-        actLayout->addWidget(btnHist);
+        actLayout->addWidget(btnInfo);
         actLayout->addWidget(btnFollowUp);
         actLayout->setAlignment(Qt::AlignCenter);
 
@@ -468,10 +434,8 @@ void PatientWidget::loadPatientsData() {
         QString patName = p.fullName;
         QString patCode = p.patientCode;
 
-        connect(btnHist, &QPushButton::clicked, this, [this, patId, patName, patCode]() {
-            PatientRecordHistoryDialog dialog(m_pharmacyService, m_medicalRecordService, this);
-            dialog.loadPatientHistory(patId, patName, patCode);
-            dialog.exec();
+        connect(btnInfo, &QPushButton::clicked, this, [this, i]() {
+            handlePatientSelected(i, 0);
         });
 
         connect(btnFollowUp, &QPushButton::clicked, this, [this, patId, patName]() {

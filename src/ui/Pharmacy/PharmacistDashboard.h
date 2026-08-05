@@ -93,9 +93,12 @@ private:
     // Sub-components: Overview
     // ────────────────────────────────────────────────────────────────
     QLabel* m_lblStatTotalMeds = nullptr;
+    QLabel* m_lblStatInventoryValue = nullptr;
     QLabel* m_lblStatLowStock = nullptr;
+    QLabel* m_lblStatOutOfStock = nullptr;
     QLabel* m_lblStatExpiring = nullptr;
     QLabel* m_lblStatPendingPresc = nullptr;
+    QLabel* m_lblStatDispensedToday = nullptr;
     QTableWidget* m_tblOverviewAlerts = nullptr;
 
     // ────────────────────────────────────────────────────────────────

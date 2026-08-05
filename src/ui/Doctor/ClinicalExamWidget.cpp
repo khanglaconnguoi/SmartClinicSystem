@@ -18,7 +18,6 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
     setupUi();
 
     // Kết nối các tín hiệu chuyển hướng về Dashboard
-    connect(m_tabAppointmentsList, &QPushButton::clicked, this, &ClinicalExamWidget::viewAppointmentsListRequested);
     connect(m_btnCancel, &QPushButton::clicked, this, &ClinicalExamWidget::backToDashboardRequested);
     connect(m_btnFinish, &QPushButton::clicked, this, &ClinicalExamWidget::onFinishExamClicked);
     if (m_btnCallPatient) {
@@ -50,10 +49,8 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
     };
 
     if (m_btnPrescription) connect(m_btnPrescription, &QPushButton::clicked, this, openPrescriptionAction);
-    if (m_subPrescription) connect(m_subPrescription, &QPushButton::clicked, this, openPrescriptionAction);
 
     if (m_btnServiceOrder) connect(m_btnServiceOrder, &QPushButton::clicked, this, &ClinicalExamWidget::openLabRequestDialog);
-    if (m_subServiceOrder) connect(m_subServiceOrder, &QPushButton::clicked, this, &ClinicalExamWidget::openLabRequestDialog);
 
     auto openHistoryAction = [this]() {
         PatientRecordHistoryDialog dialog(m_pharmacyService, m_medicalRecordService, this);
@@ -66,9 +63,6 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
 
     if (m_btnHistory) {
         connect(m_btnHistory, &QPushButton::clicked, this, openHistoryAction);
-    }
-    if (m_subSummaryResults) {
-        connect(m_subSummaryResults, &QPushButton::clicked, this, openHistoryAction);
     }
 
     // Tính toán BMI tự động
@@ -132,13 +126,42 @@ void ClinicalExamWidget::openLabRequestDialog() {
 }
 
 void ClinicalExamWidget::loadLabResults() {
-    if (!m_serviceRequestService || m_currentMedicalRecordId <= 0 || !m_txtClsSummary) return;
+    if (!m_serviceResultsLayout) return;
+
+    // Clear old result boxes and labels
+    QLayoutItem* item;
+    while ((item = m_serviceResultsLayout->takeAt(0)) != nullptr) {
+        if (item->widget()) delete item->widget();
+        delete item;
+    }
+    m_serviceResultBoxes.clear();
+
+    if (!m_serviceRequestService || m_currentMedicalRecordId <= 0) return;
 
     auto requests = m_serviceRequestService->getRequestsByRoom(-1, "");
     QString summaryText;
 
     for (const auto &req : requests) {
         if (req.recordId == m_currentMedicalRecordId) {
+            // Add title label
+            QString title = QString("[%1] %2 — Trạng thái: %3")
+                .arg(req.serviceName, req.roomName, serviceRequestStatusToVi(req.status));
+            QLabel* lbl = new QLabel(title, this);
+            lbl->setStyleSheet("font-size: 12px; font-weight: bold; color: #374151; background: transparent; margin-top: 4px;");
+            m_serviceResultsLayout->addWidget(lbl);
+
+            // Add result text box
+            QTextEdit* box = new QTextEdit(this);
+            box->setReadOnly(true);
+            box->setFixedHeight(68);
+            box->setPlainText(req.resultNote.isEmpty() ? "Chưa có kết quả." : req.resultNote);
+            box->setStyleSheet(
+                "QTextEdit { background-color: #F8FAFC; border: 1px solid #D1D5DB; "
+                "border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; }"
+            );
+            m_serviceResultsLayout->addWidget(box);
+            m_serviceResultBoxes.append(box);
+
             summaryText += QString("[%1] %2 - Trạng thái: %3\n")
                 .arg(req.roomName, req.serviceName, serviceRequestStatusToVi(req.status));
             if (!req.resultNote.isEmpty()) {
@@ -148,7 +171,7 @@ void ClinicalExamWidget::loadLabResults() {
         }
     }
 
-    if (!summaryText.isEmpty()) {
+    if (m_txtClsSummary && !summaryText.isEmpty()) {
         m_txtClsSummary->setText(summaryText);
     }
 }
@@ -160,49 +183,18 @@ void ClinicalExamWidget::setupUi() {
     mainLayout->setContentsMargins(16, 12, 16, 16);
     mainLayout->setSpacing(12);
 
-    mainLayout->addLayout(setupTopTabBar());
     mainLayout->addWidget(setupPatientInfoCard());
 
     QHBoxLayout* workspaceLayout = new QHBoxLayout();
     workspaceLayout->setSpacing(12);
 
-    workspaceLayout->addWidget(setupSubSidebar(), 2);          
-    workspaceLayout->addWidget(setupMainExamForm(), 5);        
-    workspaceLayout->addWidget(setupMedicalHistoryPanel(), 3); 
+    workspaceLayout->addWidget(setupMainExamForm(), 6);        
+    workspaceLayout->addWidget(setupMedicalHistoryPanel(), 4); 
 
     mainLayout->addLayout(workspaceLayout, 1);
 }
 
-QHBoxLayout* ClinicalExamWidget::setupTopTabBar() {
-    QHBoxLayout* topTabsLayout = new QHBoxLayout();
-    topTabsLayout->setSpacing(4);
 
-    m_tabAppointmentsList = new QPushButton("DANH SÁCH", this);
-    m_tabClinicalExam = new QPushButton("KHÁM LÂM SÀNG", this);
-    m_tabRegistration = new QPushButton("ĐĂNG KÝ KHÁM", this);
-    m_tabBilling = new QPushButton("THU TIỀN", this);
-
-    QPushButton* tabs[] = { m_tabAppointmentsList, m_tabClinicalExam, m_tabRegistration, m_tabBilling };
-    for (auto* tab : tabs) {
-        tab->setCursor(Qt::PointingHandCursor);
-        tab->setFixedHeight(36);
-        if (tab == m_tabClinicalExam) {
-            tab->setStyleSheet(
-                "QPushButton { background-color: #007A7E; color: white; border: none; "
-                "font-size: 13px; font-weight: bold; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 0 20px; }"
-            );
-        } else {
-            tab->setStyleSheet(
-                "QPushButton { background-color: #E5E7EB; color: #4B5563; border: 1px solid #D1D5DB; border-bottom: none; "
-                "font-size: 13px; font-weight: 600; border-top-left-radius: 6px; border-top-right-radius: 6px; padding: 0 20px; }"
-                "QPushButton:hover { background-color: #DBEAFE; color: #1E40AF; }"
-            );
-        }
-        topTabsLayout->addWidget(tab);
-    }
-    topTabsLayout->addStretch();
-    return topTabsLayout;
-}
 
 QFrame* ClinicalExamWidget::setupPatientInfoCard() {
     QFrame* infoCard = new QFrame(this);
@@ -317,39 +309,7 @@ QFrame* ClinicalExamWidget::setupPatientInfoCard() {
     return infoCard;
 }
 
-QFrame* ClinicalExamWidget::setupSubSidebar() {
-    QFrame* subSidebar = new QFrame(this);
-    subSidebar->setObjectName("SubSidebar");
-    subSidebar->setFixedWidth(180);
-    subSidebar->setStyleSheet(
-        "QFrame#SubSidebar { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; }"
-        "QPushButton { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; border: none; border-radius: 6px; color: #4B5563; background: transparent; }"
-        "QPushButton:hover { background-color: #F3F4F6; color: #007A7E; }"
-        "QPushButton#activeSub { background-color: #E0F2FE; color: #0369A1; font-weight: bold; }"
-    );
-    QVBoxLayout* subSidebarLayout = new QVBoxLayout(subSidebar);
-    subSidebarLayout->setContentsMargins(8, 12, 8, 12);
-    subSidebarLayout->setSpacing(4);
 
-    QLabel* subHdr = new QLabel("KHÁM BỆNH", subSidebar);
-    subHdr->setStyleSheet("font-size: 11px; font-weight: bold; color: #9CA3AF; margin-bottom: 8px; background: transparent; padding-left: 10px;");
-    subSidebarLayout->addWidget(subHdr);
-
-    m_subClinicalExam = new QPushButton("Khám lâm sàng", subSidebar);
-    m_subClinicalExam->setObjectName("activeSub");
-    m_subServiceOrder = new QPushButton("Chỉ định dịch vụ", subSidebar);
-    m_subPrescription = new QPushButton("Đơn thuốc", subSidebar);
-    m_subSummaryResults = new QPushButton("Kết quả khám tổng hợp", subSidebar);
-    m_subSocialInsurance = new QPushButton("Thông tin nghỉ BHXH", subSidebar);
-    m_subHospitalTransfer = new QPushButton("Thông tin chuyển viện", subSidebar);
-
-    QPushButton* subs[] = { m_subClinicalExam, m_subServiceOrder, m_subPrescription, m_subSummaryResults, m_subSocialInsurance, m_subHospitalTransfer };
-    for (auto* subBtn : subs) {
-        subSidebarLayout->addWidget(subBtn);
-    }
-    subSidebarLayout->addStretch();
-    return subSidebar;
-}
 
 QWidget* ClinicalExamWidget::setupMainExamForm() {
     QFrame* mainForm = new QFrame(this);
@@ -467,6 +427,17 @@ QWidget* ClinicalExamWidget::setupMainExamForm() {
     m_txtAdvice->setPlaceholderText("Ví dụ: Uống thuốc sau ăn, tái khám đúng hẹn...");
     advCol->addWidget(m_txtAdvice);
     fieldsLayout->addLayout(advCol);
+
+    // --- SERVICE REQUEST RESULTS SECTION ---
+    QLabel* lblResults = new QLabel("Kết quả xét nghiệm lâm sàng:", mainForm);
+    lblResults->setStyleSheet("font-size: 12px; font-weight: bold; color: #111827; margin-top: 6px;");
+    fieldsLayout->addWidget(lblResults);
+
+    QWidget* resultsContainer = new QWidget(mainForm);
+    m_serviceResultsLayout = new QVBoxLayout(resultsContainer);
+    m_serviceResultsLayout->setContentsMargins(0, 0, 0, 0);
+    m_serviceResultsLayout->setSpacing(6);
+    fieldsLayout->addWidget(resultsContainer);
 
     mainFormLayout->addLayout(fieldsLayout);
     mainFormLayout->addStretch();

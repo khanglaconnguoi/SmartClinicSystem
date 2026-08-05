@@ -79,8 +79,14 @@ private:
   QPushButton *m_selectedSlotButton = nullptr;
 
   // Overview UI elements
-  class QLabel *m_lblRevenue = nullptr;
-  class QLabel *m_lblPatientNum = nullptr;
+  class QLabel *m_lblCompletedToday = nullptr;
+  class QLabel *m_lblStartedToday = nullptr;
+  class QLabel *m_lblCheckedInToday = nullptr;
+  class QLabel *m_lblAvgWaitTime = nullptr;
+  class QLabel *m_lblScheduledToday = nullptr;
+  class QLabel *m_lblNoShowCancelled = nullptr;
+  class QLabel *m_lblTotalApptsToday = nullptr;
+  class QLabel *m_lblActiveRooms = nullptr;
   QTableWidget *m_recentActivityTable = nullptr;
 
   // Management UI
