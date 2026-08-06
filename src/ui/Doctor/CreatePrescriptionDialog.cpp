@@ -180,14 +180,19 @@ void CreatePrescriptionDialog::setupUI() {
 
     tblPrescription->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     tblPrescription->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    tblPrescription->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    tblPrescription->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
-    tblPrescription->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
-    tblPrescription->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    tblPrescription->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Interactive);
+    tblPrescription->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Interactive);
+    tblPrescription->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Interactive);
+    tblPrescription->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Interactive);
     tblPrescription->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Stretch);
     tblPrescription->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);
-    tblPrescription->setColumnWidth(7, 40);
+    tblPrescription->setColumnWidth(2, 90);   // Số Lượng
+    tblPrescription->setColumnWidth(3, 110);  // Liều Lượng
+    tblPrescription->setColumnWidth(4, 110);  // Tần Suất
+    tblPrescription->setColumnWidth(5, 90);   // Số Ngày
+    tblPrescription->setColumnWidth(7, 60);   // Nút Xóa
     tblPrescription->verticalHeader()->setVisible(false);
+    tblPrescription->verticalHeader()->setDefaultSectionSize(38); // Đặt chiều cao dòng phù hợp để chứa widget (QSpinBox, QLineEdit)
     tblPrescription->setFocusPolicy(Qt::NoFocus);
     tblPrescription->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
     rightLayout->addWidget(tblPrescription);
@@ -395,6 +400,7 @@ void CreatePrescriptionDialog::onAddSelectedClicked() {
 void CreatePrescriptionDialog::addMedicineRow(int medicationId, const QString &name, double price, int qty, const QString &dosage, const QString &freq, int days, const QString &note, int maxStock) {
     int row = tblPrescription->rowCount();
     tblPrescription->insertRow(row);
+    tblPrescription->setRowHeight(row, 38); // Đảm bảo dòng mới có chiều cao 38px để không bị cắt xén nội dung
 
     // 0. Tên thuốc
     QTableWidgetItem *itemDrug = new QTableWidgetItem(name);
