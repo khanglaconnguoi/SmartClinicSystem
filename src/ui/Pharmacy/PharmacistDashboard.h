@@ -17,6 +17,7 @@
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
+#include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 #include <QtCharts/QValueAxis>
 #include <memory>
@@ -96,6 +97,7 @@ private:
   QWidget *m_dispensingPage = nullptr;
   QWidget *m_billingPage = nullptr;
   QWidget *m_reportsPage = nullptr;
+  QWidget *m_leaveManagePage = nullptr;
 
   // ────────────────────────────────────────────────────────────────
   // ────────────────────────────────────────────────────────────────

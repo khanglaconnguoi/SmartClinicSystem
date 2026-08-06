@@ -9,7 +9,7 @@
 #include "service/BillingService.h"
 #include "service/PharmacyService.h"
 
-
+#include <QCoreApplication>
 #include <QDate>
 #include <QDateTime>
 #include <QDebug>
@@ -20,7 +20,10 @@
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QLocale>
+#include <QMarginsF>
 #include <QMessageBox>
+#include <QPageLayout>
+#include <QPageSize>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPdfWriter>
@@ -28,7 +31,6 @@
 #include <QStackedWidget>
 #include <QTextDocument>
 #include <QTextEdit>
-
 
 PharmacistDashboardWidget::PharmacistDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
@@ -1769,6 +1771,14 @@ void PharmacistDashboardWidget::buildBillingPage() {
       "32px; font-size: 13px; } QPushButton:hover { background-color: #1D4ED8; "
       "}");
 
+  QPushButton *btnResetBill = new QPushButton("Đặt lại", tabList);
+  btnResetBill->setCursor(Qt::PointingHandCursor);
+  btnResetBill->setStyleSheet(
+      "QPushButton { background-color: #64748B; color: white; padding: 6px "
+      "16px; border-radius: 6px; border: none; font-weight: bold; min-height: "
+      "32px; font-size: 13px; } QPushButton:hover { background-color: #475569; "
+      "}");
+
   billSearchLay->addWidget(m_txtBillKeyword);
   billSearchLay->addWidget(m_cbBillStatus);
   billSearchLay->addWidget(btnSearchBill);
@@ -2395,10 +2405,15 @@ void PharmacistDashboardWidget::handlePrintInvoice() {
   int selectedRow = m_tblInvoices->currentRow();
   if (selectedRow < 0)
     return;
+  int invoiceId =
+      m_tblInvoices->item(selectedRow, 0)->data(Qt::UserRole).toInt();
   int recordId =
       m_tblInvoices->item(selectedRow, 0)->data(Qt::UserRole + 1).toInt();
 
-  auto optInvoice = m_billingService->getInvoiceByRecordId(recordId);
+  auto optInvoice = m_billingService->getInvoiceById(invoiceId);
+  if (!optInvoice.has_value() && recordId > 0) {
+    optInvoice = m_billingService->getInvoiceByRecordId(recordId);
+  }
   if (!optInvoice.has_value())
     return;
   auto inv = optInvoice.value();
@@ -2584,101 +2599,105 @@ void PharmacistDashboardWidget::buildReportsPage() {
   mainLayout->setSpacing(16);
 
   QHBoxLayout *rangeLayout = new QHBoxLayout();
-rangeLayout->setSpacing(10);
+  rangeLayout->setSpacing(10);
 
-m_dateReportFrom = new QDateEdit(m_reportsPage);
-m_dateReportFrom->setCalendarPopup(true);
-m_dateReportFrom->setDate(QDate::currentDate().addDays(-30));
+  m_dateReportFrom = new QDateEdit(m_reportsPage);
+  m_dateReportFrom->setCalendarPopup(true);
+  m_dateReportFrom->setDate(QDate::currentDate().addDays(-30));
 
-m_dateReportTo = new QDateEdit(m_reportsPage);
-m_dateReportTo->setCalendarPopup(true);
-m_dateReportTo->setDate(QDate::currentDate());
+  m_dateReportTo = new QDateEdit(m_reportsPage);
+  m_dateReportTo->setCalendarPopup(true);
+  m_dateReportTo->setDate(QDate::currentDate());
 
-QPushButton *btnGenerate = new QPushButton("Tạo Báo Cáo", m_reportsPage);
-btnGenerate->setCursor(Qt::PointingHandCursor);
-btnGenerate->setStyleSheet(
-    "QPushButton { background-color: #2563EB; color: white; padding: 6px 16px; "
-    "border-radius: 4px; border: none; font-weight: bold; } QPushButton:hover "
-    "{ background-color: #1D4ED8; }");
+  QPushButton *btnGenerate = new QPushButton("Tạo Báo Cáo", m_reportsPage);
+  btnGenerate->setCursor(Qt::PointingHandCursor);
+  btnGenerate->setStyleSheet("QPushButton { background-color: #2563EB; color: "
+                             "white; padding: 6px 16px; "
+                             "border-radius: 4px; border: none; font-weight: "
+                             "bold; } QPushButton:hover "
+                             "{ background-color: #1D4ED8; }");
 
-rangeLayout->addWidget(new QLabel("Từ ngày:"));
-rangeLayout->addWidget(m_dateReportFrom);
-rangeLayout->addWidget(new QLabel("Đến ngày:"));
-rangeLayout->addWidget(m_dateReportTo);
-rangeLayout->addWidget(btnGenerate);
-rangeLayout->addStretch();
-mainLayout->addLayout(rangeLayout);
+  rangeLayout->addWidget(new QLabel("Từ ngày:"));
+  rangeLayout->addWidget(m_dateReportFrom);
+  rangeLayout->addWidget(new QLabel("Đến ngày:"));
+  rangeLayout->addWidget(m_dateReportTo);
+  rangeLayout->addWidget(btnGenerate);
+  rangeLayout->addStretch();
+  mainLayout->addLayout(rangeLayout);
 
-QHBoxLayout *kpiLay = new QHBoxLayout();
-kpiLay->setSpacing(16);
+  QHBoxLayout *kpiLay = new QHBoxLayout();
+  kpiLay->setSpacing(16);
 
-QFrame *kpi1 = makeCard(m_reportsPage);
-QVBoxLayout *kpi1Lay = new QVBoxLayout(kpi1);
-kpi1Lay->addWidget(new QLabel("Tổng lượng thuốc cấp phát", kpi1));
-m_lblReportTotalQty = new QLabel("0", kpi1);
-m_lblReportTotalQty->setStyleSheet(
-    "font-size: 22px; font-weight: bold; color: #2563EB;");
-kpi1Lay->addWidget(m_lblReportTotalQty);
-kpiLay->addWidget(kpi1);
+  QFrame *kpi1 = makeCard(m_reportsPage);
+  QVBoxLayout *kpi1Lay = new QVBoxLayout(kpi1);
+  kpi1Lay->addWidget(new QLabel("Tổng lượng thuốc cấp phát", kpi1));
+  m_lblReportTotalQty = new QLabel("0", kpi1);
+  m_lblReportTotalQty->setStyleSheet(
+      "font-size: 22px; font-weight: bold; color: #2563EB;");
+  kpi1Lay->addWidget(m_lblReportTotalQty);
+  kpiLay->addWidget(kpi1);
 
-QFrame *kpi2 = makeCard(m_reportsPage);
-QVBoxLayout *kpi2Lay = new QVBoxLayout(kpi2);
-kpi2Lay->addWidget(new QLabel("Tổng giá trị tiêu thụ (VNĐ)", kpi2));
-m_lblReportTotalValue = new QLabel("0 VNĐ", kpi2);
-m_lblReportTotalValue->setStyleSheet(
-    "font-size: 22px; font-weight: bold; color: #059669;");
-kpi2Lay->addWidget(m_lblReportTotalValue);
-kpiLay->addWidget(kpi2);
+  QFrame *kpi2 = makeCard(m_reportsPage);
+  QVBoxLayout *kpi2Lay = new QVBoxLayout(kpi2);
+  kpi2Lay->addWidget(new QLabel("Tổng giá trị tiêu thụ (VNĐ)", kpi2));
+  m_lblReportTotalValue = new QLabel("0 VNĐ", kpi2);
+  m_lblReportTotalValue->setStyleSheet(
+      "font-size: 22px; font-weight: bold; color: #059669;");
+  kpi2Lay->addWidget(m_lblReportTotalValue);
+  kpiLay->addWidget(kpi2);
 
-mainLayout->addLayout(kpiLay);
+  mainLayout->addLayout(kpiLay);
 
-QHBoxLayout *workLayout = new QHBoxLayout();
-workLayout->setSpacing(16);
+  QHBoxLayout *workLayout = new QHBoxLayout();
+  workLayout->setSpacing(16);
 
-QFrame *tableCard = makeCard(m_reportsPage);
-QVBoxLayout *tableCardLayout = new QVBoxLayout(tableCard);
+  QFrame *tableCard = makeCard(m_reportsPage);
+  QVBoxLayout *tableCardLayout = new QVBoxLayout(tableCard);
 
-QLabel *lblTblTitle = new QLabel("CHI TIẾT TIÊU THỤ THUỐC ĐỊNH KỲ", tableCard);
-lblTblTitle->setStyleSheet(
-    "font-size: 13px; font-weight: bold; color: #374151;");
-tableCardLayout->addWidget(lblTblTitle);
+  QLabel *lblTblTitle =
+      new QLabel("CHI TIẾT TIÊU THỤ THUỐC ĐỊNH KỲ", tableCard);
+  lblTblTitle->setStyleSheet(
+      "font-size: 13px; font-weight: bold; color: #374151;");
+  tableCardLayout->addWidget(lblTblTitle);
 
-m_tblReportUsage = new QTableWidget(tableCard);
-m_tblReportUsage->setColumnCount(5);
-m_tblReportUsage->setHorizontalHeaderLabels({"Tên thuốc", "Số lượng", "Đơn vị",
-                                             "Đơn giá (VNĐ)",
-                                             "Tổng giá trị (VNĐ)"});
-m_tblReportUsage->horizontalHeader()->setSectionResizeMode(
-    0, QHeaderView::Stretch);
-m_tblReportUsage->setEditTriggers(QAbstractItemView::NoEditTriggers);
-m_tblReportUsage->setFocusPolicy(Qt::NoFocus);
-m_tblReportUsage->setStyleSheet(
-    "QTableWidget { outline: none; } QHeaderView::section { background-color: "
-    "#EFF6FF; color: #1E40AF; font-weight: bold; border: none; padding: 8px "
-    "10px; border-bottom: 2px solid #BFDBFE; } QTableWidget::item { outline: "
-    "none; border: none; } QTableWidget::item:focus { outline: none; border: "
-    "none; }");
-tableCardLayout->addWidget(m_tblReportUsage);
-workLayout->addWidget(tableCard, 6);
+  m_tblReportUsage = new QTableWidget(tableCard);
+  m_tblReportUsage->setColumnCount(5);
+  m_tblReportUsage->setHorizontalHeaderLabels({"Tên thuốc", "Số lượng",
+                                               "Đơn vị", "Đơn giá (VNĐ)",
+                                               "Tổng giá trị (VNĐ)"});
+  m_tblReportUsage->horizontalHeader()->setSectionResizeMode(
+      0, QHeaderView::Stretch);
+  m_tblReportUsage->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_tblReportUsage->setFocusPolicy(Qt::NoFocus);
+  m_tblReportUsage->setStyleSheet(
+      "QTableWidget { outline: none; } QHeaderView::section { "
+      "background-color: "
+      "#EFF6FF; color: #1E40AF; font-weight: bold; border: none; padding: 8px "
+      "10px; border-bottom: 2px solid #BFDBFE; } QTableWidget::item { outline: "
+      "none; border: none; } QTableWidget::item:focus { outline: none; border: "
+      "none; }");
+  tableCardLayout->addWidget(m_tblReportUsage);
+  workLayout->addWidget(tableCard, 6);
 
-QFrame *chartCard = makeCard(m_reportsPage);
-QVBoxLayout *chartLayout = new QVBoxLayout(chartCard);
+  QFrame *chartCard = makeCard(m_reportsPage);
+  QVBoxLayout *chartLayout = new QVBoxLayout(chartCard);
 
-QLabel *lblChartTitle = new QLabel("TOP 5 THUỐC SỬ DỤNG NHIỀU NHẤT", chartCard);
-lblChartTitle->setStyleSheet(
-    "font-size: 13px; font-weight: bold; color: #374151;");
-chartLayout->addWidget(lblChartTitle);
+  QLabel *lblChartTitle =
+      new QLabel("TOP 5 THUỐC SỬ DỤNG NHIỀU NHẤT", chartCard);
+  lblChartTitle->setStyleSheet(
+      "font-size: 13px; font-weight: bold; color: #374151;");
+  chartLayout->addWidget(lblChartTitle);
 
-m_chartView = new QChartView(chartCard);
-m_chartView->setRenderHint(QPainter::Antialiasing);
-chartLayout->addWidget(m_chartView);
-workLayout->addWidget(chartCard, 4);
+  m_chartView = new QChartView(chartCard);
+  m_chartView->setRenderHint(QPainter::Antialiasing);
+  chartLayout->addWidget(m_chartView);
+  workLayout->addWidget(chartCard, 4);
 
-mainLayout->addLayout(workLayout, 1);
-m_stackedWidget->addWidget(m_reportsPage);
+  mainLayout->addLayout(workLayout, 1);
+  m_stackedWidget->addWidget(m_reportsPage);
 
-connect(btnGenerate, &QPushButton::clicked, this,
-        &PharmacistDashboardWidget::generateReport);
+  connect(btnGenerate, &QPushButton::clicked, this,
+          &PharmacistDashboardWidget::generateReport);
 }
 
 void PharmacistDashboardWidget::generateReport() {
