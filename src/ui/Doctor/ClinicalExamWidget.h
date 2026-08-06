@@ -69,12 +69,6 @@ private:
 
     QList<Diagnosis> getDiagnosesFromUi() const;
 
-    // --- TOP TABS BAR ---
-    QPushButton* m_tabAppointmentsList;
-    QPushButton* m_tabClinicalExam;
-    QPushButton* m_tabRegistration;
-    QPushButton* m_tabBilling;
-
     // --- PATIENT INFO AREA ---
     QLabel* m_lblPatientCodeVal;
     QLabel* m_lblPatientNameVal;
@@ -91,14 +85,6 @@ private:
     QPushButton* m_btnHistory;
     QPushButton* m_btnCallPatient = nullptr;
     QPushButton* m_btnPrint;
-
-    // --- SUB-SIDEBAR (KHÁM BỆNH MENU) ---
-    QPushButton* m_subClinicalExam;
-    QPushButton* m_subServiceOrder;
-    QPushButton* m_subPrescription;
-    QPushButton* m_subSummaryResults;
-    QPushButton* m_subSocialInsurance;
-    QPushButton* m_subHospitalTransfer;
 
     // --- MAIN FORM INPUTS ---
     QComboBox* m_cbTemplate;
@@ -122,6 +108,10 @@ private:
     QComboBox* m_cbRoom;
     QLineEdit* m_txtAdvice;
 
+    // --- SERVICE REQUEST RESULTS ---
+    QVBoxLayout* m_serviceResultsLayout = nullptr;
+    QList<QTextEdit*> m_serviceResultBoxes;
+
     // --- RIGHT PANEL TEXT EDITS ---
     QTextEdit* m_txtHistoryIllness;
     QTextEdit* m_txtHistoryPersonal;
@@ -130,9 +120,7 @@ private:
 
     // --- UI Setup & Helpers ---
     void setupUi();
-    QHBoxLayout* setupTopTabBar();
     QFrame* setupPatientInfoCard();
-    QFrame* setupSubSidebar();
     QWidget* setupMainExamForm();
     QFrame* setupMedicalHistoryPanel();
     QFrame* createSeparator();

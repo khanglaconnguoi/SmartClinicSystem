@@ -67,21 +67,54 @@ ReceptionDashboardWidget::ReceptionDashboardWidget(
 }
 
 void ReceptionDashboardWidget::fillDashboardData() {
-  buildSidebar();
+  QDate today = QDate::currentDate();
 
-  if (m_analyticService) {
-    QDate today = QDate::currentDate();
-    QDate startOfMonth = QDate(today.year(), today.month(), 1);
+  if (m_appointmentService) {
+    auto appts = m_appointmentService->getAppointmentsByDate(today);
 
-    IncomeStatsDTO incomeStats = m_analyticService->getIncomeStats(startOfMonth, today);
-    if (m_lblRevenue) {
-      m_lblRevenue->setText(
-          QLocale(QLocale::Vietnamese).toCurrencyString(incomeStats.total, "₫"));
+    int completedCount = 0;
+    int startedCount = 0;
+    int checkedInCount = 0;
+    int scheduledCount = 0;
+    int noShowCancelledCount = 0;
+
+    for (const auto &a : appts) {
+      if (a.status == AppointmentStatusText::COMPLETED) {
+        completedCount++;
+      } else if (a.status == AppointmentStatusText::STARTED) {
+        startedCount++;
+      } else if (a.status == AppointmentStatusText::CHECKED_IN) {
+        checkedInCount++;
+      } else if (a.status == AppointmentStatusText::SCHEDULED) {
+        scheduledCount++;
+      } else if (a.status == AppointmentStatusText::CANCELLED || a.status == AppointmentStatusText::NO_SHOW) {
+        noShowCancelledCount++;
+      }
     }
 
-    PatientStatsDTO patientStats = m_analyticService->getPatientStats(startOfMonth, today);
-    if (m_lblPatientNum) {
-      m_lblPatientNum->setText(QString("%1 lượt khám").arg(patientStats.total));
+    if (m_lblCompletedToday) m_lblCompletedToday->setText(QString("%1 ca").arg(completedCount));
+    if (m_lblStartedToday) m_lblStartedToday->setText(QString("Đang khám: %1 ca").arg(startedCount));
+    if (m_lblCheckedInToday) m_lblCheckedInToday->setText(QString("%1 bệnh nhân").arg(checkedInCount));
+    if (m_lblScheduledToday) m_lblScheduledToday->setText(QString("%1 ca").arg(scheduledCount));
+    if (m_lblNoShowCancelled) m_lblNoShowCancelled->setText(QString("Hủy / Vắng mặt: %1 ca").arg(noShowCancelledCount));
+    if (m_lblTotalApptsToday) m_lblTotalApptsToday->setText(QString("%1 lượt").arg(appts.size()));
+
+    auto roomQueues = m_appointmentService->getRoomQueueStatuses(today);
+    int activeRooms = 0;
+    for (const auto &rq : roomQueues) {
+      if (rq.currentTicketNumber > 0 || rq.nextTicketNumber > 0 || rq.doctorId > 0) {
+        activeRooms++;
+      }
+    }
+    if (m_lblActiveRooms) {
+      m_lblActiveRooms->setText(QString("Phòng đang hoạt động: %1 phòng").arg(activeRooms > 0 ? activeRooms : roomQueues.size()));
+    }
+  }
+
+  if (m_analyticService) {
+    WaitTimeStatsDTO waitStats = m_analyticService->getWaitTimeStats(today, today);
+    if (m_lblAvgWaitTime) {
+      m_lblAvgWaitTime->setText(QString("Thời gian chờ TB: %1 phút").arg(QString::number(waitStats.avg, 'f', 1)));
     }
   }
 
@@ -190,7 +223,7 @@ void ReceptionDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
   }
 
   if (index == 0) {
-    refreshRecentActivity();
+    fillDashboardData();
   }
 }
 
@@ -202,40 +235,79 @@ void ReceptionDashboardWidget::buildOverviewPage() {
   layout->setContentsMargins(30, 30, 30, 30);
   layout->setSpacing(20);
 
-  QLabel *lblTitle = new QLabel("Tổng quan tháng này", m_overviewPage);
+  QLabel *lblTitle = new QLabel("Tổng quan hôm nay", m_overviewPage);
   lblTitle->setStyleSheet(
       "font-size: 24px; font-weight: bold; color: #202124;");
   layout->addWidget(lblTitle);
 
   // Cards layout
   QHBoxLayout *cardsLayout = new QHBoxLayout();
-  cardsLayout->setSpacing(20);
+  cardsLayout->setSpacing(16);
 
-  // Card 1: Revenue
+  // Card 1: Completed & Started
   QFrame *card1 = makeCard(m_overviewPage);
   QVBoxLayout *c1Layout = new QVBoxLayout(card1);
-  QLabel *c1Title = new QLabel("Doanh thu", card1);
-  c1Title->setStyleSheet("color: #5F6368; font-size: 14px;");
-  m_lblRevenue = new QLabel("0 VND", card1);
-  m_lblRevenue->setStyleSheet(
-      "color: #4B94F2; font-size: 28px; font-weight: bold;");
+  c1Layout->setContentsMargins(16, 14, 16, 14);
+  c1Layout->setSpacing(4);
+  QLabel *c1Title = new QLabel("Lượt khám hoàn thành", card1);
+  c1Title->setStyleSheet("color: #5F6368; font-size: 13px; font-weight: 500;");
+  m_lblCompletedToday = new QLabel("0 ca", card1);
+  m_lblCompletedToday->setStyleSheet("color: #34A853; font-size: 22px; font-weight: bold;");
+  m_lblStartedToday = new QLabel("Đang khám: 0 ca", card1);
+  m_lblStartedToday->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
   c1Layout->addWidget(c1Title);
-  c1Layout->addWidget(m_lblRevenue);
+  c1Layout->addWidget(m_lblCompletedToday);
+  c1Layout->addWidget(m_lblStartedToday);
   cardsLayout->addWidget(card1);
 
-  // Card 2: Patients
+  // Card 2: Waiting Patients & Wait Time
   QFrame *card2 = makeCard(m_overviewPage);
   QVBoxLayout *c2Layout = new QVBoxLayout(card2);
-  QLabel *c2Title = new QLabel("Lượt khám", card2);
-  c2Title->setStyleSheet("color: #5F6368; font-size: 14px;");
-  m_lblPatientNum = new QLabel("0", card2);
-  m_lblPatientNum->setStyleSheet(
-      "color: #34A853; font-size: 28px; font-weight: bold;");
+  c2Layout->setContentsMargins(16, 14, 16, 14);
+  c2Layout->setSpacing(4);
+  QLabel *c2Title = new QLabel("Bệnh nhân chờ khám", card2);
+  c2Title->setStyleSheet("color: #5F6368; font-size: 13px; font-weight: 500;");
+  m_lblCheckedInToday = new QLabel("0 bệnh nhân", card2);
+  m_lblCheckedInToday->setStyleSheet("color: #E67E22; font-size: 22px; font-weight: bold;");
+  m_lblAvgWaitTime = new QLabel("Thời gian chờ TB: 0.0 phút", card2);
+  m_lblAvgWaitTime->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
   c2Layout->addWidget(c2Title);
-  c2Layout->addWidget(m_lblPatientNum);
+  c2Layout->addWidget(m_lblCheckedInToday);
+  c2Layout->addWidget(m_lblAvgWaitTime);
   cardsLayout->addWidget(card2);
 
-  cardsLayout->addStretch();
+  // Card 3: Scheduled & No-Show
+  QFrame *card3 = makeCard(m_overviewPage);
+  QVBoxLayout *c3Layout = new QVBoxLayout(card3);
+  c3Layout->setContentsMargins(16, 14, 16, 14);
+  c3Layout->setSpacing(4);
+  QLabel *c3Title = new QLabel("Lịch hẹn còn lại hôm nay", card3);
+  c3Title->setStyleSheet("color: #5F6368; font-size: 13px; font-weight: 500;");
+  m_lblScheduledToday = new QLabel("0 ca", card3);
+  m_lblScheduledToday->setStyleSheet("color: #4B94F2; font-size: 22px; font-weight: bold;");
+  m_lblNoShowCancelled = new QLabel("Hủy / Vắng mặt: 0 ca", card3);
+  m_lblNoShowCancelled->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
+  c3Layout->addWidget(c3Title);
+  c3Layout->addWidget(m_lblScheduledToday);
+  c3Layout->addWidget(m_lblNoShowCancelled);
+  cardsLayout->addWidget(card3);
+
+  // Card 4: Total Visits & Active Rooms
+  QFrame *card4 = makeCard(m_overviewPage);
+  QVBoxLayout *c4Layout = new QVBoxLayout(card4);
+  c4Layout->setContentsMargins(16, 14, 16, 14);
+  c4Layout->setSpacing(4);
+  QLabel *c4Title = new QLabel("Tổng lượt tiếp nhận", card4);
+  c4Title->setStyleSheet("color: #5F6368; font-size: 13px; font-weight: 500;");
+  m_lblTotalApptsToday = new QLabel("0 lượt", card4);
+  m_lblTotalApptsToday->setStyleSheet("color: #2B6CB0; font-size: 22px; font-weight: bold;");
+  m_lblActiveRooms = new QLabel("Phòng đang hoạt động: 0 phòng", card4);
+  m_lblActiveRooms->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
+  c4Layout->addWidget(c4Title);
+  c4Layout->addWidget(m_lblTotalApptsToday);
+  c4Layout->addWidget(m_lblActiveRooms);
+  cardsLayout->addWidget(card4);
+
   layout->addLayout(cardsLayout);
 
   QLabel *lblSubTitle = new QLabel("Hoạt động gần đây", m_overviewPage);

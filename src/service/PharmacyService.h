@@ -165,6 +165,9 @@ public:
      */
     QList<MedicationSummaryDTO> getExpiringMedications(int withinDays = 30) const;
 
+    double getTotalInventoryValue() const;
+    int getOutOfStockCount() const;
+
 
     // QList<ActiveIngredientDTO> searchIngredients(const QString& keyword) const;
 

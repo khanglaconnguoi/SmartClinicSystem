@@ -25,6 +25,7 @@ struct SpecialityDistDTO {
 };
 
 struct DoctorKPI {
+    int doctorId = 0;
     QString name;
     int patientCount = 0;
     double income = 0.0;

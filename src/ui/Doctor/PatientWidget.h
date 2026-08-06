@@ -63,7 +63,6 @@ private:
     QStackedWidget* m_mainStackedWidget;
 
     QWidget* m_listViewWidget;
-    QTabBar* m_patientTabBar;
     QTableWidget* m_patientTable;
 
     QWidget* m_detailViewWidget;

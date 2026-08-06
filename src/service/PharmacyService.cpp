@@ -334,6 +334,14 @@ PharmacyService::getExpiringMedications(int withinDays) const {
   return dtos;
 }
 
+double PharmacyService::getTotalInventoryValue() const {
+  return m_medicationRepo ? m_medicationRepo->getTotalInventoryValue() : 0.0;
+}
+
+int PharmacyService::getOutOfStockCount() const {
+  return m_medicationRepo ? m_medicationRepo->getOutOfStockCount() : 0;
+}
+
 // QList<ActiveIngredientDTO>
 // PharmacyService::searchIngredients(const QString &keyword) const {
 //   if (keyword.trimmed().isEmpty()) {

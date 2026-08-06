@@ -25,6 +25,7 @@ QList<DoctorKPI> AnalyticService::getDoctorsKPI(const QDate& start, const QDate&
 
     for (const auto& raw : rawMetrics) {
         DoctorKPI kpiDto;
+        kpiDto.doctorId = raw.doctorId;
         kpiDto.name = raw.doctorName;
         kpiDto.patientCount = raw.patientCount;
         kpiDto.income = raw.consultationIncome;

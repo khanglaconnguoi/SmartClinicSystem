@@ -43,6 +43,7 @@ DoctorDashboardWidget::DoctorDashboardWidget(
     std::shared_ptr<MedicalRecordService> medicalRecordService,
     std::shared_ptr<PharmacyService> pharmacyService,
     std::shared_ptr<ServiceRequestService> serviceRequestService,
+    std::shared_ptr<AnalyticService> analyticService,
     QWidget *parent)
     : BaseDashboardWidget(user, staffService, parent),
       m_patientService(patientService),
@@ -51,6 +52,7 @@ DoctorDashboardWidget::DoctorDashboardWidget(
       m_currentExaminingRow(-1),
       m_pharmacyService(pharmacyService),
       m_serviceRequestService(serviceRequestService),
+      m_analyticService(analyticService),
       m_overviewPage(nullptr), m_patientsPage(nullptr),
       m_appointmentsPage(nullptr), m_settingsPage(nullptr),
       m_clinicalExamPage(nullptr) {
@@ -299,15 +301,6 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   m_appointmentsTable->setFocusPolicy(Qt::NoFocus);
   m_appointmentsTable->verticalHeader()->setVisible(false);
 
-  connect(m_appointmentsTable, &QTableWidget::cellClicked, this,
-          [this](int row, int col) {
-            if (col == 6) return;
-            if (row >= 0 && row < m_apptPageMeta.size()) {
-              ApptMeta meta = m_apptPageMeta[row];
-              openClinicalExamWithIds(meta.patientId, meta.appointmentId, meta.name, meta.code, meta.time, meta.reason);
-            }
-          });
-
   pageLayout->addWidget(m_appointmentsTable, 1);
   m_stackedWidget->addWidget(m_appointmentsPage);
 }
@@ -336,9 +329,10 @@ void DoctorDashboardWidget::createDoctorCards(QWidget *parentPage,
   QHBoxLayout *cardsLayout = new QHBoxLayout();
   cardsLayout->setSpacing(20);
 
-  QStringList titles = {"Tổng số ca khám hôm nay", "Doanh thu phòng khám"};
+  QStringList titles = {"Tổng số ca khám hôm nay", "Tổng số ca khám trong tháng", "KPI tháng"};
+  QStringList subtitles = {"Hôm nay", "Tháng này", "Tháng này"};
 
-  for (int i = 0; i < 2; ++i) {
+  for (int i = 0; i < 3; ++i) {
     QFrame *card = new QFrame(parentPage);
     QString accentColor = "#4B94F2";
 
@@ -361,12 +355,14 @@ void DoctorDashboardWidget::createDoctorCards(QWidget *parentPage,
                             "900; border: none; letter-spacing: -1px;");
 
     if (i == 0) {
-      m_lblCardAppointments = lblValue;
+      m_lblCardAppointmentsToday = lblValue;
+    } else if (i == 1) {
+      m_lblCardAppointmentsMonth = lblValue;
     } else {
-      m_lblCardRevenue = lblValue;
+      m_lblCardKpiMonth = lblValue;
     }
 
-    QLabel *lblSubtitle = new QLabel("Hôm nay", card);
+    QLabel *lblSubtitle = new QLabel(subtitles[i], card);
     lblSubtitle->setStyleSheet(
         "color: #6B7280; font-size: 12px; font-weight: 500; border: none;");
 
@@ -568,15 +564,6 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
   m_patientTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_patientTable->setFocusPolicy(Qt::NoFocus);
   m_patientTable->verticalHeader()->setVisible(false);
-
-  connect(m_patientTable, &QTableWidget::cellClicked, this,
-          [this](int row, int col) {
-            if (col == 6) return;
-            if (row >= 0 && row < m_rowApptMeta.size()) {
-              ApptMeta meta = m_rowApptMeta[row];
-              openClinicalExamWithIds(meta.patientId, meta.appointmentId, meta.name, meta.code, meta.time, meta.reason);
-            }
-          });
 
   m_patientTable->setMinimumHeight(220);
   pageLayout->addWidget(m_patientTable);
@@ -827,16 +814,29 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       m_appointmentsTable->setItem(rowIdx, 4, roomItem);
       m_appointmentsTable->setItem(rowIdx, 5, statusItem);
 
-      // Action Buttons Widget (Single Call Patient Button)
+      // Action Buttons Widget (Xem hồ sơ & Gọi Khám)
       QWidget *actWidget = new QWidget(m_appointmentsTable);
       QHBoxLayout *actLayout = new QHBoxLayout(actWidget);
       actLayout->setContentsMargins(4, 3, 4, 3);
+      actLayout->setSpacing(8);
       int captureApptId = rec.appointmentId;
       int capturePatientId = rec.patientId;
       QString captureName = rec.patientName;
       QString captureCode = rec.patientCode;
       QString captureTime = rec.startTime;
       QString captureReason = rec.reason;
+
+      QPushButton *btnDetail = new QPushButton("Xem hồ sơ", actWidget);
+      btnDetail->setCursor(Qt::PointingHandCursor);
+      btnDetail->setMinimumHeight(32);
+      btnDetail->setStyleSheet(
+          "QPushButton { background-color: #0284C7; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 14px; border: none; }"
+          "QPushButton:hover { background-color: #0369A1; }"
+      );
+      connect(btnDetail, &QPushButton::clicked, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
+          openClinicalExamWithIds(capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason);
+      });
+      actLayout->addWidget(btnDetail);
 
       if (rec.status != AppointmentStatusText::COMPLETED) {
           QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
@@ -881,13 +881,49 @@ void DoctorDashboardWidget::refreshOverviewCards() {
   int docId = m_currentUser->getAccountId();
   QDate today = QDate::currentDate();
 
-  auto appts = m_appointmentService->getDoctorAppointments(docId, today);
-  if (m_lblCardAppointments) {
-    m_lblCardAppointments->setText(QString::number(appts.size()));
+  // 1. Ca khám hôm nay
+  auto apptsToday = m_appointmentService->getDoctorAppointments(docId, today);
+  if (m_lblCardAppointmentsToday) {
+    m_lblCardAppointmentsToday->setText(QString::number(apptsToday.size()));
   }
 
-  if (m_lblCardRevenue) {
-    m_lblCardRevenue->setText("N/A");
+  // 2. Ca khám trong tháng
+  QDate startOfMonth(today.year(), today.month(), 1);
+  QDate endOfMonth(today.year(), today.month(), today.daysInMonth());
+
+  auto allAppts = m_appointmentService->getDoctorAppointments(docId, QDate());
+  int monthCount = 0;
+  for (const auto &appt : allAppts) {
+    QDate apptDate = QDate::fromString(appt.appointmentDate, "yyyy-MM-dd");
+    if (apptDate.isValid() && apptDate >= startOfMonth && apptDate <= endOfMonth) {
+      monthCount++;
+    }
+  }
+  if (m_lblCardAppointmentsMonth) {
+    m_lblCardAppointmentsMonth->setText(QString::number(monthCount));
+  }
+
+  // 3. KPI tháng
+  if (m_lblCardKpiMonth) {
+    if (m_analyticService) {
+      QList<DoctorKPI> kpiList = m_analyticService->getDoctorsKPI(startOfMonth, endOfMonth);
+      double doctorKpiValue = 0.0;
+      bool found = false;
+      for (const auto &kpi : kpiList) {
+        if (kpi.doctorId == docId || kpi.name == m_currentUser->getFullName()) {
+          doctorKpiValue = kpi.kpi;
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        m_lblCardKpiMonth->setText(QString::number(doctorKpiValue * 100.0, 'f', 1) + " %");
+      } else {
+        m_lblCardKpiMonth->setText("0.0 %");
+      }
+    } else {
+      m_lblCardKpiMonth->setText("N/A");
+    }
   }
 }
 

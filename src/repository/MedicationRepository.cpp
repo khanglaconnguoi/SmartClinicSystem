@@ -440,6 +440,32 @@ QList<std::shared_ptr<Medication>> MedicationRepository::findExpiringBefore(cons
     return result;
 }
 
+double MedicationRepository::getTotalInventoryValue() const {
+    QString sql = R"(
+        SELECT SUM(stock_quantity * unit_price)
+        FROM medications
+        WHERE is_active = 1
+    )";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {});
+    if (query.next()) {
+        return query.value(0).toDouble();
+    }
+    return 0.0;
+}
+
+int MedicationRepository::getOutOfStockCount() const {
+    QString sql = R"(
+        SELECT COUNT(*)
+        FROM medications
+        WHERE is_active = 1 AND stock_quantity <= 0
+    )";
+    QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {});
+    if (query.next()) {
+        return query.value(0).toInt();
+    }
+    return 0;
+}
+
 
 // QList<ActiveIngredientDTO> MedicationRepository::searchIngredients(const QString& keyword) const {
 //     QString sql = R"(
