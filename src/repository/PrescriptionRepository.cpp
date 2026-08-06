@@ -1,4 +1,5 @@
 #include "PrescriptionRepository.h"
+#include <QDate>
 #include <QSqlError>
 
 bool PrescriptionRepository::insertHeader(
@@ -159,6 +160,21 @@ PrescriptionResultDTO PrescriptionRepository::mapRowToPrescriptionHeader(
   dto.prescribedAt = query.value("prescribed_at").toDateTime();
   dto.totalAmount = 0.0; // Khởi tạo để tính toán sau
 
+  dto.patientName = query.value("patient_name").toString();
+  QString dobStr = query.value("patient_dob").toString();
+  QDate dob = QDate::fromString(dobStr, "yyyy-MM-dd");
+  dto.patientAge = dob.isValid() ? (QDate::currentDate().year() - dob.year()) : 0;
+  
+  QString rawGender = query.value("patient_gender").toString();
+  if (rawGender == "MALE") dto.patientGender = QString::fromUtf8("Nam");
+  else if (rawGender == "FEMALE") dto.patientGender = QString::fromUtf8("Nữ");
+  else dto.patientGender = QString::fromUtf8("Khác");
+
+  dto.diagnosis = query.value("diagnosis").toString();
+  if (dto.diagnosis.isEmpty()) {
+      dto.diagnosis = QString::fromUtf8("Chưa ghi nhận");
+  }
+
   if (!query.value("dispensed_by").isNull()) {
     PrescriptionActionInfoDTO info;
     info.staffId = query.value("dispensed_by").toInt();
@@ -220,6 +236,10 @@ static const QString SELECT_PRESCRIPTION_SQL = R"(
         s_canc.full_name AS cancelled_by_name,
         p.cancelled_at,
         p.cancel_reason,
+        pat.full_name AS patient_name,
+        pat.date_of_birth AS patient_dob,
+        pat.gender AS patient_gender,
+        (SELECT description FROM diagnoses WHERE record_id = p.record_id LIMIT 1) AS diagnosis,
         pi.medication_id, 
         pi.brand_name, 
         pi.unit_price, 
@@ -229,6 +249,8 @@ static const QString SELECT_PRESCRIPTION_SQL = R"(
         pi.duration_days, 
         pi.note AS item_note
     FROM prescriptions p
+    INNER JOIN medical_records mr ON p.record_id = mr.record_id
+    INNER JOIN patients pat ON mr.patient_id = pat.patient_id
     INNER JOIN staff d ON p.doctor_id = d.staff_id
     INNER JOIN prescription_items pi ON p.prescription_id = pi.prescription_id
     LEFT JOIN staff s_disp ON p.dispensed_by = s_disp.staff_id
@@ -286,6 +308,21 @@ QList<PrescriptionResultDTO> PrescriptionRepository::search(
       dto.notes = query.value("notes").toString();
       dto.prescribedAt = query.value("prescribed_at").toDateTime();
       dto.totalAmount = 0.0;
+
+      dto.patientName = query.value("patient_name").toString();
+      QString dobStr = query.value("patient_dob").toString();
+      QDate dob = QDate::fromString(dobStr, "yyyy-MM-dd");
+      dto.patientAge = dob.isValid() ? (QDate::currentDate().year() - dob.year()) : 0;
+      
+      QString rawGender = query.value("patient_gender").toString();
+      if (rawGender == "MALE") dto.patientGender = QString::fromUtf8("Nam");
+      else if (rawGender == "FEMALE") dto.patientGender = QString::fromUtf8("Nữ");
+      else dto.patientGender = QString::fromUtf8("Khác");
+
+      dto.diagnosis = query.value("diagnosis").toString();
+      if (dto.diagnosis.isEmpty()) {
+          dto.diagnosis = QString::fromUtf8("Chưa ghi nhận");
+      }
 
       // Nạp thông tin phát thuốc dựa theo cấu trúc PrescriptionActionInfoDTO
       // mới
@@ -417,9 +454,12 @@ PrescriptionRepository::findByPatientId(int patientId) const {
             p.status, p.notes, p.prescribed_at, p.dispensed_by, s_disp.staff_code AS dispensed_by_code,
             s_disp.full_name AS dispensed_by_name, p.dispensed_at, p.cancelled_by, s_canc.staff_code AS cancelled_by_code,
             s_canc.full_name AS cancelled_by_name, p.cancelled_at, p.cancel_reason,
+            pat.full_name AS patient_name, pat.date_of_birth AS patient_dob, pat.gender AS patient_gender,
+            (SELECT description FROM diagnoses WHERE record_id = p.record_id LIMIT 1) AS diagnosis,
             pi.medication_id, pi.brand_name, pi.unit_price, pi.quantity, pi.dosage, pi.frequency, pi.duration_days, pi.note AS item_note
         FROM prescriptions p
-        INNER JOIN medical_records mr ON p.record_id = mr.record_id    -- ✅ Đưa phép JOIN lên trước WHERE
+        INNER JOIN medical_records mr ON p.record_id = mr.record_id
+        INNER JOIN patients pat ON mr.patient_id = pat.patient_id
         INNER JOIN staff d ON p.doctor_id = d.staff_id
         INNER JOIN prescription_items pi ON p.prescription_id = pi.prescription_id
         LEFT JOIN staff s_disp ON p.dispensed_by = s_disp.staff_id

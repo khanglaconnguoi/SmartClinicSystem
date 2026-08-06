@@ -346,7 +346,7 @@ void PharmacistDashboardWidget::buildOverviewPage() {
         "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
         "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
         "QTableWidget::item:focus { outline: none; border: none; }"
-        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+        "QTableWidget::item:selected, QTableWidget::item:selected:!active { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
         "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
     );
     tableCardLayout->addWidget(m_tblReportUsage);
@@ -647,7 +647,7 @@ void PharmacistDashboardWidget::buildInventoryPage() {
         "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
         "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
         "QTableWidget::item:focus { outline: none; border: none; }"
-        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+        "QTableWidget::item:selected, QTableWidget::item:selected:!active { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
         "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
     );
     tblLayout->addWidget(m_tblInventory);
@@ -888,7 +888,7 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
     "QTableWidget::item { background: transparent; color: #334155; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
     "QTableWidget::item:focus { outline: none; border: none; }"
-    "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+    "QTableWidget::item:selected, QTableWidget::item:selected:!active { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
     "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
 );
     tblLayout->addWidget(m_tblPrescriptions);
@@ -915,9 +915,13 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     lblDetTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #4A5568; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px;");
     detLayout->addWidget(lblDetTitle);
 
-    m_lblDetPatientName = new QLabel("<b>Bệnh nhân:</b> Chưa chọn", detCard);
+    m_lblDetPatientName = new QLabel("<span style='color: #1E293B;'><b>Bệnh nhân:</b> Chưa chọn</span>", detCard);
     m_lblDetPatientInfo = new QLabel("Tuổi: -- | Giới tính: --", detCard);
-    m_lblDetDiagnosis = new QLabel("Chẩn đoán: --", detCard);
+    m_lblDetDiagnosis = new QLabel("<span style='color: #1E293B;'><b>Chẩn đoán:</b> --</span>", detCard);
+    
+    m_lblDetPatientName->setStyleSheet("color: #1E293B;");
+    m_lblDetPatientInfo->setStyleSheet("color: #1E293B;");
+    m_lblDetDiagnosis->setStyleSheet("color: #1E293B;");
     detLayout->addWidget(m_lblDetPatientName);
     detLayout->addWidget(m_lblDetPatientInfo);
     detLayout->addWidget(m_lblDetDiagnosis);
@@ -1028,6 +1032,12 @@ void PharmacistDashboardWidget::performPrescriptionSearch() {
         QTableWidgetItem* docItem = new QTableWidgetItem(presc.doctorName);
         QTableWidgetItem* dateItem = new QTableWidgetItem(presc.prescribedAt.toString("dd/MM/yyyy HH:mm"));
 
+        idItem->setForeground(QBrush(QColor("#334155")));
+        patItem->setForeground(QBrush(QColor("#334155")));
+        ageItem->setForeground(QBrush(QColor("#334155")));
+        docItem->setForeground(QBrush(QColor("#334155")));
+        dateItem->setForeground(QBrush(QColor("#334155")));
+
         QString statStr = prescriptionStatusToVi(presc.status);
         QTableWidgetItem* statItem = new QTableWidgetItem(statStr);
 
@@ -1090,9 +1100,9 @@ void PharmacistDashboardWidget::selectPrescriptionRow(int row) {
     double totalAmount = idItem->data(Qt::UserRole + 6).toDouble();
     PrescriptionStatus status = static_cast<PrescriptionStatus>(idItem->data(Qt::UserRole + 7).toInt());
 
-    m_lblDetPatientName->setText(QString("<b>Bệnh nhân:</b> %1").arg(patName));
+    m_lblDetPatientName->setText(QString("<span style='color: #1E293B;'><b>Bệnh nhân:</b> %1</span>").arg(patName));
     m_lblDetPatientInfo->setText(QString("Tuổi: %1 | Giới tính: %2").arg(patAge).arg(patGender));
-    m_lblDetDiagnosis->setText(QString("<b>Chẩn đoán:</b> %1").arg(diagnosis));
+    m_lblDetDiagnosis->setText(QString("<span style='color: #1E293B;'><b>Chẩn đoán:</b> %1</span>").arg(diagnosis));
     m_txtDetNotes->setText(notes);
     m_lblDetTotalCost->setText(QString("Tổng giá trị thuốc: %1 VND").arg(QLocale(QLocale::Vietnamese).toString(totalAmount, 'f', 0)));
 
@@ -1355,7 +1365,7 @@ void PharmacistDashboardWidget::buildBillingPage() {
         "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
         "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
         "QTableWidget::item:focus { outline: none; border: none; }"
-        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+        "QTableWidget::item:selected, QTableWidget::item:selected:!active { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
         "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
     );
     leftBill->addWidget(m_tblInvoices);
@@ -1369,7 +1379,8 @@ void PharmacistDashboardWidget::buildBillingPage() {
     lblBillDetTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #4A5568; border-bottom: 2px solid #E2E8F0; padding-bottom: 6px;");
     rightBill->addWidget(lblBillDetTitle);
 
-    m_lblBillPatientName = new QLabel("<b>Bệnh nhân:</b> Chưa chọn", billDetCard);
+    m_lblBillPatientName = new QLabel("<span style='color: #1E293B;'><b>Bệnh nhân:</b> Chưa chọn</span>", billDetCard);
+    m_lblBillPatientName->setStyleSheet("color: #1E293B;");
     m_lblBillDetails = new QLabel("Mã hóa đơn: -- | Ngày lập: --", billDetCard);
     m_lblBillInsurancePercent = new QLabel("Bảo hiểm chi trả: --", billDetCard);
     m_lblBillInsurancePercent->setStyleSheet("font-weight: bold; color: #2563EB; font-size: 13px;");
@@ -1555,7 +1566,7 @@ void PharmacistDashboardWidget::selectInvoiceRow(int row) {
             coveragePercent = m_patientService->getInsuranceCoveragePercent(inv.patientId);
         }
 
-        m_lblBillPatientName->setText(QString("<b>Hóa đơn số:</b> %1").arg(inv.invoiceCode));
+        m_lblBillPatientName->setText(QString("<span style='color: #1E293B;'><b>Hóa đơn số:</b> %1</span>").arg(inv.invoiceCode));
         m_lblBillDetails->setText(QString("Ngày lập: %1 | Trạng thái: %2").arg(inv.issuedDate.toString("dd/MM/yyyy")).arg(inv.status));
         
         if (coveragePercent > 0.0) {
@@ -1719,10 +1730,20 @@ void PharmacistDashboardWidget::showCreateInvoiceDialog(const PrescriptionResult
     dlg.setMinimumSize(450, 350);
     QVBoxLayout* lay = new QVBoxLayout(&dlg);
     
-    lay->addWidget(new QLabel(QString("<b>Bệnh nhân:</b> %1").arg(presc.patientName)));
-    lay->addWidget(new QLabel(QString("<b>Tuổi:</b> %1 | <b>Giới tính:</b> %2").arg(presc.patientAge).arg(presc.patientGender)));
-    lay->addWidget(new QLabel(QString("<b>Bác sĩ kê đơn:</b> %1").arg(presc.doctorName)));
-    lay->addWidget(new QLabel(QString("<b>Ngày kê đơn:</b> %1").arg(presc.prescribedAt.toString("dd/MM/yyyy HH:mm"))));
+    QLabel* lblPat = new QLabel(QString("<span style='color: #172B4D;'><b>Bệnh nhân:</b> %1</span>").arg(presc.patientName), &dlg);
+    QLabel* lblAge = new QLabel(QString("<span style='color: #172B4D;'><b>Tuổi:</b> %1 | <b>Giới tính:</b> %2</span>").arg(presc.patientAge).arg(presc.patientGender), &dlg);
+    QLabel* lblDoc = new QLabel(QString("<span style='color: #172B4D;'><b>Bác sĩ kê đơn:</b> %1</span>").arg(presc.doctorName), &dlg);
+    QLabel* lblDate = new QLabel(QString("<span style='color: #172B4D;'><b>Ngày kê đơn:</b> %1</span>").arg(presc.prescribedAt.toString("dd/MM/yyyy HH:mm")), &dlg);
+    
+    lblPat->setStyleSheet("color: #172B4D;");
+    lblAge->setStyleSheet("color: #172B4D;");
+    lblDoc->setStyleSheet("color: #172B4D;");
+    lblDate->setStyleSheet("color: #172B4D;");
+    
+    lay->addWidget(lblPat);
+    lay->addWidget(lblAge);
+    lay->addWidget(lblDoc);
+    lay->addWidget(lblDate);
     
     QHBoxLayout* feeLay = new QHBoxLayout();
     feeLay->addWidget(new QLabel("Phí khám bệnh (VND):"));
@@ -1740,7 +1761,7 @@ void PharmacistDashboardWidget::showCreateInvoiceDialog(const PrescriptionResult
     QLabel* lblGrandTotal = new QLabel(&dlg);
     auto updateGrandTotal = [spinFee, medTotal, lblGrandTotal]() {
         double grand = spinFee->value() + medTotal;
-        lblGrandTotal->setText(QString("<h3>Tổng thanh toán: <span style='color:#E53E3E;'>%1 VND</span></h3>").arg(QLocale(QLocale::Vietnamese).toString(grand, 'f', 0)));
+        lblGrandTotal->setText(QString("<h3 style='color: #172B4D;'>Tổng thanh toán: <span style='color:#E53E3E;'>%1 VND</span></h3>").arg(QLocale(QLocale::Vietnamese).toString(grand, 'f', 0)));
     };
     connect(spinFee, QOverload<double>::of(&QDoubleSpinBox::valueChanged), updateGrandTotal);
     updateGrandTotal();
