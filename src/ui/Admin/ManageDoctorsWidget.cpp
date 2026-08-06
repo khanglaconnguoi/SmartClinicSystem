@@ -10,6 +10,9 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QFile>
 
 ManageDoctorsWidget::ManageDoctorsWidget(
     std::shared_ptr<StaffService> staffService,
@@ -119,6 +122,34 @@ void ManageDoctorsWidget::buildUI() {
       "32px; }"
       "QPushButton:hover { background-color: #DC2626; }");
 
+  QLabel *lblSearchIcon = new QLabel(filterCard);
+  QPixmap searchPix(":/assets/icons/search_icon.png");
+  qDebug() << "--- Search Icon Debug ---";
+  qDebug() << "QRC searchPix isNull:" << searchPix.isNull();
+#ifdef PROJECT_ROOT_DIR
+  qDebug() << "PROJECT_ROOT_DIR is:" << PROJECT_ROOT_DIR;
+  QString testPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/icons/search_icon.png";
+  qDebug() << "Test path exists:" << QFile::exists(testPath) << "Path:" << testPath;
+#else
+  qDebug() << "PROJECT_ROOT_DIR not defined!";
+#endif
+  qDebug() << "applicationDirPath exists:" << QFile::exists(QCoreApplication::applicationDirPath() + "/assets/icons/search_icon.png");
+
+  if (searchPix.isNull()) {
+#ifdef PROJECT_ROOT_DIR
+    searchPix.load(QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/icons/search_icon.png");
+#else
+    searchPix.load(QCoreApplication::applicationDirPath() + "/assets/icons/search_icon.png");
+#endif
+  }
+
+  if (!searchPix.isNull()) {
+    lblSearchIcon->setPixmap(searchPix.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  } else {
+    lblSearchIcon->setText("Tìm kiếm:");
+  }
+
+  filterLayout->addWidget(lblSearchIcon);
   filterLayout->addWidget(m_txtSearchKey);
   filterLayout->addWidget(m_cbSpecialtyFilter);
   filterLayout->addWidget(m_cbDepartmentFilter);

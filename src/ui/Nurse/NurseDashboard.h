@@ -54,7 +54,7 @@ private:
     QTableWidget *m_overviewTable = nullptr;
 
     // Lab Queue Elements
-    QComboBox *m_comboRooms = nullptr;
+    QLabel *m_lblRoomValue = nullptr;
     QComboBox *m_comboStatusFilter = nullptr;
     QDateEdit *m_queueDateEdit = nullptr;
     QTableWidget *m_queueTable = nullptr;
@@ -67,6 +67,13 @@ private:
     // Selected Request State
     int m_selectedRequestId = -1;
     int m_nurseRoomId = -1;
+    int m_activeRequestId = -1;
+
+    // Active Patient Info Labels
+    QLabel *m_lblActivePatientName = nullptr;
+    QLabel *m_lblActivePatientCode = nullptr;
+    QLabel *m_lblActivePatientService = nullptr;
+    QLabel *m_lblActivePatientStatus = nullptr;
 
     // UI Construction
     void buildSidebar();
@@ -80,7 +87,6 @@ private:
     void switchPage(int index, QPushButton* activeBtn);
 
 private slots:
-    void onRoomChanged(int index);
     void onStatusFilterChanged(int index);
     void onDateChanged(const QDate &date);
     void onQueueTableRowSelected(int row, int col);

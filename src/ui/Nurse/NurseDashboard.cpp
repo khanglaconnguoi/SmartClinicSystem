@@ -58,23 +58,30 @@ void NurseDashboardWidget::fillDashboardData() {
 }
 
 void NurseDashboardWidget::buildSidebar() {
-    m_btnOverview = new QPushButton("Tổng quan", m_sidebarFrame);
-    m_btnLabQueue = new QPushButton("Phòng xét nghiệm", m_sidebarFrame);
-    QPushButton *btnLogout = new QPushButton("Đăng xuất", m_sidebarFrame);
+    QLabel *roleHeader = new QLabel("Y TÁ", m_sidebarFrame);
+    roleHeader->setStyleSheet(
+        "font-size: 10px; font-weight: bold; color: #B0B8C4;"
+        "letter-spacing: 2px; margin: 8px 4px 4px 4px;");
+
+    m_btnOverview = new QPushButton("Tổng Quan", m_sidebarFrame);
+    m_btnLabQueue = new QPushButton("Phòng Xét Nghiệm", m_sidebarFrame);
+    QPushButton *btnLogout = new QPushButton("Đăng Xuất", m_sidebarFrame);
 
     m_btnOverview->setObjectName("activeBtn"); // Default active
 
     btnLogout->setCursor(Qt::PointingHandCursor);
     btnLogout->setStyleSheet(
-        "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; font-weight: 600; "
-        "border: none; border-radius: 6px; color: #DC2626; background-color: transparent; } "
-        "QPushButton:hover { background-color: #FEE2E2; color: #991B1B; }"
-    );
+        "QPushButton { text-align: left; padding: 12px 20px; font-size: 14px; "
+        "color: #D32F2F; border: none; border-radius: 0px; background-color: "
+        "transparent; font-weight: bold; }"
+        "QPushButton:hover { background-color: #FFEBEE; }");
 
+    m_sidebarLayout->addWidget(roleHeader);
     m_sidebarLayout->addWidget(m_btnOverview);
     m_sidebarLayout->addWidget(m_btnLabQueue);
     m_sidebarLayout->addStretch();
     m_sidebarLayout->addWidget(btnLogout);
+    m_sidebarLayout->addSpacing(30);
 
     connect(m_btnOverview, &QPushButton::clicked, this, [this]() {
         switchPage(0, m_btnOverview);
@@ -135,6 +142,7 @@ void NurseDashboardWidget::buildOverviewPage() {
     m_overviewTable->setColumnCount(6);
     m_overviewTable->setHorizontalHeaderLabels({"STT", "Mã BN", "Bệnh nhân", "Dịch vụ", "Phòng", "Trạng thái"});
     m_overviewTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_overviewTable->verticalHeader()->setVisible(false);
     m_overviewTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_overviewTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_overviewTable->setFocusPolicy(Qt::NoFocus);
@@ -168,9 +176,8 @@ void NurseDashboardWidget::buildLabQueuePage() {
 
     QLabel *lblRoom = new QLabel("Phòng xét nghiệm:", filterCard);
     lblRoom->setStyleSheet("font-weight: 600; color: #172B4D; border: none;");
-    m_comboRooms = new QComboBox(filterCard);
-    m_comboRooms->setMinimumWidth(180);
-    m_comboRooms->setStyleSheet(filterInputStyle);
+    m_lblRoomValue = new QLabel(filterCard);
+    m_lblRoomValue->setStyleSheet("font-weight: bold; color: #0052CC; font-size: 14px; background-color: #DEEBFF; border-radius: 4px; padding: 6px 12px; border: none;");
 
     QLabel *lblStatus = new QLabel("Trạng thái:", filterCard);
     lblStatus->setStyleSheet("font-weight: 600; color: #172B4D; border: none;");
@@ -192,7 +199,7 @@ void NurseDashboardWidget::buildLabQueuePage() {
     btnRefresh->setStyleSheet("QPushButton { background-color: #DEEBFF; color: #0052CC; font-weight: bold; border: none; border-radius: 4px; padding: 6px 14px; } QPushButton:hover { background-color: #B3D4FF; }");
 
     filterLayout->addWidget(lblRoom);
-    filterLayout->addWidget(m_comboRooms);
+    filterLayout->addWidget(m_lblRoomValue);
     filterLayout->addWidget(lblStatus);
     filterLayout->addWidget(m_comboStatusFilter);
     filterLayout->addWidget(lblDate);
@@ -213,8 +220,9 @@ void NurseDashboardWidget::buildLabQueuePage() {
 
     m_queueTable = new QTableWidget(tableCard);
     m_queueTable->setColumnCount(7);
-    m_queueTable->setHorizontalHeaderLabels({"STT Ticket", "Mã BN", "Họ tên bệnh nhân", "Dịch vụ", "Bác sĩ chỉ định", "Trạng thái", "Thời gian"});
+    m_queueTable->setHorizontalHeaderLabels({"STT", "Mã BN", "Họ và tên", "Dịch vụ", "Bác sĩ chỉ định", "Trạng thái", "Thời gian"});
     m_queueTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_queueTable->verticalHeader()->setVisible(false);
     m_queueTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_queueTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_queueTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -241,16 +249,46 @@ void NurseDashboardWidget::buildLabQueuePage() {
     actionTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #172B4D; border: none;");
     actionLayout->addWidget(actionTitle);
 
-    m_btnCheckIn = new QPushButton("1. Tiếp Nhận", actionCard);
-    m_btnStartProcessing = new QPushButton("2. Bắt Đầu XN", actionCard);
-    m_btnComplete = new QPushButton("3. Trả Kết Quả", actionCard);
+    // Active Patient Section
+    QFrame *activePatientBox = new QFrame(actionCard);
+    activePatientBox->setStyleSheet("QFrame { background-color: #F4F5F7; border: 1px solid #DFE1E6; border-radius: 6px; padding: 10px; } QLabel { border: none; background: transparent; }");
+    QVBoxLayout *activeLayout = new QVBoxLayout(activePatientBox);
+    activeLayout->setContentsMargins(10, 10, 10, 10);
+    activeLayout->setSpacing(6);
+
+    QLabel *activeTitle = new QLabel("BỆNH NHÂN HIỆN TẠI", activePatientBox);
+    activeTitle->setStyleSheet("font-size: 11px; font-weight: bold; color: #5E6C84;");
+    activeLayout->addWidget(activeTitle);
+
+    auto createInfoRow = [activePatientBox](const QString &label, QLabel *&valLabel) {
+        QHBoxLayout *row = new QHBoxLayout();
+        row->setSpacing(5);
+        QLabel *lbl = new QLabel(label, activePatientBox);
+        lbl->setStyleSheet("color: #5E6C84; font-size: 12px; font-weight: 500;");
+        valLabel = new QLabel("-", activePatientBox);
+        valLabel->setStyleSheet("color: #172B4D; font-size: 12px; font-weight: bold;");
+        row->addWidget(lbl);
+        row->addWidget(valLabel, 1, Qt::AlignRight);
+        return row;
+    };
+
+    activeLayout->addLayout(createInfoRow("Mã BN:", m_lblActivePatientCode));
+    activeLayout->addLayout(createInfoRow("Họ tên:", m_lblActivePatientName));
+    activeLayout->addLayout(createInfoRow("Dịch vụ:", m_lblActivePatientService));
+    activeLayout->addLayout(createInfoRow("Trạng thái:", m_lblActivePatientStatus));
+
+    actionLayout->addWidget(activePatientBox);
+
+    m_btnCheckIn = new QPushButton("Tiếp Nhận", actionCard);
+    m_btnStartProcessing = new QPushButton("Bắt Đầu XN", actionCard);
+    m_btnComplete = new QPushButton("Trả Kết Quả", actionCard);
     m_btnCancel = new QPushButton("Hủy Yêu Cầu", actionCard);
 
     QString actionBtnBase = "QPushButton { font-weight: bold; border-radius: 6px; padding: 10px; border: none; font-size: 14px; } ";
-    m_btnCheckIn->setStyleSheet(actionBtnBase + "QPushButton { background-color: #FFAB00; color: white; } QPushButton:hover { background-color: #FF8F00; }");
-    m_btnStartProcessing->setStyleSheet(actionBtnBase + "QPushButton { background-color: #0065FF; color: white; } QPushButton:hover { background-color: #0052CC; }");
-    m_btnComplete->setStyleSheet(actionBtnBase + "QPushButton { background-color: #36B37E; color: white; } QPushButton:hover { background-color: #2D9D6F; }");
-    m_btnCancel->setStyleSheet(actionBtnBase + "QPushButton { background-color: #FF5630; color: white; } QPushButton:hover { background-color: #DE350B; }");
+    m_btnCheckIn->setStyleSheet(actionBtnBase + "QPushButton { background-color: #FFAB00; color: white; } QPushButton:hover { background-color: #FF8F00; } QPushButton:disabled { background-color: #DFE1E6; color: #959595; }");
+    m_btnStartProcessing->setStyleSheet(actionBtnBase + "QPushButton { background-color: #0065FF; color: white; } QPushButton:hover { background-color: #0052CC; } QPushButton:disabled { background-color: #DFE1E6; color: #959595; }");
+    m_btnComplete->setStyleSheet(actionBtnBase + "QPushButton { background-color: #36B37E; color: white; } QPushButton:hover { background-color: #2D9D6F; } QPushButton:disabled { background-color: #DFE1E6; color: #959595; }");
+    m_btnCancel->setStyleSheet(actionBtnBase + "QPushButton { background-color: #FF5630; color: white; } QPushButton:hover { background-color: #DE350B; } QPushButton:disabled { background-color: #DFE1E6; color: #959595; }");
 
     actionLayout->addWidget(m_btnCheckIn);
     actionLayout->addWidget(m_btnStartProcessing);
@@ -262,7 +300,6 @@ void NurseDashboardWidget::buildLabQueuePage() {
     mainLayout->addLayout(contentLayout, 1);
 
     // Connections
-    connect(m_comboRooms, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &NurseDashboardWidget::onRoomChanged);
     connect(m_comboStatusFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &NurseDashboardWidget::onStatusFilterChanged);
     connect(m_queueDateEdit, &QDateEdit::dateChanged, this, &NurseDashboardWidget::onDateChanged);
     connect(btnRefresh, &QPushButton::clicked, this, &NurseDashboardWidget::updateQueueTable);
@@ -275,11 +312,10 @@ void NurseDashboardWidget::buildLabQueuePage() {
 }
 
 void NurseDashboardWidget::loadLabRooms() {
-    m_comboRooms->clear();
-    m_comboRooms->addItem("--- Tất cả phòng ---", -1);
     if (m_nurseRoomId > 0) {
-        m_comboRooms->addItem(QString("Phòng %1").arg(m_nurseRoomId), m_nurseRoomId);
-        m_comboRooms->setCurrentIndex(1);
+        m_lblRoomValue->setText(QString("Phòng %1").arg(m_nurseRoomId));
+    } else {
+        m_lblRoomValue->setText("Chưa phân công");
     }
 }
 
@@ -287,7 +323,7 @@ void NurseDashboardWidget::updateOverviewData() {
     if (!m_serviceRequestService) return;
 
     QString today = QDate::currentDate().toString("yyyy-MM-dd");
-    int roomId = m_comboRooms ? m_comboRooms->currentData().toInt() : -1;
+    int roomId = m_nurseRoomId;
 
     auto all = m_serviceRequestService->getRequestsByRoom(roomId, today);
 
@@ -321,7 +357,7 @@ void NurseDashboardWidget::updateOverviewData() {
 void NurseDashboardWidget::updateQueueTable() {
     if (!m_serviceRequestService) return;
 
-    int roomId = m_comboRooms ? m_comboRooms->currentData().toInt() : -1;
+    int roomId = m_nurseRoomId;
     QString date = m_queueDateEdit ? m_queueDateEdit->date().toString("yyyy-MM-dd") : QDate::currentDate().toString("yyyy-MM-dd");
 
     std::optional<ServiceRequestStatus> statusOpt = std::nullopt;
@@ -357,12 +393,50 @@ void NurseDashboardWidget::updateQueueTable() {
         m_queueTable->setItem(i, 5, itemStatus);
         m_queueTable->setItem(i, 6, itemTime);
     }
+
+    // UPDATE ACTIVE PATIENT SECTION
+    auto allOnDateRequests = m_serviceRequestService->getRequestsByRoom(roomId, date);
+    
+    std::optional<ServiceRequestDTO> activeReq = std::nullopt;
+    for (const auto &req : allOnDateRequests) {
+        if (req.status == ServiceRequestStatus::CheckedIn || req.status == ServiceRequestStatus::Processing) {
+            activeReq = req;
+            break;
+        }
+    }
+
+    if (activeReq.has_value()) {
+        m_activeRequestId = activeReq->requestId;
+        if (m_lblActivePatientCode) m_lblActivePatientCode->setText(activeReq->patientCode);
+        if (m_lblActivePatientName) m_lblActivePatientName->setText(activeReq->patientName);
+        if (m_lblActivePatientService) m_lblActivePatientService->setText(activeReq->serviceName);
+        if (m_lblActivePatientStatus) m_lblActivePatientStatus->setText(serviceRequestStatusToVi(activeReq->status));
+
+        // Enable buttons based on status
+        if (m_btnCheckIn) m_btnCheckIn->setEnabled(false);
+        
+        if (activeReq->status == ServiceRequestStatus::CheckedIn) {
+            if (m_btnStartProcessing) m_btnStartProcessing->setEnabled(true);
+            if (m_btnComplete) m_btnComplete->setEnabled(false);
+        } else if (activeReq->status == ServiceRequestStatus::Processing) {
+            if (m_btnStartProcessing) m_btnStartProcessing->setEnabled(false);
+            if (m_btnComplete) m_btnComplete->setEnabled(true);
+        }
+        if (m_btnCancel) m_btnCancel->setEnabled(true);
+    } else {
+        m_activeRequestId = -1;
+        if (m_lblActivePatientCode) m_lblActivePatientCode->setText("-");
+        if (m_lblActivePatientName) m_lblActivePatientName->setText("Chưa có");
+        if (m_lblActivePatientService) m_lblActivePatientService->setText("-");
+        if (m_lblActivePatientStatus) m_lblActivePatientStatus->setText("Trống");
+
+        if (m_btnCheckIn) m_btnCheckIn->setEnabled(false);
+        if (m_btnStartProcessing) m_btnStartProcessing->setEnabled(false);
+        if (m_btnComplete) m_btnComplete->setEnabled(false);
+        if (m_btnCancel) m_btnCancel->setEnabled(false);
+    }
 }
 
-void NurseDashboardWidget::onRoomChanged(int index) {
-    Q_UNUSED(index);
-    updateQueueTable();
-}
 
 void NurseDashboardWidget::onStatusFilterChanged(int index) {
     Q_UNUSED(index);
@@ -380,12 +454,22 @@ void NurseDashboardWidget::onQueueTableRowSelected(int row, int col) {
     QTableWidgetItem *item = m_queueTable->item(row, 0);
     if (item) {
         m_selectedRequestId = item->data(Qt::UserRole).toInt();
+        
+        // If there is no active patient, enable appropriate buttons based on selection
+        if (m_activeRequestId <= 0) {
+            if (m_btnCheckIn) m_btnCheckIn->setEnabled(true);
+            if (m_btnCancel) m_btnCancel->setEnabled(true);
+        }
     }
 }
 
 void NurseDashboardWidget::onCheckInClicked() {
+    if (m_activeRequestId > 0) {
+        QMessageBox::warning(this, "Thông báo", "Vui lòng hoàn thành hoặc hủy yêu cầu hiện tại trước khi tiếp nhận bệnh nhân mới.");
+        return;
+    }
     if (m_selectedRequestId <= 0) {
-        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn một yêu cầu trong danh sách.");
+        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn một yêu cầu trong danh sách để tiếp nhận.");
         return;
     }
 
@@ -399,12 +483,13 @@ void NurseDashboardWidget::onCheckInClicked() {
 }
 
 void NurseDashboardWidget::onStartProcessingClicked() {
-    if (m_selectedRequestId <= 0) {
-        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn một yêu cầu trong danh sách.");
+    int reqId = (m_activeRequestId > 0) ? m_activeRequestId : m_selectedRequestId;
+    if (reqId <= 0) {
+        QMessageBox::warning(this, "Thông báo", "Không có bệnh nhân nào đang xử lý.");
         return;
     }
 
-    if (m_serviceRequestService->startProcessing(m_selectedRequestId)) {
+    if (m_serviceRequestService->startProcessing(reqId)) {
         QMessageBox::information(this, "Thành công", "Đã chuyển trạng thái sang Đang Thực Hiện Xét Nghiệm.");
         updateQueueTable();
     } else {
@@ -413,8 +498,9 @@ void NurseDashboardWidget::onStartProcessingClicked() {
 }
 
 void NurseDashboardWidget::onCompleteClicked() {
-    if (m_selectedRequestId <= 0) {
-        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn một yêu cầu trong danh sách.");
+    int reqId = (m_activeRequestId > 0) ? m_activeRequestId : m_selectedRequestId;
+    if (reqId <= 0) {
+        QMessageBox::warning(this, "Thông báo", "Không có bệnh nhân nào đang xử lý.");
         return;
     }
 
@@ -426,7 +512,7 @@ void NurseDashboardWidget::onCompleteClicked() {
 
     if (!ok) return; // User cancelled input
 
-    if (m_serviceRequestService->completeProcessing(m_selectedRequestId, resultNote)) {
+    if (m_serviceRequestService->completeProcessing(reqId, resultNote)) {
         QMessageBox::information(this, "Thành công", "Đã hoàn thành và trả kết quả xét nghiệm!");
         updateQueueTable();
     } else {
@@ -435,15 +521,16 @@ void NurseDashboardWidget::onCompleteClicked() {
 }
 
 void NurseDashboardWidget::onCancelClicked() {
-    if (m_selectedRequestId <= 0) {
-        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn một yêu cầu trong danh sách.");
+    int reqId = (m_activeRequestId > 0) ? m_activeRequestId : m_selectedRequestId;
+    if (reqId <= 0) {
+        QMessageBox::warning(this, "Thông báo", "Vui lòng chọn một yêu cầu trong danh sách hoặc có bệnh nhân đang xử lý để hủy.");
         return;
     }
 
     auto reply = QMessageBox::question(this, "Xác nhận", "Bạn có chắc chắn muốn hủy yêu cầu xét nghiệm này?", QMessageBox::Yes | QMessageBox::No);
     if (reply != QMessageBox::Yes) return;
 
-    if (m_serviceRequestService->cancelRequest(m_selectedRequestId)) {
+    if (m_serviceRequestService->cancelRequest(reqId)) {
         QMessageBox::information(this, "Thành công", "Đã hủy yêu cầu xét nghiệm.");
         updateQueueTable();
     } else {
