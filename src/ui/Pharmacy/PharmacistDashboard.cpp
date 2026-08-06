@@ -1114,14 +1114,6 @@ void PharmacistDashboardWidget::buildDispensingPage() {
       "QComboBox { padding: 6px 10px; border: 1px solid #CBD5E1; "
       "border-radius: 6px; color: #0F172A; }");
 
-  QPushButton *btnSearch = new QPushButton("Lọc", m_dispensingPage);
-  btnSearch->setCursor(Qt::PointingHandCursor);
-  btnSearch->setStyleSheet(
-      "QPushButton { background-color: #2563EB; color: white; padding: 6px "
-      "16px; border-radius: 6px; border: none; font-weight: bold; min-height: "
-      "32px; font-size: 13px; } QPushButton:hover { background-color: #1D4ED8; "
-      "}");
-
   QPushButton *btnReset = new QPushButton("Đặt lại", m_dispensingPage);
   btnReset->setCursor(Qt::PointingHandCursor);
   btnReset->setStyleSheet(
@@ -1132,7 +1124,6 @@ void PharmacistDashboardWidget::buildDispensingPage() {
 
   searchLayout->addWidget(m_txtPrescKeyword);
   searchLayout->addWidget(m_cbPrescStatus);
-  searchLayout->addWidget(btnSearch);
   searchLayout->addWidget(btnReset);
   leftLayout->addLayout(searchLayout);
 
@@ -1305,10 +1296,6 @@ void PharmacistDashboardWidget::buildDispensingPage() {
   mainLayout->addWidget(detCard, 4);
   m_stackedWidget->addWidget(m_dispensingPage);
 
-  connect(btnSearch, &QPushButton::clicked, this, [this]() {
-    m_prescCurrentPage = 1;
-    performPrescriptionSearch();
-  });
   connect(btnReset, &QPushButton::clicked, this, [this]() {
     m_txtPrescKeyword->clear();
     m_cbPrescStatus->setCurrentIndex(0);
@@ -1449,7 +1436,7 @@ void PharmacistDashboardWidget::selectPrescriptionRow(int row) {
 
   m_lblDetPatientName->setText(QString("<b>Bệnh nhân:</b> %1").arg(patName));
   m_lblDetPatientInfo->setText(
-      QString("Tuổi: %1 | Giới tính: %2").arg(patAge).arg(patGender));
+      QString("Tuổi: %1 | Giới tính: %2").arg(patAge).arg(GenderText::toVi(patGender)));
   m_lblDetDiagnosis->setText(QString("<b>Chẩn đoán:</b> %1").arg(diagnosis));
   m_txtDetNotes->setText(notes);
   m_lblDetTotalCost->setText(
@@ -1601,7 +1588,7 @@ void PharmacistDashboardWidget::handlePrintReceipt() {
       "</td>"
       "    <td><b>Tuổi:</b> " +
       QString::number(presc.patientAge) + " | <b>Giới tính:</b> " +
-      presc.patientGender +
+      GenderText::toVi(presc.patientGender) +
       "</td>"
       "  </tr>"
       "  <tr>"
@@ -1763,14 +1750,6 @@ void PharmacistDashboardWidget::buildBillingPage() {
       "QComboBox { padding: 6px 10px; border: 1px solid #CBD5E1; "
       "border-radius: 6px; color: #0F172A; }");
 
-  QPushButton *btnSearchBill = new QPushButton("Lọc hóa đơn", tabList);
-  btnSearchBill->setCursor(Qt::PointingHandCursor);
-  btnSearchBill->setStyleSheet(
-      "QPushButton { background-color: #2563EB; color: white; padding: 6px "
-      "16px; border-radius: 6px; border: none; font-weight: bold; min-height: "
-      "32px; font-size: 13px; } QPushButton:hover { background-color: #1D4ED8; "
-      "}");
-
   QPushButton *btnResetBill = new QPushButton("Đặt lại", tabList);
   btnResetBill->setCursor(Qt::PointingHandCursor);
   btnResetBill->setStyleSheet(
@@ -1781,7 +1760,6 @@ void PharmacistDashboardWidget::buildBillingPage() {
 
   billSearchLay->addWidget(m_txtBillKeyword);
   billSearchLay->addWidget(m_cbBillStatus);
-  billSearchLay->addWidget(btnSearchBill);
   billSearchLay->addWidget(btnResetBill);
   leftBill->addLayout(billSearchLay);
   m_tblInvoices = new QTableWidget(tabList);
@@ -1978,10 +1956,6 @@ void PharmacistDashboardWidget::buildBillingPage() {
   mainLayout->addWidget(m_tabBillingContainer);
   m_stackedWidget->addWidget(m_billingPage);
 
-  connect(btnSearchBill, &QPushButton::clicked, this, [this]() {
-    m_billCurrentPage = 1;
-    performInvoiceSearch();
-  });
   connect(btnResetBill, &QPushButton::clicked, this, [this]() {
     m_txtBillKeyword->clear();
     m_cbBillStatus->setCurrentIndex(0);
@@ -1992,6 +1966,16 @@ void PharmacistDashboardWidget::buildBillingPage() {
     m_billCurrentPage = 1;
     performInvoiceSearch();
   });
+  connect(m_txtBillKeyword, &QLineEdit::textChanged, this,
+          [this](const QString &) {
+            m_billCurrentPage = 1;
+            performInvoiceSearch();
+          });
+  connect(m_cbBillStatus, &QComboBox::currentIndexChanged, this,
+          [this](int) {
+            m_billCurrentPage = 1;
+            performInvoiceSearch();
+          });
   connect(m_btnBillPrev, &QPushButton::clicked, this,
           &PharmacistDashboardWidget::prevInvoicePage);
   connect(m_btnBillNext, &QPushButton::clicked, this,
