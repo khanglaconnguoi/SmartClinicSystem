@@ -44,6 +44,8 @@ struct MedicalRecordResultDTO {
   int recordId;                       // record_id      NOT NULL  PK
   int patientId;                      // patient_id     NOT NULL
   int doctorId;                       // doctor_id      NOT NULL
+  QString doctorName;                 // JOIN từ staff
+  QString doctorCode;                 // JOIN từ staff
   int appointmentId;                  // appointment_id NOT NULL
   QDateTime visitDateTime;            // visit_datetime NOT NULL
   VitalSigns vitals;                  // tất cả nullable trong DB

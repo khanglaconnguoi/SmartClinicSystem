@@ -1,6 +1,29 @@
 #include "DoctorDashboard.h"
 
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QPainterPath>
+#include <QStyleOptionViewItem>
+
+class StartedRowDelegate : public QStyledItemDelegate {
+public:
+    StartedRowDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override {
+        QStyleOptionViewItem opt = option;
+        initStyleOption(&opt, index);
+        
+        QVariant bg = index.data(Qt::BackgroundRole);
+        if (bg.isValid() && bg.canConvert<QBrush>()) {
+            painter->fillRect(opt.rect, bg.value<QBrush>());
+        }
+        
+        QStyledItemDelegate::paint(painter, opt, index);
+    }
+};
+
+#include <algorithm>
 #include <QCalendarWidget>
+#include <QGraphicsDropShadowEffect>
 #include <QDate>
 #include <QDateEdit>
 #include <QDebug>
@@ -135,7 +158,7 @@ void DoctorDashboardWidget::fillDashboardData() {
   m_stackedWidget = new QStackedWidget(m_mainContentWidget);
   m_stackedWidget->setObjectName("StackedWidget");
   m_stackedWidget->setStyleSheet(
-      "QStackedWidget#StackedWidget > QWidget { background-color: #EEF2F6; }");
+      "QStackedWidget#StackedWidget > QWidget { background-color: transparent; }");
   m_mainContentLayout->addWidget(m_stackedWidget, 1);
 
   buildOverviewPage();
@@ -244,17 +267,27 @@ void DoctorDashboardWidget::buildPatientsPage() {
 void DoctorDashboardWidget::buildAppointmentsPage() {
   m_appointmentsPage = new QWidget(this);
   QVBoxLayout *pageLayout = new QVBoxLayout(m_appointmentsPage);
-  pageLayout->setContentsMargins(0, 0, 0, 0);
-  pageLayout->setSpacing(20);
+  pageLayout->setContentsMargins(16, 12, 16, 16);
+  pageLayout->setSpacing(16);
+
+  QFrame* container = new QFrame(m_appointmentsPage);
+  container->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; }");
+  auto* containerShadow = new QGraphicsDropShadowEffect(container);
+  containerShadow->setBlurRadius(16); containerShadow->setOffset(0, 2); containerShadow->setColor(QColor(0, 0, 0, 10));
+  container->setGraphicsEffect(containerShadow);
+
+  QVBoxLayout* containerLayout = new QVBoxLayout(container);
+  containerLayout->setContentsMargins(24, 20, 24, 24);
+  containerLayout->setSpacing(16);
 
   QHBoxLayout *headerLayout = new QHBoxLayout();
-  QLabel *title = new QLabel("Lịch Hẹn Khám", m_appointmentsPage);
-  title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;");
+  QLabel *title = new QLabel("Lịch Hẹn Khám", container);
+  title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827; border: none;");
   
-  QLabel *lblFilter = new QLabel("Ngày:", m_appointmentsPage);
-  lblFilter->setStyleSheet("font-size: 14px; font-weight: bold; color: #374151;");
+  QLabel *lblFilter = new QLabel("Ngày:", container);
+  lblFilter->setStyleSheet("font-size: 14px; font-weight: bold; color: #374151; border: none;");
 
-  m_apptDateFilter = new QDateEdit(QDate::currentDate(), m_appointmentsPage);
+  m_apptDateFilter = new QDateEdit(QDate::currentDate(), container);
   m_apptDateFilter->setCalendarPopup(true);
   m_apptDateFilter->setDisplayFormat("dd/MM/yyyy");
   m_apptDateFilter->setCursor(Qt::PointingHandCursor);
@@ -268,7 +301,7 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   );
   connect(m_apptDateFilter, &QDateEdit::dateChanged, this, &DoctorDashboardWidget::refreshAppointmentsTables);
 
-  QPushButton *btnRefresh = new QPushButton("Tải lại", m_appointmentsPage);
+  QPushButton *btnRefresh = new QPushButton("Tải lại", container);
   btnRefresh->setCursor(Qt::PointingHandCursor);
   btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 6px 14px; border-radius: 6px; } QPushButton:hover { background-color: #DBEAFE; }");
   connect(btnRefresh, &QPushButton::clicked, this, &DoctorDashboardWidget::refreshAppointmentsTables);
@@ -279,29 +312,45 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   headerLayout->addWidget(m_apptDateFilter);
   headerLayout->addSpacing(10);
   headerLayout->addWidget(btnRefresh);
-  pageLayout->addLayout(headerLayout);
+  containerLayout->addLayout(headerLayout);
 
-  m_appointmentsTable = new QTableWidget(m_appointmentsPage);
+  m_appointmentsTable = new QTableWidget(container);
   m_appointmentsTable->setColumnCount(7);
   m_appointmentsTable->setHorizontalHeaderLabels(
       {"Thời Gian", "Mã BN", "Tên Bệnh Nhân", "Dịch Vụ Khám", "Phòng Khám",
        "Trạng Thái", "Thao Tác"});
-  m_appointmentsTable->setStyleSheet(
-      "QTableWidget { background-color: #FFFFFF; border: 1px solid #EAEAEA; "
-      "border-radius: 8px; gridline-color: #F1F3F4; outline: none; }"
-      "QHeaderView::section { background-color: #F8F9FA; padding: 10px; "
-      "font-weight: bold; border: none; border-bottom: 2px solid #EAEAEA; "
-      "color: #5F6368; }"
-      "QTableWidget::item { padding: 12px; color: #3C4043; outline: none; }"
-      "QTableWidget::item:focus { outline: none; border: none; }");
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
-      QHeaderView::Stretch);
   m_appointmentsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_appointmentsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_appointmentsTable->setAlternatingRowColors(true);
+  m_appointmentsTable->setShowGrid(false);
   m_appointmentsTable->setFocusPolicy(Qt::NoFocus);
   m_appointmentsTable->verticalHeader()->setVisible(false);
+  m_appointmentsTable->verticalHeader()->setDefaultSectionSize(46);
 
-  pageLayout->addWidget(m_appointmentsTable, 1);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->resizeSection(0, 140);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->resizeSection(1, 140);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->resizeSection(4, 110);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->resizeSection(5, 110);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->resizeSection(6, 260);
+  m_appointmentsTable->horizontalHeader()->setFixedHeight(40);
+
+  m_appointmentsTable->setStyleSheet(
+      "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+      "QTableWidget::item { padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+      "QTableWidget::item:focus { outline: none; border: none; }"
+      "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+      "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }"
+  );
+  m_appointmentsTable->setItemDelegate(new StartedRowDelegate(m_appointmentsTable));
+
+  containerLayout->addWidget(m_appointmentsTable, 1);
+  pageLayout->addWidget(container, 1);
   m_stackedWidget->addWidget(m_appointmentsPage);
 }
 
@@ -531,7 +580,7 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
   
   QPushButton *btnRefresh = new QPushButton("Tải lại", tableCard);
   btnRefresh->setCursor(Qt::PointingHandCursor);
-  btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 4px 12px; border-radius: 6px; } QPushButton:hover { background-color: #DBEAFE; }");
+  btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 4px 12px; border-radius: 6px; } QPushButton:hover { background-color: transparent }");
   connect(btnRefresh, &QPushButton::clicked, this, &DoctorDashboardWidget::refreshAppointmentsTables);
 
   tblHeaderLayout->addWidget(tblTitle);
@@ -551,15 +600,20 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
       "QHeaderView::section { background-color: #F9FAFB; padding: 12px; "
       "font-weight: bold; border: none; border-bottom: 2px solid #E5E7EB; "
       "color: #6B7280; }"
-      "QTableWidget::item { padding: 12px; color: #111827; border-bottom: 1px "
-      "solid #F3F4F6; outline: none; }"
-      "QTableWidget::item:focus { outline: none; border: none; }");
+      "QTableWidget::item { background-color: transparent; padding: 0px 12px; border-bottom: 1px solid #F3F4F6; color: #111827; }");
+  m_patientTable->setItemDelegate(new StartedRowDelegate(m_patientTable));
 
   cardLayout->addWidget(m_patientTable);
   pageLayout->addWidget(tableCard);
 
-  m_patientTable->horizontalHeader()->setSectionResizeMode(
-      QHeaderView::Stretch);
+  m_patientTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  m_patientTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
+  m_patientTable->horizontalHeader()->resizeSection(1, 120);
+  m_patientTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
+  m_patientTable->horizontalHeader()->resizeSection(2, 100);
+  m_patientTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
+  m_patientTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
+  m_patientTable->horizontalHeader()->resizeSection(4, 150);
   m_patientTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_patientTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_patientTable->setFocusPolicy(Qt::NoFocus);
@@ -728,6 +782,16 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
   if (m_patientTable) {
     auto records =
         m_appointmentService ? m_appointmentService->getDoctorAppointments(docId, today) : QList<AppointmentRecordDTO>();
+
+    std::stable_sort(records.begin(), records.end(), [](const AppointmentRecordDTO &a, const AppointmentRecordDTO &b) {
+      bool aIsStarted = (a.status == AppointmentStatusText::STARTED);
+      bool bIsStarted = (b.status == AppointmentStatusText::STARTED);
+      if (aIsStarted != bIsStarted) {
+        return aIsStarted;
+      }
+      return false;
+    });
+
     m_rowApptMeta.clear();
     m_patientTable->setRowCount(0);
     int rowIdx = 0;
@@ -742,7 +806,7 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       QString statusColor = "#2563EB";
 
       if (rec.status == AppointmentStatusText::STARTED) {
-        statusColor = "#EAB308";
+        statusColor = "#D97706";
       }
 
       m_patientTable->insertRow(rowIdx);
@@ -756,11 +820,21 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       statusItem->setForeground(QBrush(QColor(statusColor)));
       statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
 
+      if (rec.status == AppointmentStatusText::STARTED) {
+        QBrush bgBrush(QColor("#DBEAFE"));
+        nameItem->setBackground(bgBrush);
+        codeItem->setBackground(bgBrush);
+        timeItem->setBackground(bgBrush);
+        deptItem->setBackground(bgBrush);
+        statusItem->setBackground(bgBrush);
+      }
+
       m_patientTable->setItem(rowIdx, 0, nameItem);
       m_patientTable->setItem(rowIdx, 1, codeItem);
       m_patientTable->setItem(rowIdx, 2, timeItem);
       m_patientTable->setItem(rowIdx, 3, deptItem);
       m_patientTable->setItem(rowIdx, 4, statusItem);
+      m_patientTable->setRowHeight(rowIdx, 64);
 
       m_rowApptMeta.append(ApptMeta{rec.appointmentId, rec.patientId,
                                     rec.patientName, rec.patientCode,
@@ -772,6 +846,16 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
   if (m_appointmentsTable) {
     QDate filterDate = m_apptDateFilter ? m_apptDateFilter->date() : today;
     auto records = m_appointmentService ? m_appointmentService->getDoctorAppointments(docId, filterDate) : QList<AppointmentRecordDTO>();
+
+    std::stable_sort(records.begin(), records.end(), [](const AppointmentRecordDTO &a, const AppointmentRecordDTO &b) {
+      bool aIsStarted = (a.status == AppointmentStatusText::STARTED);
+      bool bIsStarted = (b.status == AppointmentStatusText::STARTED);
+      if (aIsStarted != bIsStarted) {
+        return aIsStarted;
+      }
+      return false;
+    });
+
     m_apptPageMeta.clear();
     m_appointmentsTable->setRowCount(0);
     int rowIdx = 0;
@@ -807,6 +891,16 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
       statusItem->setForeground(QBrush(QColor(statusColor)));
 
+      if (rec.status == AppointmentStatusText::STARTED) {
+        QBrush bgBrush(QColor("#DBEAFE"));
+        timeItem->setBackground(bgBrush);
+        codeItem->setBackground(bgBrush);
+        nameItem->setBackground(bgBrush);
+        reasonItem->setBackground(bgBrush);
+        roomItem->setBackground(bgBrush);
+        statusItem->setBackground(bgBrush);
+      }
+
       m_appointmentsTable->setItem(rowIdx, 0, timeItem);
       m_appointmentsTable->setItem(rowIdx, 1, codeItem);
       m_appointmentsTable->setItem(rowIdx, 2, nameItem);
@@ -816,6 +910,9 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
       // Action Buttons Widget (Xem hồ sơ & Gọi Khám)
       QWidget *actWidget = new QWidget(m_appointmentsTable);
+      if (rec.status == AppointmentStatusText::STARTED) {
+        actWidget->setStyleSheet("QWidget { background-color: #DBEAFE; }");
+      }
       QHBoxLayout *actLayout = new QHBoxLayout(actWidget);
       actLayout->setContentsMargins(4, 3, 4, 3);
       actLayout->setSpacing(8);
@@ -826,9 +923,9 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       QString captureTime = rec.startTime;
       QString captureReason = rec.reason;
 
-      QPushButton *btnDetail = new QPushButton("Xem hồ sơ", actWidget);
+      QPushButton *btnDetail = new QPushButton("Xem thông tin", actWidget);
       btnDetail->setCursor(Qt::PointingHandCursor);
-      btnDetail->setMinimumHeight(32);
+      btnDetail->setMinimumHeight(38);
       btnDetail->setStyleSheet(
           "QPushButton { background-color: #0284C7; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 14px; border: none; }"
           "QPushButton:hover { background-color: #0369A1; }"
@@ -841,7 +938,7 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       if (rec.status != AppointmentStatusText::COMPLETED) {
           QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
           btnCall->setCursor(Qt::PointingHandCursor);
-          btnCall->setMinimumHeight(32);
+          btnCall->setMinimumHeight(38);
           btnCall->setStyleSheet(
               "QPushButton { background-color: #2563EB; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 16px; border: none; }"
               "QPushButton:hover { background-color: #1D4ED8; }"
@@ -863,7 +960,7 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       actLayout->setAlignment(Qt::AlignCenter);
 
       m_appointmentsTable->setCellWidget(rowIdx, 6, actWidget);
-      m_appointmentsTable->setRowHeight(rowIdx, 54);
+      m_appointmentsTable->setRowHeight(rowIdx, 64);
 
       m_apptPageMeta.append(ApptMeta{rec.appointmentId, rec.patientId,
                                      rec.patientName, rec.patientCode,
@@ -1004,7 +1101,7 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
   m_leaveStartDate->setDisplayFormat("dd/MM/yyyy");
   m_leaveStartDate->setStyleSheet(
       "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827; background-color: #FFFFFF;");
+      "#111827; background-color: transparent;");
 
   m_leaveEndDate = new QDateEdit(QDate::currentDate(), formFrame);
   m_leaveEndDate->setCalendarWidget(createCustomCalendar());
@@ -1013,13 +1110,13 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
   m_leaveEndDate->setDisplayFormat("dd/MM/yyyy");
   m_leaveEndDate->setStyleSheet(
       "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827; background-color: #FFFFFF;");
+      "#111827; background-color: transparent;");
 
   m_txtLeaveReason = new QTextEdit(formFrame);
   m_txtLeaveReason->setFixedHeight(80);
   m_txtLeaveReason->setStyleSheet(
       "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827; background-color: #FFFFFF;");
+      "#111827; background-color: transparent;");
 
   formLayout->addRow("Quỹ phép còn lại:", m_lblLeaveBalance);
   formLayout->addRow("Từ ngày:", m_leaveStartDate);

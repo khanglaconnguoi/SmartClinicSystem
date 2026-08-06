@@ -8,16 +8,10 @@
 #include <QPushButton>
 #include <QTabBar>
 #include <QHeaderView>
-#include <QStackedWidget>
 #include <QLabel>
-#include <QComboBox>
 #include <QLineEdit>
-#include <QTextEdit>
-#include <QCheckBox>
-#include <QButtonGroup>
 #include <QScrollArea>
 #include <QGraphicsDropShadowEffect>
-#include <QDateEdit>
 #include "service/PatientService.h"
 #include "service/PharmacyService.h"
 #include "service/MedicalRecordService.h"
@@ -45,12 +39,13 @@ public:
 
 private slots:
     void handlePatientSelected(int row, int column);
-    void showPatientList();
+    void handlePrevPage();
+    void handleNextPage();
 
 private:
     void setupUi();
     void createListView();
-    void createDetailView();
+    void updatePaginationInfo();
 
     std::shared_ptr<PatientService> m_patientService;
     std::shared_ptr<PharmacyService> m_pharmacyService;
@@ -60,33 +55,14 @@ private:
     QList<PatientSearchResultDTO> m_patientList;
 
     QVBoxLayout* m_mainLayout;
-    QStackedWidget* m_mainStackedWidget;
-
     QWidget* m_listViewWidget;
     QTableWidget* m_patientTable;
-
-    QWidget* m_detailViewWidget;
-    QStackedWidget* m_detailStackedWidget;
-    QWidget* m_infoSubPage;
-    
-    QPushButton* m_btnInfo;
-    QPushButton* m_btnHistoryInfo;
-    QPushButton* m_btnBack;
-    
-    QLineEdit* txtPatientID;
-    QLineEdit* txtFullName;
-    QLineEdit* txtDob;
-    QLineEdit* txtPhone;
-    QLineEdit* txtAddress;
-    QTextEdit* txtNotes;
-    QLineEdit* txtCitizenID;
-    QLineEdit* txtEmail;
-    QComboBox* cbBloodType;
-    QLineEdit* txtAllergies;
-    QLineEdit* txtInsurance;
-    QLineEdit* txtEmergencyName;
-    QLineEdit* txtEmergencyPhone;
-    QComboBox* cbGender;
-
     QLineEdit* m_searchBar;
+
+    // Pagination
+    int m_currentPage = 1;
+    int m_totalPages = 1;
+    QPushButton* m_btnPrevPage;
+    QPushButton* m_btnNextPage;
+    QLabel* m_lblPageInfo;
 };

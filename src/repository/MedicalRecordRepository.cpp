@@ -218,8 +218,11 @@ MedicalRecordRepository::findById(int recordId) {
 QList<MedicalRecordResultDTO>
 MedicalRecordRepository::getHistoryByPatientId(int patientId) {
   DatabaseManager &db = DatabaseManager::getInstance();
-  const QString sql = "SELECT * FROM medical_records WHERE patient_id = ? AND "
-                      "is_deleted = 0 ORDER BY visit_datetime DESC";
+  const QString sql = "SELECT m.*, s.full_name as doctor_name, s.staff_code as doctor_code "
+                      "FROM medical_records m "
+                      "LEFT JOIN staff s ON m.doctor_id = s.staff_id "
+                      "WHERE m.patient_id = ? AND m.is_deleted = 0 "
+                      "ORDER BY m.visit_datetime DESC";
   QSqlQuery query = db.selectQuery(sql, {patientId});
 
   QList<MedicalRecordResultDTO> results;
@@ -228,6 +231,8 @@ MedicalRecordRepository::getHistoryByPatientId(int patientId) {
     dto.recordId = query.value("record_id").toInt();
     dto.patientId = query.value("patient_id").toInt();
     dto.doctorId = query.value("doctor_id").toInt();
+    dto.doctorName = query.value("doctor_name").toString();
+    dto.doctorCode = query.value("doctor_code").toString();
     dto.appointmentId = query.value("appointment_id").toInt();
     dto.visitDateTime = query.value("visit_datetime").toDateTime();
     dto.vitals.temperature = query.value("temperature").toDouble();
