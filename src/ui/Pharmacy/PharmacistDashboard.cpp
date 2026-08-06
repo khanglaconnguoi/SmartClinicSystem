@@ -1542,7 +1542,10 @@ void PharmacistDashboardWidget::selectInvoiceRow(int row) {
     int recordId = codeItem->data(Qt::UserRole + 1).toInt();
     QString status = codeItem->data(Qt::UserRole + 2).toString();
 
-    auto optInv = m_billingService->getInvoiceByRecordId(recordId);
+    auto optInv = m_billingService->getInvoiceById(m_selectedInvoiceId);
+    if (!optInv.has_value() && recordId > 0) {
+        optInv = m_billingService->getInvoiceByRecordId(recordId);
+    }
     if (optInv.has_value()) {
         auto inv = optInv.value();
         
