@@ -139,9 +139,15 @@ void ReceptionDashboardWidget::buildSidebar() {
   if (!m_sidebarLayout)
     return;
 
+  // Prevent duplicate sidebar creation
+  if (m_btnOverview)
+    return;
+
   QLabel *lblTitle = new QLabel("LỄ TÂN", m_sidebarFrame);
+  lblTitle->setAlignment(Qt::AlignCenter);
   lblTitle->setStyleSheet("font-size: 15px; font-weight: bold; color: #2563EB; "
-                          "letter-spacing: 1px; padding-left: 20px; margin-top: 5px; margin-bottom: 15px;");
+                          "letter-spacing: 1px; margin-top: 5px; margin-bottom: 15px; "
+                          "background: transparent; border: none;");
   m_sidebarLayout->addWidget(lblTitle);
 
   m_btnOverview = new QPushButton("Tổng Quan", m_sidebarFrame);
@@ -1104,7 +1110,12 @@ void ReceptionDashboardWidget::buildAppointmentsPage() {
   m_appointmentsTable->setHorizontalHeaderLabels({"Thời gian", "Bệnh nhân", "Bác sĩ", "Phòng", "Trạng thái", "Thao tác"});
   m_appointmentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   m_appointmentsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+  
+  // Set Fixed width for column 5 (Thao tác) to display buttons fully
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->resizeSection(5, 200);
+
+  m_appointmentsTable->verticalHeader()->setDefaultSectionSize(46);
   m_appointmentsTable->setStyleSheet("QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #EAEAEA; color: #333333; outline: none; }"
                        "QHeaderView::section { background-color: #F1F3F4; font-weight: bold; border: none; padding: 10px; color: #5F6368; }"
                        "QTableWidget::item { padding: 5px; border-bottom: 1px solid #EAEAEA; color: #333333; outline: none; }"

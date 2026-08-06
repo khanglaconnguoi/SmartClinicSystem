@@ -360,11 +360,14 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery &query
     if (!avatarBytes.isEmpty()) {
         avatar.loadFromData(avatarBytes);
     } else {
-        #ifdef PROJECT_ROOT_DIR
-            QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) +
-                                "/assets/images/default_avatar.png";
-            avatar.load(defaultPath);
-        #endif
+        bool loaded = avatar.load(":/assets/images/default_avatar.png");
+        if (!loaded) {
+            #ifdef PROJECT_ROOT_DIR
+                QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) +
+                                    "/assets/images/default_avatar.png";
+                avatar.load(defaultPath);
+            #endif
+        }
     }
 
   switch (role) {
@@ -651,11 +654,14 @@ std::unique_ptr<StaffProfileDTO> StaffRepository::queryProfile(const QString& wh
         if (!avatarBytes.isEmpty()) {
             dto.avatar.loadFromData(avatarBytes);
         } else {
-            #ifdef PROJECT_ROOT_DIR
-                QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) +
-                                        "/assets/images/default_avatar.png";
-                dto.avatar.load(defaultPath);
-            #endif
+            bool loaded = dto.avatar.load(":/assets/images/default_avatar.png");
+            if (!loaded) {
+                #ifdef PROJECT_ROOT_DIR
+                    QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) +
+                                            "/assets/images/default_avatar.png";
+                    dto.avatar.load(defaultPath);
+                #endif
+            }
         }
     };
 

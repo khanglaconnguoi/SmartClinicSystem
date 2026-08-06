@@ -117,14 +117,21 @@ void ManageNursesWidget::buildUI() {
       "32px; }"
       "QPushButton:hover { background-color: #DC2626; }");
 
-  filterLayout->addWidget(m_txtSearchKey);
-  filterLayout->addWidget(m_cbLevelFilter);
-  filterLayout->addWidget(m_cbDepartmentFilter);
-  filterLayout->addWidget(m_cbShiftFilter);
-  filterLayout->addWidget(m_cbStatusFilter);
-  filterLayout->addWidget(m_btnResetFilters);
-  filterLayout->addStretch();
-  pageLayout->addWidget(filterCard);
+    QLabel *lblSearchIcon = new QLabel(filterCard);
+    QPixmap searchPix(":/assets/icons/search_icon.png");
+    if (searchPix.isNull()) {
+#ifdef PROJECT_ROOT_DIR
+        searchPix.load(QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/icons/search_icon.png");
+#else
+        searchPix.load(QCoreApplication::applicationDirPath() + "/assets/icons/search_icon.png");
+#endif
+    }
+
+    if (!searchPix.isNull()) {
+        lblSearchIcon->setPixmap(searchPix.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        lblSearchIcon->setText("Tìm kiếm:");
+    }
 
   // Card bao bọc Table
   QFrame *tableCard = makeCard(this);
