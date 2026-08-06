@@ -284,6 +284,7 @@ struct NurseProfileDTO : public StaffProfileDTO {
     QString  certification;
     int      roomId   = 0;
     QString  roomName;  // JOIN từ bảng rooms
+    RoomType roomType = RoomType::Unknown;
 
     ~NurseProfileDTO() override = default;
 

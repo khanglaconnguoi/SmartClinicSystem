@@ -134,7 +134,7 @@ QList<AppointmentRecordDTO> AppointmentRepository::getAppointmentsByDate(const Q
   QList<AppointmentRecordDTO> list;
 
   QString sql = R"(
-        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, p.full_name, p.patient_code, r.room_number, a.ticket_number, a.checked_in_at, a.started_at, a.completed_at, s.full_name, dp.specialty
+        SELECT a.appointment_id, a.patient_id, a.doctor_id, a.appointment_date, a.start_time, a.end_time, a.status, a.reason, a.notes, p.full_name, p.patient_code, r.room_number, a.ticket_number, a.checked_in_at, a.started_at, a.completed_at, s.full_name, dp.specialty, a.room_id
         FROM appointments a
         JOIN patients p ON a.patient_id = p.patient_id
         LEFT JOIN rooms r ON a.room_id = r.room_id
@@ -170,6 +170,7 @@ QList<AppointmentRecordDTO> AppointmentRepository::getAppointmentsByDate(const Q
     rec.completedAt = query.value(15).toString();
     rec.doctorName = query.value(16).toString();
     rec.doctorSpecialty = query.value(17).toString();
+    rec.roomId = query.value(18).toInt();
     list.append(rec);
   }
 

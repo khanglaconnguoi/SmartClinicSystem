@@ -172,7 +172,7 @@ void MainWindow::switchToPharmacistDashboard(
 void MainWindow::switchToNurseDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   auto dashboard = new NurseDashboardWidget(
-      user, m_staffService, m_serviceRequestService, this);
+      user, m_staffService, m_serviceRequestService, m_appointmentService, this);
   registerDashboardPage(dashboard);
 }
 

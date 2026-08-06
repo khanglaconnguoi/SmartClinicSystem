@@ -17,7 +17,6 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "src/*.h"
     "src/*.hpp"
     "src/*.ui"
-    "src/*.qrc"
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

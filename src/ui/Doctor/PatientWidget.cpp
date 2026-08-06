@@ -81,7 +81,7 @@ void PatientWidget::createListView() {
 
     QPushButton *btnRefresh = new QPushButton("Tải lại", container);
     btnRefresh->setCursor(Qt::PointingHandCursor);
-    btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 6px 14px; border-radius: 6px; } QPushButton:hover { background-color: #DBEAFE; }");
+    btnRefresh->setStyleSheet("QPushButton { background-color: #2563EB; color: white; border: none; border-radius: 8px; padding: 6px 16px; font-weight: bold; font-size: 13px; min-height: 32px; } QPushButton:hover { background-color: #1D4ED8; }");
     connect(btnRefresh, &QPushButton::clicked, this, &PatientWidget::loadPatientsData);
 
     toolbarLayout->addWidget(title);
@@ -115,7 +115,7 @@ void PatientWidget::createListView() {
         "QTableWidget::item { background: transparent; padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
         "QTableWidget::item:focus { outline: none; border: none; }"
         "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
-        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }"
+        "QHeaderView::section { background-color: #EFF6FF; color: #1E40AF; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #BFDBFE; padding: 4px; }"
     );
 
     containerLayout->addWidget(m_patientTable);

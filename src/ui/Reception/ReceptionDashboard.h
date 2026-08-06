@@ -6,6 +6,10 @@
 
 class IAuthenticatable;
 class StaffService;
+class PatientService;
+class AppointmentService;
+class AnalyticService;
+
 class QStackedWidget;
 class QPushButton;
 class QWidget;
@@ -14,8 +18,13 @@ class QHBoxLayout;
 class QComboBox;
 class QDateEdit;
 class QTableWidget;
-
-class AnalyticService;
+class QLabel;
+class QTextEdit;
+class QLineEdit;
+class QTabWidget;
+class QGridLayout;
+class QFrame;
+class QScrollArea;
 
 class ReceptionDashboardWidget : public BaseDashboardWidget {
   Q_OBJECT
@@ -44,15 +53,23 @@ private:
   QPushButton *m_btnOverview = nullptr;
   QPushButton *m_btnRegister = nullptr;
   QPushButton *m_btnPatients = nullptr;
-  QPushButton *m_btnManageAppts = nullptr;
   QPushButton *m_btnRoomQueue = nullptr;
+  QPushButton *m_btnLeaveManage = nullptr;
 
   // Pages
   QWidget *m_overviewPage = nullptr;
   QWidget *m_registerPage = nullptr;
   QWidget *m_patientsPage = nullptr;
-  QWidget *m_appointmentsPage = nullptr;
   QWidget *m_roomQueuePage = nullptr;
+  QWidget *m_leaveManagePage = nullptr;
+
+  // Leave Management UI
+  QLabel *m_lblLeaveBalance = nullptr;
+  QDateEdit *m_leaveStartDate = nullptr;
+  QDateEdit *m_leaveEndDate = nullptr;
+  QTextEdit *m_txtLeaveReason = nullptr;
+  QTabWidget *m_leaveTabWidget = nullptr;
+  QTableWidget *m_tableLeaveHistory = nullptr;
 
   // Room Queue Page UI
   class QGridLayout *m_roomQueueLayout = nullptr;
@@ -99,9 +116,6 @@ private:
   int m_patientCurrentPage = 1;
   int m_patientTotalPages = 1;
 
-  QTableWidget *m_appointmentsTable = nullptr;
-  QDateEdit *m_apptDateEdit = nullptr;
-
   // Build functions
   void buildSidebar();
   void buildOverviewPage();
@@ -113,8 +127,8 @@ private:
   void handlePatientResetFilters();
   void handlePatientPrevPage();
   void handlePatientNextPage();
-  void buildAppointmentsPage();
   void buildRoomQueuePage();
+  void buildLeaveManagePage();
   void onPatientTypeSelected(bool isNew);
 
   class QFrame *makeCard(QWidget *parent = nullptr);
@@ -122,10 +136,14 @@ private:
   // Helpers
   void clearLayout(QLayout *layout);
   void switchPage(int index, QPushButton *activeBtn);
+  void refreshOverviewStats();
   void loadAvailableDoctors();
   void loadDoctorTimeSlots(int docId, const QString &date);
-  void updateAppointmentsTable();
   void showPatientHistoryDialog(int patientId, const QString &patientName);
+
+  void onLeaveTabSelected();
+  void loadLeaveHistory();
+  void onSubmitLeaveRequest();
 
 private slots:
   void onContinueClicked();

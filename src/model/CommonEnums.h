@@ -814,43 +814,55 @@ inline PrescriptionStatus prescriptionStatusFromEn(const QString &text) {
 // SECTION 3: NAMESPACE TEXT — các trường CHECK dùng để lưu/hiển thị
 // =====================================================================
 
-namespace RoomTypeText {
-    inline const QString EXAM     = "EXAM";
-    inline const QString SURGERY  = "SURGERY";
-    inline const QString WARD     = "WARD";
-    inline const QString LAB      = "LAB";
-    inline const QString PHARMACY = "PHARMACY";
-    inline const QString ADMIN    = "ADMIN";
+// RoomType
+enum class RoomType { Exam, Surgery, Ward, Lab, Pharmacy, Admin, Unknown };
 
-    inline const QList<QPair<QString, QString>> roomTypes = {
-        {EXAM,     "Phòng khám"},
-        {SURGERY,  "Phòng phẫu thuật"},
-        {WARD,     "Phòng bệnh"},
-        {LAB,      "Phòng xét nghiệm"},
-        {PHARMACY, "Nhà thuốc"},
-        {ADMIN,    "Hành chính"}
-    };
+static const QList<EnumInfo<RoomType>> roomTypeList = {
+    {RoomType::Exam, "Phòng khám", "EXAM"},
+    {RoomType::Surgery, "Phòng phẫu thuật", "SURGERY"},
+    {RoomType::Ward, "Phòng bệnh", "WARD"},
+    {RoomType::Lab, "Phòng xét nghiệm", "LAB"},
+    {RoomType::Pharmacy, "Nhà thuốc", "PHARMACY"},
+    {RoomType::Admin, "Hành chính", "ADMIN"},
+    {RoomType::Unknown, "Khác", "UNKNOWN"}
+};
 
-    inline const QList<QPair<QString, QString>> &getList() { return roomTypes; }
-
-    inline bool isValid(const QString &val) {
-        QString v = val.toUpper().trimmed();
-        for (const auto &p : roomTypes) if (p.first == v) return true;
-        return false;
+inline QString roomTypeToVi(RoomType value) {
+    for (const auto &item : roomTypeList) {
+        if (item.value == value)
+            return item.viText;
     }
+    return "Phòng khám";
+}
 
-    inline QString toVi(const QString &en) {
-        QString v = en.toUpper().trimmed();
-        for (const auto &p : roomTypes) if (p.first == v) return p.second;
-        return "Phòng khám";
+inline RoomType roomTypeFromVi(const QString &text) {
+    QString trimmed = text.trimmed();
+    for (const auto &item : roomTypeList) {
+        if (item.viText.compare(trimmed, Qt::CaseInsensitive) == 0)
+            return item.value;
     }
+    return RoomType::Exam;
+}
 
-    inline QString toEn(const QString &vi) {
-        for (const auto &p : roomTypes)
-            if (p.second.compare(vi.trimmed(), Qt::CaseInsensitive) == 0) return p.first;
-        return EXAM;
+inline QString roomTypeToEn(RoomType value) {
+    for (const auto &item : roomTypeList) {
+        if (item.value == value)
+            return item.enText;
     }
-} // namespace RoomTypeText
+    return "EXAM";
+}
+
+inline RoomType roomTypeFromEn(const QString &text) {
+    QString upper = text.trimmed().toUpper();
+    for (const auto &item : roomTypeList) {
+        if (item.enText == upper)
+            return item.value;
+    }
+    return RoomType::Unknown;
+}
+
+inline QString roomTypeToString(RoomType type) { return roomTypeToEn(type); }
+inline RoomType roomTypeFromString(const QString &typeStr) { return roomTypeFromEn(typeStr); }
 
 namespace RoomStatusText {
     inline const QString AVAILABLE   = "AVAILABLE";

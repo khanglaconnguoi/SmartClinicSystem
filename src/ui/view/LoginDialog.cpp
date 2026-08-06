@@ -40,8 +40,27 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
 
     lblLeftLogo = new QLabel(leftForm);
     lblLeftLogo->setGeometry(110, 10, 220, 110);
-    lblLeftLogo->setPixmap(QPixmap(appPath + "/logo.png"));
-    lblLeftLogo->setScaledContents(true);
+    QPixmap logoPix;
+    bool logoLoaded = false;
+#ifdef PROJECT_ROOT_DIR
+    QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/logo.png";
+    logoLoaded = logoPix.load(defaultPath);
+#endif
+    if (!logoLoaded) {
+        QString fallbackPath = QApplication::applicationDirPath() + "/assets/images/logo.png";
+        logoLoaded = logoPix.load(fallbackPath);
+    }
+    if (!logoLoaded) {
+        logoLoaded = logoPix.load("assets/images/logo.png");
+    }
+    if (!logoPix.isNull()) {
+        lblLeftLogo->setPixmap(logoPix);
+        lblLeftLogo->setScaledContents(true);
+    } else {
+        lblLeftLogo->setText("SMART CLINIC SYSTEM");
+        lblLeftLogo->setAlignment(Qt::AlignCenter);
+        lblLeftLogo->setStyleSheet("font-size: 20px; font-weight: bold; color: #2563EB;");
+    }
 
     lblSlogan = new QLabel("NovaCare - Nâng cao sức khỏe", leftForm);
     lblSlogan->setGeometry(0, 130, 440, 20);

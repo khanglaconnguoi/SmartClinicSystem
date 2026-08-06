@@ -12,10 +12,10 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-
 ManageReceptionWidget::ManageReceptionWidget(
     std::shared_ptr<StaffService> staffService, QWidget *parent)
-    : QWidget(parent), m_staffService(staffService), m_tblReception(nullptr), m_btnResetFilters(nullptr) {
+    : QWidget(parent), m_staffService(staffService), m_tblReception(nullptr),
+      m_btnResetFilters(nullptr) {
   buildUI();
 }
 
@@ -33,9 +33,9 @@ void ManageReceptionWidget::buildUI() {
 
   // Header
   QHBoxLayout *headerLayout = new QHBoxLayout();
-  QLabel *lblTitle = new QLabel("Quản lý Lễ tân");
+  QLabel *lblTitle = new QLabel("QUẢN LÝ LỄ TÂN");
   lblTitle->setStyleSheet(
-      "font-size: 24px; font-weight: bold; color: #111827;");
+      "font-size: 22px; font-weight: bold; color: #000000;");
   headerLayout->addWidget(lblTitle);
 
   headerLayout->addStretch();
@@ -101,10 +101,9 @@ void ManageReceptionWidget::buildUI() {
   m_btnResetFilters = new QPushButton("Đặt lại", filterCard);
   m_btnResetFilters->setCursor(Qt::PointingHandCursor);
   m_btnResetFilters->setStyleSheet(
-      "QPushButton { background-color: #EF4444; color: white; border-radius: "
-      "6px; padding: 6px 15px; font-weight: bold; border: none; min-height: "
-      "32px; }"
-      "QPushButton:hover { background-color: #DC2626; }");
+      "QPushButton { background-color: #6B7280; color: white; border: none; "
+      "border-radius: 6px; padding: 4px 12px; font-weight: bold; min-height: 28px; "
+      "font-size: 12px; } QPushButton:hover { background-color: #4B5563; }");
 
   filterLayout->addWidget(m_txtSearchKey);
   filterLayout->addWidget(m_cbDepartmentFilter);
@@ -142,13 +141,14 @@ void ManageReceptionWidget::buildUI() {
   m_tblReception->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_tblReception->setFocusPolicy(Qt::NoFocus);
   m_tblReception->setStyleSheet(
-      "QTableWidget { border: none; outline: none; gridline-color: #E2E8F0; font-size: 13px; "
+      "QTableWidget { border: none; outline: none; gridline-color: #E2E8F0; "
+      "font-size: 13px; "
       "background-color: white; color: #0F172A; }"
       "QTableWidget::item { outline: none; border: none; }"
       "QTableWidget::item:focus { outline: none; border: none; }"
-      "QHeaderView::section { background-color: #F8FAFC; padding: 10px; "
-      "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
-      "color: #1E293B; }");
+      "QHeaderView::section { background-color: #EFF6FF; padding: 10px; "
+      "font-weight: bold; border: none; border-bottom: 2px solid #BFDBFE; "
+      "color: #1E40AF; }");
 
   // Pagination layout
   QHBoxLayout *paginationLayout = new QHBoxLayout();

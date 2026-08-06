@@ -44,20 +44,15 @@ void PatientDashboardWidget::buildPatientSidebar() {
   if (!m_sidebarFrame || !m_sidebarLayout)
     return;
 
-  // --- Logo / tiêu đề phòng khám ---
-  if (m_logoLabel) {
-    m_logoLabel->setText("Nova Care");
-    m_logoLabel->setStyleSheet("font-size: 20px; font-weight: bold;"
-                               "color: #4B94F2; margin-bottom: 8px;");
-  }
+  // Logo is already loaded in BaseWidget (m_logoLabel)
 
   QLabel *roleBadge = new QLabel("BỆNH NHÂN", m_sidebarFrame);
   roleBadge->setAlignment(Qt::AlignCenter);
   roleBadge->setStyleSheet(
-      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
-      "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
-      "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
-      "margin-top: 4px; margin-bottom: 12px; }");
+      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 14px; "
+      "font-weight: 900; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+      "padding: 10px 14px; border-radius: 10px; border: none; "
+      "margin-top: 4px; margin-bottom: 14px; }");
   m_sidebarLayout->addWidget(roleBadge);
 
   // --- Tạo các nút sidebar bệnh nhân ---
@@ -109,9 +104,9 @@ void PatientDashboardWidget::buildTopbar() {
   // --- Tên người dùng ---
   if (m_currentUser && m_nameLabel) {
     QString name = m_currentUser->getFullName();
-    m_nameLabel->setText(name.isEmpty() ? "Bệnh Nhân" : name);
-    m_nameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: "
-                                  "#3C4043; font-family: 'Segoe UI';");
+    m_nameLabel->setText(name.isEmpty() ? "BỆNH NHÂN" : name.toUpper());
+    m_nameLabel->setStyleSheet("font-size: 13px; font-weight: bold; color: "
+                                  "#1E293B; font-family: 'Segoe UI'; letter-spacing: 0.5px;");
   }
 
   // --- Avatar ---
@@ -301,8 +296,8 @@ void PatientDashboardWidget::createUpcomingAppointments() {
 
   // Header hàng
   QHBoxLayout *hdr = new QHBoxLayout();
-  QLabel *title = new QLabel("Lịch Hẹn Sắp Tới", section);
-  title->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
+  QLabel *title = new QLabel("LỊCH HẸN SẮP TỚI", section);
+  title->setStyleSheet("font-size: 16px; font-weight: bold; color: #000000;");
 
   QPushButton *btnAll = new QPushButton("Xem tất cả →", section);
   btnAll->setCursor(Qt::PointingHandCursor);
@@ -467,9 +462,9 @@ void PatientDashboardWidget::createRecentMedicalRecords() {
   mv->setContentsMargins(24, 20, 24, 20);
   mv->setSpacing(14);
 
-  QLabel *medTitle = new QLabel("Lần Khám Gần Nhất", medCard);
+  QLabel *medTitle = new QLabel("LẦN KHÁM GẦN NHẤT", medCard);
   medTitle->setStyleSheet(
-      "font-size: 16px; font-weight: bold; color: #111827;");
+      "font-size: 16px; font-weight: bold; color: #000000;");
   mv->addWidget(medTitle);
 
   QFrame *sep = new QFrame(medCard);
@@ -519,8 +514,8 @@ void PatientDashboardWidget::createRecentMedicalRecords() {
   rv->setContentsMargins(24, 20, 24, 20);
   rv->setSpacing(14);
 
-  QLabel *rxTitle = new QLabel("Đơn Thuốc Hiện Tại", rxCard);
-  rxTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
+  QLabel *rxTitle = new QLabel("ĐƠN THUỐC HIỆN TẠI", rxCard);
+  rxTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #000000;");
   rv->addWidget(rxTitle);
 
   QFrame *sep2 = new QFrame(rxCard);
@@ -586,8 +581,8 @@ void PatientDashboardWidget::createHealthTimeline() {
   vl->setContentsMargins(24, 20, 24, 20);
   vl->setSpacing(16);
 
-  QLabel *title = new QLabel("Lịch Sử Hoạt Động Sức Khỏe", section);
-  title->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
+  QLabel *title = new QLabel("LỊCH SỬ HOẠT ĐỘNG SỨC KHỎE", section);
+  title->setStyleSheet("font-size: 16px; font-weight: bold; color: #000000;");
   vl->addWidget(title);
 
   QFrame *sep = new QFrame(section);

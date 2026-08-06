@@ -44,11 +44,54 @@ void BaseDashboardWidget::setupSidebarFrame() {
     m_sidebarLayout->setContentsMargins(15, 30, 15, 30);
     m_sidebarLayout->setSpacing(10);
 
-    m_logoLabel = new QLabel("Nova Care Clinic", m_sidebarFrame);
-    m_logoLabel->setStyleSheet("font-size: 20px; font-weight: bold; color: #2563EB; margin-bottom: 20px;");
+#include <QCoreApplication>
+
+    m_logoLabel = new QLabel(m_sidebarFrame);
+    QPixmap logoPix;
+    bool logoLoaded = false;
+#ifdef PROJECT_ROOT_DIR
+    QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/logo.png";
+    logoLoaded = logoPix.load(defaultPath);
+#endif
+    if (!logoLoaded) {
+        QString fallbackPath = QCoreApplication::applicationDirPath() + "/assets/images/logo.png";
+        logoLoaded = logoPix.load(fallbackPath);
+    }
+    if (!logoLoaded) {
+        logoLoaded = logoPix.load("assets/images/logo.png");
+    }
+    if (!logoPix.isNull()) {
+        QPixmap scaledLogo = logoPix.scaledToWidth(170, Qt::SmoothTransformation);
+        m_logoLabel->setPixmap(scaledLogo);
+        m_logoLabel->setAlignment(Qt::AlignCenter);
+        m_logoLabel->setStyleSheet("margin-top: 5px; margin-bottom: 15px; background: transparent; border: none;");
+    } else {
+        m_logoLabel->setText("SMART CLINIC SYSTEM");
+        m_logoLabel->setStyleSheet("font-size: 18px; font-weight: bold; color: #2563EB; margin-bottom: 20px;");
+    }
     m_sidebarLayout->addWidget(m_logoLabel);
 
     m_globalLayout->addWidget(m_sidebarFrame);
+}
+
+#include <QPainter>
+#include <QPainterPath>
+
+static QPixmap getCircularPixmap(const QPixmap &src, int size) {
+    if (src.isNull()) return QPixmap();
+    QPixmap result(size, size);
+    result.fill(Qt::transparent);
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    QPainterPath path;
+    path.addEllipse(0, 0, size, size);
+    painter.setClipPath(path);
+    QPixmap scaled = src.scaled(size, size, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    int x = (scaled.width() - size) / 2;
+    int y = (scaled.height() - size) / 2;
+    painter.drawPixmap(0, 0, scaled, x, y, size, size);
+    return result;
 }
 
 void BaseDashboardWidget::setupMainContentFrame() {
@@ -64,27 +107,37 @@ void BaseDashboardWidget::setupMainContentFrame() {
     userInfoLayout->setSpacing(10); 
 
     m_nameLabel = new ClickableLabel(m_mainContentWidget);
-    m_nameLabel->setText(m_currentUser ? m_currentUser->getFullName() : "Loading...");
+    m_nameLabel->setText(m_currentUser ? m_currentUser->getFullName().toUpper() : "LOADING...");
     m_nameLabel->setCursor(Qt::PointingHandCursor);
-    m_nameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #1E293B; font-family: 'Arial';");
+    m_nameLabel->setStyleSheet("font-size: 13px; font-weight: bold; color: #1E293B; font-family: 'Segoe UI', sans-serif; letter-spacing: 0.5px;");
 
     m_avatarBtn = new QPushButton(m_mainContentWidget);
     m_avatarBtn->setFixedSize(36, 36);
     m_avatarBtn->setCursor(Qt::PointingHandCursor);
+
     if (m_currentUser && !m_currentUser->getAvatar().isNull()) {
-        m_avatarBtn->setIcon(QIcon(m_currentUser->getAvatar()));
+        QPixmap circularPix = getCircularPixmap(m_currentUser->getAvatar(), 36);
+        m_avatarBtn->setIcon(QIcon(circularPix));
         m_avatarBtn->setIconSize(QSize(36, 36));
+        m_avatarBtn->setText("");
+    } else {
+        QString initial = m_currentUser ? m_currentUser->getFullName().left(1).toUpper() : "U";
+        m_avatarBtn->setText(initial);
     }
+
     m_avatarBtn->setStyleSheet(
         "QPushButton { "
         "   background-color: #EFF6FF; "
         "   color: #2563EB; "
-        "   border: 1px solid #DBEAFE; "
+        "   border: 1.5px solid #2563EB; "
         "   border-radius: 18px; "
-        "   font-size: 16px; "
+        "   font-size: 15px; "
         "   font-weight: bold; "
         "   padding: 0px; "
         "   margin: 0px; "
+        "}"
+        "QPushButton:hover { "
+        "   background-color: #DBEAFE; "
         "}"
     );
 

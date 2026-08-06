@@ -24,38 +24,35 @@ QFrame *ManageLeaveWidget::makeCard(QWidget *parent) {
   QFrame *card = new QFrame(parent);
   card->setObjectName("CardFrame");
   card->setStyleSheet(
-      "#CardFrame { background-color: #FFFFFF; border-radius: 12px; }");
-  QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(card);
-  shadow->setBlurRadius(15);
-  shadow->setColor(QColor(0, 0, 0, 15));
-  shadow->setOffset(0, 5);
-  card->setGraphicsEffect(shadow);
+      "#CardFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; }");
   return card;
 }
 
 void ManageLeaveWidget::setupUi() {
+  this->setStyleSheet("background-color: #FFFFFF;");
   QVBoxLayout *layout = new QVBoxLayout(this);
   layout->setContentsMargins(40, 40, 40, 40);
   layout->setSpacing(20);
 
-  QLabel *lblTitle = new QLabel("Quản Lý Nghỉ Phép", this);
+  QLabel *lblTitle = new QLabel("QUẢN LÝ NGHỈ PHÉP", this);
   lblTitle->setStyleSheet(
-      "font-size: 24px; font-weight: bold; color: #202124;");
+      "font-size: 22px; font-weight: bold; color: #000000; background: transparent; border: none;");
   layout->addWidget(lblTitle);
 
   QTabWidget *tabWidget = new QTabWidget(this);
   tabWidget->setStyleSheet(
-      "QTabWidget::pane { border: 1px solid #E2E8F0; border-radius: 8px; "
+      "QTabWidget::pane { border: 1px solid #E2E8F0; border-radius: 12px; "
       "background: white; }"
-      "QTabBar::tab { padding: 10px 20px; font-weight: bold; color: #475569; "
+      "QTabBar::tab { padding: 10px 22px; font-weight: bold; font-size: 13px; color: #475569; "
       "background: #F8FAFC; border: 1px solid #E2E8F0; border-bottom: none; "
       "border-top-left-radius: 8px; border-top-right-radius: 8px; "
       "margin-right: 2px; }"
       "QTabBar::tab:selected { color: #2563EB; background: white; "
-      "border-bottom: 2px solid #2563EB; }");
+      "border-bottom: 2px solid #FFFFFF; }");
 
   // Tab 1: Duyệt đơn
   QWidget *tabApprove = new QWidget();
+  tabApprove->setStyleSheet("background-color: #FFFFFF;");
   QVBoxLayout *layApprove = new QVBoxLayout(tabApprove);
   layApprove->setContentsMargins(20, 20, 20, 20);
 
@@ -92,14 +89,15 @@ void ManageLeaveWidget::setupUi() {
       "#0F172A; background-color: white; outline: none; }"
       "QTableWidget::item { outline: none; border: none; }"
       "QTableWidget::item:focus { outline: none; border: none; }"
-      "QHeaderView::section { background-color: #F8FAFC; color: #1E293B; "
-      "font-weight: bold; padding: 8px; border: 1px solid #E2E8F0; }");
+      "QHeaderView::section { background-color: #EFF6FF; color: #1E40AF; "
+      "font-weight: bold; padding: 8px; border: none; border-bottom: 2px solid #BFDBFE; }");
   layApprove->addWidget(m_tablePendingLeaves);
 
   tabWidget->addTab(tabApprove, "Danh sách Chờ duyệt");
 
   // Tab 2: Đăng ký nghỉ
   QWidget *tabRegister = new QWidget();
+  tabRegister->setStyleSheet("background-color: #FFFFFF;");
   QVBoxLayout *layRegister = new QVBoxLayout(tabRegister);
   layRegister->setContentsMargins(20, 20, 20, 20);
 

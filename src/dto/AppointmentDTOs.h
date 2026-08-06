@@ -20,6 +20,7 @@ struct AppointmentRecordDTO {
     QString roomNumber;
     QString doctorName;
     QString doctorSpecialty;
+    int roomId = 0;
     QString checkedInAt;
     QString startedAt;
     QString completedAt;

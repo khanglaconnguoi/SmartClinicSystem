@@ -88,24 +88,25 @@ void AvatarPickerWidget::mousePressEvent(QMouseEvent *event) {
 
 void AvatarPickerWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     
-    // Draw rounded background/border
+    // Draw circular background/border
     QRect rect = this->rect();
     QPainterPath path;
-    path.addRoundedRect(rect, 12, 12);
+    path.addEllipse(rect);
     
     painter.setClipPath(path);
     
     if (m_hasCustomAvatar && !m_avatarPixmap.isNull()) {
-        // Draw the avatar image scaled and centered
-        int x = (width() - m_avatarPixmap.width()) / 2;
-        int y = (height() - m_avatarPixmap.height()) / 2;
-        painter.drawPixmap(x, y, m_avatarPixmap);
+        QPixmap scaled = m_avatarPixmap.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        int x = (width() - scaled.width()) / 2;
+        int y = (height() - scaled.height()) / 2;
+        painter.drawPixmap(x, y, scaled);
     } else {
         // Draw placeholder background
-        painter.fillPath(path, QColor("#F3F4F6")); // Light gray
-        painter.setPen(QPen(QColor("#D1D5DB"), 2, Qt::DashLine));
+        painter.fillPath(path, QColor("#EFF6FF")); // Light blue
+        painter.setPen(QPen(QColor("#BFDBFE"), 2, Qt::DashLine));
         painter.drawPath(path);
         
         // Let standard QLabel draw the text

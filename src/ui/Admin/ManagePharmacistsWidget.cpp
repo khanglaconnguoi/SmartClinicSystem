@@ -36,9 +36,9 @@ void ManagePharmacistsWidget::buildUI() {
 
   // Header
   QHBoxLayout *headerLayout = new QHBoxLayout();
-  QLabel *lblPageTitle = new QLabel("Danh sách Dược sĩ", this);
+  QLabel *lblPageTitle = new QLabel("QUẢN LÝ DƯỢC SĨ", this);
   lblPageTitle->setStyleSheet(
-      "font-size: 24px; font-weight: bold; color: #111827;");
+      "font-size: 22px; font-weight: bold; color: #000000;");
   headerLayout->addWidget(lblPageTitle);
 
   headerLayout->addStretch();
@@ -112,10 +112,9 @@ void ManagePharmacistsWidget::buildUI() {
   m_btnResetFilters = new QPushButton("Đặt lại", filterCard);
   m_btnResetFilters->setCursor(Qt::PointingHandCursor);
   m_btnResetFilters->setStyleSheet(
-      "QPushButton { background-color: #EF4444; color: white; border-radius: "
-      "6px; padding: 6px 15px; font-weight: bold; border: none; min-height: "
-      "32px; }"
-      "QPushButton:hover { background-color: #DC2626; }");
+      "QPushButton { background-color: #6B7280; color: white; border: none; "
+      "border-radius: 6px; padding: 4px 12px; font-weight: bold; min-height: 28px; "
+      "font-size: 12px; } QPushButton:hover { background-color: #4B5563; }");
 
   filterLayout->addWidget(m_txtSearchKey);
   filterLayout->addWidget(m_txtSectionFilter);
@@ -157,9 +156,9 @@ void ManagePharmacistsWidget::buildUI() {
       "background-color: white; color: #0F172A; }"
       "QTableWidget::item { outline: none; border: none; }"
       "QTableWidget::item:focus { outline: none; border: none; }"
-      "QHeaderView::section { background-color: #F8FAFC; padding: 10px; "
-      "font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; "
-      "color: #1E293B; }");
+      "QHeaderView::section { background-color: #EFF6FF; padding: 10px; "
+      "font-weight: bold; border: none; border-bottom: 2px solid #BFDBFE; "
+      "color: #1E40AF; }");
 
   // Pagination layout
   QHBoxLayout *paginationLayout = new QHBoxLayout();
