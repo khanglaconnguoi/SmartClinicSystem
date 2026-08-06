@@ -165,7 +165,7 @@ void MainWindow::switchToPatientDashboard(
 void MainWindow::switchToPharmacistDashboard(
     std::shared_ptr<IAuthenticatable> user) {
   auto dashboard = new PharmacistDashboardWidget(
-      user, m_staffService, m_medicalRecordService, m_pharmacyService, m_billingService, this);
+      user, m_staffService, m_medicalRecordService, m_pharmacyService, m_billingService, m_patientService, this);
   registerDashboardPage(dashboard);
 }
 

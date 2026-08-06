@@ -1084,6 +1084,21 @@ PatientRepository::getInsuranceByPatientId(int patientId) {
   return result;
 }
 
+double PatientRepository::getInsuranceCoveragePercent(int patientId) const {
+  const QString sql = R"(
+    SELECT coverage_percent
+    FROM patient_insurance
+    WHERE patient_id = ? AND is_active = 1
+    LIMIT 1
+  )";
+
+  QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
+  if (query.next()) {
+    return query.value(0).toDouble();
+  }
+  return 0.0;
+}
+
 std::optional<PatientShortDTO>
 PatientRepository::getPatientByPhoneOrCitizenId(
     const QString &phone, const QString &citizenId) const {

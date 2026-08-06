@@ -1,5 +1,6 @@
 #include "MedicationRepository.h"
 #include "DatabaseManager.h"
+#include "model/CommonEnums.h"
 #include <QSqlError>
 
 bool MedicationRepository::insertMedicationBase(const MedicationInputDTO& medication,
@@ -526,7 +527,7 @@ static QString buildMedicationWhereClause(const MedicationSearchCriteria& criter
         QStringList placeholders;
         for (const QString& cat : criteria.selectedCategories) {
             placeholders.append("?");
-            outParams.append(cat);
+            outParams.append(MedicationCategoryText::toVi(cat));
         }
         where += QString(
             " AND EXISTS ("
@@ -537,11 +538,17 @@ static QString buildMedicationWhereClause(const MedicationSearchCriteria& criter
         ).arg(placeholders.join(","));
     }
 
-    if (criteria.inStockOnly) {
+    if (criteria.outOfStockOnly) {
+        where += " AND m.stock_quantity <= 0";
+    } else if (criteria.inStockOnly) {
         where += " AND m.stock_quantity > 0";
     }
 
-    if (criteria.excludeExpired) {
+    if (criteria.expiringSoonOnly) {
+        where += " AND m.expiry_date IS NOT NULL AND m.expiry_date >= ? AND m.expiry_date <= ?";
+        outParams.append(QDate::currentDate().toString("yyyy-MM-dd"));
+        outParams.append(QDate::currentDate().addDays(30).toString("yyyy-MM-dd"));
+    } else if (criteria.excludeExpired) {
         where += " AND (m.expiry_date IS NULL OR m.expiry_date >= ?)";
         outParams.append(QDate::currentDate().toString("yyyy-MM-dd"));
     }

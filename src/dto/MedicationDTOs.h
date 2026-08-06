@@ -49,6 +49,8 @@ struct MedicationSearchCriteria {
   bool excludeExpired = true;
   bool lowStockOnly = false;
   bool criticalStockOnly = false;
+  bool outOfStockOnly = false;      // Lọc thuốc hết hàng
+  bool expiringSoonOnly = false;    // Lọc thuốc sắp hết hạn (< 30 ngày)
   QVariant maxUnitPrice;
   QString manufacturer = "";
   // ── Phân trang ─────────────────────────────────────────────────────

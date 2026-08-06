@@ -637,6 +637,15 @@ std::optional<InsuranceResultDTO> PatientService::getInsurance(int patientId) co
     return m_patientRepository->getInsuranceByPatientId(patientId);
 }
 
+double PatientService::getInsuranceCoveragePercent(int patientId) const {
+  QString err = Validation::validateValidId(patientId, "ID bệnh nhân không hợp lệ.");
+  if (!err.isEmpty()) {
+    qWarning() << "PatientService::getInsuranceCoveragePercent validation failed:" << err;
+    return 0.0;
+  }
+  return m_patientRepository->getInsuranceCoveragePercent(patientId);
+}
+
 std::optional<PatientShortDTO> PatientService::getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
     return m_patientRepository->getPatientByPhoneOrCitizenId(phone, citizenId);
 }

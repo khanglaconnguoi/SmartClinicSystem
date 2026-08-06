@@ -26,6 +26,7 @@
 #include "service/PharmacyService.h"
 #include "service/StaffService.h"
 #include "service/BillingService.h"
+#include "service/PatientService.h"
 #include "ui/BaseDashboard.h"
 
 class PharmacistDashboardWidget : public BaseDashboardWidget {
@@ -38,6 +39,7 @@ public:
         std::shared_ptr<MedicalRecordService> medicalRecordService = nullptr, 
         std::shared_ptr<PharmacyService> pharmacyService = nullptr, 
         std::shared_ptr<BillingService> billingService = nullptr,
+        std::shared_ptr<PatientService> patientService = nullptr,
         QWidget *parent = nullptr
     );
     virtual ~PharmacistDashboardWidget() override = default;
@@ -72,6 +74,7 @@ private:
     std::shared_ptr<MedicalRecordService> m_medicalRecordService;
     std::shared_ptr<PharmacyService> m_pharmacyService;
     std::shared_ptr<BillingService> m_billingService;
+    std::shared_ptr<PatientService> m_patientService;
 
     QStackedWidget* m_stackedWidget = nullptr;
 
@@ -80,17 +83,15 @@ private:
     QPushButton* m_btnInventory = nullptr;
     QPushButton* m_btnDispensing = nullptr;
     QPushButton* m_btnBilling = nullptr;
-    QPushButton* m_btnReports = nullptr;
 
     // Pages
     QWidget* m_overviewPage = nullptr;
     QWidget* m_inventoryPage = nullptr;
     QWidget* m_dispensingPage = nullptr;
     QWidget* m_billingPage = nullptr;
-    QWidget* m_reportsPage = nullptr;
 
     // ────────────────────────────────────────────────────────────────
-    // Sub-components: Overview
+    // Sub-components: Overview & Reports (Merged)
     // ────────────────────────────────────────────────────────────────
     QLabel* m_lblStatTotalMeds = nullptr;
     QLabel* m_lblStatInventoryValue = nullptr;
@@ -99,7 +100,6 @@ private:
     QLabel* m_lblStatExpiring = nullptr;
     QLabel* m_lblStatPendingPresc = nullptr;
     QLabel* m_lblStatDispensedToday = nullptr;
-    QTableWidget* m_tblOverviewAlerts = nullptr;
 
     // ────────────────────────────────────────────────────────────────
     // Sub-components: Inventory (CRUD)
@@ -121,6 +121,7 @@ private:
     QLineEdit* m_txtPrescKeyword = nullptr;
     QComboBox* m_cbPrescStatus = nullptr;
     QTableWidget* m_tblPrescriptions = nullptr;
+    QTableWidget* m_tblOverviewAlerts = nullptr; // Cảnh báo tồn kho khẩn cấp
     QPushButton* m_btnPrescPrev = nullptr;
     QPushButton* m_btnPrescNext = nullptr;
     QLabel* m_lblPrescPageInfo = nullptr;
@@ -153,11 +154,15 @@ private:
     QTableWidget* m_tblInvoices = nullptr;
     QLabel* m_lblBillPatientName = nullptr;
     QLabel* m_lblBillDetails = nullptr;
+    QLabel* m_lblBillInsurancePercent = nullptr; // New UI label to show insurance coverage %
     QTableWidget* m_tblBillItems = nullptr;
     QLabel* m_lblBillTotalAmount = nullptr;
     QPushButton* m_btnCollectPayment = nullptr;
     QPushButton* m_btnPrintInvoice = nullptr;
     int m_selectedInvoiceId = -1;
+    int m_selectedInvoiceRecordId = -1;       // Cached record ID
+    int m_selectedInvoicePatientId = -1;      // Cached patient ID
+    double m_selectedInvoiceTotalAmount = 0.0; // Cached original total amount
 
     // Tab 2: Pending Invoices (Unbilled prescriptions)
     QLineEdit* m_txtPendingPatientId = nullptr;
@@ -181,9 +186,9 @@ private:
     void buildInventoryPage();
     void buildDispensingPage();
     void buildBillingPage();
-    void buildReportsPage();
     
     QFrame* makeCard(QWidget* parent = nullptr);
     void switchPage(int index, QPushButton* activeBtn);
     void refreshOverviewStats();
+    void refreshOverviewAlerts();
 };

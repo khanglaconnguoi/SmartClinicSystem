@@ -229,6 +229,14 @@ public:
    */
   std::optional<InsuranceResultDTO> getInsurance(int patientId) const;
 
+  /**
+   * @brief Lấy tỷ lệ bảo hiểm chi trả của bệnh nhân theo ID.
+   *        Thực hiện validate ID bệnh nhân.
+   * @param patientId ID của bệnh nhân.
+   * @return Tỷ lệ bảo hiểm chi trả (double từ 0.0 đến 100.0).
+   */
+  double getInsuranceCoveragePercent(int patientId) const;
+
   std::optional<PatientShortDTO> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
   QString validateCitizenIdUnique(const QString &citizenId, int excludePatientId = -1) const;
   QString validatePhoneNumberUnique(const QString &phone, int excludePatientId = -1) const;

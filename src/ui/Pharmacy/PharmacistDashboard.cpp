@@ -34,11 +34,13 @@ PharmacistDashboardWidget::PharmacistDashboardWidget(
     std::shared_ptr<MedicalRecordService> medicalRecordService,
     std::shared_ptr<PharmacyService> pharmacyService,
     std::shared_ptr<BillingService> billingService,
+    std::shared_ptr<PatientService> patientService,
     QWidget *parent)
     : BaseDashboardWidget(user, staffService, parent),
       m_medicalRecordService(medicalRecordService),
       m_pharmacyService(pharmacyService),
-      m_billingService(billingService) {
+      m_billingService(billingService),
+      m_patientService(patientService) {
     initializeDashboard();
 }
 
@@ -46,7 +48,7 @@ void PharmacistDashboardWidget::fillDashboardData() {
     buildSidebar();
 
     if (m_currentUser && m_nameLabel) {
-        m_nameLabel->setText(m_currentUser->getFullName() + " (Dược sĩ)");
+        m_nameLabel->setText(m_currentUser->getFullName());
     }
 
     m_stackedWidget = new QStackedWidget(m_mainContentWidget);
@@ -58,7 +60,6 @@ void PharmacistDashboardWidget::fillDashboardData() {
     buildInventoryPage();
     buildDispensingPage();
     buildBillingPage();
-    buildReportsPage();
 
     switchPage(0, m_btnDash);
 }
@@ -79,13 +80,11 @@ void PharmacistDashboardWidget::buildSidebar() {
     m_btnInventory = new QPushButton("Kho Thuốc", m_sidebarFrame);
     m_btnDispensing = new QPushButton("Cấp Phát Thuốc", m_sidebarFrame);
     m_btnBilling = new QPushButton("Hóa Đơn & Thu Tiền", m_sidebarFrame);
-    m_btnReports = new QPushButton("Báo Cáo Thống Kê", m_sidebarFrame);
 
     m_sidebarLayout->addWidget(m_btnDash);
     m_sidebarLayout->addWidget(m_btnInventory);
     m_sidebarLayout->addWidget(m_btnDispensing);
     m_sidebarLayout->addWidget(m_btnBilling);
-    m_sidebarLayout->addWidget(m_btnReports);
     m_sidebarLayout->addStretch();
 
     m_btnLogout = new QPushButton("Đăng Xuất", m_sidebarFrame);
@@ -104,7 +103,6 @@ void PharmacistDashboardWidget::buildSidebar() {
     connect(m_btnInventory, &QPushButton::clicked, this, [this]() { switchPage(1, m_btnInventory); });
     connect(m_btnDispensing, &QPushButton::clicked, this, [this]() { switchPage(2, m_btnDispensing); });
     connect(m_btnBilling, &QPushButton::clicked, this, [this]() { switchPage(3, m_btnBilling); });
-    connect(m_btnReports, &QPushButton::clicked, this, [this]() { switchPage(4, m_btnReports); });
 }
 
 void PharmacistDashboardWidget::switchPage(int index, QPushButton* activeBtn) {
@@ -112,7 +110,7 @@ void PharmacistDashboardWidget::switchPage(int index, QPushButton* activeBtn) {
 
     m_stackedWidget->setCurrentIndex(index);
 
-    QPushButton* buttons[] = { m_btnDash, m_btnInventory, m_btnDispensing, m_btnBilling, m_btnReports };
+    QPushButton* buttons[] = { m_btnDash, m_btnInventory, m_btnDispensing, m_btnBilling };
     for (auto* btn : buttons) {
         if (btn) {
             btn->setObjectName("");
@@ -127,19 +125,29 @@ void PharmacistDashboardWidget::switchPage(int index, QPushButton* activeBtn) {
         activeBtn->style()->polish(activeBtn);
     }
 
-    if (index == 0) refreshOverviewStats();
-    else if (index == 1) performInventorySearch();
-    else if (index == 2) performPrescriptionSearch();
+    if (index == 0) {
+        refreshOverviewStats();
+        generateReport();
+    }
+    else if (index == 1) {
+        performInventorySearch();
+        refreshOverviewAlerts();
+    }
+    else if (index == 2) {
+        performPrescriptionSearch();
+    }
     else if (index == 3) {
         performInvoiceSearch();
         loadPendingBilling();
     }
-    else if (index == 4) generateReport();
 }
 
 QFrame* PharmacistDashboardWidget::makeCard(QWidget* parent) {
     QFrame* card = new QFrame(parent ? parent : m_mainContentWidget);
-    card->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 8px; }");
+    card->setStyleSheet(
+        "QFrame { background-color: #FFFFFF; border: 1px solid #EAEAEA; border-radius: 8px; }"
+        "QLabel { border: none; background-color: transparent; color: #1E293B; }"
+    );
     
     QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect(card);
     shadow->setBlurRadius(10);
@@ -153,74 +161,87 @@ QFrame* PharmacistDashboardWidget::makeCard(QWidget* parent) {
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE 1: OVERVIEW (TỔNG QUAN)
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE 1: OVERVIEW & REPORTS (TỔNG QUAN & BÁO CÁO)
+// ─────────────────────────────────────────────────────────────────────────────
 void PharmacistDashboardWidget::buildOverviewPage() {
     m_overviewPage = new QWidget(this);
-    QVBoxLayout* mainLayout = new QVBoxLayout(m_overviewPage);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->setSpacing(20);
+    QVBoxLayout* pageLayout = new QVBoxLayout(m_overviewPage);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+
+    QScrollArea* scrollArea = new QScrollArea(m_overviewPage);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setStyleSheet("QScrollArea { background-color: transparent; border: none; }");
+
+    QWidget* scrollContent = new QWidget(scrollArea);
+    scrollContent->setStyleSheet("background-color: transparent;");
+    QVBoxLayout* mainLayout = new QVBoxLayout(scrollContent);
+    mainLayout->setContentsMargins(0, 0, 16, 16);
+    mainLayout->setSpacing(24);
 
     QHBoxLayout* cardsLayout = new QHBoxLayout();
     cardsLayout->setSpacing(16);
 
     // Card 1: Inventory & Valuation
-    QFrame* card1 = makeCard(m_overviewPage);
+    QFrame* card1 = makeCard(scrollContent);
     QVBoxLayout* lay1 = new QVBoxLayout(card1);
     lay1->setContentsMargins(16, 14, 16, 14);
     lay1->setSpacing(4);
     QLabel* lbl1Title = new QLabel("Tổng số loại thuốc", card1);
-    lbl1Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    lbl1Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500; border: none; background-color: transparent;");
     m_lblStatTotalMeds = new QLabel("0 loại", card1);
-    m_lblStatTotalMeds->setStyleSheet("font-size: 22px; font-weight: bold; color: #2B6CB0;");
+    m_lblStatTotalMeds->setStyleSheet("font-size: 22px; font-weight: bold; color: #2B6CB0; border: none; background-color: transparent;");
     m_lblStatInventoryValue = new QLabel("Giá trị kho: 0 VNĐ", card1);
-    m_lblStatInventoryValue->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
+    m_lblStatInventoryValue->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500; border: none; background-color: transparent;");
     lay1->addWidget(lbl1Title);
     lay1->addWidget(m_lblStatTotalMeds);
     lay1->addWidget(m_lblStatInventoryValue);
     cardsLayout->addWidget(card1);
 
     // Card 2: Dispensing Progress
-    QFrame* card2 = makeCard(m_overviewPage);
+    QFrame* card2 = makeCard(scrollContent);
     QVBoxLayout* lay2 = new QVBoxLayout(card2);
     lay2->setContentsMargins(16, 14, 16, 14);
     lay2->setSpacing(4);
     QLabel* lbl2Title = new QLabel("Đơn thuốc chờ cấp phát", card2);
-    lbl2Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    lbl2Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500; border: none; background-color: transparent;");
     m_lblStatPendingPresc = new QLabel("0 đơn", card2);
-    m_lblStatPendingPresc->setStyleSheet("font-size: 22px; font-weight: bold; color: #319795;");
+    m_lblStatPendingPresc->setStyleSheet("font-size: 22px; font-weight: bold; color: #319795; border: none; background-color: transparent;");
     m_lblStatDispensedToday = new QLabel("Đã cấp hôm nay: 0 đơn", card2);
-    m_lblStatDispensedToday->setStyleSheet("color: #2F855A; font-size: 12px; font-weight: 500;");
+    m_lblStatDispensedToday->setStyleSheet("color: #2F855A; font-size: 12px; font-weight: 500; border: none; background-color: transparent;");
     lay2->addWidget(lbl2Title);
     lay2->addWidget(m_lblStatPendingPresc);
     lay2->addWidget(m_lblStatDispensedToday);
     cardsLayout->addWidget(card2);
 
     // Card 3: Stock Warning
-    QFrame* card3 = makeCard(m_overviewPage);
+    QFrame* card3 = makeCard(scrollContent);
     QVBoxLayout* lay3 = new QVBoxLayout(card3);
     lay3->setContentsMargins(16, 14, 16, 14);
     lay3->setSpacing(4);
     QLabel* lbl3Title = new QLabel("Thuốc sắp hết hàng", card3);
-    lbl3Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    lbl3Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500; border: none; background-color: transparent;");
     m_lblStatLowStock = new QLabel("0 loại", card3);
-    m_lblStatLowStock->setStyleSheet("font-size: 22px; font-weight: bold; color: #DD6B20;");
+    m_lblStatLowStock->setStyleSheet("font-size: 22px; font-weight: bold; color: #DD6B20; border: none; background-color: transparent;");
     m_lblStatOutOfStock = new QLabel("Đã hết hàng: 0 loại", card3);
-    m_lblStatOutOfStock->setStyleSheet("color: #E53E3E; font-size: 12px; font-weight: 500;");
+    m_lblStatOutOfStock->setStyleSheet("color: #E53E3E; font-size: 12px; font-weight: 500; border: none; background-color: transparent;");
     lay3->addWidget(lbl3Title);
     lay3->addWidget(m_lblStatLowStock);
     lay3->addWidget(m_lblStatOutOfStock);
     cardsLayout->addWidget(card3);
 
     // Card 4: Expiry Warning
-    QFrame* card4 = makeCard(m_overviewPage);
+    QFrame* card4 = makeCard(scrollContent);
     QVBoxLayout* lay4 = new QVBoxLayout(card4);
     lay4->setContentsMargins(16, 14, 16, 14);
     lay4->setSpacing(4);
     QLabel* lbl4Title = new QLabel("Thuốc sắp hết hạn (<30 ngày)", card4);
-    lbl4Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500;");
+    lbl4Title->setStyleSheet("color: #4A5568; font-size: 13px; font-weight: 500; border: none; background-color: transparent;");
     m_lblStatExpiring = new QLabel("0 loại", card4);
-    m_lblStatExpiring->setStyleSheet("font-size: 22px; font-weight: bold; color: #C53030;");
+    m_lblStatExpiring->setStyleSheet("font-size: 22px; font-weight: bold; color: #C53030; border: none; background-color: transparent;");
     QLabel* lbl4Sub = new QLabel("Cần ưu tiên xuất trước", card4);
-    lbl4Sub->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500;");
+    lbl4Sub->setStyleSheet("color: #718096; font-size: 12px; font-weight: 500; border: none; background-color: transparent;");
     lay4->addWidget(lbl4Title);
     lay4->addWidget(m_lblStatExpiring);
     lay4->addWidget(lbl4Sub);
@@ -228,25 +249,232 @@ void PharmacistDashboardWidget::buildOverviewPage() {
 
     mainLayout->addLayout(cardsLayout);
 
-    QFrame* tableCard = makeCard(m_overviewPage);
+    // ────────────────────────────────────────────────────────────────
+    // REPORT CONTAINER (BÁO CÁO THỐNG KÊ CHI TIẾT)
+    // ────────────────────────────────────────────────────────────────
+    QFrame* reportContainer = makeCard(scrollContent);
+    QVBoxLayout* reportLayout = new QVBoxLayout(reportContainer);
+    reportLayout->setContentsMargins(20, 20, 20, 20);
+    reportLayout->setSpacing(16);
+
+    QLabel* lblReportTitle = new QLabel("BÁO CÁO TIÊU THỤ THUỐC ĐỊNH KỲ", reportContainer);
+    lblReportTitle->setStyleSheet("font-size: 15px; font-weight: bold; color: #1E293B; border: none; background-color: transparent;");
+    reportLayout->addWidget(lblReportTitle);
+
+    QHBoxLayout* rangeLayout = new QHBoxLayout();
+    rangeLayout->setSpacing(12);
+
+    m_dateReportFrom = new QDateEdit(reportContainer);
+    m_dateReportFrom->setCalendarPopup(true);
+    m_dateReportFrom->setDate(QDate::currentDate().addDays(-30));
+    m_dateReportFrom->setStyleSheet("QDateEdit { padding: 6px 10px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; }");
+
+    m_dateReportTo = new QDateEdit(reportContainer);
+    m_dateReportTo->setCalendarPopup(true);
+    m_dateReportTo->setDate(QDate::currentDate());
+    m_dateReportTo->setStyleSheet("QDateEdit { padding: 6px 10px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; }");
+
+    QPushButton* btnGenerate = new QPushButton("Tải Lại", reportContainer);
+    btnGenerate->setCursor(Qt::PointingHandCursor);
+    btnGenerate->setFixedHeight(34);
+    btnGenerate->setStyleSheet("QPushButton { background-color: #2563EB; color: white; padding: 6px 16px; border-radius: 6px; border: none; font-weight: bold; } QPushButton:hover { background-color: #1D4ED8; }");
+
+    QPushButton* btnExportPDF = new QPushButton("Xuất Báo Cáo", reportContainer);
+    btnExportPDF->setCursor(Qt::PointingHandCursor);
+    btnExportPDF->setFixedHeight(34);
+    btnExportPDF->setStyleSheet("QPushButton { background-color: #10B981; color: white; padding: 6px 16px; border-radius: 6px; border: none; font-weight: bold; } QPushButton:hover { background-color: #059669; }");
+
+    QLabel* lblFrom = new QLabel("Từ ngày:", reportContainer);
+    lblFrom->setStyleSheet("border: none; background-color: transparent;");
+    QLabel* lblTo = new QLabel("Đến ngày:", reportContainer);
+    lblTo->setStyleSheet("border: none; background-color: transparent;");
+
+    rangeLayout->addWidget(lblFrom);
+    rangeLayout->addWidget(m_dateReportFrom);
+    rangeLayout->addWidget(lblTo);
+    rangeLayout->addWidget(m_dateReportTo);
+    rangeLayout->addWidget(btnGenerate);
+    rangeLayout->addWidget(btnExportPDF);
+    rangeLayout->addStretch();
+    reportLayout->addLayout(rangeLayout);
+
+    QHBoxLayout* kpiLay = new QHBoxLayout();
+    kpiLay->setSpacing(16);
+
+    QFrame* kpiReport1 = makeCard(reportContainer);
+    QVBoxLayout* kpiReport1Lay = new QVBoxLayout(kpiReport1);
+    QLabel* lblKpi1 = new QLabel("Tổng lượng thuốc cấp phát", kpiReport1);
+    lblKpi1->setStyleSheet("border: none; background-color: transparent;");
+    m_lblReportTotalQty = new QLabel("0 đơn vị", kpiReport1);
+    m_lblReportTotalQty->setStyleSheet("font-size: 20px; font-weight: bold; color: #2563EB; border: none; background-color: transparent;");
+    kpiReport1Lay->addWidget(lblKpi1);
+    kpiReport1Lay->addWidget(m_lblReportTotalQty);
+    kpiLay->addWidget(kpiReport1);
+
+    QFrame* kpiReport2 = makeCard(reportContainer);
+    QVBoxLayout* kpiReport2Lay = new QVBoxLayout(kpiReport2);
+    QLabel* lblKpi2 = new QLabel("Tổng giá trị tiêu thụ", kpiReport2);
+    lblKpi2->setStyleSheet("border: none; background-color: transparent;");
+    m_lblReportTotalValue = new QLabel("0 VNĐ", kpiReport2);
+    m_lblReportTotalValue->setStyleSheet("font-size: 20px; font-weight: bold; color: #059669; border: none; background-color: transparent;");
+    kpiReport2Lay->addWidget(lblKpi2);
+    kpiReport2Lay->addWidget(m_lblReportTotalValue);
+    kpiLay->addWidget(kpiReport2);
+    reportLayout->addLayout(kpiLay);
+
+    QHBoxLayout* workLayout = new QHBoxLayout();
+    workLayout->setSpacing(16);
+
+    QFrame* tableCard = makeCard(reportContainer);
     QVBoxLayout* tableCardLayout = new QVBoxLayout(tableCard);
     
-    QLabel* lblAlertTitle = new QLabel("CẢNH BÁO TỒN KHO KHẨN CẤP", tableCard);
-    lblAlertTitle->setStyleSheet("font-size: 14px; font-weight: bold; color: #2D3748;");
-    tableCardLayout->addWidget(lblAlertTitle);
+    QLabel* lblTblTitle = new QLabel("CHI TIẾT TIÊU THỤ THEO LOẠI THUỐC", tableCard);
+    lblTblTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #475569; border: none; background-color: transparent;");
+    tableCardLayout->addWidget(lblTblTitle);
 
-    m_tblOverviewAlerts = new QTableWidget(tableCard);
-    m_tblOverviewAlerts->setColumnCount(5);
-    m_tblOverviewAlerts->setHorizontalHeaderLabels({"Tên thuốc", "Tồn kho", "Đơn vị", "Hạn dùng", "Cảnh báo"});
-    m_tblOverviewAlerts->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_tblOverviewAlerts->setFocusPolicy(Qt::NoFocus);
-    m_tblOverviewAlerts->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
-    tableCardLayout->addWidget(m_tblOverviewAlerts);
+    m_tblReportUsage = new QTableWidget(tableCard);
+    m_tblReportUsage->setColumnCount(5);
+    m_tblReportUsage->setHorizontalHeaderLabels({"Tên thuốc", "Số lượng", "Đơn vị", "Đơn giá (VNĐ)", "Tổng giá trị (VNĐ)"});
+    m_tblReportUsage->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblReportUsage->setFocusPolicy(Qt::NoFocus);
+    m_tblReportUsage->setShowGrid(false);
+    m_tblReportUsage->verticalHeader()->setVisible(false);
+    m_tblReportUsage->horizontalHeader()->setFixedHeight(38);
+    m_tblReportUsage->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblReportUsage->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_tblReportUsage->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
+        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+    );
+    tableCardLayout->addWidget(m_tblReportUsage);
+    workLayout->addWidget(tableCard, 6);
 
-    mainLayout->addWidget(tableCard, 1);
+    QFrame* chartCard = makeCard(reportContainer);
+    QVBoxLayout* chartLayout = new QVBoxLayout(chartCard);
+    
+    QLabel* lblChartTitle = new QLabel("TOP 5 THUỐC SỬ DỤNG NHIỀU NHẤT", chartCard);
+    lblChartTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #475569; border: none; background-color: transparent;");
+    chartLayout->addWidget(lblChartTitle);
+
+    m_chartView = new QChartView(chartCard);
+    m_chartView->setRenderHint(QPainter::Antialiasing);
+    m_chartView->setMinimumHeight(240);
+    chartLayout->addWidget(m_chartView);
+    workLayout->addWidget(chartCard, 4);
+    reportLayout->addLayout(workLayout);
+
+    mainLayout->addWidget(reportContainer, 1);
+
+    scrollArea->setWidget(scrollContent);
+    pageLayout->addWidget(scrollArea);
     m_stackedWidget->addWidget(m_overviewPage);
-}
 
+    connect(btnGenerate, &QPushButton::clicked, this, &PharmacistDashboardWidget::generateReport);
+    connect(btnExportPDF, &QPushButton::clicked, this, [this]() {
+        QString fileName = QFileDialog::getSaveFileName(this, 
+            "Xuất Báo Cáo PDF", 
+            QString("BaoCaoTieuThuThuoc_%1.pdf").arg(QDate::currentDate().toString("yyyyMMdd")), 
+            "PDF Files (*.pdf)");
+        if (fileName.isEmpty()) return;
+
+        QString tableRowsHtml = "";
+        for (int r = 0; r < m_tblReportUsage->rowCount(); ++r) {
+            tableRowsHtml += "<tr>";
+            for (int c = 0; c < m_tblReportUsage->columnCount(); ++c) {
+                QTableWidgetItem* item = m_tblReportUsage->item(r, c);
+                QString text = item ? item->text() : "";
+                tableRowsHtml += "<td>" + text + "</td>";
+            }
+            tableRowsHtml += "</tr>";
+        }
+
+        QString html = "<html><head><style>"
+                       "body { font-family: 'Segoe UI', Arial, sans-serif; color: #000000; margin: 0; padding: 0; font-size: 13px; line-height: 1.5; }"
+                       ".header { text-align: center; margin-bottom: 30px; }"
+                       ".clinic-title { font-size: 16px; font-weight: bold; color: #000000; }"
+                       ".clinic-sub { font-size: 12px; color: #000000; }"
+                       ".divider { border: none; border-top: 1px solid #000000; margin: 15px 0; }"
+                       ".title { font-size: 24px; font-weight: bold; color: #000000; text-transform: uppercase; }"
+                       ".subtitle { font-size: 14px; color: #000000; margin-top: 5px; }"
+                       ".section-title { font-size: 16px; font-weight: bold; color: #000000; margin-top: 30px; margin-bottom: 12px; border-bottom: 2px solid #000000; padding-bottom: 5px; }"
+                       ".kpi-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }"
+                       ".kpi-table td { padding: 15px; border: 1px solid #000000; background-color: #FFFFFF; width: 50%; }"
+                       ".kpi-title { color: #000000; font-size: 12px; font-weight: bold; }"
+                       ".kpi-value { font-size: 20px; font-weight: bold; color: #000000; margin-top: 5px; }"
+                       ".items-table { width: 100%; border-collapse: collapse; margin-top: 10px; }"
+                       ".items-table th { background-color: #FFFFFF; color: #000000; font-weight: bold; border: 1px solid #000000; padding: 10px; font-size: 13px; text-align: left; }"
+                       ".items-table td { border: 1px solid #000000; padding: 10px; font-size: 13px; color: #000000; }"
+                       ".footer { margin-top: 40px; font-size: 12px; color: #000000; text-align: right; }"
+                       "</style></head><body>"
+                       "<div class='header'>"
+                       "  <div class='clinic-title'>NOVA CARE CLINIC</div>"
+                       "  <div class='clinic-sub'>Địa chỉ: 227 Đường Nguyễn Văn Cừ, Phường Chợ Quán, TP. HCM</div>"
+                       "  <div class='divider'></div>"
+                       "  <div class='title'>Báo Cáo Tiêu Thụ Thuốc Định Kỳ</div>"
+                       "  <div class='subtitle'>Từ ngày: " + m_dateReportFrom->date().toString("dd/MM/yyyy") + 
+                       "   - Đến ngày: " + m_dateReportTo->date().toString("dd/MM/yyyy") + "</div>"
+                       "</div>"
+                       
+                       "<div class='section-title'>Chỉ Số Kho & Tiêu Thụ</div>"
+                       "<table class='kpi-table'>"
+                       "  <tr>"
+                       "    <td><div class='kpi-title'>Tổng số loại thuốc trong kho</div><div class='kpi-value'>" + m_lblStatTotalMeds->text() + "</div></td>"
+                       "    <td><div class='kpi-title'>Tổng giá trị kho hiện tại</div><div class='kpi-value'>" + m_lblStatInventoryValue->text() + "</div></td>"
+                       "  </tr>"
+                       "  <tr>"
+                       "    <td><div class='kpi-title'>Tổng lượng thuốc đã cấp phát (trong kỳ)</div><div class='kpi-value'>" + m_lblReportTotalQty->text() + "</div></td>"
+                       "    <td><div class='kpi-title'>Tổng giá trị tiêu thụ (trong kỳ)</div><div class='kpi-value'>" + m_lblReportTotalValue->text() + "</div></td>"
+                       "  </tr>"
+                       "</table>"
+                       
+                       "<div class='section-title'>Chi Tiết Tiêu Thụ Theo Loại Thuốc</div>"
+                       "<table class='items-table'>"
+                       "  <thead>"
+                       "    <tr>"
+                       "      <th>Tên thuốc</th>"
+                       "      <th>Số lượng cấp phát</th>"
+                       "      <th>Thành tiền</th>"
+                       "    </tr>"
+                       "  </thead>"
+                       "  <tbody>" + tableRowsHtml + "</tbody>"
+                       "</table>"
+                       
+                       "<table style='width: 100%; margin-top: 40px; border: none; border-collapse: collapse;'>"
+                       "  <tr style='border: none;'>"
+                       "    <td style='width: 50%; text-align: center; border: none; background: transparent; font-size: 13px;'>"
+                       "      <b>Người lập báo cáo</b><br/>"
+                       "      <small>(Ký và ghi rõ họ tên)</small><br/><br/><br/><br/>"
+                       "      <b>" + (m_currentUser ? m_currentUser->getFullName() : "Dược sĩ") + "</b>"
+                       "    </td>"
+                       "    <td style='width: 50%; text-align: center; border: none; background: transparent; font-size: 13px;'>"
+                       "      <b>Trưởng khoa dược</b><br/>"
+                       "      <small>(Ký, đóng dấu và ghi rõ họ tên)</small><br/><br/><br/><br/>"
+                       "      .............................................."
+                       "    </td>"
+                       "  </tr>"
+                       "</table>"
+                       
+                       "<div class='footer'>"
+                       "  Ngày lập báo cáo: " + QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm") +
+                       "</div>"
+                       "</body></html>";
+
+        QPdfWriter writer(fileName);
+        writer.setResolution(96);
+        writer.setPageSize(QPageSize(QPageSize::A4));
+        writer.setPageMargins(QMarginsF(20, 20, 20, 20), QPageLayout::Millimeter);
+
+        QTextDocument doc;
+        doc.setPageSize(QSizeF(writer.width(), writer.height()));
+        doc.setHtml(html);
+        doc.print(&writer);
+
+        QMessageBox::information(this, "Thành công", "Đã xuất báo cáo tổng quan ra file PDF thành công!");
+    });
+}
 void PharmacistDashboardWidget::refreshOverviewStats() {
     if (!m_pharmacyService) return;
 
@@ -287,6 +515,13 @@ void PharmacistDashboardWidget::refreshOverviewStats() {
     if (m_lblStatDispensedToday) {
         m_lblStatDispensedToday->setText(QString("Đã cấp hôm nay: %1 đơn").arg(pagedDispensed.totalCount));
     }
+}
+
+void PharmacistDashboardWidget::refreshOverviewAlerts() {
+    if (!m_tblOverviewAlerts || !m_pharmacyService) return;
+
+    auto lowStock = m_pharmacyService->getLowStockMedications();
+    auto expiring = m_pharmacyService->getExpiringMedications(30);
 
     m_tblOverviewAlerts->setRowCount(0);
     int row = 0;
@@ -334,27 +569,53 @@ void PharmacistDashboardWidget::buildInventoryPage() {
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(16);
 
+    QTabWidget* tabContainer = new QTabWidget(m_inventoryPage);
+    tabContainer->setStyleSheet(
+        "QTabWidget::pane { border: 1px solid #E2E8F0; background: #FFFFFF; border-radius: 8px; }"
+        "QTabBar::tab { background: #F1F5F9; color: #64748B; font-weight: bold; padding: 8px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px; }"
+        "QTabBar::tab:selected { background: #FFFFFF; color: #2563EB; border-bottom: 2px solid #2563EB; }"
+    );
+
+    // TAB 1: Danh sách kho thuốc
+    QWidget* tabInventory = new QWidget(tabContainer);
+    QVBoxLayout* tabInvLayout = new QVBoxLayout(tabInventory);
+    tabInvLayout->setContentsMargins(12, 12, 12, 12);
+    tabInvLayout->setSpacing(12);
+
     QHBoxLayout* filterLayout = new QHBoxLayout();
     filterLayout->setSpacing(10);
 
-    m_txtInvKeyword = new QLineEdit(m_inventoryPage);
+    m_txtInvKeyword = new QLineEdit(tabInventory);
     m_txtInvKeyword->setPlaceholderText("Tìm theo tên thuốc, nhà sản xuất...");
     m_txtInvKeyword->setFixedWidth(250);
+    m_txtInvKeyword->setFixedHeight(38);
+    m_txtInvKeyword->setStyleSheet(
+        "QLineEdit { border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 12px; font-size: 13px; color: #0F172A; background-color: #FFFFFF; }"
+        "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; }"
+    );
 
-    m_cbInvCategory = new QComboBox(m_inventoryPage);
+    m_cbInvCategory = new QComboBox(tabInventory);
     m_cbInvCategory->addItem("Tất cả danh mục", "");
     for (const auto &pair : MedicationCategoryText::getList()) {
         m_cbInvCategory->addItem(pair.second, pair.first);
     }
+    m_cbInvCategory->setFixedHeight(38);
+    m_cbInvCategory->setStyleSheet("QComboBox { padding: 6px 10px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; }");
 
-    m_cbInvStatus = new QComboBox(m_inventoryPage);
+    m_cbInvStatus = new QComboBox(tabInventory);
     m_cbInvStatus->addItems({"Tất cả trạng thái", "Còn hàng", "Hết hàng", "Sắp hết hàng", "Sắp hết hạn"});
+    m_cbInvStatus->setFixedHeight(38);
+    m_cbInvStatus->setStyleSheet("QComboBox { padding: 6px 10px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; }");
 
-    QPushButton* btnSearch = new QPushButton("Tìm kiếm", m_inventoryPage);
-    btnSearch->setStyleSheet("background-color: #4B94F2; color: white; padding: 6px 16px; border-radius: 4px; border: none; font-weight: bold;");
+    QPushButton* btnSearch = new QPushButton("Tìm kiếm", tabInventory);
+    btnSearch->setCursor(Qt::PointingHandCursor);
+    btnSearch->setFixedHeight(38);
+    btnSearch->setStyleSheet("QPushButton { background-color: #4B94F2; color: white; padding: 0 16px; border-radius: 6px; border: none; font-weight: bold; } QPushButton:hover { background-color: #357ABD; }");
     
-    QPushButton* btnAddMed = new QPushButton("+ Thêm thuốc mới", m_inventoryPage);
-    btnAddMed->setStyleSheet("background-color: #10B981; color: white; padding: 6px 16px; border-radius: 4px; border: none; font-weight: bold;");
+    QPushButton* btnAddMed = new QPushButton("+ Thêm thuốc mới", tabInventory);
+    btnAddMed->setCursor(Qt::PointingHandCursor);
+    btnAddMed->setFixedHeight(38);
+    btnAddMed->setStyleSheet("QPushButton { background-color: #10B981; color: white; padding: 0 16px; border-radius: 6px; border: none; font-weight: bold; } QPushButton:hover { background-color: #059669; }");
 
     filterLayout->addWidget(m_txtInvKeyword);
     filterLayout->addWidget(m_cbInvCategory);
@@ -362,17 +623,33 @@ void PharmacistDashboardWidget::buildInventoryPage() {
     filterLayout->addWidget(btnSearch);
     filterLayout->addStretch();
     filterLayout->addWidget(btnAddMed);
-    mainLayout->addLayout(filterLayout);
+    tabInvLayout->addLayout(filterLayout);
 
-    QFrame* tblCard = makeCard(m_inventoryPage);
+    QFrame* tblCard = makeCard(tabInventory);
     QVBoxLayout* tblLayout = new QVBoxLayout(tblCard);
+    tblLayout->setContentsMargins(0, 0, 0, 0);
 
     m_tblInventory = new QTableWidget(tblCard);
     m_tblInventory->setColumnCount(8);
     m_tblInventory->setHorizontalHeaderLabels({"Mã", "Tên thương hiệu", "Đơn vị", "Đơn giá", "Tồn kho", "Hạn sử dụng", "Trạng thái", "Hành động"});
     m_tblInventory->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblInventory->setFocusPolicy(Qt::NoFocus);
-    m_tblInventory->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
+    m_tblInventory->setShowGrid(false);
+    m_tblInventory->verticalHeader()->setVisible(false);
+    m_tblInventory->verticalHeader()->setDefaultSectionSize(40);
+    m_tblInventory->horizontalHeader()->setFixedHeight(38);
+    m_tblInventory->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblInventory->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    m_tblInventory->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    m_tblInventory->horizontalHeader()->setSectionResizeMode(7, QHeaderView::Fixed);
+    m_tblInventory->setColumnWidth(7, 120);
+    m_tblInventory->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
+        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+    );
     tblLayout->addWidget(m_tblInventory);
 
     QHBoxLayout* pageLayout = new QHBoxLayout();
@@ -387,11 +664,67 @@ void PharmacistDashboardWidget::buildInventoryPage() {
     pageLayout->addStretch();
     tblLayout->addLayout(pageLayout);
 
-    mainLayout->addWidget(tblCard, 1);
+    tabInvLayout->addWidget(tblCard);
+    tabContainer->addTab(tabInventory, "Danh sách kho thuốc");
+
+    // TAB 2: Cảnh báo tồn kho
+    QWidget* tabAlerts = new QWidget(tabContainer);
+    QVBoxLayout* tabAlertsLayout = new QVBoxLayout(tabAlerts);
+    tabAlertsLayout->setContentsMargins(12, 12, 12, 12);
+    tabAlertsLayout->setSpacing(12);
+
+    QFrame* alertCard = makeCard(tabAlerts);
+    QVBoxLayout* alertCardLayout = new QVBoxLayout(alertCard);
+    alertCardLayout->setContentsMargins(10, 10, 10, 10);
+    
+    QLabel* lblAlertTitle = new QLabel("CẢNH BÁO TỒN KHO KHẨN CẤP", alertCard);
+    lblAlertTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #1E293B; margin-bottom: 10px;");
+    alertCardLayout->addWidget(lblAlertTitle);
+
+    m_tblOverviewAlerts = new QTableWidget(alertCard);
+    m_tblOverviewAlerts->setColumnCount(5);
+    m_tblOverviewAlerts->setHorizontalHeaderLabels({"Tên thuốc", "Tồn kho", "Đơn vị", "Hạn dùng", "Cảnh báo"});
+    m_tblOverviewAlerts->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblOverviewAlerts->setFocusPolicy(Qt::NoFocus);
+    m_tblOverviewAlerts->setShowGrid(false);
+    m_tblOverviewAlerts->verticalHeader()->setVisible(false);
+    m_tblOverviewAlerts->horizontalHeader()->setFixedHeight(38);
+    m_tblOverviewAlerts->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblOverviewAlerts->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_tblOverviewAlerts->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
+        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+    );
+    alertCardLayout->addWidget(m_tblOverviewAlerts);
+    tabAlertsLayout->addWidget(alertCard);
+    tabContainer->addTab(tabAlerts, "Cảnh báo tồn kho");
+
+    mainLayout->addWidget(tabContainer, 1);
     m_stackedWidget->addWidget(m_inventoryPage);
 
-    connect(btnSearch, &QPushButton::clicked, this, &PharmacistDashboardWidget::performInventorySearch);
-    connect(m_txtInvKeyword, &QLineEdit::returnPressed, this, &PharmacistDashboardWidget::performInventorySearch);
+    connect(btnSearch, &QPushButton::clicked, this, [this]() {
+        m_invCurrentPage = 1;
+        performInventorySearch();
+    });
+    connect(m_txtInvKeyword, &QLineEdit::returnPressed, this, [this]() {
+        m_invCurrentPage = 1;
+        performInventorySearch();
+    });
+    connect(m_txtInvKeyword, &QLineEdit::textChanged, this, [this](const QString&) {
+        m_invCurrentPage = 1;
+        performInventorySearch();
+    });
+    connect(m_cbInvCategory, &QComboBox::currentIndexChanged, this, [this](int) {
+        m_invCurrentPage = 1;
+        performInventorySearch();
+    });
+    connect(m_cbInvStatus, &QComboBox::currentIndexChanged, this, [this](int) {
+        m_invCurrentPage = 1;
+        performInventorySearch();
+    });
     connect(m_btnInvPrev, &QPushButton::clicked, this, &PharmacistDashboardWidget::prevInventoryPage);
     connect(m_btnInvNext, &QPushButton::clicked, this, &PharmacistDashboardWidget::nextInventoryPage);
     
@@ -409,16 +742,32 @@ void PharmacistDashboardWidget::performInventorySearch() {
     criteria.page = m_invCurrentPage;
     criteria.pageSize = m_invPageSize;
 
-    QString cat = m_cbInvCategory->currentText();
-    if (cat != "Tất cả danh mục" && !cat.isEmpty()) {
+    QString cat = m_cbInvCategory->currentData().toString();
+    if (!cat.isEmpty()) {
         criteria.selectedCategories.append(cat);
     }
 
     QString status = m_cbInvStatus->currentText();
-    if (status == "Còn hàng") criteria.inStockOnly = true;
-    else if (status == "Hết hàng") criteria.inStockOnly = false;
-    else if (status == "Sắp hết hàng") criteria.lowStockOnly = true;
-    else if (status == "Sắp hết hạn") criteria.excludeExpired = false;
+    // Default values of criteria: inStockOnly = true, excludeExpired = true
+    if (status == "Tất cả trạng thái") {
+        criteria.inStockOnly = false;
+        criteria.excludeExpired = false;
+    } else if (status == "Còn hàng") {
+        criteria.inStockOnly = true;
+        criteria.excludeExpired = true;
+    } else if (status == "Hết hàng") {
+        criteria.inStockOnly = false;
+        criteria.outOfStockOnly = true;
+        criteria.excludeExpired = false;
+    } else if (status == "Sắp hết hàng") {
+        criteria.inStockOnly = false;
+        criteria.lowStockOnly = true;
+        criteria.excludeExpired = false;
+    } else if (status == "Sắp hết hạn") {
+        criteria.inStockOnly = false;
+        criteria.expiringSoonOnly = true;
+        criteria.excludeExpired = false;
+    }
 
     auto result = m_pharmacyService->searchMedicationsPaged(criteria);
     m_invTotalPages = (result.totalCount + m_invPageSize - 1) / m_invPageSize;
@@ -497,14 +846,22 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     QHBoxLayout* searchLayout = new QHBoxLayout();
     m_txtPrescKeyword = new QLineEdit(m_dispensingPage);
     m_txtPrescKeyword->setPlaceholderText("Tìm bệnh nhân, bác sĩ...");
+    m_txtPrescKeyword->setStyleSheet(
+        "QLineEdit { border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 12px; font-size: 13px; color: #0F172A; background-color: #FFFFFF; }"
+        "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; }"
+    );
+
     m_cbPrescStatus = new QComboBox(m_dispensingPage);
     m_cbPrescStatus->addItem("Tất cả trạng thái", "");
     m_cbPrescStatus->addItem(prescriptionStatusToVi(PrescriptionStatus::Pending), "PENDING");
     m_cbPrescStatus->addItem(prescriptionStatusToVi(PrescriptionStatus::Dispensed), "DISPENSED");
     m_cbPrescStatus->addItem(prescriptionStatusToVi(PrescriptionStatus::Cancelled), "CANCELLED");
+    m_cbPrescStatus->setStyleSheet("QComboBox { padding: 6px 10px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; }");
     
     QPushButton* btnSearch = new QPushButton("Lọc", m_dispensingPage);
-    btnSearch->setStyleSheet("background-color: #4B94F2; color: white; padding: 5px 12px; border-radius: 4px; border: none; font-weight: bold;");
+    btnSearch->setCursor(Qt::PointingHandCursor);
+    btnSearch->setFixedHeight(34);
+    btnSearch->setStyleSheet("background-color: #4B94F2; color: white; padding: 6px 16px; border-radius: 6px; border: none; font-weight: bold;");
 
     searchLayout->addWidget(m_txtPrescKeyword);
     searchLayout->addWidget(m_cbPrescStatus);
@@ -513,16 +870,27 @@ void PharmacistDashboardWidget::buildDispensingPage() {
 
     QFrame* tblCard = makeCard(m_dispensingPage);
     QVBoxLayout* tblLayout = new QVBoxLayout(tblCard);
+    tblLayout->setContentsMargins(0, 0, 0, 0);
     
     m_tblPrescriptions = new QTableWidget(tblCard);
     m_tblPrescriptions->setColumnCount(6);
     m_tblPrescriptions->setHorizontalHeaderLabels({"Mã đơn", "Bệnh nhân", "Tuổi", "Bác sĩ", "Ngày kê", "Trạng thái"});
-    m_tblPrescriptions->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_tblPrescriptions->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblPrescriptions->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tblPrescriptions->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblPrescriptions->setFocusPolicy(Qt::NoFocus);
-    m_tblPrescriptions->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
+    m_tblPrescriptions->setShowGrid(false);
+    m_tblPrescriptions->verticalHeader()->setVisible(false);
+    m_tblPrescriptions->horizontalHeader()->setFixedHeight(38);
+    m_tblPrescriptions->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblPrescriptions->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    m_tblPrescriptions->setStyleSheet(
+    "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+    "QTableWidget::item { background: transparent; color: #334155; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+    "QTableWidget::item:focus { outline: none; border: none; }"
+    "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+    "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+);
     tblLayout->addWidget(m_tblPrescriptions);
 
     QHBoxLayout* pageLayout = new QHBoxLayout();
@@ -557,12 +925,21 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     m_tblDetItems = new QTableWidget(detCard);
     m_tblDetItems->setColumnCount(3);
     m_tblDetItems->setHorizontalHeaderLabels({"Tên thuốc", "SL", "Liều dùng"});
+    m_tblDetItems->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_tblDetItems->setFocusPolicy(Qt::NoFocus);
+    m_tblDetItems->setShowGrid(false);
+    m_tblDetItems->verticalHeader()->setVisible(false);
+    m_tblDetItems->horizontalHeader()->setFixedHeight(38);
+    m_tblDetItems->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_tblDetItems->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tblDetItems->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     m_tblDetItems->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
-    m_tblDetItems->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_tblDetItems->setFocusPolicy(Qt::NoFocus);
-    m_tblDetItems->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
+    m_tblDetItems->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+    );
     detLayout->addWidget(m_tblDetItems);
 
     m_lblDetTotalCost = new QLabel("Tổng giá trị thuốc: 0 VND", detCard);
@@ -597,8 +974,22 @@ void PharmacistDashboardWidget::buildDispensingPage() {
     mainLayout->addWidget(detCard, 4);
     m_stackedWidget->addWidget(m_dispensingPage);
 
-    connect(btnSearch, &QPushButton::clicked, this, &PharmacistDashboardWidget::performPrescriptionSearch);
-    connect(m_txtPrescKeyword, &QLineEdit::returnPressed, this, &PharmacistDashboardWidget::performPrescriptionSearch);
+    connect(btnSearch, &QPushButton::clicked, this, [this]() {
+        m_prescCurrentPage = 1;
+        performPrescriptionSearch();
+    });
+    connect(m_txtPrescKeyword, &QLineEdit::returnPressed, this, [this]() {
+        m_prescCurrentPage = 1;
+        performPrescriptionSearch();
+    });
+    connect(m_txtPrescKeyword, &QLineEdit::textChanged, this, [this](const QString&) {
+        m_prescCurrentPage = 1;
+        performPrescriptionSearch();
+    });
+    connect(m_cbPrescStatus, &QComboBox::currentIndexChanged, this, [this](int) {
+        m_prescCurrentPage = 1;
+        performPrescriptionSearch();
+    });
     connect(m_btnPrescPrev, &QPushButton::clicked, this, &PharmacistDashboardWidget::prevPrescriptionPage);
     connect(m_btnPrescNext, &QPushButton::clicked, this, &PharmacistDashboardWidget::nextPrescriptionPage);
     connect(m_tblPrescriptions, &QTableWidget::cellClicked, this, &PharmacistDashboardWidget::selectPrescriptionRow);
@@ -810,7 +1201,7 @@ void PharmacistDashboardWidget::handlePrintReceipt() {
                    "</style></head><body>"
                    "<div class='header'>"
                    "  <div style='font-size: 14px; font-weight: bold;'>NOVA CARE CLINIC</div>"
-                   "  <div style='font-size: 11px;'>Địa chỉ: 123 Đường Nguyễn Văn Cừ, Quận 5, TP. HCM</div>"
+                   "  <div style='font-size: 11px;'>Địa chỉ: 227 Đường Nguyễn Văn Cừ, Phường Chợ Quán, TP. HCM</div>"
                    "  <hr/>"
                    "  <div class='title'>PHIẾU XUẤT KHO THUỐC</div>"
                    "  <div>Mã đơn thuốc: " + QString::number(presc.prescriptionId) + "</div>"
@@ -912,6 +1303,11 @@ void PharmacistDashboardWidget::buildBillingPage() {
     mainLayout->setSpacing(16);
 
     m_tabBillingContainer = new QTabWidget(m_billingPage);
+    m_tabBillingContainer->setStyleSheet(
+        "QTabWidget::pane { border: 1px solid #E2E8F0; background: #FFFFFF; border-radius: 8px; }"
+        "QTabBar::tab { background: #F1F5F9; color: #64748B; font-weight: bold; padding: 8px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px; }"
+        "QTabBar::tab:selected { background: #FFFFFF; color: #2563EB; border-bottom: 2px solid #2563EB; }"
+    );
 
     // TAB 1: Danh sách hóa đơn lâm sàng
     QWidget* tabList = new QWidget(this);
@@ -925,11 +1321,19 @@ void PharmacistDashboardWidget::buildBillingPage() {
     QHBoxLayout* billSearchLay = new QHBoxLayout();
     m_txtBillKeyword = new QLineEdit(tabList);
     m_txtBillKeyword->setPlaceholderText("Tìm mã hóa đơn...");
+    m_txtBillKeyword->setStyleSheet(
+        "QLineEdit { border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 12px; font-size: 13px; color: #0F172A; background-color: #FFFFFF; }"
+        "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; }"
+    );
+
     m_cbBillStatus = new QComboBox(tabList);
     m_cbBillStatus->addItems({"Chưa thanh toán", "Đã thanh toán", "Đã hủy", "Tất cả trạng thái"});
+    m_cbBillStatus->setStyleSheet("QComboBox { padding: 6px 10px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; }");
     
     QPushButton* btnSearchBill = new QPushButton("Lọc hóa đơn", tabList);
-    btnSearchBill->setStyleSheet("background-color: #4B94F2; color: white; padding: 4px 10px; border: none; border-radius: 4px; font-weight: bold;");
+    btnSearchBill->setCursor(Qt::PointingHandCursor);
+    btnSearchBill->setFixedHeight(34);
+    btnSearchBill->setStyleSheet("background-color: #4B94F2; color: white; padding: 6px 16px; border-radius: 6px; border: none; font-weight: bold;");
     billSearchLay->addWidget(m_txtBillKeyword);
     billSearchLay->addWidget(m_cbBillStatus);
     billSearchLay->addWidget(btnSearchBill);
@@ -938,12 +1342,22 @@ void PharmacistDashboardWidget::buildBillingPage() {
     m_tblInvoices = new QTableWidget(tabList);
     m_tblInvoices->setColumnCount(6);
     m_tblInvoices->setHorizontalHeaderLabels({"Mã HĐ", "Mã bệnh án", "Bệnh nhân", "Tổng tiền", "Ngày lập", "Trạng thái"});
-    m_tblInvoices->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     m_tblInvoices->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblInvoices->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tblInvoices->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblInvoices->setFocusPolicy(Qt::NoFocus);
-    m_tblInvoices->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
+    m_tblInvoices->setShowGrid(false);
+    m_tblInvoices->verticalHeader()->setVisible(false);
+    m_tblInvoices->horizontalHeader()->setFixedHeight(38);
+    m_tblInvoices->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblInvoices->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+    m_tblInvoices->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
+        "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+    );
     leftBill->addWidget(m_tblInvoices);
     tabListLayout->addLayout(leftBill, 6);
 
@@ -957,17 +1371,29 @@ void PharmacistDashboardWidget::buildBillingPage() {
 
     m_lblBillPatientName = new QLabel("<b>Bệnh nhân:</b> Chưa chọn", billDetCard);
     m_lblBillDetails = new QLabel("Mã hóa đơn: -- | Ngày lập: --", billDetCard);
+    m_lblBillInsurancePercent = new QLabel("Bảo hiểm chi trả: --", billDetCard);
+    m_lblBillInsurancePercent->setStyleSheet("font-weight: bold; color: #2563EB; font-size: 13px;");
     rightBill->addWidget(m_lblBillPatientName);
     rightBill->addWidget(m_lblBillDetails);
+    rightBill->addWidget(m_lblBillInsurancePercent);
 
     m_tblBillItems = new QTableWidget(billDetCard);
     m_tblBillItems->setColumnCount(3);
     m_tblBillItems->setHorizontalHeaderLabels({"Khoản thu", "SL", "Thành tiền"});
-    m_tblBillItems->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_tblBillItems->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     m_tblBillItems->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblBillItems->setFocusPolicy(Qt::NoFocus);
-    m_tblBillItems->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
+    m_tblBillItems->setShowGrid(false);
+    m_tblBillItems->verticalHeader()->setVisible(false);
+    m_tblBillItems->horizontalHeader()->setFixedHeight(38);
+    m_tblBillItems->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblBillItems->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_tblBillItems->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    m_tblBillItems->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+    );
     rightBill->addWidget(m_tblBillItems);
 
     m_lblBillTotalAmount = new QLabel("Tổng thanh toán: 0 VND", billDetCard);
@@ -999,8 +1425,15 @@ void PharmacistDashboardWidget::buildBillingPage() {
     QHBoxLayout* pendingSearchLay = new QHBoxLayout();
     m_txtPendingPatientId = new QLineEdit(tabPending);
     m_txtPendingPatientId->setPlaceholderText("Nhập Mã Bệnh Nhân (Patient ID) để tra cứu đơn thuốc...");
+    m_txtPendingPatientId->setStyleSheet(
+        "QLineEdit { border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 12px; font-size: 13px; color: #0F172A; background-color: #FFFFFF; }"
+        "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; }"
+    );
+
     m_btnSearchPending = new QPushButton("Tìm kiếm đơn thuốc", tabPending);
-    m_btnSearchPending->setStyleSheet("background-color: #4B94F2; color: white; padding: 5px 12px; border: none; border-radius: 4px; font-weight: bold;");
+    m_btnSearchPending->setCursor(Qt::PointingHandCursor);
+    m_btnSearchPending->setFixedHeight(34);
+    m_btnSearchPending->setStyleSheet("background-color: #4B94F2; color: white; padding: 5px 12px; border: none; border-radius: 6px; font-weight: bold;");
     pendingSearchLay->addWidget(m_txtPendingPatientId);
     pendingSearchLay->addWidget(m_btnSearchPending);
     tabPendingLayout->addLayout(pendingSearchLay);
@@ -1008,10 +1441,19 @@ void PharmacistDashboardWidget::buildBillingPage() {
     m_tblPendingBilling = new QTableWidget(tabPending);
     m_tblPendingBilling->setColumnCount(6);
     m_tblPendingBilling->setHorizontalHeaderLabels({"Bệnh nhân", "Chẩn đoán", "Bác sĩ", "Ngày kê", "Tiền thuốc dự kiến", "Hành động"});
-    m_tblPendingBilling->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_tblPendingBilling->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tblPendingBilling->setFocusPolicy(Qt::NoFocus);
-    m_tblPendingBilling->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
+    m_tblPendingBilling->setShowGrid(false);
+    m_tblPendingBilling->verticalHeader()->setVisible(false);
+    m_tblPendingBilling->horizontalHeader()->setFixedHeight(38);
+    m_tblPendingBilling->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tblPendingBilling->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    m_tblPendingBilling->setStyleSheet(
+        "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 10px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
+        "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 6px; }"
+    );
     tabPendingLayout->addWidget(m_tblPendingBilling);
     m_tabBillingContainer->addTab(tabPending, "Chờ xuất hóa đơn");
 
@@ -1020,11 +1462,20 @@ void PharmacistDashboardWidget::buildBillingPage() {
 
     connect(btnSearchBill, &QPushButton::clicked, this, &PharmacistDashboardWidget::performInvoiceSearch);
     connect(m_txtBillKeyword, &QLineEdit::returnPressed, this, &PharmacistDashboardWidget::performInvoiceSearch);
+    connect(m_txtBillKeyword, &QLineEdit::textChanged, this, [this](const QString&) {
+        performInvoiceSearch();
+    });
+    connect(m_cbBillStatus, &QComboBox::currentIndexChanged, this, [this](int) {
+        performInvoiceSearch();
+    });
     connect(m_tblInvoices, &QTableWidget::cellClicked, this, &PharmacistDashboardWidget::selectInvoiceRow);
     connect(m_btnCollectPayment, &QPushButton::clicked, this, &PharmacistDashboardWidget::handleCollectPayment);
     connect(m_btnPrintInvoice, &QPushButton::clicked, this, &PharmacistDashboardWidget::handlePrintInvoice);
     connect(m_btnSearchPending, &QPushButton::clicked, this, &PharmacistDashboardWidget::loadPendingBilling);
     connect(m_txtPendingPatientId, &QLineEdit::returnPressed, this, &PharmacistDashboardWidget::loadPendingBilling);
+    connect(m_txtPendingPatientId, &QLineEdit::textChanged, this, [this](const QString&) {
+        loadPendingBilling();
+    });
 }
 
 void PharmacistDashboardWidget::performInvoiceSearch() {
@@ -1094,9 +1545,36 @@ void PharmacistDashboardWidget::selectInvoiceRow(int row) {
     auto optInv = m_billingService->getInvoiceByRecordId(recordId);
     if (optInv.has_value()) {
         auto inv = optInv.value();
+        
+        m_selectedInvoiceRecordId = recordId;
+        m_selectedInvoicePatientId = inv.patientId;
+        m_selectedInvoiceTotalAmount = inv.totalAmount;
+
+        double coveragePercent = 0.0;
+        if (m_patientService && inv.patientId > 0) {
+            coveragePercent = m_patientService->getInsuranceCoveragePercent(inv.patientId);
+        }
+
         m_lblBillPatientName->setText(QString("<b>Hóa đơn số:</b> %1").arg(inv.invoiceCode));
         m_lblBillDetails->setText(QString("Ngày lập: %1 | Trạng thái: %2").arg(inv.issuedDate.toString("dd/MM/yyyy")).arg(inv.status));
-        m_lblBillTotalAmount->setText(QString("Tổng thanh toán: %1 VND").arg(QLocale(QLocale::Vietnamese).toString(inv.totalAmount, 'f', 0)));
+        
+        if (coveragePercent > 0.0) {
+            m_lblBillInsurancePercent->setText(QString("Bảo hiểm chi trả: %1%").arg(coveragePercent));
+            
+            double discount = inv.totalAmount * (coveragePercent / 100.0);
+            double finalAmount = inv.totalAmount - discount;
+            
+            if (status == "UNPAID") {
+                m_lblBillTotalAmount->setText(QString("Tổng thanh toán: <font color='gray'><s>%1 VND</s></font> &rarr; <font color='green'><b>%2 VND</b></font>")
+                    .arg(QLocale(QLocale::Vietnamese).toString(inv.totalAmount, 'f', 0))
+                    .arg(QLocale(QLocale::Vietnamese).toString(finalAmount, 'f', 0)));
+            } else {
+                m_lblBillTotalAmount->setText(QString("Tổng thanh toán (Đã thu): %1 VND").arg(QLocale(QLocale::Vietnamese).toString(inv.totalAmount, 'f', 0)));
+            }
+        } else {
+            m_lblBillInsurancePercent->setText("Bảo hiểm chi trả: 0% (Không áp dụng)");
+            m_lblBillTotalAmount->setText(QString("Tổng thanh toán: %1 VND").arg(QLocale(QLocale::Vietnamese).toString(inv.totalAmount, 'f', 0)));
+        }
 
         m_tblBillItems->setRowCount(0);
         int itemRow = 0;
@@ -1128,13 +1606,34 @@ void PharmacistDashboardWidget::selectInvoiceRow(int row) {
 void PharmacistDashboardWidget::handleCollectPayment() {
     if (m_selectedInvoiceId == -1) return;
 
+    double coveragePercent = 0.0;
+    if (m_patientService && m_selectedInvoicePatientId > 0) {
+        coveragePercent = m_patientService->getInsuranceCoveragePercent(m_selectedInvoicePatientId);
+    }
+
+    double discount = m_selectedInvoiceTotalAmount * (coveragePercent / 100.0);
+    double finalAmount = m_selectedInvoiceTotalAmount - discount;
+
+    QString msg;
+    if (coveragePercent > 0.0) {
+        msg = QString("Xác nhận đã thu đủ số tiền thực tế %1 VND của hóa đơn này?\n"
+                      "(Số tiền gốc: %2 VND, Giảm trừ bảo hiểm %3%: %4 VND)")
+                  .arg(QLocale(QLocale::Vietnamese).toString(finalAmount, 'f', 0))
+                  .arg(QLocale(QLocale::Vietnamese).toString(m_selectedInvoiceTotalAmount, 'f', 0))
+                  .arg(coveragePercent)
+                  .arg(QLocale(QLocale::Vietnamese).toString(discount, 'f', 0));
+    } else {
+        msg = QString("Xác nhận đã thu đủ số tiền của hóa đơn này (%1 VND)?")
+                  .arg(QLocale(QLocale::Vietnamese).toString(m_selectedInvoiceTotalAmount, 'f', 0));
+    }
+
     QMessageBox::StandardButton reply = QMessageBox::question(
-        this, "Thu tiền hóa đơn", "Xác nhận đã thu đủ số tiền của hóa đơn này?",
+        this, "Thu tiền hóa đơn", msg,
         QMessageBox::Yes | QMessageBox::No
     );
 
     if (reply == QMessageBox::Yes) {
-        bool success = m_billingService->collectPayment(m_selectedInvoiceId);
+        bool success = m_billingService->collectPayment(m_selectedInvoiceId, finalAmount);
         if (success) {
             QMessageBox::information(this, "Thành công", "Đã thu tiền hóa đơn thành công!");
             performInvoiceSearch();
@@ -1409,96 +1908,7 @@ void PharmacistDashboardWidget::handlePrintInvoice() {
     previewDlg.exec();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PAGE 5: PERIODIC REPORT (BÁO CÁO ĐỊNH KỲ)
-// ─────────────────────────────────────────────────────────────────────────────
-void PharmacistDashboardWidget::buildReportsPage() {
-    m_reportsPage = new QWidget(this);
-    QVBoxLayout* mainLayout = new QVBoxLayout(m_reportsPage);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->setSpacing(16);
 
-    QHBoxLayout* rangeLayout = new QHBoxLayout();
-    rangeLayout->setSpacing(10);
-
-    m_dateReportFrom = new QDateEdit(m_reportsPage);
-    m_dateReportFrom->setCalendarPopup(true);
-    m_dateReportFrom->setDate(QDate::currentDate().addDays(-30));
-
-    m_dateReportTo = new QDateEdit(m_reportsPage);
-    m_dateReportTo->setCalendarPopup(true);
-    m_dateReportTo->setDate(QDate::currentDate());
-
-    QPushButton* btnGenerate = new QPushButton("Tạo Báo Cáo", m_reportsPage);
-    btnGenerate->setCursor(Qt::PointingHandCursor);
-    btnGenerate->setStyleSheet("QPushButton { background-color: #2563EB; color: white; padding: 6px 16px; border-radius: 4px; border: none; font-weight: bold; } QPushButton:hover { background-color: #1D4ED8; }");
-
-    rangeLayout->addWidget(new QLabel("Từ ngày:"));
-    rangeLayout->addWidget(m_dateReportFrom);
-    rangeLayout->addWidget(new QLabel("Đến ngày:"));
-    rangeLayout->addWidget(m_dateReportTo);
-    rangeLayout->addWidget(btnGenerate);
-    rangeLayout->addStretch();
-    mainLayout->addLayout(rangeLayout);
-
-    QHBoxLayout* kpiLay = new QHBoxLayout();
-    kpiLay->setSpacing(16);
-
-    QFrame* kpi1 = makeCard(m_reportsPage);
-    QVBoxLayout* kpi1Lay = new QVBoxLayout(kpi1);
-    kpi1Lay->addWidget(new QLabel("Tổng lượng thuốc cấp phát", kpi1));
-    m_lblReportTotalQty = new QLabel("0", kpi1);
-    m_lblReportTotalQty->setStyleSheet("font-size: 22px; font-weight: bold; color: #2563EB;");
-    kpi1Lay->addWidget(m_lblReportTotalQty);
-    kpiLay->addWidget(kpi1);
-
-    QFrame* kpi2 = makeCard(m_reportsPage);
-    QVBoxLayout* kpi2Lay = new QVBoxLayout(kpi2);
-    kpi2Lay->addWidget(new QLabel("Tổng giá trị tiêu thụ (VNĐ)", kpi2));
-    m_lblReportTotalValue = new QLabel("0 VNĐ", kpi2);
-    m_lblReportTotalValue->setStyleSheet("font-size: 22px; font-weight: bold; color: #059669;");
-    kpi2Lay->addWidget(m_lblReportTotalValue);
-    kpiLay->addWidget(kpi2);
-
-    mainLayout->addLayout(kpiLay);
-
-    QHBoxLayout* workLayout = new QHBoxLayout();
-    workLayout->setSpacing(16);
-
-    QFrame* tableCard = makeCard(m_reportsPage);
-    QVBoxLayout* tableCardLayout = new QVBoxLayout(tableCard);
-    
-    QLabel* lblTblTitle = new QLabel("CHI TIẾT TIÊU THỤ THUỐC ĐỊNH KỲ", tableCard);
-    lblTblTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #374151;");
-    tableCardLayout->addWidget(lblTblTitle);
-
-    m_tblReportUsage = new QTableWidget(tableCard);
-    m_tblReportUsage->setColumnCount(5);
-    m_tblReportUsage->setHorizontalHeaderLabels({"Tên thuốc", "Số lượng", "Đơn vị", "Đơn giá (VNĐ)", "Tổng giá trị (VNĐ)"});
-    m_tblReportUsage->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_tblReportUsage->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_tblReportUsage->setFocusPolicy(Qt::NoFocus);
-    m_tblReportUsage->setStyleSheet("QTableWidget { outline: none; } QTableWidget::item { outline: none; border: none; } QTableWidget::item:focus { outline: none; border: none; }");
-    tableCardLayout->addWidget(m_tblReportUsage);
-    workLayout->addWidget(tableCard, 6);
-
-    QFrame* chartCard = makeCard(m_reportsPage);
-    QVBoxLayout* chartLayout = new QVBoxLayout(chartCard);
-    
-    QLabel* lblChartTitle = new QLabel("TOP 5 THUỐC SỬ DỤNG NHIỀU NHẤT", chartCard);
-    lblChartTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #374151;");
-    chartLayout->addWidget(lblChartTitle);
-
-    m_chartView = new QChartView(chartCard);
-    m_chartView->setRenderHint(QPainter::Antialiasing);
-    chartLayout->addWidget(m_chartView);
-    workLayout->addWidget(chartCard, 4);
-
-    mainLayout->addLayout(workLayout, 1);
-    m_stackedWidget->addWidget(m_reportsPage);
-
-    connect(btnGenerate, &QPushButton::clicked, this, &PharmacistDashboardWidget::generateReport);
-}
 
 void PharmacistDashboardWidget::generateReport() {
     if (!m_tblReportUsage || !m_pharmacyService) return;

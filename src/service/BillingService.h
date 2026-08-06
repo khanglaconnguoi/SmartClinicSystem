@@ -46,7 +46,7 @@ public:
 
   bool updateInvoice(const InvoiceUpdateDTO &dto);
   bool cancelInvoice(int invoiceId);
-  bool collectPayment(int invoiceId);
+  bool collectPayment(int invoiceId, double finalAmount = -1.0);
 
   /**
    * @brief Tìm kiếm hóa đơn theo tiêu chí linh hoạt.

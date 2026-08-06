@@ -145,8 +145,8 @@ bool BillingService::cancelInvoice(int invoiceId) {
     return m_billingRepository->cancelInvoice(invoiceId);
 }
 
-bool BillingService::collectPayment(int invoiceId) {
-    return m_billingRepository->collectPayment(invoiceId);
+bool BillingService::collectPayment(int invoiceId, double finalAmount) {
+    return m_billingRepository->collectPayment(invoiceId, finalAmount);
 }
 
 QString BillingService::validateSearchCriteria(const InvoiceSearchCriteria &criteria) {

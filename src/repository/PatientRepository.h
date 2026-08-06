@@ -184,6 +184,14 @@ public:
   std::optional<InsuranceResultDTO> getInsuranceByPatientId(int patientId);
 
   /**
+   * @brief Lấy tỷ lệ chi trả bảo hiểm của bệnh nhân.
+   * @param patientId ID của bệnh nhân.
+   * @return Tỷ lệ chi trả (0.0 đến 100.0). Nếu không tìm thấy hoặc bảo hiểm không hoạt động, trả về 0.0.
+   */
+  double getInsuranceCoveragePercent(int patientId) const;
+
+
+  /**
    * @brief Lấy mã bệnh nhân mới nhất có tiền tố chỉ định.
    */
   std::optional<QString> getLatestPatientCode(const QString &prefixWithDate) const;
