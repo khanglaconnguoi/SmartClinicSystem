@@ -8,7 +8,7 @@
 class RoomQueueWidget : public QFrame {
     Q_OBJECT
 public:
-    explicit RoomQueueWidget(int roomId, const QString& roomName, int doctorId, const QString& doctorName, int currentTicket, int nextTicket, QWidget *parent = nullptr);
+    explicit RoomQueueWidget(int roomId, const QString& roomName, int doctorId, const QString& doctorName, int currentTicket, int nextTicket, int waitingCount = 0, QWidget *parent = nullptr);
     ~RoomQueueWidget() override = default;
 
     int getRoomId() const { return m_roomId; }
@@ -23,7 +23,7 @@ protected:
     void leaveEvent(QEvent *event) override;
 
 private:
-    void setupUi(const QString& roomName, const QString& doctorName, int currentTicket, int nextTicket);
+    void setupUi(const QString& roomName, const QString& doctorName, int currentTicket, int nextTicket, int waitingCount);
 
     int m_roomId;
     int m_doctorId;

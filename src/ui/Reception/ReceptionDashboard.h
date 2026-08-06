@@ -92,7 +92,6 @@ private:
   // Management UI
   QTableWidget *m_patientsTable = nullptr;
   QLineEdit *m_txtPatientSearchKey = nullptr;
-  QComboBox *m_cbPatientTypeFilter = nullptr;
   QPushButton *m_btnResetPatientFilters = nullptr;
   QPushButton *m_btnPatientPrevPage = nullptr;
   QPushButton *m_btnPatientNextPage = nullptr;

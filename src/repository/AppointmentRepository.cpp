@@ -469,6 +469,16 @@ QList<RoomQueueStatusDTO> AppointmentRepository::getRoomQueueStatuses(const QStr
             if (nextQ.next()) {
                 dto.nextTicketNumber = nextQ.value("ticket_number").toInt();
             }
+
+            // Get count of remaining CHECKED_IN patients waiting
+            QString countSql = R"(
+                SELECT COUNT(*) FROM appointments
+                WHERE doctor_id = ? AND appointment_date = ? AND status = 'CHECKED_IN'
+            )";
+            QSqlQuery countQ = db.selectQuery(countSql, {dto.doctorId, date});
+            if (countQ.next()) {
+                dto.waitingCount = countQ.value(0).toInt();
+            }
         }
         statuses.append(dto);
     }

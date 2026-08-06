@@ -45,6 +45,7 @@ ReceptionDashboardWidget::ReceptionDashboardWidget(
       m_analyticService(analyticService) {
 
   initializeDashboard();
+  buildSidebar();
 
   m_stackedWidget = new QStackedWidget(m_mainContentWidget);
   m_mainContentLayout->addWidget(m_stackedWidget, 1);
@@ -143,12 +144,14 @@ void ReceptionDashboardWidget::buildSidebar() {
   if (m_btnOverview)
     return;
 
-  QLabel *lblTitle = new QLabel("LỄ TÂN", m_sidebarFrame);
-  lblTitle->setAlignment(Qt::AlignCenter);
-  lblTitle->setStyleSheet("font-size: 15px; font-weight: bold; color: #2563EB; "
-                          "letter-spacing: 1px; margin-top: 5px; margin-bottom: 15px; "
-                          "background: transparent; border: none;");
-  m_sidebarLayout->addWidget(lblTitle);
+  QLabel *roleBadge = new QLabel("LỄ TÂN", m_sidebarFrame);
+  roleBadge->setAlignment(Qt::AlignCenter);
+  roleBadge->setStyleSheet(
+      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
+      "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+      "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
+      "margin-top: 4px; margin-bottom: 12px; }");
+  m_sidebarLayout->addWidget(roleBadge);
 
   m_btnOverview = new QPushButton("Tổng Quan", m_sidebarFrame);
   m_btnRegister = new QPushButton("Đăng Ký Khám", m_sidebarFrame);
@@ -871,15 +874,6 @@ void ReceptionDashboardWidget::buildPatientsPage() {
       "QLineEdit { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; min-width: 250px; }"
       "QLineEdit:focus { border: 1px solid #2563EB; }");
 
-  m_cbPatientTypeFilter = new QComboBox(filterCard);
-  m_cbPatientTypeFilter->setStyleSheet(
-      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; min-height: 32px; background: white; }"
-      "QComboBox:focus { border: 1px solid #2563EB; }");
-  m_cbPatientTypeFilter->addItem("Tất cả loại BN", -1);
-  m_cbPatientTypeFilter->addItem("Ngoại trú", static_cast<int>(PatientType::Outpatient));
-  m_cbPatientTypeFilter->addItem("Nội trú", static_cast<int>(PatientType::Inpatient));
-  m_cbPatientTypeFilter->addItem("Cấp cứu", static_cast<int>(PatientType::Emergency));
-
   m_btnResetPatientFilters = new QPushButton("Đặt lại", filterCard);
   m_btnResetPatientFilters->setCursor(Qt::PointingHandCursor);
   m_btnResetPatientFilters->setStyleSheet(
@@ -887,7 +881,6 @@ void ReceptionDashboardWidget::buildPatientsPage() {
       "QPushButton:hover { background-color: #DC2626; }");
 
   filterLayout->addWidget(m_txtPatientSearchKey);
-  filterLayout->addWidget(m_cbPatientTypeFilter);
   filterLayout->addWidget(m_btnResetPatientFilters);
   filterLayout->addStretch();
   pageLayout->addWidget(filterCard);
@@ -906,7 +899,7 @@ void ReceptionDashboardWidget::buildPatientsPage() {
   m_patientsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
   m_patientsTable->horizontalHeader()->resizeSection(2, 120);
   m_patientsTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
-  m_patientsTable->horizontalHeader()->resizeSection(3, 240);
+  m_patientsTable->horizontalHeader()->resizeSection(3, 300);
 
   m_patientsTable->verticalHeader()->setDefaultSectionSize(46);
   m_patientsTable->verticalHeader()->setVisible(false);
@@ -952,7 +945,6 @@ void ReceptionDashboardWidget::buildPatientsPage() {
   pageLayout->addWidget(tableCard);
 
   connect(m_txtPatientSearchKey, &QLineEdit::textChanged, this, &ReceptionDashboardWidget::handlePatientFilterChanged);
-  connect(m_cbPatientTypeFilter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ReceptionDashboardWidget::handlePatientFilterChanged);
   connect(m_btnResetPatientFilters, &QPushButton::clicked, this, &ReceptionDashboardWidget::handlePatientResetFilters);
   connect(m_btnPatientPrevPage, &QPushButton::clicked, this, &ReceptionDashboardWidget::handlePatientPrevPage);
   connect(m_btnPatientNextPage, &QPushButton::clicked, this, &ReceptionDashboardWidget::handlePatientNextPage);
@@ -967,7 +959,6 @@ void ReceptionDashboardWidget::handlePatientFilterChanged() {
 
 void ReceptionDashboardWidget::handlePatientResetFilters() {
   if (m_txtPatientSearchKey) m_txtPatientSearchKey->clear();
-  if (m_cbPatientTypeFilter) m_cbPatientTypeFilter->setCurrentIndex(0);
   m_patientCurrentPage = 1;
   refreshPatientsTable();
 }
@@ -994,12 +985,7 @@ void ReceptionDashboardWidget::refreshPatientsTable() {
   if (m_txtPatientSearchKey) {
     criteria.searchKey = m_txtPatientSearchKey->text().trimmed();
   }
-  if (m_cbPatientTypeFilter && m_cbPatientTypeFilter->currentIndex() > 0) {
-    int val = m_cbPatientTypeFilter->currentData().toInt();
-    if (val >= 0) {
-      criteria.type = static_cast<PatientType>(val);
-    }
-  }
+  criteria.type = PatientType::Outpatient;
   criteria.page = m_patientCurrentPage;
   criteria.pageSize = 10;
 
@@ -1033,10 +1019,10 @@ void ReceptionDashboardWidget::refreshPatientsTable() {
       btnHistory->setStyleSheet("QPushButton { background-color: #1A73E8; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; min-width: 95px; }"
                                 "QPushButton:hover { background-color: #1557B0; }");
 
-      QPushButton* btnEdit = new QPushButton("Sửa");
-      btnEdit->setCursor(Qt::PointingHandCursor);
-      btnEdit->setStyleSheet("QPushButton { background-color: #F59E0B; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; min-width: 55px; }"
-                                "QPushButton:hover { background-color: #D97706; }");
+      QPushButton* btnContactInfo = new QPushButton("Xem thông tin liên lạc");
+      btnContactInfo->setCursor(Qt::PointingHandCursor);
+      btnContactInfo->setStyleSheet("QPushButton { background-color: #0284C7; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold; font-size: 12px; min-width: 140px; }"
+                                "QPushButton:hover { background-color: #0369A1; }");
 
       int pId = p.patientId;
       QString pName = p.fullName;
@@ -1044,7 +1030,7 @@ void ReceptionDashboardWidget::refreshPatientsTable() {
           showPatientHistoryDialog(pId, pName);
       });
 
-      connect(btnEdit, &QPushButton::clicked, this, [this, pId]() {
+      connect(btnContactInfo, &QPushButton::clicked, this, [this, pId]() {
           PatientEditDialog dialog(pId, m_patientService, this);
           connect(&dialog, &PatientEditDialog::patientUpdated, this, [this]() {
               refreshPatientsTable();
@@ -1053,7 +1039,7 @@ void ReceptionDashboardWidget::refreshPatientsTable() {
       });
 
       actionLayout->addWidget(btnHistory);
-      actionLayout->addWidget(btnEdit);
+      actionLayout->addWidget(btnContactInfo);
       actionLayout->setAlignment(Qt::AlignCenter);
       m_patientsTable->setCellWidget(i, 3, actionWidget);
   }
@@ -1318,7 +1304,7 @@ void ReceptionDashboardWidget::onRefreshRoomQueue() {
     int maxCols = 4; // 4 cards per row
 
     for (const auto& st : statuses) {
-        auto *card = new RoomQueueWidget(st.roomId, st.roomNumber, st.doctorId, st.doctorName, st.currentTicketNumber, st.nextTicketNumber, this);
+        auto *card = new RoomQueueWidget(st.roomId, st.roomNumber, st.doctorId, st.doctorName, st.currentTicketNumber, st.nextTicketNumber, st.waitingCount, this);
         connect(card, &RoomQueueWidget::clicked, this, [this](int rId, int dId) {
             auto items = m_appointmentService->getDoctorQueue(dId, QDate::currentDate());
             auto *dialog = new RoomQueueDialog(rId, "Phòng khám", items, this);

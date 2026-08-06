@@ -36,6 +36,15 @@ void AdminDashboardWidget::fillDashboardData() {
   }
 
   // --- Sidebar Menu ---
+  QLabel *roleBadge = new QLabel("QUẢN TRỊ VIÊN", m_sidebarFrame);
+  roleBadge->setAlignment(Qt::AlignCenter);
+  roleBadge->setStyleSheet(
+      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
+      "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+      "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
+      "margin-top: 4px; margin-bottom: 12px; }");
+  m_sidebarLayout->addWidget(roleBadge);
+
   m_btnAnalytics = new QPushButton("Thống kê - Báo cáo", m_sidebarFrame);
   m_btnManageDoctors = new QPushButton("Quản lý Bác sĩ", m_sidebarFrame);
   m_btnManageNurses = new QPushButton("Quản lý Y tá", m_sidebarFrame);

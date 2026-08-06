@@ -98,21 +98,6 @@ void ManageReceptionWidget::buildUI() {
   m_cbStatusFilter->addItem("Đang làm việc", true);
   m_cbStatusFilter->addItem("Tất cả trạng thái", false);
 
-    QLabel *lblSearchIcon = new QLabel(filterCard);
-    QPixmap searchPix(":/assets/icons/search_icon.png");
-    if (searchPix.isNull()) {
-#ifdef PROJECT_ROOT_DIR
-        searchPix.load(QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/icons/search_icon.png");
-#else
-        searchPix.load(QCoreApplication::applicationDirPath() + "/assets/icons/search_icon.png");
-#endif
-    }
-
-    if (!searchPix.isNull()) {
-        lblSearchIcon->setPixmap(searchPix.scaled(20, 20, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    } else {
-        lblSearchIcon->setText("Tìm kiếm:");
-    }
 
   filterLayout->addWidget(m_txtSearchKey);
   filterLayout->addWidget(m_cbDepartmentFilter);

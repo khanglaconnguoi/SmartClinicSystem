@@ -156,7 +156,7 @@ void ClinicalExamWidget::loadLabResults() {
             box->setFixedHeight(68);
             box->setPlainText(req.resultNote.isEmpty() ? "Chưa có kết quả." : req.resultNote);
             box->setStyleSheet(
-                "QTextEdit { background-color: #F8FAFC; border: 1px solid #D1D5DB; "
+                "QTextEdit { background: transparent; border: 1px solid #D1D5DB; "
                 "border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #111827; }"
             );
             m_serviceResultsLayout->addWidget(box);

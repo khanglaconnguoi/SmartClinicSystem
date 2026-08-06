@@ -1,29 +1,29 @@
 #include "DoctorDashboard.h"
 
-#include <QStyledItemDelegate>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOptionViewItem>
+#include <QStyledItemDelegate>
+
 
 class StartedRowDelegate : public QStyledItemDelegate {
 public:
-    StartedRowDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
-    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override {
-        QStyleOptionViewItem opt = option;
-        initStyleOption(&opt, index);
-        
-        QVariant bg = index.data(Qt::BackgroundRole);
-        if (bg.isValid() && bg.canConvert<QBrush>()) {
-            painter->fillRect(opt.rect, bg.value<QBrush>());
-        }
-        
-        QStyledItemDelegate::paint(painter, opt, index);
+  StartedRowDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
+  void paint(QPainter *painter, const QStyleOptionViewItem &option,
+             const QModelIndex &index) const override {
+    QStyleOptionViewItem opt = option;
+    initStyleOption(&opt, index);
+
+    QVariant bg = index.data(Qt::BackgroundRole);
+    if (bg.isValid() && bg.canConvert<QBrush>()) {
+      painter->fillRect(opt.rect, bg.value<QBrush>());
     }
+
+    QStyledItemDelegate::paint(painter, opt, index);
+  }
 };
 
-#include <algorithm>
 #include <QCalendarWidget>
-#include <QGraphicsDropShadowEffect>
 #include <QDate>
 #include <QDateEdit>
 #include <QDebug>
@@ -43,10 +43,12 @@ public:
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 #include <QtCharts/QValueAxis>
+#include <algorithm>
+
 
 #include "ClinicalExamWidget.h"
-#include "PatientWidget.h"
 #include "PatientRecordHistoryDialog.h"
+#include "PatientWidget.h"
 #include "ScheduleFollowUpDialog.h"
 #include "model/CommonEnums.h"
 #include "model/IAuthenticatable.h"
@@ -58,6 +60,7 @@ public:
 #include "service/StaffService.h"
 #include "ui/view/Profile.h"
 
+
 DoctorDashboardWidget::DoctorDashboardWidget(
     std::shared_ptr<IAuthenticatable> user,
     std::shared_ptr<StaffService> staffService,
@@ -66,18 +69,15 @@ DoctorDashboardWidget::DoctorDashboardWidget(
     std::shared_ptr<MedicalRecordService> medicalRecordService,
     std::shared_ptr<PharmacyService> pharmacyService,
     std::shared_ptr<ServiceRequestService> serviceRequestService,
-    std::shared_ptr<AnalyticService> analyticService,
-    QWidget *parent)
+    std::shared_ptr<AnalyticService> analyticService, QWidget *parent)
     : BaseDashboardWidget(user, staffService, parent),
       m_patientService(patientService),
       m_appointmentService(appointmentService),
-      m_medicalRecordService(medicalRecordService),
-      m_currentExaminingRow(-1),
+      m_medicalRecordService(medicalRecordService), m_currentExaminingRow(-1),
       m_pharmacyService(pharmacyService),
       m_serviceRequestService(serviceRequestService),
-      m_analyticService(analyticService),
-      m_overviewPage(nullptr), m_patientsPage(nullptr),
-      m_appointmentsPage(nullptr), m_settingsPage(nullptr),
+      m_analyticService(analyticService), m_overviewPage(nullptr),
+      m_patientsPage(nullptr), m_appointmentsPage(nullptr),
       m_clinicalExamPage(nullptr) {
   initializeDashboard();
 }
@@ -117,18 +117,19 @@ void DoctorDashboardWidget::fillDashboardData() {
     m_avatarBtn->setIconSize(QSize(size, size));
     m_avatarBtn->setIcon(QIcon(targetPixmap));
     m_avatarBtn->setStyleSheet("QPushButton { "
-                                  "   background-color: transparent; "
-                                  "   border: none; "
-                                  "   width: 36px; "
-                                  "   height: 36px; "
-                                  "   padding: 0px; "
-                                  "   margin: 0px; "
-                                  "}");
+                               "   background-color: transparent; "
+                               "   border: none; "
+                               "   width: 36px; "
+                               "   height: 36px; "
+                               "   padding: 0px; "
+                               "   margin: 0px; "
+                               "}");
     m_avatarBtn->update();
 
     disconnect(m_avatarBtn, &QPushButton::clicked, nullptr, nullptr);
     connect(m_avatarBtn, &QPushButton::clicked, this, [this]() {
-      if (!m_currentUser || !m_staffService) return;
+      if (!m_currentUser || !m_staffService)
+        return;
       ProfileWidget dialog(m_staffService, this);
       dialog.loadProfile(m_currentUser->getAccountId());
       dialog.exec();
@@ -139,7 +140,8 @@ void DoctorDashboardWidget::fillDashboardData() {
         QPixmap raw = m_currentUser->getAvatar();
         if (!raw.isNull()) {
           int sz = 36;
-          QPixmap scaled = raw.scaled(sz, sz, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+          QPixmap scaled = raw.scaled(sz, sz, Qt::KeepAspectRatioByExpanding,
+                                      Qt::SmoothTransformation);
           QPixmap target(sz, sz);
           target.fill(Qt::transparent);
           QPainter p(&target);
@@ -157,15 +159,14 @@ void DoctorDashboardWidget::fillDashboardData() {
 
   m_stackedWidget = new QStackedWidget(m_mainContentWidget);
   m_stackedWidget->setObjectName("StackedWidget");
-  m_stackedWidget->setStyleSheet(
-      "QStackedWidget#StackedWidget > QWidget { background-color: transparent; }");
+  m_stackedWidget->setStyleSheet("QStackedWidget#StackedWidget > QWidget { "
+                                 "background-color: transparent; }");
   m_mainContentLayout->addWidget(m_stackedWidget, 1);
 
   buildOverviewPage();
   buildPatientsPage();
   buildAppointmentsPage();
   buildLeaveManagePage();
-  buildSettingsPage();
   buildClinicalExamPage();
 
   refreshAppointmentsTables();
@@ -177,17 +178,24 @@ void DoctorDashboardWidget::buildSidebar() {
   if (!m_sidebarLayout)
     return;
 
+  QLabel *roleBadge = new QLabel("BÁC SĨ", m_sidebarFrame);
+  roleBadge->setAlignment(Qt::AlignCenter);
+  roleBadge->setStyleSheet(
+      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
+      "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+      "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
+      "margin-top: 4px; margin-bottom: 12px; }");
+  m_sidebarLayout->addWidget(roleBadge);
+
   m_btnDash = new QPushButton("Tổng Quan", m_sidebarFrame);
   m_btnPatients = new QPushButton("Bệnh Nhân", m_sidebarFrame);
   m_btnAppoint = new QPushButton("Lịch Hẹn", m_sidebarFrame);
   m_btnLeaveManage = new QPushButton("Nghỉ Phép", m_sidebarFrame);
-  m_btnSetting = new QPushButton("Cài Đặt", m_sidebarFrame);
 
   m_sidebarLayout->addWidget(m_btnDash);
   m_sidebarLayout->addWidget(m_btnPatients);
   m_sidebarLayout->addWidget(m_btnAppoint);
   m_sidebarLayout->addWidget(m_btnLeaveManage);
-  m_sidebarLayout->addWidget(m_btnSetting);
   m_sidebarLayout->addStretch();
 
   m_btnLogout = new QPushButton("Đăng Xuất", m_sidebarFrame);
@@ -212,8 +220,6 @@ void DoctorDashboardWidget::buildSidebar() {
     onLeaveTabSelected();
     switchPage(3, m_btnLeaveManage);
   });
-  connect(m_btnSetting, &QPushButton::clicked, this,
-          [this]() { switchPage(4, m_btnSetting); });
 }
 
 void DoctorDashboardWidget::buildOverviewPage() {
@@ -260,7 +266,8 @@ void DoctorDashboardWidget::buildPatientsPage() {
     m_patientsPage->setPatientService(m_patientService);
   }
   int docId = m_currentUser ? m_currentUser->getAccountId() : -1;
-  m_patientsPage->setServices(m_pharmacyService, m_medicalRecordService, m_appointmentService, docId);
+  m_patientsPage->setServices(m_pharmacyService, m_medicalRecordService,
+                              m_appointmentService, docId);
   m_stackedWidget->addWidget(m_patientsPage);
 }
 
@@ -270,41 +277,55 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   pageLayout->setContentsMargins(16, 12, 16, 16);
   pageLayout->setSpacing(16);
 
-  QFrame* container = new QFrame(m_appointmentsPage);
-  container->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; }");
-  auto* containerShadow = new QGraphicsDropShadowEffect(container);
-  containerShadow->setBlurRadius(16); containerShadow->setOffset(0, 2); containerShadow->setColor(QColor(0, 0, 0, 10));
+  QFrame *container = new QFrame(m_appointmentsPage);
+  container->setStyleSheet("QFrame { background-color: #FFFFFF; border: 1px "
+                           "solid #E2E8F0; border-radius: 14px; }");
+  auto *containerShadow = new QGraphicsDropShadowEffect(container);
+  containerShadow->setBlurRadius(16);
+  containerShadow->setOffset(0, 2);
+  containerShadow->setColor(QColor(0, 0, 0, 10));
   container->setGraphicsEffect(containerShadow);
 
-  QVBoxLayout* containerLayout = new QVBoxLayout(container);
+  QVBoxLayout *containerLayout = new QVBoxLayout(container);
   containerLayout->setContentsMargins(24, 20, 24, 24);
   containerLayout->setSpacing(16);
 
   QHBoxLayout *headerLayout = new QHBoxLayout();
-  QLabel *title = new QLabel("Lịch Hẹn Khám", container);
-  title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827; border: none;");
-  
+  QLabel *title = new QLabel("LỊCH HẸN KHÁM", container);
+  title->setStyleSheet(
+      "font-size: 18px; font-weight: bold; color: #111827; border: none;");
+
   QLabel *lblFilter = new QLabel("Ngày:", container);
-  lblFilter->setStyleSheet("font-size: 14px; font-weight: bold; color: #374151; border: none;");
+  lblFilter->setStyleSheet(
+      "font-size: 14px; font-weight: bold; color: #374151; border: none;");
 
   m_apptDateFilter = new QDateEdit(QDate::currentDate(), container);
   m_apptDateFilter->setCalendarPopup(true);
   m_apptDateFilter->setDisplayFormat("dd/MM/yyyy");
   m_apptDateFilter->setCursor(Qt::PointingHandCursor);
   m_apptDateFilter->setStyleSheet(
-      "QDateEdit { background-color: #FFFFFF; color: #1E293B; border: 1px solid #CBD5E1; "
-      "border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 600; min-width: 130px; }"
+      "QDateEdit { background-color: #FFFFFF; color: #1E293B; border: 1px "
+      "solid #CBD5E1; "
+      "border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: "
+      "600; min-width: 130px; }"
       "QDateEdit:hover { border-color: #2563EB; }"
-      "QDateEdit::drop-down { subcontrol-origin: padding; subcontrol-position: top right; width: 26px; "
-      "border-left-width: 1px; border-left-color: #CBD5E1; border-left-style: solid; border-top-right-radius: 6px; border-bottom-right-radius: 6px; background-color: #F8FAFC; }"
-      "QDateEdit::drop-down:hover { background-color: #EFF6FF; }"
-  );
-  connect(m_apptDateFilter, &QDateEdit::dateChanged, this, &DoctorDashboardWidget::refreshAppointmentsTables);
+      "QDateEdit::drop-down { subcontrol-origin: padding; subcontrol-position: "
+      "top right; width: 26px; "
+      "border-left-width: 1px; border-left-color: #CBD5E1; border-left-style: "
+      "solid; border-top-right-radius: 6px; border-bottom-right-radius: 6px; "
+      "background-color: #F8FAFC; }"
+      "QDateEdit::drop-down:hover { background-color: #EFF6FF; }");
+  connect(m_apptDateFilter, &QDateEdit::dateChanged, this,
+          &DoctorDashboardWidget::refreshAppointmentsTables);
 
   QPushButton *btnRefresh = new QPushButton("Tải lại", container);
   btnRefresh->setCursor(Qt::PointingHandCursor);
-  btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 6px 14px; border-radius: 6px; } QPushButton:hover { background-color: #DBEAFE; }");
-  connect(btnRefresh, &QPushButton::clicked, this, &DoctorDashboardWidget::refreshAppointmentsTables);
+  btnRefresh->setStyleSheet(
+      "QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px "
+      "solid #2563EB; font-weight: bold; padding: 6px 14px; border-radius: "
+      "6px; } QPushButton:hover { background-color: #DBEAFE; }");
+  connect(btnRefresh, &QPushButton::clicked, this,
+          &DoctorDashboardWidget::refreshAppointmentsTables);
 
   headerLayout->addWidget(title);
   headerLayout->addStretch();
@@ -317,7 +338,7 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   m_appointmentsTable = new QTableWidget(container);
   m_appointmentsTable->setColumnCount(7);
   m_appointmentsTable->setHorizontalHeaderLabels(
-      {"Thời Gian", "Mã BN", "Tên Bệnh Nhân", "Dịch Vụ Khám", "Phòng Khám",
+      {"Thời Gian", "Mã Bệnh Nhân", "Tên Bệnh Nhân", "Dịch Vụ Khám", "Phòng Khám",
        "Trạng Thái", "Thao Tác"});
   m_appointmentsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   m_appointmentsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -327,50 +348,42 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   m_appointmentsTable->verticalHeader()->setVisible(false);
   m_appointmentsTable->verticalHeader()->setDefaultSectionSize(46);
 
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
+      QHeaderView::Stretch);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
+      0, QHeaderView::Fixed);
   m_appointmentsTable->horizontalHeader()->resizeSection(0, 140);
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
+      1, QHeaderView::Fixed);
   m_appointmentsTable->horizontalHeader()->resizeSection(1, 140);
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
+      4, QHeaderView::Fixed);
   m_appointmentsTable->horizontalHeader()->resizeSection(4, 110);
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
+      5, QHeaderView::Fixed);
   m_appointmentsTable->horizontalHeader()->resizeSection(5, 110);
-  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);
+  m_appointmentsTable->horizontalHeader()->setSectionResizeMode(
+      6, QHeaderView::Fixed);
   m_appointmentsTable->horizontalHeader()->resizeSection(6, 260);
   m_appointmentsTable->horizontalHeader()->setFixedHeight(40);
 
   m_appointmentsTable->setStyleSheet(
-      "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
-      "QTableWidget::item { padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+      "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: "
+      "transparent; font-size: 13px; color: #334155; outline: none; }"
+      "QTableWidget::item { background: transparent; padding: 12px 8px; border-bottom: 1px solid "
+      "#F1F5F9; outline: none; }"
       "QTableWidget::item:focus { outline: none; border: none; }"
-      "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
-      "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }"
-  );
-  m_appointmentsTable->setItemDelegate(new StartedRowDelegate(m_appointmentsTable));
+      "QTableWidget::item:selected { background-color: #EFF6FF; color: "
+      "#2563EB; font-weight: 600; }"
+      "QHeaderView::section { background-color: #F8FAFC; color: #475569; "
+      "font-weight: bold; font-size: 12px; border: none; border-bottom: 2px "
+      "solid #E2E8F0; padding: 4px; }");
+  m_appointmentsTable->setItemDelegate(
+      new StartedRowDelegate(m_appointmentsTable));
 
   containerLayout->addWidget(m_appointmentsTable, 1);
   pageLayout->addWidget(container, 1);
   m_stackedWidget->addWidget(m_appointmentsPage);
-}
-
-void DoctorDashboardWidget::buildSettingsPage() {
-  m_settingsPage = new QWidget(this);
-  QVBoxLayout *pageLayout = new QVBoxLayout(m_settingsPage);
-  pageLayout->setContentsMargins(0, 0, 0, 0);
-
-  QLabel *title = new QLabel("Cài Đặt", m_settingsPage);
-  title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;");
-  pageLayout->addWidget(title);
-
-  QLabel *desc =
-      new QLabel("Trang cấu hình và cài đặt thông tin cá nhân dành cho bác sĩ.",
-                 m_settingsPage);
-  desc->setStyleSheet("color: #5F6368; font-size: 14px;");
-  pageLayout->addWidget(desc);
-  pageLayout->addStretch();
-
-  m_stackedWidget->addWidget(m_settingsPage);
 }
 
 void DoctorDashboardWidget::createDoctorCards(QWidget *parentPage,
@@ -378,7 +391,8 @@ void DoctorDashboardWidget::createDoctorCards(QWidget *parentPage,
   QHBoxLayout *cardsLayout = new QHBoxLayout();
   cardsLayout->setSpacing(20);
 
-  QStringList titles = {"Tổng số ca khám hôm nay", "Tổng số ca khám trong tháng", "KPI tháng"};
+  QStringList titles = {"Tổng số ca khám hôm nay",
+                        "Tổng số ca khám trong tháng", "KPI tháng"};
   QStringList subtitles = {"Hôm nay", "Tháng này", "Tháng này"};
 
   for (int i = 0; i < 3; ++i) {
@@ -451,15 +465,17 @@ void DoctorDashboardWidget::createDoctorCharts(QWidget *parentPage,
       auto appts = m_appointmentService->getDoctorAppointments(docId, day);
       int completed = 0, pending = 0;
       for (const auto &a : appts) {
-        if (a.status == AppointmentStatusText::COMPLETED) completed++;
-        else pending++;
+        if (a.status == AppointmentStatusText::COMPLETED)
+          completed++;
+        else
+          pending++;
       }
-      *setMedical   << completed;
+      *setMedical << completed;
       *setAppointed << pending;
     }
   } else {
     for (int d = 0; d < 7; ++d) {
-      *setMedical   << 0;
+      *setMedical << 0;
       *setAppointed << 0;
     }
   }
@@ -575,13 +591,19 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
   cardLayout->setSpacing(10);
 
   QHBoxLayout *tblHeaderLayout = new QHBoxLayout();
-  QLabel *tblTitle = new QLabel("Danh sách bệnh nhân đang khám hôm nay", tableCard);
-  tblTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
-  
+  QLabel *tblTitle =
+      new QLabel("Danh sách bệnh nhân đang khám hôm nay", tableCard);
+  tblTitle->setStyleSheet(
+      "font-size: 16px; font-weight: bold; color: #111827;");
+
   QPushButton *btnRefresh = new QPushButton("Tải lại", tableCard);
   btnRefresh->setCursor(Qt::PointingHandCursor);
-  btnRefresh->setStyleSheet("QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px solid #2563EB; font-weight: bold; padding: 4px 12px; border-radius: 6px; } QPushButton:hover { background-color: transparent }");
-  connect(btnRefresh, &QPushButton::clicked, this, &DoctorDashboardWidget::refreshAppointmentsTables);
+  btnRefresh->setStyleSheet(
+      "QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px "
+      "solid #2563EB; font-weight: bold; padding: 4px 12px; border-radius: "
+      "6px; } QPushButton:hover { background-color: transparent }");
+  connect(btnRefresh, &QPushButton::clicked, this,
+          &DoctorDashboardWidget::refreshAppointmentsTables);
 
   tblHeaderLayout->addWidget(tblTitle);
   tblHeaderLayout->addStretch();
@@ -593,34 +615,35 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
   m_patientTable->setHorizontalHeaderLabels({"Tên Bệnh Nhân", "Mã Định Danh",
                                              "Giờ Hẹn", "Chuyên Khoa",
                                              "Trạng Thái"});
-
-  m_patientTable->setStyleSheet(
-      "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: "
-      "#F3F4F6; outline: none; }"
-      "QHeaderView::section { background-color: #F9FAFB; padding: 12px; "
-      "font-weight: bold; border: none; border-bottom: 2px solid #E5E7EB; "
-      "color: #6B7280; }"
-      "QTableWidget::item { background-color: transparent; padding: 0px 12px; border-bottom: 1px solid #F3F4F6; color: #111827; }");
-  m_patientTable->setItemDelegate(new StartedRowDelegate(m_patientTable));
-
-  cardLayout->addWidget(m_patientTable);
-  pageLayout->addWidget(tableCard);
+  m_patientTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+  m_patientTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  m_patientTable->setAlternatingRowColors(true);
+  m_patientTable->setShowGrid(false);
+  m_patientTable->setFocusPolicy(Qt::NoFocus);
+  m_patientTable->verticalHeader()->setVisible(false);
+  m_patientTable->verticalHeader()->setDefaultSectionSize(46);
 
   m_patientTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
   m_patientTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed);
-  m_patientTable->horizontalHeader()->resizeSection(1, 120);
+  m_patientTable->horizontalHeader()->resizeSection(1, 140);
   m_patientTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
-  m_patientTable->horizontalHeader()->resizeSection(2, 100);
+  m_patientTable->horizontalHeader()->resizeSection(2, 120);
   m_patientTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
   m_patientTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
-  m_patientTable->horizontalHeader()->resizeSection(4, 150);
-  m_patientTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-  m_patientTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  m_patientTable->setFocusPolicy(Qt::NoFocus);
-  m_patientTable->verticalHeader()->setVisible(false);
+  m_patientTable->horizontalHeader()->resizeSection(4, 160);
+  m_patientTable->horizontalHeader()->setFixedHeight(40);
+
+  m_patientTable->setStyleSheet(
+      "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
+      "QTableWidget::item { background: transparent; padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+      "QTableWidget::item:focus { outline: none; border: none; }"
+      "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+      "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }");
+  m_patientTable->setItemDelegate(new StartedRowDelegate(m_patientTable));
 
   m_patientTable->setMinimumHeight(220);
-  pageLayout->addWidget(m_patientTable);
+  cardLayout->addWidget(m_patientTable);
+  pageLayout->addWidget(tableCard);
 }
 
 void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
@@ -628,8 +651,9 @@ void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
     return;
   m_stackedWidget->setCurrentIndex(index);
 
-  QPushButton* buttons[] = { m_btnDash, m_btnPatients, m_btnAppoint, m_btnLeaveManage, m_btnSetting };
-  for (auto* btn : buttons) {
+  QPushButton *buttons[] = {m_btnDash, m_btnPatients, m_btnAppoint,
+                            m_btnLeaveManage};
+  for (auto *btn : buttons) {
     if (btn) {
       btn->setObjectName("");
       btn->style()->unpolish(btn);
@@ -652,7 +676,9 @@ void DoctorDashboardWidget::switchPage(int index, QPushButton *activeBtn) {
 
 void DoctorDashboardWidget::buildClinicalExamPage() {
   m_clinicalExamPage = new ClinicalExamWidget(m_medicalRecordService, this);
-  m_clinicalExamPage->setServices(m_pharmacyService, m_patientService, m_appointmentService, m_serviceRequestService);
+  m_clinicalExamPage->setServices(m_pharmacyService, m_patientService,
+                                  m_appointmentService,
+                                  m_serviceRequestService);
   m_stackedWidget->addWidget(m_clinicalExamPage);
 
   connect(m_clinicalExamPage, &ClinicalExamWidget::backToDashboardRequested,
@@ -692,7 +718,8 @@ void DoctorDashboardWidget::openClinicalExam(
     }
   }
 
-  m_clinicalExamPage->loadPatientInfo(patientId, appointmentId, name, id, time, specialty);
+  m_clinicalExamPage->loadPatientInfo(patientId, appointmentId, name, id, time,
+                                      specialty);
 
   int idx = m_stackedWidget->indexOf(m_clinicalExamPage);
   if (idx != -1) {
@@ -707,10 +734,12 @@ void DoctorDashboardWidget::openClinicalExamWithIds(
     return;
 
   if (m_appointmentService && appointmentId > 0) {
-    m_appointmentService->updateAppointmentStatus(appointmentId, AppointmentStatusText::STARTED);
+    m_appointmentService->updateAppointmentStatus(
+        appointmentId, AppointmentStatusText::STARTED);
   }
 
-  m_clinicalExamPage->loadPatientInfo(patientId, appointmentId, name, code, time, reason);
+  m_clinicalExamPage->loadPatientInfo(patientId, appointmentId, name, code,
+                                      time, reason);
 
   int idx = m_stackedWidget->indexOf(m_clinicalExamPage);
   if (idx != -1) {
@@ -730,7 +759,9 @@ void DoctorDashboardWidget::handleCallPatientRequested(int targetApptId) {
   }
 
   if (apptId <= 0) {
-    QMessageBox::warning(this, "Thông báo", "Vui lòng chọn một bệnh nhân từ danh sách để gọi khám.");
+    QMessageBox::warning(
+        this, "Thông báo",
+        "Vui lòng chọn một bệnh nhân từ danh sách để gọi khám.");
     return;
   }
 
@@ -738,17 +769,16 @@ void DoctorDashboardWidget::handleCallPatientRequested(int targetApptId) {
       m_appointmentService->callSpecificPatient(apptId);
 
   if (result.first > 0) {
-    QMessageBox::information(
-        this, "Gọi Khám Thành Công",
-        QString("Đã gọi bệnh nhân:\n\nSố vé: %1\nTên: %2")
-            .arg(result.first)
-            .arg(result.second));
+    QMessageBox::information(this, "Gọi Khám Thành Công",
+                             QString("Đã gọi bệnh nhân:\n\nSố vé: %1\nTên: %2")
+                                 .arg(result.first)
+                                 .arg(result.second));
 
-    QTimer::singleShot(0, this, [this]() {
-        refreshAppointmentsTables();
-    });
+    QTimer::singleShot(0, this, [this]() { refreshAppointmentsTables(); });
   } else {
-    QMessageBox::warning(this, "Thông báo", "Không thể gọi bệnh nhân được chọn hoặc không tìm thấy dữ liệu lượt khám.");
+    QMessageBox::warning(this, "Thông báo",
+                         "Không thể gọi bệnh nhân được chọn hoặc không tìm "
+                         "thấy dữ liệu lượt khám.");
   }
 }
 
@@ -764,13 +794,15 @@ void DoctorDashboardWidget::handlePatientExamFinished() {
   }
 
   if (apptId > 0) {
-    m_appointmentService->updateAppointmentStatus(apptId, AppointmentStatusText::COMPLETED);
+    m_appointmentService->updateAppointmentStatus(
+        apptId, AppointmentStatusText::COMPLETED);
   }
 
   QTimer::singleShot(0, this, [this]() {
-      refreshAppointmentsTables();
-      QMessageBox::information(this, "Nova Care Clinic", "Đã kết thúc ca khám thành công!");
-      switchPage(0, m_btnDash);
+    refreshAppointmentsTables();
+    QMessageBox::information(this, "Nova Care Clinic",
+                             "Đã kết thúc ca khám thành công!");
+    switchPage(0, m_btnDash);
   });
 }
 
@@ -781,23 +813,27 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
   if (m_patientTable) {
     auto records =
-        m_appointmentService ? m_appointmentService->getDoctorAppointments(docId, today) : QList<AppointmentRecordDTO>();
+        m_appointmentService
+            ? m_appointmentService->getDoctorAppointments(docId, today)
+            : QList<AppointmentRecordDTO>();
 
-    std::stable_sort(records.begin(), records.end(), [](const AppointmentRecordDTO &a, const AppointmentRecordDTO &b) {
-      bool aIsStarted = (a.status == AppointmentStatusText::STARTED);
-      bool bIsStarted = (b.status == AppointmentStatusText::STARTED);
-      if (aIsStarted != bIsStarted) {
-        return aIsStarted;
-      }
-      return false;
-    });
+    std::stable_sort(
+        records.begin(), records.end(),
+        [](const AppointmentRecordDTO &a, const AppointmentRecordDTO &b) {
+          bool aIsStarted = (a.status == AppointmentStatusText::STARTED);
+          bool bIsStarted = (b.status == AppointmentStatusText::STARTED);
+          if (aIsStarted != bIsStarted) {
+            return aIsStarted;
+          }
+          return false;
+        });
 
     m_rowApptMeta.clear();
     m_patientTable->setRowCount(0);
     int rowIdx = 0;
     for (const auto &rec : records) {
       // Chỉ hiển thị bệnh nhân Đã check-in (chờ khám) và Đang khám
-      if (rec.status != AppointmentStatusText::CHECKED_IN && 
+      if (rec.status != AppointmentStatusText::CHECKED_IN &&
           rec.status != AppointmentStatusText::STARTED) {
         continue;
       }
@@ -817,17 +853,11 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       QTableWidgetItem *deptItem = new QTableWidgetItem(rec.reason);
       QTableWidgetItem *statusItem = new QTableWidgetItem(statusText);
 
+      codeItem->setTextAlignment(Qt::AlignCenter);
+      timeItem->setTextAlignment(Qt::AlignCenter);
+      statusItem->setTextAlignment(Qt::AlignCenter);
       statusItem->setForeground(QBrush(QColor(statusColor)));
       statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
-
-      if (rec.status == AppointmentStatusText::STARTED) {
-        QBrush bgBrush(QColor("#DBEAFE"));
-        nameItem->setBackground(bgBrush);
-        codeItem->setBackground(bgBrush);
-        timeItem->setBackground(bgBrush);
-        deptItem->setBackground(bgBrush);
-        statusItem->setBackground(bgBrush);
-      }
 
       m_patientTable->setItem(rowIdx, 0, nameItem);
       m_patientTable->setItem(rowIdx, 1, codeItem);
@@ -845,23 +875,29 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
   if (m_appointmentsTable) {
     QDate filterDate = m_apptDateFilter ? m_apptDateFilter->date() : today;
-    auto records = m_appointmentService ? m_appointmentService->getDoctorAppointments(docId, filterDate) : QList<AppointmentRecordDTO>();
+    auto records =
+        m_appointmentService
+            ? m_appointmentService->getDoctorAppointments(docId, filterDate)
+            : QList<AppointmentRecordDTO>();
 
-    std::stable_sort(records.begin(), records.end(), [](const AppointmentRecordDTO &a, const AppointmentRecordDTO &b) {
-      bool aIsStarted = (a.status == AppointmentStatusText::STARTED);
-      bool bIsStarted = (b.status == AppointmentStatusText::STARTED);
-      if (aIsStarted != bIsStarted) {
-        return aIsStarted;
-      }
-      return false;
-    });
+    std::stable_sort(
+        records.begin(), records.end(),
+        [](const AppointmentRecordDTO &a, const AppointmentRecordDTO &b) {
+          bool aIsStarted = (a.status == AppointmentStatusText::STARTED);
+          bool bIsStarted = (b.status == AppointmentStatusText::STARTED);
+          if (aIsStarted != bIsStarted) {
+            return aIsStarted;
+          }
+          return false;
+        });
 
     m_apptPageMeta.clear();
     m_appointmentsTable->setRowCount(0);
     int rowIdx = 0;
     for (const auto &rec : records) {
-      // Hiển thị tất cả lịch hẹn chưa hủy/chưa vắng mặt (bao gồm Đã hẹn, Đã check-in, Đang khám, Đã khám)
-      if (rec.status == AppointmentStatusText::CANCELLED || 
+      // Hiển thị tất cả lịch hẹn chưa hủy/chưa vắng mặt (bao gồm Đã hẹn, Đã
+      // check-in, Đang khám, Đã khám)
+      if (rec.status == AppointmentStatusText::CANCELLED ||
           rec.status == AppointmentStatusText::NO_SHOW) {
         continue;
       }
@@ -891,16 +927,6 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
       statusItem->setForeground(QBrush(QColor(statusColor)));
 
-      if (rec.status == AppointmentStatusText::STARTED) {
-        QBrush bgBrush(QColor("#DBEAFE"));
-        timeItem->setBackground(bgBrush);
-        codeItem->setBackground(bgBrush);
-        nameItem->setBackground(bgBrush);
-        reasonItem->setBackground(bgBrush);
-        roomItem->setBackground(bgBrush);
-        statusItem->setBackground(bgBrush);
-      }
-
       m_appointmentsTable->setItem(rowIdx, 0, timeItem);
       m_appointmentsTable->setItem(rowIdx, 1, codeItem);
       m_appointmentsTable->setItem(rowIdx, 2, nameItem);
@@ -910,12 +936,9 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
       // Action Buttons Widget (Xem hồ sơ & Gọi Khám)
       QWidget *actWidget = new QWidget(m_appointmentsTable);
-      if (rec.status == AppointmentStatusText::STARTED) {
-        actWidget->setStyleSheet("QWidget { background-color: #DBEAFE; }");
-      }
       QHBoxLayout *actLayout = new QHBoxLayout(actWidget);
       actLayout->setContentsMargins(4, 3, 4, 3);
-      actLayout->setSpacing(8);
+      actLayout->setSpacing(12);
       int captureApptId = rec.appointmentId;
       int capturePatientId = rec.patientId;
       QString captureName = rec.patientName;
@@ -927,35 +950,54 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
       btnDetail->setCursor(Qt::PointingHandCursor);
       btnDetail->setMinimumHeight(38);
       btnDetail->setStyleSheet(
-          "QPushButton { background-color: #0284C7; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 14px; border: none; }"
-          "QPushButton:hover { background-color: #0369A1; }"
-      );
-      connect(btnDetail, &QPushButton::clicked, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
-          openClinicalExamWithIds(capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason);
-      });
+          "QPushButton { background-color: #0284C7; color: white; font-size: "
+          "12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: "
+          "6px; padding: 6px 14px; border: none; }"
+          "QPushButton:hover { background-color: #0369A1; }");
+      connect(btnDetail, &QPushButton::clicked, this,
+              [this, capturePatientId, captureApptId, captureName, captureCode,
+               captureTime, captureReason]() {
+                openClinicalExamWithIds(capturePatientId, captureApptId,
+                                        captureName, captureCode, captureTime,
+                                        captureReason);
+              });
       actLayout->addWidget(btnDetail);
 
       if (rec.status != AppointmentStatusText::COMPLETED) {
-          QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
-          btnCall->setCursor(Qt::PointingHandCursor);
-          btnCall->setMinimumHeight(38);
-          btnCall->setStyleSheet(
-              "QPushButton { background-color: #2563EB; color: white; font-size: 12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: 6px; padding: 6px 16px; border: none; }"
-              "QPushButton:hover { background-color: #1D4ED8; }"
-          );
+        QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
+        btnCall->setCursor(Qt::PointingHandCursor);
+        btnCall->setMinimumHeight(38);
+        btnCall->setStyleSheet(
+            "QPushButton { background-color: #D97706; color: white; font-size: "
+            "12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: "
+            "6px; padding: 6px 14px; border: none; }"
+            "QPushButton:hover { background-color: #B45309; }");
 
-          connect(btnCall, &QPushButton::clicked, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
-              if (!m_appointmentService) return;
-              auto res = m_appointmentService->callSpecificPatient(captureApptId);
-              if (res.first > 0) {
-                  QMessageBox::information(this, "Gọi Khám Thành Công", QString("Đã gọi bệnh nhân: %1 (Vé: %2)").arg(res.second).arg(res.first));
-              }
-              QTimer::singleShot(0, this, [this, capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason]() {
-                  openClinicalExamWithIds(capturePatientId, captureApptId, captureName, captureCode, captureTime, captureReason);
-                  refreshAppointmentsTables();
-              });
-          });
-          actLayout->addWidget(btnCall);
+        connect(btnCall, &QPushButton::clicked, this,
+                [this, capturePatientId, captureApptId, captureName,
+                 captureCode, captureTime, captureReason]() {
+                  if (!m_appointmentService)
+                    return;
+                  auto res =
+                      m_appointmentService->callSpecificPatient(captureApptId);
+                  if (res.first > 0) {
+                    QMessageBox::information(
+                        this, "Gọi Khám Thành Công",
+                        QString("Đã gọi bệnh nhân: %1 (Vé: %2)")
+                            .arg(res.second)
+                            .arg(res.first));
+                  }
+                  QTimer::singleShot(
+                      0, this,
+                      [this, capturePatientId, captureApptId, captureName,
+                       captureCode, captureTime, captureReason]() {
+                        openClinicalExamWithIds(capturePatientId, captureApptId,
+                                                captureName, captureCode,
+                                                captureTime, captureReason);
+                        refreshAppointmentsTables();
+                      });
+                });
+        actLayout->addWidget(btnCall);
       }
       actLayout->setAlignment(Qt::AlignCenter);
 
@@ -973,7 +1015,8 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 }
 
 void DoctorDashboardWidget::refreshOverviewCards() {
-  if (!m_currentUser || !m_appointmentService) return;
+  if (!m_currentUser || !m_appointmentService)
+    return;
 
   int docId = m_currentUser->getAccountId();
   QDate today = QDate::currentDate();
@@ -992,7 +1035,8 @@ void DoctorDashboardWidget::refreshOverviewCards() {
   int monthCount = 0;
   for (const auto &appt : allAppts) {
     QDate apptDate = QDate::fromString(appt.appointmentDate, "yyyy-MM-dd");
-    if (apptDate.isValid() && apptDate >= startOfMonth && apptDate <= endOfMonth) {
+    if (apptDate.isValid() && apptDate >= startOfMonth &&
+        apptDate <= endOfMonth) {
       monthCount++;
     }
   }
@@ -1003,7 +1047,8 @@ void DoctorDashboardWidget::refreshOverviewCards() {
   // 3. KPI tháng
   if (m_lblCardKpiMonth) {
     if (m_analyticService) {
-      QList<DoctorKPI> kpiList = m_analyticService->getDoctorsKPI(startOfMonth, endOfMonth);
+      QList<DoctorKPI> kpiList =
+          m_analyticService->getDoctorsKPI(startOfMonth, endOfMonth);
       double doctorKpiValue = 0.0;
       bool found = false;
       for (const auto &kpi : kpiList) {
@@ -1014,7 +1059,8 @@ void DoctorDashboardWidget::refreshOverviewCards() {
         }
       }
       if (found) {
-        m_lblCardKpiMonth->setText(QString::number(doctorKpiValue * 100.0, 'f', 1) + " %");
+        m_lblCardKpiMonth->setText(
+            QString::number(doctorKpiValue * 100.0, 'f', 1) + " %");
       } else {
         m_lblCardKpiMonth->setText("0.0 %");
       }
@@ -1080,13 +1126,15 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
         "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: "
         "#FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 36px; }"
         "QCalendarWidget QToolButton { color: #333333; font-weight: bold; "
-        "background-color: transparent; border: none; padding: 4px 6px; margin: "
+        "background-color: transparent; border: none; padding: 4px 6px; "
+        "margin: "
         "1px; font-size: 13px; }"
         "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; "
         "border-radius: 4px; }"
         "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
         "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #333333; "
-        "selection-background-color: #4B94F2; selection-color: white; font-size: 13px; }"
+        "selection-background-color: #4B94F2; selection-color: white; "
+        "font-size: 13px; }"
         "QCalendarWidget QAbstractItemView:enabled { font-size: 13px; color: "
         "#333333; background-color: #FFFFFF; selection-background-color: "
         "#4B94F2; selection-color: #FFFFFF; }"
@@ -1101,7 +1149,7 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
   m_leaveStartDate->setDisplayFormat("dd/MM/yyyy");
   m_leaveStartDate->setStyleSheet(
       "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827; background-color: transparent;");
+      "#111827;");
 
   m_leaveEndDate = new QDateEdit(QDate::currentDate(), formFrame);
   m_leaveEndDate->setCalendarWidget(createCustomCalendar());
@@ -1110,13 +1158,13 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
   m_leaveEndDate->setDisplayFormat("dd/MM/yyyy");
   m_leaveEndDate->setStyleSheet(
       "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827; background-color: transparent;");
+      "#111827;");
 
   m_txtLeaveReason = new QTextEdit(formFrame);
   m_txtLeaveReason->setFixedHeight(80);
   m_txtLeaveReason->setStyleSheet(
       "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827; background-color: transparent;");
+      "#111827;");
 
   formLayout->addRow("Quỹ phép còn lại:", m_lblLeaveBalance);
   formLayout->addRow("Từ ngày:", m_leaveStartDate);
@@ -1188,8 +1236,8 @@ void DoctorDashboardWidget::onLeaveTabSelected() {
 
   if (auto sysUser = std::dynamic_pointer_cast<SystemUser>(m_currentUser)) {
     int staffId = sysUser->getAccountId();
-    LeaveBalanceDTO balance = m_staffService->getLeaveBalance(
-        staffId, QDate::currentDate().year());
+    LeaveBalanceDTO balance =
+        m_staffService->getLeaveBalance(staffId, QDate::currentDate().year());
     if (balance.totalDays > 0) {
       int remaining = balance.totalDays - balance.usedDays;
       m_lblLeaveBalance->setText(QString("%1 ngày").arg(remaining));
@@ -1223,7 +1271,8 @@ void DoctorDashboardWidget::loadLeaveHistory() {
         row, 1, new QTableWidgetItem(req.endDate.toString("dd/MM/yyyy")));
     m_tableLeaveHistory->setItem(row, 2, new QTableWidgetItem(req.reason));
 
-    QTableWidgetItem *statusItem = new QTableWidgetItem(LeaveStatusText::toVi(req.status));
+    QTableWidgetItem *statusItem =
+        new QTableWidgetItem(LeaveStatusText::toVi(req.status));
     statusItem->setFont(QFont("Segoe UI", 10, QFont::Bold));
     if (req.status == LeaveStatusText::PENDING) {
       statusItem->setForeground(QColor("#F29900"));
@@ -1279,9 +1328,8 @@ void DoctorDashboardWidget::onSubmitLeaveRequest() {
       int year = startDate.year();
 
       if (m_appointmentService) {
-        int cancelledCount =
-            m_appointmentService->cancelAppointmentsForDoctor(
-                staffId, startDate, endDate);
+        int cancelledCount = m_appointmentService->cancelAppointmentsForDoctor(
+            staffId, startDate, endDate);
         QString msg =
             QString("Đăng ký nghỉ phép thành công!\n\nHệ thống đã tự động HỦY "
                     "%1 lịch hẹn trong khoảng thời gian này.")
@@ -1294,8 +1342,7 @@ void DoctorDashboardWidget::onSubmitLeaveRequest() {
             "DUYỆT.\n\nLịch khám sẽ tự động hủy nếu Admin duyệt đơn.");
       }
 
-      LeaveBalanceDTO balance =
-          m_staffService->getLeaveBalance(staffId, year);
+      LeaveBalanceDTO balance = m_staffService->getLeaveBalance(staffId, year);
       int remaining = balance.totalDays - balance.usedDays;
       m_lblLeaveBalance->setText(QString("%1 ngày").arg(remaining));
 

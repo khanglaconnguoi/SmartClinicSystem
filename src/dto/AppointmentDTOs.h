@@ -50,4 +50,5 @@ struct RoomQueueStatusDTO {
     QString doctorName;
     int currentTicketNumber = 0; // The one currently STARTED
     int nextTicketNumber = 0;    // The next one CHECKED_IN
+    int waitingCount = 0;        // Count of patients CHECKED_IN waiting
 };

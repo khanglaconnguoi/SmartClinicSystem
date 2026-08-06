@@ -59,13 +59,11 @@ private:
     QPushButton* m_btnDash = nullptr;
     QPushButton* m_btnPatients = nullptr;
     QPushButton* m_btnAppoint = nullptr;
-    QPushButton* m_btnSetting = nullptr;
     QPushButton* m_btnLeaveManage = nullptr;
 
     QWidget* m_overviewPage = nullptr;
     PatientWidget* m_patientsPage = nullptr;
     QWidget* m_appointmentsPage = nullptr;
-    QWidget* m_settingsPage = nullptr;
     QWidget* m_leaveManagePage = nullptr;
     ClinicalExamWidget* m_clinicalExamPage = nullptr;
 
@@ -82,7 +80,6 @@ private:
     void buildOverviewPage();
     void buildPatientsPage();
     void buildAppointmentsPage();
-    void buildSettingsPage();
     void buildLeaveManagePage();
     void buildClinicalExamPage();
 

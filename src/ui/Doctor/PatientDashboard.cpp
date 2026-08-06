@@ -51,12 +51,14 @@ void PatientDashboardWidget::buildPatientSidebar() {
                                "color: #4B94F2; margin-bottom: 8px;");
   }
 
-  // --- Nhãn phân nhóm ---
-  QLabel *menuHeader = new QLabel("MENU", m_sidebarFrame);
-  menuHeader->setStyleSheet(
-      "font-size: 10px; font-weight: bold; color: #B0B8C4;"
-      "letter-spacing: 2px; margin: 8px 4px 4px 4px;");
-  m_sidebarLayout->addWidget(menuHeader);
+  QLabel *roleBadge = new QLabel("BỆNH NHÂN", m_sidebarFrame);
+  roleBadge->setAlignment(Qt::AlignCenter);
+  roleBadge->setStyleSheet(
+      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
+      "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+      "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
+      "margin-top: 4px; margin-bottom: 12px; }");
+  m_sidebarLayout->addWidget(roleBadge);
 
   // --- Tạo các nút sidebar bệnh nhân ---
   m_btnOverview = new QPushButton("Tổng Quan", m_sidebarFrame);

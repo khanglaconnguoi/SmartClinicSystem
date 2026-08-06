@@ -58,10 +58,14 @@ void NurseDashboardWidget::fillDashboardData() {
 }
 
 void NurseDashboardWidget::buildSidebar() {
-    QLabel *roleHeader = new QLabel("Y TÁ", m_sidebarFrame);
-    roleHeader->setStyleSheet(
-        "font-size: 10px; font-weight: bold; color: #B0B8C4;"
-        "letter-spacing: 2px; margin: 8px 4px 4px 4px;");
+    QLabel *roleBadge = new QLabel("Y TÁ", m_sidebarFrame);
+    roleBadge->setAlignment(Qt::AlignCenter);
+    roleBadge->setStyleSheet(
+        "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
+        "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+        "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
+        "margin-top: 4px; margin-bottom: 12px; }");
+    m_sidebarLayout->addWidget(roleBadge);
 
     m_btnOverview = new QPushButton("Tổng Quan", m_sidebarFrame);
     m_btnLabQueue = new QPushButton("Phòng Xét Nghiệm", m_sidebarFrame);
@@ -76,7 +80,6 @@ void NurseDashboardWidget::buildSidebar() {
         "transparent; font-weight: bold; }"
         "QPushButton:hover { background-color: #FFEBEE; }");
 
-    m_sidebarLayout->addWidget(roleHeader);
     m_sidebarLayout->addWidget(m_btnOverview);
     m_sidebarLayout->addWidget(m_btnLabQueue);
     m_sidebarLayout->addStretch();

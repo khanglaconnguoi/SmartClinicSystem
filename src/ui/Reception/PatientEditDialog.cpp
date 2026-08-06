@@ -3,20 +3,17 @@
 
 PatientEditDialog::PatientEditDialog(int patientId, std::shared_ptr<PatientService> patientService, QWidget *parent)
     : QDialog(parent), m_patientId(patientId), m_patientService(patientService) {
-    setWindowTitle("Chỉnh sửa thông tin bệnh nhân");
-    setFixedSize(480, 420);
+    setWindowTitle("Thông tin liên lạc bệnh nhân");
+    setFixedSize(500, 430);
     setStyleSheet("QDialog { background-color: #FFFFFF; font-family: 'Segoe UI', Arial, sans-serif; }"
                   "QLabel { font-size: 13px; color: #374151; font-weight: 500; }"
                   "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 8px 12px; font-size: 13px; background-color: #F9FAFB; color: #111827; }"
                   "QLineEdit:focus { border: 1px solid #2563EB; background-color: #FFFFFF; }"
-                  "QPushButton { font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 6px; }"
-                  "#btnSave { background-color: #2563EB; color: white; border: none; }"
-                  "#btnSave:hover { background-color: #1D4ED8; }"
-                  "#btnCancel { background-color: white; color: #4B5563; border: 1px solid #D1D5DB; }"
-                  "#btnCancel:hover { background-color: #F3F4F6; }");
+                  "QPushButton { font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 6px; }");
 
     setupUi();
     loadPatientData();
+    setEditMode(false);
 }
 
 void PatientEditDialog::setupUi() {
@@ -24,7 +21,7 @@ void PatientEditDialog::setupUi() {
     mainLayout->setContentsMargins(24, 20, 24, 20);
     mainLayout->setSpacing(16);
 
-    QLabel *lblTitle = new QLabel("Cập nhật thông tin liên lạc & cá nhân", this);
+    QLabel *lblTitle = new QLabel("Thông tin liên lạc của bệnh nhân", this);
     lblTitle->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827; margin-bottom: 8px;");
     mainLayout->addWidget(lblTitle);
 
@@ -51,21 +48,85 @@ void PatientEditDialog::setupUi() {
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
 
-    m_btnCancel = new QPushButton("Hủy", this);
-    m_btnCancel->setObjectName("btnCancel");
-    m_btnCancel->setCursor(Qt::PointingHandCursor);
+    m_btnEditSave = new QPushButton("Sửa thông tin liên lạc", this);
+    m_btnEditSave->setCursor(Qt::PointingHandCursor);
 
-    m_btnSave = new QPushButton("Lưu thay đổi", this);
-    m_btnSave->setObjectName("btnSave");
-    m_btnSave->setCursor(Qt::PointingHandCursor);
+    m_btnCloseCancel = new QPushButton("Đóng", this);
+    m_btnCloseCancel->setCursor(Qt::PointingHandCursor);
 
-    buttonLayout->addWidget(m_btnCancel);
-    buttonLayout->addWidget(m_btnSave);
+    buttonLayout->addWidget(m_btnEditSave);
+    buttonLayout->addWidget(m_btnCloseCancel);
 
     mainLayout->addLayout(buttonLayout);
 
-    connect(m_btnCancel, &QPushButton::clicked, this, &QDialog::reject);
-    connect(m_btnSave, &QPushButton::clicked, this, &PatientEditDialog::handleSave);
+    connect(m_btnEditSave, &QPushButton::clicked, this, &PatientEditDialog::handleEditOrSave);
+    connect(m_btnCloseCancel, &QPushButton::clicked, this, &PatientEditDialog::handleCloseOrCancel);
+}
+
+void PatientEditDialog::setEditMode(bool editable) {
+    m_isEditMode = editable;
+
+    m_txtFullName->setReadOnly(!editable);
+    m_txtPhone->setReadOnly(!editable);
+    m_txtEmail->setReadOnly(!editable);
+    m_txtAddress->setReadOnly(!editable);
+    m_txtEmergencyName->setReadOnly(!editable);
+    m_txtEmergencyPhone->setReadOnly(!editable);
+
+    QString readOnlyStyle =
+        "QLineEdit { border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 12px; font-size: 13px; background-color: #F8FAFC; color: #334155; }";
+    QString editStyle =
+        "QLineEdit { border: 1px solid #CBD5E1; border-radius: 6px; padding: 8px 12px; font-size: 13px; background-color: #FFFFFF; color: #0F172A; }"
+        "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; }";
+
+    QString currentStyle = editable ? editStyle : readOnlyStyle;
+    m_txtFullName->setStyleSheet(currentStyle);
+    m_txtPhone->setStyleSheet(currentStyle);
+    m_txtEmail->setStyleSheet(currentStyle);
+    m_txtAddress->setStyleSheet(currentStyle);
+    m_txtEmergencyName->setStyleSheet(currentStyle);
+    m_txtEmergencyPhone->setStyleSheet(currentStyle);
+
+    if (editable) {
+        m_btnEditSave->setText("Lưu thay đổi");
+        m_btnEditSave->setStyleSheet(
+            "QPushButton { background-color: #2563EB; color: white; border: none; font-weight: bold; padding: 8px 16px; border-radius: 6px; }"
+            "QPushButton:hover { background-color: #1D4ED8; }"
+        );
+        m_btnCloseCancel->setText("Hủy");
+        m_btnCloseCancel->setStyleSheet(
+            "QPushButton { background-color: white; color: #4B5563; border: 1px solid #D1D5DB; font-weight: bold; padding: 8px 16px; border-radius: 6px; }"
+            "QPushButton:hover { background-color: #F3F4F6; }"
+        );
+    } else {
+        m_btnEditSave->setText("Sửa thông tin liên lạc");
+        m_btnEditSave->setStyleSheet(
+            "QPushButton { background-color: #D97706; color: white; border: none; font-weight: bold; padding: 8px 16px; border-radius: 6px; }"
+            "QPushButton:hover { background-color: #B45309; }"
+        );
+        m_btnCloseCancel->setText("Đóng");
+        m_btnCloseCancel->setStyleSheet(
+            "QPushButton { background-color: white; color: #4B5563; border: 1px solid #D1D5DB; font-weight: bold; padding: 8px 16px; border-radius: 6px; }"
+            "QPushButton:hover { background-color: #F3F4F6; }"
+        );
+    }
+}
+
+void PatientEditDialog::handleEditOrSave() {
+    if (!m_isEditMode) {
+        setEditMode(true);
+    } else {
+        handleSave();
+    }
+}
+
+void PatientEditDialog::handleCloseOrCancel() {
+    if (m_isEditMode) {
+        loadPatientData();
+        setEditMode(false);
+    } else {
+        reject();
+    }
 }
 
 void PatientEditDialog::loadPatientData() {

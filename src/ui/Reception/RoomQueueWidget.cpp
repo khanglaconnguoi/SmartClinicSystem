@@ -3,14 +3,14 @@
 #include <QLabel>
 #include <QGraphicsDropShadowEffect>
 
-RoomQueueWidget::RoomQueueWidget(int roomId, const QString& roomName, int doctorId, const QString& doctorName, int currentTicket, int nextTicket, QWidget *parent)
+RoomQueueWidget::RoomQueueWidget(int roomId, const QString& roomName, int doctorId, const QString& doctorName, int currentTicket, int nextTicket, int waitingCount, QWidget *parent)
     : QFrame(parent), m_roomId(roomId), m_doctorId(doctorId) 
 {
-    setupUi(roomName, doctorName, currentTicket, nextTicket);
+    setupUi(roomName, doctorName, currentTicket, nextTicket, waitingCount);
 }
 
-void RoomQueueWidget::setupUi(const QString& roomName, const QString& doctorName, int currentTicket, int /*nextTicket*/) {
-    setFixedSize(200, 160);
+void RoomQueueWidget::setupUi(const QString& roomName, const QString& doctorName, int currentTicket, int /*nextTicket*/, int waitingCount) {
+    setFixedSize(200, 175);
     setStyleSheet(
         "RoomQueueWidget {"
         "    background-color: #FFFFFF;"
@@ -32,8 +32,8 @@ void RoomQueueWidget::setupUi(const QString& roomName, const QString& doctorName
     setGraphicsEffect(shadow);
 
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(16, 16, 16, 16);
-    layout->setSpacing(8);
+    layout->setContentsMargins(14, 14, 14, 14);
+    layout->setSpacing(4);
 
     // Room Name
     auto *lblRoom = new QLabel(roomName, this);
@@ -45,6 +45,16 @@ void RoomQueueWidget::setupUi(const QString& roomName, const QString& doctorName
     lblDoctor->setStyleSheet("font-size: 14px; color: #4B5563; font-weight: 500;");
     lblDoctor->setAlignment(Qt::AlignCenter);
     lblDoctor->setWordWrap(true);
+
+    // Remaining waiting count
+    auto *lblWaiting = new QLabel(this);
+    if (m_doctorId > 0) {
+        lblWaiting->setText(QString("Đang chờ: %1 bệnh nhân").arg(waitingCount));
+        lblWaiting->setStyleSheet("font-size: 12px; color: #475569; font-weight: 600; background: transparent; padding: 2px 0px;");
+    } else {
+        lblWaiting->setText("");
+    }
+    lblWaiting->setAlignment(Qt::AlignCenter);
 
     // Status / Queue Ticket
     QString queueText;
@@ -70,6 +80,9 @@ void RoomQueueWidget::setupUi(const QString& roomName, const QString& doctorName
 
     layout->addWidget(lblRoom);
     layout->addWidget(lblDoctor);
+    if (m_doctorId > 0) {
+        layout->addWidget(lblWaiting);
+    }
     layout->addStretch();
     layout->addWidget(lblQueue);
 }

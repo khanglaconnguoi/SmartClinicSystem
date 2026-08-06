@@ -68,7 +68,7 @@ void PatientWidget::createListView() {
     QHBoxLayout* toolbarLayout = new QHBoxLayout();
     toolbarLayout->setSpacing(12);
 
-    QLabel *title = new QLabel("Danh sách bệnh nhân", container);
+    QLabel *title = new QLabel("DANH SÁCH BỆNH NHÂN", container);
     title->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827; border: none;");
 
     m_searchBar = new QLineEdit(container);
@@ -112,7 +112,7 @@ void PatientWidget::createListView() {
     m_patientTable->setFocusPolicy(Qt::NoFocus);
     m_patientTable->setStyleSheet(
         "QTableWidget { background-color: #FFFFFF; border: none; gridline-color: transparent; font-size: 13px; color: #334155; outline: none; }"
-        "QTableWidget::item { padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
+        "QTableWidget::item { background: transparent; padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
         "QTableWidget::item:focus { outline: none; border: none; }"
         "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
         "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }"

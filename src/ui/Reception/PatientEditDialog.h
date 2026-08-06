@@ -23,15 +23,19 @@ signals:
     void patientUpdated();
 
 private slots:
-    void handleSave();
+    void handleEditOrSave();
+    void handleCloseOrCancel();
 
 private:
     void setupUi();
     void loadPatientData();
+    void setEditMode(bool editable);
+    void handleSave();
 
     int m_patientId;
     std::shared_ptr<PatientService> m_patientService;
     std::optional<PatientDetailDTO> m_patientDetail;
+    bool m_isEditMode = false;
 
     QLineEdit *m_txtFullName = nullptr;
     QLineEdit *m_txtPhone = nullptr;
@@ -40,6 +44,6 @@ private:
     QLineEdit *m_txtEmergencyName = nullptr;
     QLineEdit *m_txtEmergencyPhone = nullptr;
 
-    QPushButton *m_btnSave = nullptr;
-    QPushButton *m_btnCancel = nullptr;
+    QPushButton *m_btnEditSave = nullptr;
+    QPushButton *m_btnCloseCancel = nullptr;
 };

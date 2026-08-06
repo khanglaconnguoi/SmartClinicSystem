@@ -66,6 +66,15 @@ void PharmacistDashboardWidget::fillDashboardData() {
 void PharmacistDashboardWidget::buildSidebar() {
     if (!m_sidebarLayout) return;
 
+    QLabel *roleBadge = new QLabel("DƯỢC SĨ", m_sidebarFrame);
+    roleBadge->setAlignment(Qt::AlignCenter);
+    roleBadge->setStyleSheet(
+        "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
+        "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+        "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
+        "margin-top: 4px; margin-bottom: 12px; }");
+    m_sidebarLayout->addWidget(roleBadge);
+
     m_btnDash = new QPushButton("Tổng Quan", m_sidebarFrame);
     m_btnInventory = new QPushButton("Kho Thuốc", m_sidebarFrame);
     m_btnDispensing = new QPushButton("Cấp Phát Thuốc", m_sidebarFrame);
