@@ -378,6 +378,7 @@ struct PatientSearchCriteria {
   // ── Dropdown filter ───────────────────────────────────
   std::optional<PatientType> type; // nullopt = tìm cả 3 loại
   int roomId = -1;                 // -1 = tất cả phòng
+  int doctorId = -1;               // -1 = tất cả bác sĩ
 
   // ── Status filter ─────────────────────────────────────
   QString status; // rỗng = tất cả trạng thái (REGISTERED/ADMITTED/...)

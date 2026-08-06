@@ -303,6 +303,26 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   m_apptDateFilter->setCalendarPopup(true);
   m_apptDateFilter->setDisplayFormat("dd/MM/yyyy");
   m_apptDateFilter->setCursor(Qt::PointingHandCursor);
+
+  QCalendarWidget *customApptCal = new QCalendarWidget(m_apptDateFilter);
+  customApptCal->setLocale(QLocale(QLocale::English, QLocale::UnitedStates));
+  customApptCal->setHorizontalHeaderFormat(QCalendarWidget::ShortDayNames);
+  customApptCal->setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
+  customApptCal->setMinimumSize(350, 240);
+  customApptCal->setStyleSheet(
+      "QCalendarWidget { background-color: #FFFFFF; color: #1E293B; }"
+      "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #FFFFFF; border-bottom: 1px solid #E2E8F0; min-height: 36px; }"
+      "QCalendarWidget QToolButton { color: #1E293B; font-weight: bold; background-color: transparent; border: none; padding: 4px 6px; margin: 1px; font-size: 13px; }"
+      "QCalendarWidget QToolButton:hover { background-color: #EFF6FF; border-radius: 4px; }"
+      "QCalendarWidget QMenu { background-color: #FFFFFF; color: #1E293B; border: 1px solid #E2E8F0; }"
+      "QCalendarWidget QMenu::item { padding: 4px 12px; background-color: transparent; color: #1E293B; }"
+      "QCalendarWidget QMenu::item:selected { background-color: #EFF6FF; color: #2563EB; }"
+      "QCalendarWidget QSpinBox { background-color: #FFFFFF; color: #1E293B; selection-background-color: #2563EB; selection-color: white; font-size: 13px; }"
+      "QCalendarWidget QHeaderView { background-color: #FFFFFF; font-size: 11px; font-weight: bold; color: #475569; }"
+      "QCalendarWidget QAbstractItemView:enabled { font-size: 12px; color: #1E293B; background-color: #FFFFFF; selection-background-color: #2563EB; selection-color: #FFFFFF; }"
+      "QCalendarWidget QAbstractItemView:disabled { color: #CBD5E1; }");
+  m_apptDateFilter->setCalendarWidget(customApptCal);
+
   m_apptDateFilter->setStyleSheet(
       "QDateEdit { background-color: #FFFFFF; color: #1E293B; border: 1px "
       "solid #CBD5E1; "

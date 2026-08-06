@@ -176,6 +176,10 @@ void PatientWidget::loadPatientsData() {
         criteria.searchKey = m_searchBar->text().trimmed();
     }
 
+    if (m_doctorId > 0) {
+        criteria.doctorId = m_doctorId;
+    }
+
     criteria.page = m_currentPage;
     criteria.pageSize = 10;
 

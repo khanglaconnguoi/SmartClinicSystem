@@ -515,6 +515,12 @@ PatientRepository::buildSearchWhereClause(const PatientSearchCriteria &criteria,
     outParams << pattern << pattern << pattern << pattern;
   }
 
+  // doctorId: lọc bệnh nhân từng có lịch hẹn với bác sĩ chỉ định.
+  if (criteria.doctorId > 0) {
+    conditions << "p.patient_id IN (SELECT DISTINCT patient_id FROM appointments WHERE doctor_id = ?)";
+    outParams << criteria.doctorId;
+  }
+
 
   // roomId: chỉ áp dụng được với bảng có cột room_id (in_patients /
   // emergency_patients).
