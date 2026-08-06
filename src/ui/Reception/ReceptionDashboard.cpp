@@ -1137,6 +1137,7 @@ void ReceptionDashboardWidget::updateAppointmentsTable() {
 
         if (a.status == "SCHEDULED" && apptDate >= todayDate) {
             QWidget* widget = new QWidget();
+            widget->setStyleSheet("background-color: transparent;");
             QHBoxLayout* l = new QHBoxLayout(widget);
             l->setContentsMargins(4, 4, 4, 4);
             l->setSpacing(8);

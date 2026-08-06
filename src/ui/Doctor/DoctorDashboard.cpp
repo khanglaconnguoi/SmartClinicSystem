@@ -936,6 +936,7 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
 
       // Action Buttons Widget (Xem hồ sơ & Gọi Khám)
       QWidget *actWidget = new QWidget(m_appointmentsTable);
+      actWidget->setStyleSheet("background-color: transparent;");
       QHBoxLayout *actLayout = new QHBoxLayout(actWidget);
       actLayout->setContentsMargins(4, 3, 4, 3);
       actLayout->setSpacing(12);
@@ -1108,8 +1109,10 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
   layRegister->setContentsMargins(20, 20, 20, 20);
 
   QFrame *formFrame = makeCard(tabRegister);
-  formFrame->setStyleSheet(formFrame->styleSheet() +
-                           " QLabel { color: #111827; }");
+formFrame->setStyleSheet(
+    "QFrame#DashboardCard { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 14px; }"
+    "QLabel { color: #111827; background-color: transparent; }"
+);
   QFormLayout *formLayout = new QFormLayout(formFrame);
   formLayout->setContentsMargins(20, 20, 20, 20);
   formLayout->setSpacing(15);
@@ -1206,13 +1209,12 @@ void DoctorDashboardWidget::buildLeaveManagePage() {
   m_tableLeaveHistory->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_tableLeaveHistory->setFocusPolicy(Qt::NoFocus);
   m_tableLeaveHistory->setStyleSheet(
-      "QTableWidget { border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#202124; background-color: white; outline: none; }"
-      "QTableWidget::item { outline: none; border: none; }"
-      "QTableWidget::item:focus { outline: none; border: none; }"
-      "QHeaderView::section { background-color: #F1F3F4; color: #5F6368; "
-      "font-weight: bold; padding: 4px; border: 1px solid #DADCE0; }");
-
+    "QTableWidget { border: 1px solid #DADCE0; border-radius: 4px; color: "
+    "#202124; background-color: white; outline: none; }"
+    "QTableWidget::item { background-color: transparent; outline: none; border: none; color: #202124; }"
+    "QTableWidget::item:selected { background-color: #EFF6FF; color: #1A73E8; }"
+    "QHeaderView::section { background-color: #F1F3F4; color: #202124; "
+    "font-weight: bold; padding: 6px; border: none; border-bottom: 1px solid #DADCE0; }");
   layHistory->addWidget(m_tableLeaveHistory);
   m_leaveTabWidget->addTab(tabHistory, "Lịch sử nghỉ phép");
 
@@ -1241,10 +1243,10 @@ void DoctorDashboardWidget::onLeaveTabSelected() {
     if (balance.totalDays > 0) {
       int remaining = balance.totalDays - balance.usedDays;
       m_lblLeaveBalance->setText(QString("%1 ngày").arg(remaining));
-      m_lblLeaveBalance->setStyleSheet("color: #1A73E8; font-weight: bold;");
+      m_lblLeaveBalance->setStyleSheet("background-color: transparent; color: #1A73E8; font-weight: bold;");
     } else {
       m_lblLeaveBalance->setText("Không thể lấy dữ liệu quỹ phép.");
-      m_lblLeaveBalance->setStyleSheet("color: red;");
+      m_lblLeaveBalance->setStyleSheet("background-color: transparent; color: red;");
     }
   }
 }
