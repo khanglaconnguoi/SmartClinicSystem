@@ -15,7 +15,7 @@
 
 ManageReceptionWidget::ManageReceptionWidget(
     std::shared_ptr<StaffService> staffService, QWidget *parent)
-    : QWidget(parent), m_staffService(staffService), m_tblReception(nullptr) {
+    : QWidget(parent), m_staffService(staffService), m_tblReception(nullptr), m_btnResetFilters(nullptr) {
   buildUI();
 }
 
@@ -98,6 +98,13 @@ void ManageReceptionWidget::buildUI() {
   m_cbStatusFilter->addItem("Đang làm việc", true);
   m_cbStatusFilter->addItem("Tất cả trạng thái", false);
 
+  m_btnResetFilters = new QPushButton("Đặt lại", filterCard);
+  m_btnResetFilters->setCursor(Qt::PointingHandCursor);
+  m_btnResetFilters->setStyleSheet(
+      "QPushButton { background-color: #EF4444; color: white; border-radius: "
+      "6px; padding: 6px 15px; font-weight: bold; border: none; min-height: "
+      "32px; }"
+      "QPushButton:hover { background-color: #DC2626; }");
 
   filterLayout->addWidget(m_txtSearchKey);
   filterLayout->addWidget(m_cbDepartmentFilter);
