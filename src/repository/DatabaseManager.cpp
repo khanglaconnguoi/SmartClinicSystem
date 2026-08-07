@@ -633,7 +633,7 @@ bool DatabaseManager::createTables() {
           start_date TEXT    NOT NULL,
           end_date   TEXT    NOT NULL,
           reason     TEXT,
-          status     TEXT    NOT NULL DEFAULT 'APPROVED',
+          status     TEXT    NOT NULL DEFAULT 'PENDING',
           created_at TEXT    NOT NULL DEFAULT (datetime('now')),
           updated_at TEXT    NOT NULL DEFAULT (datetime('now')),
           FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
