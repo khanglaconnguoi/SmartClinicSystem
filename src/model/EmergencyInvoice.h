@@ -17,6 +17,12 @@ public:
     explicit EmergencyInvoice(int patientId, double consultationFee, double medicationFee, const QDate& issuedDate);
 
     /**
+     * @brief   Trả về loại hóa đơn ("EMERGENCY").
+     * @return  Chuỗi loại hóa đơn.
+     */
+    QString getInvoiceType() const override;
+
+    /**
      * @brief   Tính tổng tiền hóa đơn.
      * @return  Tổng số tiền (khám + thuốc). Mở rộng phụ phí nếu có.
      */

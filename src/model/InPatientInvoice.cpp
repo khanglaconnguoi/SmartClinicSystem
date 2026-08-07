@@ -5,6 +5,10 @@ InPatientInvoice::InPatientInvoice(int patientId, double consultationFee, double
 {
 }
 
+QString InPatientInvoice::getInvoiceType() const {
+    return "INPATIENT";
+}
+
 double InPatientInvoice::calculate() const {
     return m_consultationFee + m_medicationFee; // (chưa tính phụ phí giường bệnh theo ngày)
 }
