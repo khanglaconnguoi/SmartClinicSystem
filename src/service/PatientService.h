@@ -210,6 +210,8 @@ public:
   // bool checkDrugAllergyConflict(int patientId, const QString &drugName)
   // const;
 
+  QString updateBloodType(int patientId, const QString &bloodType);
+
   /**
    * @brief Thêm danh sách dị ứng cho bệnh nhân đã tồn tại.
    * @param patientId ID bệnh nhân.
@@ -217,6 +219,11 @@ public:
    * @return "" nếu thành công, hoặc chuỗi thông báo lỗi.
    */
   QString addAllergiesToPatient(int patientId, QList<AllergyInputDTO> allergies);
+
+  /**
+   * @brief Ghi đè/cập nhật toàn bộ danh sách dị ứng cho bệnh nhân.
+   */
+  QString updateAllergiesOfPatient(int patientId, QList<AllergyInputDTO> allergies);
 
   /**
    * @brief Lấy danh sách dị ứng đang active của bệnh nhân.

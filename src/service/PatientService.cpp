@@ -605,6 +605,20 @@ bool PatientService::restorePatient(int patientId) {
   return m_patientRepository->restorePatient(patientId);
 }
 
+QString PatientService::updateBloodType(int patientId, const QString &bloodType) {
+  QString err;
+  if (!(err = Validation::validateValidId(patientId, "ID bệnh nhân không hợp lệ.")).isEmpty())
+    return err;
+
+  if (!(err = validateBloodType(bloodType)).isEmpty())
+    return err;
+
+  if (!m_patientRepository->updateBloodType(patientId, bloodType))
+    return "Cập nhật nhóm máu thất bại.";
+
+  return "";
+}
+
 QString PatientService::addAllergiesToPatient(int patientId, QList<AllergyInputDTO> allergies) {
   QString err;
   if (!(err = Validation::validateValidId(patientId, "ID bệnh nhân không hợp lệ.")).isEmpty())
@@ -622,6 +636,27 @@ QString PatientService::addAllergiesToPatient(int patientId, QList<AllergyInputD
     return err;
 
   if (!m_patientRepository->insertAllergies(patientId, allergies))
+    return "Lỗi hệ thống khi lưu thông tin dị ứng. Vui lòng thử lại.";
+
+  return "";
+}
+
+QString PatientService::updateAllergiesOfPatient(int patientId, QList<AllergyInputDTO> allergies) {
+  QString err;
+  if (!(err = Validation::validateValidId(patientId, "ID bệnh nhân không hợp lệ.")).isEmpty())
+    return err;
+
+  if (!m_patientRepository->getPatientById(patientId).has_value())
+    return "Không tìm thấy bệnh nhân trong hệ thống.";
+
+  normalizeAllergyInputList(allergies);
+
+  if (!allergies.isEmpty()) {
+    if (!(err = validateAllergyInputList(allergies)).isEmpty())
+      return err;
+  }
+
+  if (!m_patientRepository->saveAllergies(patientId, allergies))
     return "Lỗi hệ thống khi lưu thông tin dị ứng. Vui lòng thử lại.";
 
   return "";

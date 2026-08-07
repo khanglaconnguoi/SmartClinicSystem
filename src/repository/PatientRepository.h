@@ -140,6 +140,8 @@ public:
    */
   bool isPatientSoftDeleted(int patientId);
 
+  bool updateBloodType(int patientId, const QString &bloodType);
+
   // ─── Allergies ────────────────────────────────────────────────────────────
 
   /**
@@ -154,6 +156,11 @@ public:
    *        Dùng trước khi re-insert khi update.
    */
   bool deactivateAllergies(int patientId);
+
+  /**
+   * @brief Thay thế/lưu toàn bộ danh sách dị ứng cho bệnh nhân.
+   */
+  bool saveAllergies(int patientId, const QList<AllergyInputDTO> &items);
 
   /**
    * @brief Lấy danh sách dị ứng đang active của bệnh nhân.

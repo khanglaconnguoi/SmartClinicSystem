@@ -360,11 +360,19 @@ namespace ShiftText {
 
 namespace BloodTypeText {
     inline const QList<QPair<QString, QString>> bloodTypes = {
-        {"A+", "A+"}, {"A-", "A-"}, {"B+", "B+"}, {"B-", "B-"},
+        {"UNKNOWN", "Chưa biết"}, {"A+", "A+"}, {"A-", "A-"}, {"B+", "B+"}, {"B-", "B-"},
         {"AB+", "AB+"}, {"AB-", "AB-"}, {"O+", "O+"}, {"O-", "O-"}};
     inline const QList<QPair<QString, QString>> &getList() { return bloodTypes; }
-    inline QString toVi(const QString &en) { return en.toUpper().trimmed(); }
-    inline QString toEn(const QString &vi) { return vi.toUpper().trimmed(); }
+    inline QString toVi(const QString &en) {
+        QString clean = en.toUpper().trimmed();
+        if (clean.isEmpty() || clean == "UNKNOWN") return "Chưa biết";
+        return clean;
+    }
+    inline QString toEn(const QString &vi) {
+        QString clean = vi.trimmed();
+        if (clean.isEmpty() || clean.compare("Chưa biết", Qt::CaseInsensitive) == 0 || clean.compare("UNKNOWN", Qt::CaseInsensitive) == 0) return "UNKNOWN";
+        return clean.toUpper();
+    }
 } // namespace BloodTypeText
 
 namespace DepartmentText {

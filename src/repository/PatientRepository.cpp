@@ -871,6 +871,15 @@ bool PatientRepository::isPatientSoftDeleted(int patientId) {
   return query.value(0).toInt() == 1;
 }
 
+bool PatientRepository::updateBloodType(int patientId, const QString &bloodType) {
+  const QString sql = R"(
+    UPDATE patients SET blood_type = ? WHERE patient_id = ?
+  )";
+  return DatabaseManager::getInstance()
+      .executeQuery(sql, {bloodType.trimmed().toUpper(), patientId})
+      .isActive();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Allergies
 // ─────────────────────────────────────────────────────────────────────────────
@@ -912,6 +921,13 @@ bool PatientRepository::deactivateAllergies(int patientId) {
   return DatabaseManager::getInstance()
       .executeQuery(sql, {patientId})
       .isActive();
+}
+
+bool PatientRepository::saveAllergies(int patientId,
+                                      const QList<AllergyInputDTO> &items) {
+  deactivateAllergies(patientId);
+  if (items.isEmpty()) return true;
+  return insertAllergies(patientId, items);
 }
 
 QList<AllergyResultDTO>

@@ -9,6 +9,8 @@
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QFrame>
+#include <QTableWidget>
+#include <QScrollArea>
 
 #include <memory>
 #include "dto/PatientDTOs.h"
@@ -76,6 +78,13 @@ private:
     QLabel* m_lblPatientDobVal;
     QLabel* m_lblPatientGenderVal;
     QLabel* m_lblPatientAgeVal;
+    QComboBox* m_cbBloodType;
+
+    // --- ALLERGIES MANAGEMENT ---
+    QTableWidget* m_tblAllergies;
+    QPushButton* m_btnAddActiveAllergy;
+    QPushButton* m_btnAddOtherAllergy;
+    QList<AllergyInputDTO> m_currentAllergies;
 
     // --- QUICK ACTION BUTTONS ---
     QPushButton* m_btnSave;            // Viết Hồ Sơ Bệnh Án
@@ -126,4 +135,7 @@ private:
     QFrame* setupMedicalHistoryPanel();
     QFrame* createSeparator();
     void updateBmi();
+    void refreshAllergyTable();
+    void openAddActiveIngredientAllergyDialog();
+    void openAddOtherAllergyDialog();
 };

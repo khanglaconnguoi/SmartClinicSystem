@@ -121,12 +121,22 @@ void PatientInfoWidget::loadPatientData(const PatientDetailDTO& detail) {
     }
     
     if (cbGender) cbGender->setCurrentText(GenderText::toVi(detail.gender));
-    if (cbBloodType) cbBloodType->setCurrentText(BloodTypeText::toVi(detail.bloodType));
+    if (cbBloodType) {
+        QString bt = detail.bloodType.trimmed().toUpper();
+        if (bt.isEmpty() || bt == "UNKNOWN") {
+            cbBloodType->setCurrentText(BloodTypeText::toVi("UNKNOWN"));
+            cbBloodType->setEnabled(true);
+        } else {
+            cbBloodType->setCurrentText(BloodTypeText::toVi(bt));
+            cbBloodType->setEnabled(false);
+        }
+    }
     
     if (txtAllergies) {
         QStringList allergyList;
         for (const auto& a : detail.allergies) {
-            allergyList.append(a.allergenName);
+            QString typeLabel = a.ingredientId.has_value() ? "[Hoạt chất]" : "[Khác]";
+            allergyList.append(QString("%1 %2").arg(typeLabel, a.allergenName));
         }
         txtAllergies->setText(allergyList.join(", "));
     }
