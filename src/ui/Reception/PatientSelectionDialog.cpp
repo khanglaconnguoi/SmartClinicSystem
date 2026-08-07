@@ -30,11 +30,11 @@ void PatientSelectionDialog::setupUi() {
   m_tablePatients->setSelectionMode(QAbstractItemView::SingleSelection);
   m_tablePatients->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_tablePatients->setFocusPolicy(Qt::NoFocus);
-  m_tablePatients->setAlternatingRowColors(true);
+  m_tablePatients->verticalHeader()->setVisible(false);
   m_tablePatients->setStyleSheet(
-      "QTableWidget { background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 6px; gridline-color: #F1F5F9; outline: none; }"
-      "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; padding: 8px; border: none; border-bottom: 1px solid #CBD5E1; outline: none; }"
-      "QTableWidget::item { padding: 8px; font-size: 13px; color: #0F172A; outline: none; border: none; }"
+      "QTableWidget { background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 6px; gridline-color: #E2E8F0; outline: none; font-size: 13px; color: #0F172A; }"
+      "QHeaderView::section { background-color: #EFF6FF; color: #1E40AF; font-weight: bold; padding: 10px; border: none; border-bottom: 2px solid #BFDBFE; outline: none; }"
+      "QTableWidget::item { padding: 8px; outline: none; border: none; }"
       "QTableWidget::item:focus { outline: none; border: none; }"
       "QTableWidget::item:selected { background-color: #E0F2FE; color: #0369A1; outline: none; border: none; }");
 

@@ -940,8 +940,8 @@ void ReceptionDashboardWidget::updateDoctorList() {
         "font-size: 16px; font-weight: bold; color: #1976D2; border: none;");
 
     auto profile = m_staffService->getOwnProfile(doctorId);
-    QString shiftInfo = profile ? profile->shift : "Cả ngày";
-    QString shiftDisplay = shiftInfo.isEmpty() ? "Không có" : shiftInfo;
+    QString shiftInfo = profile ? profile->shift : "FULL_DAY";
+    QString shiftDisplay = shiftInfo.isEmpty() ? "Không có" : ShiftText::toVi(shiftInfo);
     QLabel *lblDesc = new QLabel("Phòng Khám - Ca: " + shiftDisplay, docCard);
     lblDesc->setStyleSheet("color: #555; font-size: 13px; border: none;");
 
