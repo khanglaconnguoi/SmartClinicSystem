@@ -65,8 +65,17 @@ public:
 
   /**
    * @brief   Thêm một chẩn đoán vào hồ sơ bệnh án.
-   * @param   d  Chẩn đoán cần thêm.
+   * @param     Chẩn đoán cần thêm.
    */
+  void setVitals(const VitalSigns &vitals) { m_vitals = vitals; }
+  void setChiefComplaint(const QString &chiefComplaint) {
+    m_chiefComplaint = chiefComplaint;
+  }
+  void setClinicalNotes(const QString &notes) { m_clinicalNotes = notes; }
+  void setTreatment(const QString &treatment) { m_treatment = treatment; }
+  void setDiagnoses(const QList<Diagnosis> &diagnoses) {
+    m_diagnoses = diagnoses;
+  }
   void addDiagnosis(const Diagnosis &d) { m_diagnoses.append(d); }
 
   /**

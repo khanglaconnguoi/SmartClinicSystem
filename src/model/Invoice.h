@@ -42,6 +42,12 @@ public:
     QString getStatus() const { return m_status; }
 
     /**
+     * @brief   Trả về loại hóa đơn (OUTPATIENT, INPATIENT, EMERGENCY).
+     * @return  Chuỗi loại hóa đơn.
+     */
+    virtual QString getInvoiceType() const = 0;
+
+    /**
      * @brief   Tính tổng tiền hóa đơn (khám + thuốc + phụ phí nếu có).
      * @return  Tổng số tiền.
      */

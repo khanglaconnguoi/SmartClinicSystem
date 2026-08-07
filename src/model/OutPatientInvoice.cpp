@@ -5,6 +5,10 @@ OutPatientInvoice::OutPatientInvoice(int patientId, double consultationFee, doub
 {
 }
 
+QString OutPatientInvoice::getInvoiceType() const {
+    return "OUTPATIENT";
+}
+
 double OutPatientInvoice::calculate() const {
     return m_consultationFee + m_medicationFee; // không phụ phí
 }

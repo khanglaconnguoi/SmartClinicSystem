@@ -5,6 +5,10 @@ EmergencyInvoice::EmergencyInvoice(int patientId, double consultationFee, double
 {
 }
 
+QString EmergencyInvoice::getInvoiceType() const {
+    return "EMERGENCY";
+}
+
 double EmergencyInvoice::calculate() const {
     return m_consultationFee + m_medicationFee; // Tính cơ bản, có thể thêm m_emergencySurcharge nếu cần
 }

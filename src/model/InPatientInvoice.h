@@ -17,6 +17,12 @@ public:
     explicit InPatientInvoice(int patientId, double consultationFee, double medicationFee, const QDate& issuedDate);
 
     /**
+     * @brief   Trả về loại hóa đơn ("INPATIENT").
+     * @return  Chuỗi loại hóa đơn.
+     */
+    QString getInvoiceType() const override;
+
+    /**
      * @brief   Tính tổng tiền hóa đơn.
      * @return  Tổng số tiền (khám + thuốc). Chưa tính phụ phí giường bệnh.
      */
