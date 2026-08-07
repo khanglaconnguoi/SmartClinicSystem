@@ -19,7 +19,7 @@ ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> med
     setupUi();
 
     // Kết nối các tín hiệu chuyển hướng về Dashboard
-    connect(m_btnCancel, &QPushButton::clicked, this, &ClinicalExamWidget::backToDashboardRequested);
+    connect(m_btnCancel, &QPushButton::clicked, this, &ClinicalExamWidget::onCancelExamClicked);
     connect(m_btnFinish, &QPushButton::clicked, this, &ClinicalExamWidget::onFinishExamClicked);
     if (m_btnCallPatient) {
         connect(m_btnCallPatient, &QPushButton::clicked, this, [this]() {
@@ -852,4 +852,26 @@ void ClinicalExamWidget::onFinishExamClicked() {
         return;
     }
     emit finishExamRequested();
+}
+
+void ClinicalExamWidget::onCancelExamClicked() {
+    if (m_currentAppointmentId <= 0) {
+        emit backToDashboardRequested();
+        return;
+    }
+
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Xác nhận hủy",
+                                  "Bạn có chắc chắn muốn hủy cuộc hẹn này không?\n\nTrạng thái cuộc hẹn sẽ được cập nhật thành 'Đã hủy' (CANCELLED).",
+                                  QMessageBox::Yes | QMessageBox::No);
+    
+    if (reply == QMessageBox::Yes) {
+        if (m_appointmentService) {
+            m_appointmentService->updateAppointmentStatus(m_currentAppointmentId, AppointmentStatusText::CANCELLED);
+            QMessageBox::information(this, "Thành công", "Đã hủy cuộc hẹn thành công.");
+        } else {
+            QMessageBox::warning(this, "Lỗi", "Không thể kết nối với dịch vụ cuộc hẹn.");
+        }
+        emit backToDashboardRequested();
+    }
 }

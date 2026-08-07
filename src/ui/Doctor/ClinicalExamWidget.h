@@ -49,6 +49,7 @@ signals:
 private slots:
     void onSaveClicked();
     void onFinishExamClicked();
+    void onCancelExamClicked();
     void openLabRequestDialog();
     void validateTemperatureInput();
     void validateHeartRateInput();
