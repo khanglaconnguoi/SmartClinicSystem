@@ -315,9 +315,6 @@ void NurseDashboardWidget::buildAppointmentsPage() {
       "font-size: 16px; font-weight: bold; color: #000000; border: none;");
   topLayout->addWidget(m_lblApptTitle);
 
-  QLabel *lblFilter = new QLabel("Ngày:", tblCard);
-  lblFilter->setStyleSheet("font-weight: bold; color: #475569;");
-
   m_apptDateEdit = new QDateEdit(QDate::currentDate(), tblCard);
   m_apptDateEdit->setCalendarPopup(true);
   m_apptDateEdit->setDisplayFormat("dd/MM/yyyy");
@@ -336,7 +333,6 @@ void NurseDashboardWidget::buildAppointmentsPage() {
       "QPushButton:hover { background-color: #1D4ED8; }");
 
   topLayout->addStretch();
-  topLayout->addWidget(lblFilter);
   topLayout->addWidget(m_apptDateEdit);
   topLayout->addSpacing(10);
   topLayout->addWidget(btnRefresh);

@@ -6,11 +6,10 @@ PatientEditDialog::PatientEditDialog(int patientId, std::shared_ptr<PatientServi
     setWindowTitle("Thông tin liên lạc bệnh nhân");
     setFixedSize(500, 480);
     setStyleSheet("QDialog { background-color: #FFFFFF; font-family: 'Segoe UI', Arial, sans-serif; }"
-                  "QLabel { font-size: 13px; color: #374151; font-weight: 500; }"
-                  "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 8px 12px; font-size: 13px; background-color: #F9FAFB; color: #111827; }"
-                  "QLineEdit:focus { border: 1px solid #2563EB; background-color: #FFFFFF; }"
-                  "QPushButton { font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 6px; }");
-
+              "QLabel { font-size: 13px; color: #374151; font-weight: 500; background-color: transparent; border: none; }"
+              "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 8px 12px; font-size: 13px; background-color: #F9FAFB; color: #111827; }"
+              "QLineEdit:focus { border: 1px solid #2563EB; background-color: #FFFFFF; }"
+              "QPushButton { font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 6px; }");
     setupUi();
     loadPatientData();
     setEditMode(false);
@@ -22,7 +21,7 @@ void PatientEditDialog::setupUi() {
     mainLayout->setSpacing(16);
 
     QLabel *lblTitle = new QLabel("Thông tin liên lạc của bệnh nhân", this);
-    lblTitle->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827; margin-bottom: 8px;");
+    lblTitle->setStyleSheet("font-size: 18px; font-weight: bold; color: #111827; margin-bottom: 8px; background-color: transparent; border: none;");
     mainLayout->addWidget(lblTitle);
 
     QFormLayout *formLayout = new QFormLayout();

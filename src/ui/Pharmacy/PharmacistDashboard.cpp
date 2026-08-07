@@ -728,13 +728,6 @@ void PharmacistDashboardWidget::buildInventoryPage() {
       "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; "
       "}");
 
-  m_cbInvCategory = new QComboBox(tabInventory);
-  // m_txtInvKeyword->setStyleSheet(
-  //     "QLineEdit { padding: 6px 12px; border: 1px solid #D1D5DB; "
-  //     "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
-  //     "white; }"
-  //     "QLineEdit:focus { border: 1px solid #2563EB; }");
-
   m_cbInvCategory = new QComboBox(m_inventoryPage);
   m_cbInvCategory->setStyleSheet(
       "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; "
@@ -777,14 +770,6 @@ void PharmacistDashboardWidget::buildInventoryPage() {
   // white; padding: 0 16px; border-radius: 6px; border: none; font-weight:
   // bold; } QPushButton:hover { background-color: #059669; }");
 
-  QPushButton *btnSearch = new QPushButton("Tìm kiếm", m_inventoryPage);
-  btnSearch->setCursor(Qt::PointingHandCursor);
-  btnSearch->setStyleSheet(
-      "QPushButton { background-color: #2563EB; color: white; padding: 6px "
-      "16px; border-radius: 6px; border: none; font-weight: bold; min-height: "
-      "32px; font-size: 13px; } QPushButton:hover { background-color: #1D4ED8; "
-      "}");
-
   QPushButton *btnReset = new QPushButton("Đặt lại", m_inventoryPage);
   btnReset->setCursor(Qt::PointingHandCursor);
   btnReset->setStyleSheet(
@@ -804,7 +789,6 @@ void PharmacistDashboardWidget::buildInventoryPage() {
   filterLayout->addWidget(m_txtInvKeyword);
   filterLayout->addWidget(m_cbInvCategory);
   filterLayout->addWidget(m_cbInvStatus);
-  filterLayout->addWidget(btnSearch);
   filterLayout->addWidget(btnReset);
   filterLayout->addStretch();
   filterLayout->addWidget(btnAddMed);
@@ -927,10 +911,6 @@ void PharmacistDashboardWidget::buildInventoryPage() {
   mainLayout->addWidget(tabContainer, 1);
   m_stackedWidget->addWidget(m_inventoryPage);
 
-  connect(btnSearch, &QPushButton::clicked, this, [this]() {
-    m_invCurrentPage = 1;
-    performInventorySearch();
-  });
   connect(btnReset, &QPushButton::clicked, this, [this]() {
     m_txtInvKeyword->clear();
     m_cbInvCategory->setCurrentIndex(0);
@@ -1043,9 +1023,11 @@ void PharmacistDashboardWidget::performInventorySearch() {
     m_tblInventory->setItem(row, 6, statusItem);
 
     QPushButton *btnEdit = new QPushButton("Chỉnh sửa", m_tblInventory);
+    btnEdit->setCursor(Qt::PointingHandCursor);
     btnEdit->setStyleSheet(
-        "background-color: #E8F0FE; color: #4B94F2; border: 1px solid #4B94F2; "
-        "border-radius: 4px; padding: 2px 8px;");
+        "QPushButton { background-color: #2563EB; color: white; border: none; "
+        "border-radius: 4px; padding: 4px 8px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #1D4ED8; }");
     connect(btnEdit, &QPushButton::clicked, this,
             [this, medId = med.medicationId]() {
               AddMedicationDialog dlg(m_pharmacyService, medId, this);
