@@ -21,7 +21,7 @@ public:
   /**
    * @brief Chuẩn hóa dữ liệu hồ sơ khám trước khi UPDATE.
    */
-//   static void normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto);
+  static void normalizeMedicalRecordUpdate(MedicalRecordUpdateDTO &dto);
 
   /**
    * @brief Chuẩn hóa tiêu chí tìm kiếm.
@@ -49,10 +49,11 @@ public:
       std::shared_ptr<PatientService> patientService);
 
   QString createMedicalRecord(MedicalRecordInsertDTO &dto, int *outRecordId = nullptr);
-//   bool updateMedicalRecord(MedicalRecordUpdateDTO &dto);
+  QString updateMedicalRecord(MedicalRecordUpdateDTO &dto);
   bool softDeleteMedicalRecord(int recordId);
   QList<MedicalRecordResultDTO> getMedicalHistory(int patientId);
   std::optional<MedicalRecordResultDTO> getMedicalRecordById(int recordId) const;
+  std::optional<MedicalRecordResultDTO> getLatestRecordByAppointmentId(int appointmentId) const;
 
   /**
    * @brief Tìm kiếm hồ sơ khám theo tiêu chí linh hoạt.

@@ -120,18 +120,18 @@ void MedicalRecordService::normalizeMedicalRecordInput(
   }
 }
 
-// void MedicalRecordService::normalizeMedicalRecordUpdate(
-//     MedicalRecordUpdateDTO &dto) {
-//   dto.chiefComplaint = dto.chiefComplaint.trimmed();
-//   dto.clinicalNotes = dto.clinicalNotes.trimmed();
-//   dto.treatment = dto.treatment.trimmed();
+void MedicalRecordService::normalizeMedicalRecordUpdate(
+    MedicalRecordUpdateDTO &dto) {
+  dto.chiefComplaint = dto.chiefComplaint.trimmed();
+  dto.clinicalNotes = dto.clinicalNotes.trimmed();
+  dto.treatment = dto.treatment.trimmed();
 
-//   for (Diagnosis &d : dto.diagnoses) {
-//     d.description = d.description.simplified();
-//     d.severity = d.severity.trimmed().toUpper();
-//     d.icdCode = d.icdCode.trimmed().toUpper();
-//   }
-// }
+  for (Diagnosis &d : dto.diagnoses) {
+    d.description = d.description.simplified();
+    d.severity = d.severity.trimmed().toUpper();
+    d.icdCode = d.icdCode.trimmed().toUpper();
+  }
+}
 
 void MedicalRecordService::normalizeSearchCriteria(
     MedicalRecordSearchCriteria &criteria) {
@@ -182,29 +182,31 @@ QString MedicalRecordService::createMedicalRecord(MedicalRecordInsertDTO &dto, i
   return "";
 }
 
-// bool MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
-//   normalizeMedicalRecordUpdate(dto);
+QString MedicalRecordService::updateMedicalRecord(MedicalRecordUpdateDTO &dto) {
+  normalizeMedicalRecordUpdate(dto);
 
-//   QString errVitals = validateVitalSigns(dto.vitals);
-//   if (!errVitals.isEmpty()) {
-//     qDebug() << "Validation failed (vitals):" << errVitals;
-//     return false;
-//   }
+  QString err;
 
-//   QString errChief = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.");
-//   if (!errChief.isEmpty()) {
-//     qDebug() << "Validation failed (chief complaint):" << errChief;
-//     return false;
-//   }
+  if (!(err = validateVitalSigns(dto.vitals)).isEmpty()) {
+    qDebug() << "Validation failed (vitals):" << err;
+    return err;
+  }
 
-//   QString errDiag = validateDiagnosisList(dto.diagnoses);
-//   if (!errDiag.isEmpty()) {
-//     qDebug() << "Validation failed (diagnoses):" << errDiag;
-//     return false;
-//   }
+  if (!(err = Validation::validateTrimmedNotEmpty(dto.chiefComplaint, "Lý do khám không được để trống.")).isEmpty()) {
+    qDebug() << "Validation failed (chief complaint):" << err;
+    return err;
+  }
 
-//   return m_recordRepository->updateMedicalRecord(dto);
-// }
+  if (!(err = validateDiagnosisList(dto.diagnoses)).isEmpty()) {
+    qDebug() << "Validation failed (diagnoses):" << err;
+    return err;
+  }
+
+  if (!m_recordRepository->updateMedicalRecord(dto)) {
+    return "Lỗi CSDL khi cập nhật hồ sơ bệnh án.";
+  }
+  return "";
+}
 
 bool MedicalRecordService::softDeleteMedicalRecord(int recordId) {
   return m_recordRepository->softDeleteMedicalRecord(recordId);
@@ -218,6 +220,11 @@ MedicalRecordService::getMedicalHistory(int patientId) {
 std::optional<MedicalRecordResultDTO>
 MedicalRecordService::getMedicalRecordById(int recordId) const {
   return m_recordRepository->findById(recordId);
+}
+
+std::optional<MedicalRecordResultDTO>
+MedicalRecordService::getLatestRecordByAppointmentId(int appointmentId) const {
+  return m_recordRepository->findLatestByAppointmentId(appointmentId);
 }
 
 PagedResult<MedicalRecordSummaryDTO>

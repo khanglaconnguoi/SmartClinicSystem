@@ -10,6 +10,7 @@
 #include <QDoubleValidator>
 #include <QDebug>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include "../../model/CommonEnums.h"
 
 ClinicalExamWidget::ClinicalExamWidget(std::shared_ptr<MedicalRecordService> medicalRecordService, QWidget* parent)
@@ -266,7 +267,7 @@ QFrame* ClinicalExamWidget::setupPatientInfoCard() {
     QHBoxLayout* actionButtonsLayout = new QHBoxLayout();
     actionButtonsLayout->setSpacing(6);
 
-    m_btnSave = new QPushButton("Viết Hồ Sơ Bệnh Án", infoCard);
+    m_btnSave = new QPushButton("Lưu Hồ Sơ Bệnh Án", infoCard);
     m_btnPrescription = new QPushButton("Kê Đơn Thuốc", infoCard);
     m_btnServiceOrder = new QPushButton("Yêu Cầu Xét Nghiệm", infoCard);
     m_btnFinish = new QPushButton("Hoàn Tất Khám", infoCard);
@@ -529,6 +530,46 @@ void ClinicalExamWidget::loadPatientInfo(int patientId, int appointmentId, const
         }
     }
     
+    if (m_medicalRecordService && appointmentId > 0) {
+        auto recordOpt = m_medicalRecordService->getLatestRecordByAppointmentId(appointmentId);
+        if (recordOpt.has_value()) {
+            const auto& rec = recordOpt.value();
+            m_currentMedicalRecordId = rec.recordId;
+            
+            if (m_txtTemp) m_txtTemp->setText(QString::number(rec.vitals.temperature));
+            if (m_txtBp) m_txtBp->setText(rec.vitals.bloodPressure);
+            if (m_txtPulse) m_txtPulse->setText(QString::number(rec.vitals.heartRate));
+            if (m_txtWeight) m_txtWeight->setText(QString::number(rec.vitals.weight));
+            if (m_txtHeight) m_txtHeight->setText(QString::number(rec.vitals.height));
+            
+            if (m_txtReason) m_txtReason->setText(rec.chiefComplaint);
+            
+            QRegularExpression rxNotes("Bệnh sử: (.*?)\\nTiền sử: (.*?)\\nKhám lâm sàng chung: (.*?)\\nCận lâm sàng tóm tắt: (.*)", QRegularExpression::DotMatchesEverythingOption);
+            QRegularExpressionMatch matchNotes = rxNotes.match(rec.clinicalNotes);
+            if (matchNotes.hasMatch()) {
+                if (m_txtHistoryIllness) m_txtHistoryIllness->setText(matchNotes.captured(1).trimmed());
+                if (m_txtHistoryPersonal) m_txtHistoryPersonal->setText(matchNotes.captured(2).trimmed());
+                if (m_txtExamGeneral) m_txtExamGeneral->setText(matchNotes.captured(3).trimmed());
+                if (m_txtClsSummary) m_txtClsSummary->setText(matchNotes.captured(4).trimmed());
+            }
+
+            QRegularExpression rxTreatment("Hướng xử lý: (.*?)\\. Xử trí: (.*?)\\. Lời dặn: (.*)", QRegularExpression::DotMatchesEverythingOption);
+            QRegularExpressionMatch matchTreatment = rxTreatment.match(rec.treatment);
+            if (matchTreatment.hasMatch()) {
+                if (m_cbDirection) m_cbDirection->setCurrentText(matchTreatment.captured(1).trimmed());
+                if (m_cbAction) m_cbAction->setCurrentText(matchTreatment.captured(2).trimmed());
+                if (m_txtAdvice) m_txtAdvice->setText(matchTreatment.captured(3).trimmed());
+            }
+
+            if (!rec.diagnoses.isEmpty()) {
+                const auto& d = rec.diagnoses.first();
+                if (m_txtMainDisease) m_txtMainDisease->setText(d.icdCode);
+                if (m_cbDiagnosis) m_cbDiagnosis->setCurrentText(d.description);
+                if (m_cbSeverity) m_cbSeverity->setCurrentText(DiagnosisSeverityText::toVi(d.severity));
+            }
+        }
+    }
+    
     qDebug() << "Loaded patient info to clinical workspace:" << name << id << time << specialty << "patientId:" << patientId << "appointmentId:" << appointmentId;
 }
 
@@ -759,7 +800,24 @@ void ClinicalExamWidget::onSaveClicked() {
     dto.nextVisitDate = std::nullopt;
     dto.diagnoses = getDiagnosesFromUi();
 
-    QString err = m_medicalRecordService->createMedicalRecord(dto, &m_currentMedicalRecordId);
+    QString err;
+    if (m_currentMedicalRecordId > 0) {
+        MedicalRecordUpdateDTO updateDto;
+        updateDto.recordId = m_currentMedicalRecordId;
+        updateDto.doctorId = dto.doctorId;
+        updateDto.appointmentId = dto.appointmentId;
+        updateDto.visitDateTime = dto.visitDateTime;
+        updateDto.vitals = dto.vitals;
+        updateDto.chiefComplaint = dto.chiefComplaint;
+        updateDto.clinicalNotes = dto.clinicalNotes;
+        updateDto.treatment = dto.treatment;
+        updateDto.nextVisitDate = dto.nextVisitDate;
+        updateDto.diagnoses = dto.diagnoses;
+        
+        err = m_medicalRecordService->updateMedicalRecord(updateDto);
+    } else {
+        err = m_medicalRecordService->createMedicalRecord(dto, &m_currentMedicalRecordId);
+    }
     if (!err.isEmpty()) {
         QMessageBox::warning(this, "Lỗi kiểm tra dữ liệu", err);
         
