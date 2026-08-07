@@ -36,16 +36,13 @@ private:
     std::shared_ptr<StaffService> m_staffService;
 
     // UI members
-    QLabel      *lblLeftLogo;
-    QLabel      *lblSlogan;
-    QLineEdit   *txtAccount;
-    QLineEdit   *txtPassword;
-    QPushButton *btnLogin;
-    QPushButton *btnForgot;
-    QWidget     *rightContainer;
-    QLabel      *lblHello;
-    QLabel      *lblSubDetails;
-    QLabel      *lblDoctor;
+    QLabel      *lblLeftLogo = nullptr;
+    QLabel      *lblSlogan = nullptr;
+    QLineEdit   *txtAccount = nullptr;
+    QLineEdit   *txtPassword = nullptr;
+    QPushButton *btnLogin = nullptr;
+    QWidget     *rightContainer = nullptr;
+    QLabel      *lblDoctor = nullptr;
 };
 
 #endif // LOGINDIALOG_H

@@ -4,7 +4,7 @@
 PatientEditDialog::PatientEditDialog(int patientId, std::shared_ptr<PatientService> patientService, QWidget *parent)
     : QDialog(parent), m_patientId(patientId), m_patientService(patientService) {
     setWindowTitle("Thông tin liên lạc bệnh nhân");
-    setFixedSize(500, 430);
+    setFixedSize(500, 480);
     setStyleSheet("QDialog { background-color: #FFFFFF; font-family: 'Segoe UI', Arial, sans-serif; }"
                   "QLabel { font-size: 13px; color: #374151; font-weight: 500; }"
                   "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 8px 12px; font-size: 13px; background-color: #F9FAFB; color: #111827; }"
@@ -29,14 +29,25 @@ void PatientEditDialog::setupUi() {
     formLayout->setSpacing(12);
     formLayout->setLabelAlignment(Qt::AlignLeft);
 
+    QString permanentReadOnlyStyle = 
+        "QLineEdit { border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 12px; font-size: 13px; background-color: #F1F5F9; color: #334155; font-weight: bold; }";
+
+    m_txtPatientCode = new QLineEdit(this);
+    m_txtPatientCode->setReadOnly(true);
+    m_txtPatientCode->setStyleSheet(permanentReadOnlyStyle);
+
     m_txtFullName = new QLineEdit(this);
+    m_txtFullName->setReadOnly(true);
+    m_txtFullName->setStyleSheet(permanentReadOnlyStyle);
+
     m_txtPhone = new QLineEdit(this);
     m_txtEmail = new QLineEdit(this);
     m_txtAddress = new QLineEdit(this);
     m_txtEmergencyName = new QLineEdit(this);
     m_txtEmergencyPhone = new QLineEdit(this);
 
-    formLayout->addRow("Họ và tên *:", m_txtFullName);
+    formLayout->addRow("Mã bệnh nhân:", m_txtPatientCode);
+    formLayout->addRow("Họ và tên:", m_txtFullName);
     formLayout->addRow("Số điện thoại *:", m_txtPhone);
     formLayout->addRow("Email:", m_txtEmail);
     formLayout->addRow("Địa chỉ *:", m_txtAddress);
@@ -66,7 +77,7 @@ void PatientEditDialog::setupUi() {
 void PatientEditDialog::setEditMode(bool editable) {
     m_isEditMode = editable;
 
-    m_txtFullName->setReadOnly(!editable);
+    // Contact fields toggle editability
     m_txtPhone->setReadOnly(!editable);
     m_txtEmail->setReadOnly(!editable);
     m_txtAddress->setReadOnly(!editable);
@@ -80,7 +91,6 @@ void PatientEditDialog::setEditMode(bool editable) {
         "QLineEdit:focus { border: 1px solid #2563EB; background-color: #EFF6FF; }";
 
     QString currentStyle = editable ? editStyle : readOnlyStyle;
-    m_txtFullName->setStyleSheet(currentStyle);
     m_txtPhone->setStyleSheet(currentStyle);
     m_txtEmail->setStyleSheet(currentStyle);
     m_txtAddress->setStyleSheet(currentStyle);
@@ -139,6 +149,7 @@ void PatientEditDialog::loadPatientData() {
     }
 
     const auto &p = m_patientDetail.value();
+    m_txtPatientCode->setText(p.patientCode);
     m_txtFullName->setText(p.fullName);
     m_txtPhone->setText(p.phone);
     m_txtEmail->setText(p.email);
@@ -152,10 +163,6 @@ void PatientEditDialog::handleSave() {
 
     const auto &detail = m_patientDetail.value();
 
-    if (m_txtFullName->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "Lỗi nhập liệu", "Họ và tên không được để trống.");
-        return;
-    }
     if (m_txtPhone->text().trimmed().isEmpty()) {
         QMessageBox::warning(this, "Lỗi nhập liệu", "Số điện thoại không được để trống.");
         return;

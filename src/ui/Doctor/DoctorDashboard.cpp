@@ -86,7 +86,7 @@ void DoctorDashboardWidget::fillDashboardData() {
   buildSidebar();
 
   if (m_currentUser && m_nameLabel) {
-    m_nameLabel->setText(m_currentUser->getFullName());
+    m_nameLabel->setText(m_currentUser->getFullName().toUpper());
   }
 
   if (m_avatarBtn && m_currentUser) {
@@ -134,7 +134,7 @@ void DoctorDashboardWidget::fillDashboardData() {
       dialog.loadProfile(m_currentUser->getAccountId());
       dialog.exec();
       if (m_nameLabel) {
-        m_nameLabel->setText(m_currentUser->getFullName());
+        m_nameLabel->setText(m_currentUser->getFullName().toUpper());
       }
       if (m_avatarBtn && m_currentUser) {
         QPixmap raw = m_currentUser->getAvatar();
@@ -181,10 +181,10 @@ void DoctorDashboardWidget::buildSidebar() {
   QLabel *roleBadge = new QLabel("BÁC SĨ", m_sidebarFrame);
   roleBadge->setAlignment(Qt::AlignCenter);
   roleBadge->setStyleSheet(
-      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
-      "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
-      "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
-      "margin-top: 4px; margin-bottom: 12px; }");
+      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 14px; "
+      "font-weight: 900; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+      "padding: 10px 14px; border-radius: 10px; border: none; "
+      "margin-top: 4px; margin-bottom: 14px; }");
   m_sidebarLayout->addWidget(roleBadge);
 
   m_btnDash = new QPushButton("Tổng Quan", m_sidebarFrame);
@@ -341,9 +341,9 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
   QPushButton *btnRefresh = new QPushButton("Tải lại", container);
   btnRefresh->setCursor(Qt::PointingHandCursor);
   btnRefresh->setStyleSheet(
-      "QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px "
-      "solid #2563EB; font-weight: bold; padding: 6px 14px; border-radius: "
-      "6px; } QPushButton:hover { background-color: #DBEAFE; }");
+      "QPushButton { background-color: #2563EB; color: white; border: none; "
+      "border-radius: 8px; padding: 6px 18px; font-weight: bold; min-height: 32px; "
+      "font-size: 13px; } QPushButton:hover { background-color: #1D4ED8; }");
   connect(btnRefresh, &QPushButton::clicked, this,
           &DoctorDashboardWidget::refreshAppointmentsTables);
 
@@ -395,9 +395,9 @@ void DoctorDashboardWidget::buildAppointmentsPage() {
       "QTableWidget::item:focus { outline: none; border: none; }"
       "QTableWidget::item:selected { background-color: #EFF6FF; color: "
       "#2563EB; font-weight: 600; }"
-      "QHeaderView::section { background-color: #F8FAFC; color: #475569; "
+      "QHeaderView::section { background-color: #EFF6FF; color: #1E40AF; "
       "font-weight: bold; font-size: 12px; border: none; border-bottom: 2px "
-      "solid #E2E8F0; padding: 4px; }");
+      "solid #BFDBFE; padding: 4px; }");
   m_appointmentsTable->setItemDelegate(
       new StartedRowDelegate(m_appointmentsTable));
 
@@ -539,9 +539,9 @@ void DoctorDashboardWidget::createDoctorCharts(QWidget *parentPage,
   schedLayout->setSpacing(8);
 
   QHBoxLayout *headerLayout = new QHBoxLayout();
-  QLabel *schedTitle = new QLabel("Lịch trực hôm nay", scheduleCard);
+  QLabel *schedTitle = new QLabel("LỊCH TRỰC HÔM NAY", scheduleCard);
   schedTitle->setStyleSheet(
-      "font-size: 16px; font-weight: bold; color: #111827;");
+      "font-size: 16px; font-weight: bold; color: #000000;");
 
   QPushButton *btnLink = new QPushButton("Xem lịch hẹn →", scheduleCard);
   btnLink->setCursor(Qt::PointingHandCursor);
@@ -632,16 +632,16 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
 
   QHBoxLayout *tblHeaderLayout = new QHBoxLayout();
   QLabel *tblTitle =
-      new QLabel("Danh sách bệnh nhân đang khám hôm nay", tableCard);
+      new QLabel("DANH SÁCH BỆNH NHÂN ĐANG KHÁM HÔM NAY", tableCard);
   tblTitle->setStyleSheet(
-      "font-size: 16px; font-weight: bold; color: #111827;");
+      "font-size: 16px; font-weight: bold; color: #000000;");
 
   QPushButton *btnRefresh = new QPushButton("Tải lại", tableCard);
   btnRefresh->setCursor(Qt::PointingHandCursor);
   btnRefresh->setStyleSheet(
-      "QPushButton { background-color: #EFF6FF; color: #2563EB; border: 1px "
-      "solid #2563EB; font-weight: bold; padding: 4px 12px; border-radius: "
-      "6px; } QPushButton:hover { background-color: transparent }");
+      "QPushButton { background-color: #2563EB; color: white; border: none; "
+      "border-radius: 8px; padding: 6px 18px; font-weight: bold; min-height: 32px; "
+      "font-size: 13px; } QPushButton:hover { background-color: #1D4ED8; }");
   connect(btnRefresh, &QPushButton::clicked, this,
           &DoctorDashboardWidget::refreshAppointmentsTables);
 
@@ -678,7 +678,7 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
       "QTableWidget::item { background: transparent; padding: 12px 8px; border-bottom: 1px solid #F1F5F9; outline: none; }"
       "QTableWidget::item:focus { outline: none; border: none; }"
       "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
-      "QHeaderView::section { background-color: #F8FAFC; color: #475569; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #E2E8F0; padding: 4px; }");
+      "QHeaderView::section { background-color: #EFF6FF; color: #1E40AF; font-weight: bold; font-size: 12px; border: none; border-bottom: 2px solid #BFDBFE; padding: 4px; }");
   m_patientTable->setItemDelegate(new StartedRowDelegate(m_patientTable));
 
   m_patientTable->setMinimumHeight(220);
@@ -1124,41 +1124,39 @@ QFrame *DoctorDashboardWidget::makeCard(QWidget *parent) {
 
 void DoctorDashboardWidget::buildLeaveManagePage() {
   m_leaveManagePage = new QWidget(this);
+  m_leaveManagePage->setStyleSheet("background-color: #FFFFFF;");
   QVBoxLayout *layout = new QVBoxLayout(m_leaveManagePage);
   layout->setContentsMargins(40, 40, 40, 40);
   layout->setSpacing(20);
 
-  QLabel *lblTitle = new QLabel("Quản Lý Nghỉ Phép", m_leaveManagePage);
+  QLabel *lblTitle = new QLabel("QUẢN LÝ NGHỈ PHÉP", m_leaveManagePage);
   lblTitle->setStyleSheet(
-      "font-size: 24px; font-weight: bold; color: #202124;");
+      "font-size: 22px; font-weight: bold; color: #000000; background: transparent; border: none;");
   layout->addWidget(lblTitle);
 
   m_leaveTabWidget = new QTabWidget(m_leaveManagePage);
   m_leaveTabWidget->setStyleSheet(
-      "QTabWidget::pane { border: 1px solid #DADCE0; border-radius: 8px; "
-      "background: white; }"
-      "QTabBar::tab { padding: 10px 20px; font-weight: bold; color: #5F6368; "
-      "background: #F1F3F4; border: 1px solid #DADCE0; border-bottom: none; "
-      "border-top-left-radius: 8px; border-top-right-radius: 8px; "
-      "margin-right: 2px; }"
-      "QTabBar::tab:selected { color: #1A73E8; background: white; }");
+      "QTabWidget::pane { border: 1px solid #E2E8F0; border-radius: 12px; background-color: #FFFFFF; }"
+      "QTabBar::tab { padding: 10px 22px; font-weight: bold; font-size: 13px; color: #475569; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-bottom: none; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-right: 2px; }"
+      "QTabBar::tab:selected { color: #2563EB; background-color: #FFFFFF; border-bottom: 2px solid #FFFFFF; }");
 
   // --- Tab 1: Đăng ký nghỉ phép ---
   QWidget *tabRegister = new QWidget();
+  tabRegister->setStyleSheet("background-color: #FFFFFF;");
   QVBoxLayout *layRegister = new QVBoxLayout(tabRegister);
   layRegister->setContentsMargins(20, 20, 20, 20);
 
-  QFrame *formFrame = makeCard(tabRegister);
-formFrame->setStyleSheet(
-    "QFrame#DashboardCard { background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 14px; }"
-    "QLabel { color: #111827; background-color: transparent; }"
-);
+  QFrame *formFrame = new QFrame(tabRegister);
+  formFrame->setStyleSheet(
+      "QFrame { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; }"
+      "QLabel { color: #0F172A; font-size: 13px; font-weight: 600; background-color: transparent; border: none; }"
+  );
   QFormLayout *formLayout = new QFormLayout(formFrame);
-  formLayout->setContentsMargins(20, 20, 20, 20);
-  formLayout->setSpacing(15);
+  formLayout->setContentsMargins(24, 24, 24, 24);
+  formLayout->setSpacing(16);
 
   m_lblLeaveBalance = new QLabel("Đang tải dữ liệu...", formFrame);
-  m_lblLeaveBalance->setStyleSheet("color: #5F6368; font-style: italic;");
+  m_lblLeaveBalance->setStyleSheet("color: #2563EB; font-weight: bold; font-size: 14px; background: transparent; border: none;");
 
   auto createCustomCalendar = []() {
     QCalendarWidget *cal = new QCalendarWidget();
@@ -1170,8 +1168,7 @@ formFrame->setStyleSheet(
         "#FFFFFF; border-bottom: 1px solid #EAEAEA; min-height: 36px; }"
         "QCalendarWidget QToolButton { color: #333333; font-weight: bold; "
         "background-color: transparent; border: none; padding: 4px 6px; "
-        "margin: "
-        "1px; font-size: 13px; }"
+        "margin: 1px; font-size: 13px; }"
         "QCalendarWidget QToolButton:hover { background-color: #E3F2FD; "
         "border-radius: 4px; }"
         "QCalendarWidget QMenu { background-color: #FFFFFF; color: #333333; }"
@@ -1191,8 +1188,8 @@ formFrame->setStyleSheet(
   m_leaveStartDate->setMinimumDate(QDate::currentDate());
   m_leaveStartDate->setDisplayFormat("dd/MM/yyyy");
   m_leaveStartDate->setStyleSheet(
-      "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827;");
+      "QDateEdit { padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; background-color: #FFFFFF; font-size: 13px; }"
+      "QDateEdit:focus { border: 1px solid #2563EB; }");
 
   m_leaveEndDate = new QDateEdit(QDate::currentDate(), formFrame);
   m_leaveEndDate->setCalendarWidget(createCustomCalendar());
@@ -1200,14 +1197,14 @@ formFrame->setStyleSheet(
   m_leaveEndDate->setMinimumDate(QDate::currentDate());
   m_leaveEndDate->setDisplayFormat("dd/MM/yyyy");
   m_leaveEndDate->setStyleSheet(
-      "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827;");
+      "QDateEdit { padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; background-color: #FFFFFF; font-size: 13px; }"
+      "QDateEdit:focus { border: 1px solid #2563EB; }");
 
   m_txtLeaveReason = new QTextEdit(formFrame);
   m_txtLeaveReason->setFixedHeight(80);
   m_txtLeaveReason->setStyleSheet(
-      "padding: 8px; border: 1px solid #DADCE0; border-radius: 4px; color: "
-      "#111827;");
+      "QTextEdit { padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 6px; color: #0F172A; background-color: #FFFFFF; font-size: 13px; }"
+      "QTextEdit:focus { border: 1px solid #2563EB; }");
 
   formLayout->addRow("Quỹ phép còn lại:", m_lblLeaveBalance);
   formLayout->addRow("Từ ngày:", m_leaveStartDate);
@@ -1217,8 +1214,8 @@ formFrame->setStyleSheet(
   QPushButton *btnSubmit = new QPushButton("Gửi yêu cầu", formFrame);
   btnSubmit->setCursor(Qt::PointingHandCursor);
   btnSubmit->setStyleSheet(
-      "background-color: #1A73E8; color: white; padding: 10px 20px; "
-      "font-weight: bold; border-radius: 4px; border: none;");
+      "QPushButton { background-color: #2563EB; color: white; padding: 10px 24px; font-weight: bold; font-size: 13px; border-radius: 8px; border: none; min-height: 36px; }"
+      "QPushButton:hover { background-color: #1D4ED8; }");
 
   QHBoxLayout *btnLayout = new QHBoxLayout();
   btnLayout->addStretch();
@@ -1232,6 +1229,7 @@ formFrame->setStyleSheet(
 
   // --- Tab 2: Lịch sử nghỉ phép ---
   QWidget *tabHistory = new QWidget();
+  tabHistory->setStyleSheet("background-color: #FFFFFF;");
   QVBoxLayout *layHistory = new QVBoxLayout(tabHistory);
   layHistory->setContentsMargins(20, 20, 20, 20);
 
@@ -1249,12 +1247,10 @@ formFrame->setStyleSheet(
   m_tableLeaveHistory->setEditTriggers(QAbstractItemView::NoEditTriggers);
   m_tableLeaveHistory->setFocusPolicy(Qt::NoFocus);
   m_tableLeaveHistory->setStyleSheet(
-    "QTableWidget { border: 1px solid #DADCE0; border-radius: 4px; color: "
-    "#202124; background-color: white; outline: none; }"
-    "QTableWidget::item { background-color: transparent; outline: none; border: none; color: #202124; }"
-    "QTableWidget::item:selected { background-color: #EFF6FF; color: #1A73E8; }"
-    "QHeaderView::section { background-color: #F1F3F4; color: #202124; "
-    "font-weight: bold; padding: 6px; border: none; border-bottom: 1px solid #DADCE0; }");
+    "QTableWidget { border: 1px solid #E2E8F0; border-radius: 8px; color: #0F172A; background-color: #FFFFFF; outline: none; }"
+    "QTableWidget::item { background-color: transparent; outline: none; border: none; color: #0F172A; padding: 8px; }"
+    "QTableWidget::item:selected { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }"
+    "QHeaderView::section { background-color: #EFF6FF; color: #1E40AF; font-weight: bold; padding: 8px; border: none; border-bottom: 2px solid #BFDBFE; }");
   layHistory->addWidget(m_tableLeaveHistory);
   m_leaveTabWidget->addTab(tabHistory, "Lịch sử nghỉ phép");
 

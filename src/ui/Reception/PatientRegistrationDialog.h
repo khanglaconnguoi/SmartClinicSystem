@@ -30,8 +30,6 @@ private:
   std::shared_ptr<PatientService> m_patientService;
 
   // Các trường form tạo bệnh nhân
-  QComboBox *m_cbPatientType;
-
   QLineEdit *m_txtFullName;
   QLineEdit *m_txtCitizenId;
   QLineEdit *m_txtPhone;
@@ -39,9 +37,6 @@ private:
   QDateEdit *m_dtDateOfBirth;
   QLineEdit *m_txtEmail;
   QLineEdit *m_txtAddress;
-
-  QComboBox *m_cbBloodType;
-  QLineEdit *m_txtAllergies;
 
   // Các trường Bảo hiểm y tế
   QComboBox *m_cbInsuranceType;

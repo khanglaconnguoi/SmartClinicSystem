@@ -1094,7 +1094,7 @@ double PatientRepository::getInsuranceCoveragePercent(int patientId) const {
 
   QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, {patientId});
   if (query.next()) {
-    return query.value(0).toDouble();
+    return query.value("coverage_percent").toDouble();
   }
   return 0.0;
 }

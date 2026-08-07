@@ -222,7 +222,7 @@ void PharmacistRegistrationDialog::setupUi() {
   btnLayout->addStretch();
   m_btnCancel = new QPushButton("Hủy", bottomFrame);
   m_btnCancel->setCursor(Qt::PointingHandCursor);
-  m_btnCancel->setFixedSize(100, 40);
+  m_btnCancel->setFixedSize(140, 40);
   m_btnCancel->setStyleSheet(
       "QPushButton { background-color: #EAEAEA; color: "
       "#333; font-size: 13px; font-weight: 600; "

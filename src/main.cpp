@@ -137,6 +137,9 @@ int main(int argc, char *argv[]) {
     auto serviceRequestService = std::make_shared<ServiceRequestService>(serviceRequestRepo);
     auto analyticService = std::make_shared<AnalyticService>(analyticRepo);
 
+    auto x = patientService->getInsurance(4);
+    qDebug() << "Coverage percent of patient 4: " << x.value().coveragePercent;
+
     // Create MainWindow
     MainWindow mainWindow(authService, staffService, patientService, appointmentService, medicalRecordService, pharmacyService, billingService, serviceRequestService, analyticService);
     mainWindow.show();

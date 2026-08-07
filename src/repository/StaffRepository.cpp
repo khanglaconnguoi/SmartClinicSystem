@@ -1,5 +1,6 @@
 #include "StaffRepository.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QIODevice>
 #include <QSqlError>
@@ -360,13 +361,17 @@ std::shared_ptr<SystemUser> StaffRepository::mapRowToUser(const QSqlQuery &query
     if (!avatarBytes.isEmpty()) {
         avatar.loadFromData(avatarBytes);
     } else {
-        bool loaded = avatar.load(":/assets/images/default_avatar.png");
+        bool loaded = false;
+#ifdef PROJECT_ROOT_DIR
+        QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/default_avatar.png";
+        loaded = avatar.load(defaultPath);
+#endif
         if (!loaded) {
-            #ifdef PROJECT_ROOT_DIR
-                QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) +
-                                    "/assets/images/default_avatar.png";
-                avatar.load(defaultPath);
-            #endif
+            QString appPath = QCoreApplication::applicationDirPath() + "/assets/images/default_avatar.png";
+            loaded = avatar.load(appPath);
+        }
+        if (!loaded) {
+            avatar.load("assets/images/default_avatar.png");
         }
     }
 
@@ -478,6 +483,7 @@ static const QString SELECT_STAFF_PROFILE_SQL = R"(
         np.certification        AS nurse_certification,
         np.room_id              AS nurse_room_id,
         rn.room_number          AS nurse_room_name,
+        rn.room_type            AS nurse_room_type,
 
         pp.license_number       AS pharmacist_license_number,
         pp.pharmacy_section     AS pharmacist_section,
@@ -654,13 +660,17 @@ std::unique_ptr<StaffProfileDTO> StaffRepository::queryProfile(const QString& wh
         if (!avatarBytes.isEmpty()) {
             dto.avatar.loadFromData(avatarBytes);
         } else {
-            bool loaded = dto.avatar.load(":/assets/images/default_avatar.png");
+            bool loaded = false;
+#ifdef PROJECT_ROOT_DIR
+            QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/default_avatar.png";
+            loaded = dto.avatar.load(defaultPath);
+#endif
             if (!loaded) {
-                #ifdef PROJECT_ROOT_DIR
-                    QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) +
-                                            "/assets/images/default_avatar.png";
-                    dto.avatar.load(defaultPath);
-                #endif
+                QString appPath = QCoreApplication::applicationDirPath() + "/assets/images/default_avatar.png";
+                loaded = dto.avatar.load(appPath);
+            }
+            if (!loaded) {
+                dto.avatar.load("assets/images/default_avatar.png");
             }
         }
     };
@@ -685,6 +695,7 @@ std::unique_ptr<StaffProfileDTO> StaffRepository::queryProfile(const QString& wh
         dto->certification = query.value("nurse_certification").toString();
         dto->roomId        = query.value("nurse_room_id").toInt();
         dto->roomName      = query.value("nurse_room_name").toString();
+        dto->roomType      = roomTypeFromString(query.value("nurse_room_type").toString());
         return dto;
     }
     case UserRole::Pharmacist: {

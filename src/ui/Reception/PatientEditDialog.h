@@ -37,6 +37,7 @@ private:
     std::optional<PatientDetailDTO> m_patientDetail;
     bool m_isEditMode = false;
 
+    QLineEdit *m_txtPatientCode = nullptr;
     QLineEdit *m_txtFullName = nullptr;
     QLineEdit *m_txtPhone = nullptr;
     QLineEdit *m_txtEmail = nullptr;

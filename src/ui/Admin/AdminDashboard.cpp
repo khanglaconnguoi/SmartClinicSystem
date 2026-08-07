@@ -32,17 +32,17 @@ AdminDashboardWidget::AdminDashboardWidget(
 
 void AdminDashboardWidget::fillDashboardData() {
   if (m_currentUser && m_nameLabel) {
-    m_nameLabel->setText("Admin: " + m_currentUser->getFullName());
+    m_nameLabel->setText(m_currentUser->getFullName().toUpper());
   }
 
   // --- Sidebar Menu ---
   QLabel *roleBadge = new QLabel("QUẢN TRỊ VIÊN", m_sidebarFrame);
   roleBadge->setAlignment(Qt::AlignCenter);
   roleBadge->setStyleSheet(
-      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 12px; "
-      "font-weight: 800; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
-      "padding: 8px 12px; border-radius: 8px; border: 1px solid #BFDBFE; "
-      "margin-top: 4px; margin-bottom: 12px; }");
+      "QLabel { background-color: #EFF6FF; color: #1E40AF; font-size: 14px; "
+      "font-weight: 900; font-family: 'Segoe UI'; letter-spacing: 1.5px; "
+      "padding: 10px 14px; border-radius: 10px; border: none; "
+      "margin-top: 4px; margin-bottom: 14px; }");
   m_sidebarLayout->addWidget(roleBadge);
 
   m_btnAnalytics = new QPushButton("Thống kê - Báo cáo", m_sidebarFrame);

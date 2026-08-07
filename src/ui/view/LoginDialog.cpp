@@ -19,8 +19,6 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     setAttribute(Qt::WA_StyledBackground, true);
     setStyleSheet("background-color: #4B94F2;");
 
-    QString appPath = QApplication::applicationDirPath();
-
     QWidget *cardWidget = new QWidget(this);
     cardWidget->setGeometry(40, 20, 920, 560);
     cardWidget->setStyleSheet("QWidget { background-color: #FFFFFF; border-radius: 12px; }");
@@ -39,12 +37,31 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     leftForm->setStyleSheet("background: transparent;");
 
     lblLeftLogo = new QLabel(leftForm);
-    lblLeftLogo->setGeometry(110, 10, 220, 110);
-    lblLeftLogo->setPixmap(QPixmap(appPath + "/logo.png"));
-    lblLeftLogo->setScaledContents(true);
+    lblLeftLogo->setGeometry(93, 10, 254, 127);
+    QPixmap logoPix;
+    bool logoLoaded = false;
+#ifdef PROJECT_ROOT_DIR
+    QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/logo.png";
+    logoLoaded = logoPix.load(defaultPath);
+#endif
+    if (!logoLoaded) {
+        QString fallbackPath = QApplication::applicationDirPath() + "/assets/images/logo.png";
+        logoLoaded = logoPix.load(fallbackPath);
+    }
+    if (!logoLoaded) {
+        logoLoaded = logoPix.load("assets/images/logo.png");
+    }
+    if (!logoPix.isNull()) {
+        lblLeftLogo->setPixmap(logoPix.scaled(lblLeftLogo->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        lblLeftLogo->setAlignment(Qt::AlignCenter);
+    } else {
+        lblLeftLogo->setText("SMART CLINIC SYSTEM");
+        lblLeftLogo->setAlignment(Qt::AlignCenter);
+        lblLeftLogo->setStyleSheet("font-size: 20px; font-weight: bold; color: #2563EB;");
+    }
 
     lblSlogan = new QLabel("NovaCare - Nâng cao sức khỏe", leftForm);
-    lblSlogan->setGeometry(0, 130, 440, 20);
+    lblSlogan->setGeometry(0, 142, 440, 20);
     lblSlogan->setAlignment(Qt::AlignCenter);
     lblSlogan->setStyleSheet("font-size: 13px; font-weight: bold; color: #757575;");
 
@@ -101,13 +118,6 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     connect(btnLogin,   &QPushButton::clicked,        this, &LoginDialog::handleLogin);
     connect(txtPassword, &QLineEdit::returnPressed,   this, &LoginDialog::handleLogin);
 
-    btnForgot = new QPushButton("Quên mật khẩu?", leftForm);
-    btnForgot->setGeometry(50, 385, 360, 30);
-    btnForgot->setStyleSheet(
-        "QPushButton { color: #357AE8; font-size: 13px; background: transparent; border: none; }"
-        "QPushButton:hover { color: #4B94F2; text-decoration: underline; }"
-    );
-
     // =========================================================
     // KHUNG CHÀO ĐÓN BÊN PHẢI
     // =========================================================
@@ -123,18 +133,26 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
         "}"
     );
 
-    lblHello = new QLabel("XIN CHÀO !", rightContainer);
-    lblHello->setGeometry(40, 60, 400, 50);
-    lblHello->setStyleSheet("font-size: 42px; font-weight: bold; color: #357AE8; background: transparent;");
-
-    lblSubDetails = new QLabel("Vui lòng nhập thông tin tài khoản\nđể tiếp tục làm việc", rightContainer);
-    lblSubDetails->setGeometry(40, 120, 400, 50);
-    lblSubDetails->setStyleSheet("font-size: 16px; color: #555555; background: transparent;");
-
     lblDoctor = new QLabel(rightContainer);
-    lblDoctor->setGeometry(40, 160, 430, 380);
-    lblDoctor->setPixmap(QPixmap(appPath + "/doctor.png"));
     lblDoctor->setScaledContents(true);
+    lblDoctor->setGeometry(0, 0, 500, 580);
+    QPixmap welcomePix;
+    bool welcomeLoaded = false;
+#ifdef PROJECT_ROOT_DIR
+    QString defaultWelcomePath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/welcome.png";
+    welcomeLoaded = welcomePix.load(defaultWelcomePath);
+#endif
+    if (!welcomeLoaded) {
+        QString fallbackWelcomePath = QApplication::applicationDirPath() + "/assets/images/welcome.png";
+        welcomeLoaded = welcomePix.load(fallbackWelcomePath);
+    }
+    if (!welcomeLoaded) {
+        welcomeLoaded = welcomePix.load("assets/images/welcome.png");
+    }
+    if (!welcomePix.isNull()) {
+        lblDoctor->setPixmap(welcomePix.scaled(lblDoctor->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        lblDoctor->setAlignment(Qt::AlignRight | Qt::AlignBottom);
+    }
     lblDoctor->setStyleSheet("background: transparent;");
 }
 

@@ -109,22 +109,6 @@ void PatientRegistrationDialog::setupUi()
         "background-color: #FFFFFF; color: #111827; selection-background-color: "
         "#4B94F2; selection-color: white; }";
 
-    // --- Loại bệnh nhân (ngoài GroupBox để dễ thấy) ---
-    QGroupBox *gbPatientType = new QGroupBox("Loại Bệnh Nhân", formCard);
-    gbPatientType->setStyleSheet(groupBoxStyle);
-    QFormLayout *formType = new QFormLayout(gbPatientType);
-    formType->setContentsMargins(16, 18, 16, 16);
-    formType->setSpacing(12);
-    formType->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-
-    m_cbPatientType = new QComboBox(gbPatientType);
-    m_cbPatientType->setStyleSheet(extraInputStyle);
-    for (const auto &item : patientTypeList)
-        m_cbPatientType->addItem(item.viText, item.enText);
-    formType->addRow("Loại bệnh nhân (*):", m_cbPatientType);
-
-    cardLayout->addWidget(gbPatientType);
-
     // --- Nhóm 1: Thông tin cá nhân ---
     QGroupBox *gbPersonalInfo = new QGroupBox("Thông tin cá nhân", formCard);
     gbPersonalInfo->setStyleSheet(groupBoxStyle);
@@ -154,17 +138,6 @@ void PatientRegistrationDialog::setupUi()
     m_txtCitizenId->setStyleSheet(extraInputStyle);
     m_txtCitizenId->setPlaceholderText("Nhập 12 chữ số hợp lệ");
     form1->addRow("Số CCCD (*):", m_txtCitizenId);
-
-    m_cbBloodType = new QComboBox(gbPersonalInfo);
-    m_cbBloodType->setStyleSheet(extraInputStyle);
-    for (const auto &pair : BloodTypeText::getList())
-        m_cbBloodType->addItem(pair.second, pair.first);
-    form1->addRow("Nhóm máu:", m_cbBloodType);
-
-    m_txtAllergies = new QLineEdit(gbPersonalInfo);
-    m_txtAllergies->setStyleSheet(extraInputStyle);
-    m_txtAllergies->setPlaceholderText("VD: Penicillin, Hải sản (cách nhau bởi dấu phẩy)");
-    form1->addRow("Dị ứng:", m_txtAllergies);
 
     cardLayout->addWidget(gbPersonalInfo);
 
@@ -262,7 +235,7 @@ void PatientRegistrationDialog::setupUi()
     btnLayout->addStretch();
     m_btnCancel = new QPushButton("Hủy", bottomFrame);
     m_btnCancel->setCursor(Qt::PointingHandCursor);
-    m_btnCancel->setFixedSize(100, 40);
+    m_btnCancel->setFixedSize(140, 40);
     m_btnCancel->setStyleSheet(
         "QPushButton { background-color: #EAEAEA; color: "
         "#333; font-size: 13px; font-weight: 600; "
@@ -272,7 +245,7 @@ void PatientRegistrationDialog::setupUi()
 
     m_btnSave = new QPushButton("Lưu bệnh nhân", bottomFrame);
     m_btnSave->setCursor(Qt::PointingHandCursor);
-    m_btnSave->setFixedSize(150, 40);
+    m_btnSave->setFixedSize(140, 40);
     m_btnSave->setStyleSheet(
         "QPushButton { background-color: #34A853; color: white; font-size: 13px; "
         "font-weight: 600; border-radius: 8px; border: none; padding: 0 10px; }"
@@ -403,9 +376,9 @@ void PatientRegistrationDialog::handleSave()
     QString email = m_txtEmail->text().trimmed();
     QString address = m_txtAddress->text().trimmed();
 
-    PatientType type = patientTypeFromVi(m_cbPatientType->currentText());
-    QString bloodType = BloodTypeText::toEn(m_cbBloodType->currentText());
-    QString allergies = m_txtAllergies->text().trimmed();
+    PatientType type = PatientType::Outpatient;
+    QString bloodType = "UNKNOWN";
+    QString allergies = "";
 
     QString insuranceTypeStr = m_cbInsuranceType->currentText();
     bool hasInsurance = (insuranceTypeStr != "Không có");

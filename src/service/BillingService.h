@@ -42,6 +42,7 @@ public:
                      const QList<PrescriptionItemDTO> &prescriptionItems);
 
   double calculateMedicationTotal(const QList<PrescriptionItemDTO> &items) const;
+  std::optional<InvoiceResultDTO> getInvoiceById(int invoiceId);
   std::optional<InvoiceResultDTO> getInvoiceByRecordId(int recordId);
 
   bool updateInvoice(const InvoiceUpdateDTO &dto);

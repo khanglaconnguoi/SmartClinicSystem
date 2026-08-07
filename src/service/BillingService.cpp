@@ -133,6 +133,10 @@ bool BillingService::createInvoice(int patientId, int recordId, PatientType type
     return m_billingRepository->insertInvoice(dto);
 }
 
+std::optional<InvoiceResultDTO> BillingService::getInvoiceById(int invoiceId) {
+    return m_billingRepository->getInvoiceById(invoiceId);
+}
+
 std::optional<InvoiceResultDTO> BillingService::getInvoiceByRecordId(int recordId) {
     return m_billingRepository->getInvoiceByRecordId(recordId);
 }

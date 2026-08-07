@@ -20,8 +20,8 @@ void AdminAnalyticsWidget::setupUI() {
 
     // --- Header Title ---
     QHBoxLayout *titleLayout = new QHBoxLayout();
-    QLabel *lblTitle = new QLabel("Thống Kê & Báo Cáo Quản Lý", this);
-    lblTitle->setStyleSheet("font-size: 22px; font-weight: bold; color: #172B4D;");
+    QLabel *lblTitle = new QLabel("THỐNG KÊ & BÁO CÁO QUẢN LÝ", this);
+    lblTitle->setStyleSheet("font-size: 22px; font-weight: bold; color: #000000;");
     
     QLabel *lblSubtitle = new QLabel("Tổng quan hiệu suất phòng khám, doanh thu và chỉ số KPI", this);
     lblSubtitle->setStyleSheet("font-size: 13px; color: #5E6C84;");
@@ -127,7 +127,7 @@ void AdminAnalyticsWidget::setupUI() {
         tbl->setEditTriggers(QAbstractItemView::NoEditTriggers);
         tbl->setStyleSheet(
             "QTableWidget { border: none; background-color: #FFFFFF; alternate-background-color: #FAFBFC; font-size: 13px; color: #172B4D; }"
-            "QHeaderView::section { background-color: #F4F5F7; color: #5E6C84; font-weight: bold; font-size: 13px; padding: 10px; border: none; border-bottom: 2px solid #DFE1E6; }"
+            "QHeaderView::section { background-color: #EFF6FF; color: #1E40AF; font-weight: bold; font-size: 13px; padding: 10px; border: none; border-bottom: 2px solid #BFDBFE; }"
             "QTableWidget::item { padding: 8px; border-bottom: 1px solid #EBECF0; }"
         );
         tbl->verticalHeader()->setVisible(false);

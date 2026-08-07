@@ -107,7 +107,7 @@ void CreateLabRequestDialog::setupUI() {
     btnLayout->addStretch();
 
     m_btnCancel = new QPushButton("Hủy bỏ", container);
-    m_btnCancel->setFixedSize(110, 38);
+    m_btnCancel->setFixedSize(130, 38);
     m_btnCancel->setCursor(Qt::PointingHandCursor);
     m_btnCancel->setStyleSheet("QPushButton { background-color: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; border-radius: 6px; font-weight: bold; } QPushButton:hover { background-color: #E2E8F0; }");
 

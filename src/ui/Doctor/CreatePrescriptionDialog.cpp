@@ -746,11 +746,12 @@ void CreatePrescriptionDialog::setupStyleSheets() {
             selection-color: #1e40af;
         }
         QHeaderView::section {
-            background-color: #f1f5f9;
-            color: #334155;
+            background-color: #eff6ff;
+            color: #1e40af;
             font-weight: bold;
             padding: 6px;
-            border: 1px solid #cbd5e1;
+            border: none;
+            border-bottom: 2px solid #bfdbfe;
         }
         #detailFrame {
             background-color: #ffffff;

@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <QHeaderView>
 #include <QMessageBox>
-#include "../Doctor/PatientRegistrationDialog.h"
+#include "../Reception/PatientRegistrationDialog.h"
 
 ManagePatientsWidget::ManagePatientsWidget(std::shared_ptr<PatientService> patientService, QWidget* parent)
     : QWidget(parent), m_patientService(patientService), m_tblPatients(nullptr) {
@@ -25,8 +25,8 @@ void ManagePatientsWidget::buildUI() {
 
    // Header
     QHBoxLayout* headerLayout = new QHBoxLayout();
-    QLabel* lblTitle = new QLabel("Quản lý Bệnh nhân");
-    lblTitle->setStyleSheet("font-size: 24px; font-weight: bold; color: #111827;");
+    QLabel* lblTitle = new QLabel("QUẢN LÝ BỆNH NHÂN");
+    lblTitle->setStyleSheet("font-size: 22px; font-weight: bold; color: #000000;");
     headerLayout->addWidget(lblTitle);
     
     headerLayout->addStretch();
@@ -54,7 +54,7 @@ void ManagePatientsWidget::buildUI() {
     m_tblPatients->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tblPatients->setAlternatingRowColors(true);
     m_tblPatients->setFocusPolicy(Qt::NoFocus);
-    m_tblPatients->setStyleSheet("QTableWidget { border: none; outline: none; background-color: white; alternate-background-color: #F8FAFC; color: #0F172A; } QHeaderView::section { background-color: #F8FAFC; padding: 10px; font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; color: #1E293B; } QTableWidget::item { padding: 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A; outline: none; } QTableWidget::item:focus { outline: none; border: none; }");
+    m_tblPatients->setStyleSheet("QTableWidget { border: none; outline: none; background-color: white; alternate-background-color: #F8FAFC; color: #0F172A; } QHeaderView::section { background-color: #EFF6FF; padding: 10px; font-weight: bold; border: none; border-bottom: 2px solid #BFDBFE; color: #1E40AF; } QTableWidget::item { padding: 8px; border-bottom: 1px solid #E2E8F0; color: #0F172A; outline: none; } QTableWidget::item:focus { outline: none; border: none; }");
 
     cardLayout->addWidget(m_tblPatients);
     pageLayout->addWidget(tableCard);
@@ -115,22 +115,22 @@ void ManagePatientsWidget::loadPatientsList() {
         m_tblPatients->setItem(i, 3, itemDob);
         m_tblPatients->setItem(i, 4, itemPhone);
 
-        QWidget *actionWidget = new QWidget();
+        QWidget *actionWidget = new QWidget(m_tblPatients);
         QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
         actionLayout->setContentsMargins(4, 4, 4, 4);
         actionLayout->setSpacing(8);
         QPushButton *btnEdit = new QPushButton("Sửa");
         btnEdit->setCursor(Qt::PointingHandCursor);
         btnEdit->setStyleSheet(
-            "QPushButton { color: #4B94F2; border: 1px solid #4B94F2; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-            "{ background-color: #EBF5FF; }");
+            "QPushButton { background-color: #2563EB; color: white; border: none; padding: 4px "
+            "10px; border-radius: 4px; font-weight: bold; font-size: 12px; } QPushButton:hover "
+            "{ background-color: #1D4ED8; }");
         QPushButton *btnDelete = new QPushButton("Xóa");
         btnDelete->setCursor(Qt::PointingHandCursor);
         btnDelete->setStyleSheet(
-            "QPushButton { color: #F43F5E; border: 1px solid #F43F5E; padding: 4px "
-            "8px; border-radius: 4px; background-color: white; } QPushButton:hover "
-            "{ background-color: #FFE4E6; }");
+            "QPushButton { background-color: #DC2626; color: white; border: none; padding: 4px "
+            "10px; border-radius: 4px; font-weight: bold; font-size: 12px; } QPushButton:hover "
+            "{ background-color: #B91C1C; }");
         actionLayout->addWidget(btnEdit);
         actionLayout->addWidget(btnDelete);
         actionLayout->setAlignment(Qt::AlignCenter);

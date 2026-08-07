@@ -168,6 +168,49 @@ bool BillingRepository::collectPayment(int invoiceId, double finalAmount) {
     return db.executeQuery(sql, params).isActive();
 }
 
+std::optional<InvoiceResultDTO> BillingRepository::getInvoiceById(int invoiceId) {
+    DatabaseManager &db = DatabaseManager::getInstance();
+    QString sql = "SELECT * FROM invoices WHERE invoice_id = ?";
+    QSqlQuery query = db.selectQuery(sql, {invoiceId});
+
+    if (!query.next()) {
+        return std::nullopt;
+    }
+
+    InvoiceResultDTO dto;
+    dto.invoiceId = query.value("invoice_id").toInt();
+    dto.invoiceCode = query.value("invoice_code").toString();
+    dto.patientId = query.value("patient_id").toInt();
+    
+    QVariant recId = query.value("record_id");
+    dto.recordId = recId.isNull() ? std::nullopt : std::make_optional(recId.toInt());
+    
+    dto.patientType = patientTypeFromEn(query.value("patient_type").toString());
+    dto.consultationFee = query.value("consultation_fee").toDouble();
+    dto.medicationFee = query.value("medication_fee").toDouble();
+    dto.totalAmount = query.value("total_amount").toDouble();
+    dto.status = query.value("status").toString();
+    dto.issuedDate = query.value("issued_date").toDate();
+    
+    QVariant paidDate = query.value("paid_date");
+    dto.paidDate = paidDate.isNull() ? std::nullopt : std::make_optional(paidDate.toDate());
+
+    QString itemSql = "SELECT * FROM invoice_items WHERE invoice_id = ?";
+    QSqlQuery itemQuery = db.selectQuery(itemSql, {dto.invoiceId});
+    
+    while (itemQuery.next()) {
+        InvoiceItemDTO item;
+        item.itemType = itemQuery.value("item_type").toString();
+        item.description = itemQuery.value("description").toString();
+        item.quantity = itemQuery.value("quantity").toInt();
+        item.unitPrice = itemQuery.value("unit_price").toDouble();
+        item.subtotal = itemQuery.value("subtotal").toDouble();
+        dto.items.append(item);
+    }
+
+    return dto;
+}
+
 std::optional<InvoiceResultDTO> BillingRepository::getInvoiceByRecordId(int recordId) {
     DatabaseManager &db = DatabaseManager::getInstance();
     QString sql = "SELECT * FROM invoices WHERE record_id = ?";

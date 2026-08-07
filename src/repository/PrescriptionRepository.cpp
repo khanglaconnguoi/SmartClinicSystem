@@ -155,16 +155,14 @@ PrescriptionResultDTO PrescriptionRepository::mapRowToPrescriptionHeader(
   dto.doctorId = query.value("doctor_id").toInt();
   dto.doctorCode = query.value("doctor_code").toString();
   dto.doctorName = query.value("doctor_name").toString();
-  dto.status = prescriptionStatusFromEn(query.value("status").toString());
-  dto.notes = query.value("notes").toString();
-  dto.prescribedAt = query.value("prescribed_at").toDateTime();
-  dto.totalAmount = 0.0; // Khởi tạo để tính toán sau
 
   dto.patientName = query.value("patient_name").toString();
   QString dobStr = query.value("patient_dob").toString();
   QDate dob = QDate::fromString(dobStr, "yyyy-MM-dd");
+  if (!dob.isValid()) dob = QDate::fromString(dobStr, "dd/MM/yyyy");
+  if (!dob.isValid()) dob = QDate::fromString(dobStr, Qt::ISODate);
   dto.patientAge = dob.isValid() ? (QDate::currentDate().year() - dob.year()) : 0;
-  
+
   QString rawGender = query.value("patient_gender").toString();
   if (rawGender == "MALE") dto.patientGender = QString::fromUtf8("Nam");
   else if (rawGender == "FEMALE") dto.patientGender = QString::fromUtf8("Nữ");
@@ -174,6 +172,11 @@ PrescriptionResultDTO PrescriptionRepository::mapRowToPrescriptionHeader(
   if (dto.diagnosis.isEmpty()) {
       dto.diagnosis = QString::fromUtf8("Chưa ghi nhận");
   }
+
+  dto.status = prescriptionStatusFromEn(query.value("status").toString());
+  dto.notes = query.value("notes").toString();
+  dto.prescribedAt = query.value("prescribed_at").toDateTime();
+  dto.totalAmount = 0.0; // Khởi tạo để tính toán sau
 
   if (!query.value("dispensed_by").isNull()) {
     PrescriptionActionInfoDTO info;
@@ -224,6 +227,13 @@ static const QString SELECT_PRESCRIPTION_SQL = R"(
         p.doctor_id, 
         d.staff_code AS doctor_code,
         d.full_name AS doctor_name, 
+        pt.full_name AS patient_name,
+        pt.date_of_birth AS patient_dob,
+        pt.gender AS patient_gender,
+        COALESCE(
+            (SELECT description FROM diagnoses WHERE record_id = p.record_id LIMIT 1),
+            mr.chief_complaint
+        ) AS diagnosis,
         p.status, 
         p.notes, 
         p.prescribed_at,
@@ -236,10 +246,6 @@ static const QString SELECT_PRESCRIPTION_SQL = R"(
         s_canc.full_name AS cancelled_by_name,
         p.cancelled_at,
         p.cancel_reason,
-        pat.full_name AS patient_name,
-        pat.date_of_birth AS patient_dob,
-        pat.gender AS patient_gender,
-        (SELECT description FROM diagnoses WHERE record_id = p.record_id LIMIT 1) AS diagnosis,
         pi.medication_id, 
         pi.brand_name, 
         pi.unit_price, 
@@ -249,8 +255,8 @@ static const QString SELECT_PRESCRIPTION_SQL = R"(
         pi.duration_days, 
         pi.note AS item_note
     FROM prescriptions p
-    INNER JOIN medical_records mr ON p.record_id = mr.record_id
-    INNER JOIN patients pat ON mr.patient_id = pat.patient_id
+    LEFT JOIN medical_records mr ON p.record_id = mr.record_id
+    LEFT JOIN patients pt ON mr.patient_id = pt.patient_id
     INNER JOIN staff d ON p.doctor_id = d.staff_id
     INNER JOIN prescription_items pi ON p.prescription_id = pi.prescription_id
     LEFT JOIN staff s_disp ON p.dispensed_by = s_disp.staff_id
@@ -276,6 +282,13 @@ QList<PrescriptionResultDTO> PrescriptionRepository::search(
     sql += " AND p.status = ?";
     params.append(criteria.status);
   }
+  if (!criteria.keyword.isEmpty()) {
+    sql += " AND (pt.full_name LIKE ? OR d.full_name LIKE ? OR CAST(p.prescription_id AS TEXT) LIKE ?)";
+    QString kw = "%" + criteria.keyword + "%";
+    params.append(kw);
+    params.append(kw);
+    params.append(kw);
+  }
   if (criteria.fromDate.isValid()) {
     sql += " AND p.prescribed_at >= ?";
     params.append(criteria.fromDate.toString("yyyy-MM-dd HH:mm:ss"));
@@ -295,78 +308,15 @@ QList<PrescriptionResultDTO> PrescriptionRepository::search(
   while (query.next()) {
     int pId = query.value("prescription_id").toInt();
 
-    // 1. Nếu đơn thuốc chưa tồn tại trong danh sách kết quả -> Tạo mới phần
-    // thông tin chung
     if (!idToIdxMap.contains(pId)) {
-      PrescriptionResultDTO dto;
-      dto.prescriptionId = pId;
-      dto.recordId = query.value("record_id").toInt();
-      dto.doctorId = query.value("doctor_id").toInt();
-      dto.doctorCode = query.value("doctor_code").toString();
-      dto.doctorName = query.value("doctor_name").toString();
-      dto.status = prescriptionStatusFromEn(query.value("status").toString());
-      dto.notes = query.value("notes").toString();
-      dto.prescribedAt = query.value("prescribed_at").toDateTime();
-      dto.totalAmount = 0.0;
-
-      dto.patientName = query.value("patient_name").toString();
-      QString dobStr = query.value("patient_dob").toString();
-      QDate dob = QDate::fromString(dobStr, "yyyy-MM-dd");
-      dto.patientAge = dob.isValid() ? (QDate::currentDate().year() - dob.year()) : 0;
-      
-      QString rawGender = query.value("patient_gender").toString();
-      if (rawGender == "MALE") dto.patientGender = QString::fromUtf8("Nam");
-      else if (rawGender == "FEMALE") dto.patientGender = QString::fromUtf8("Nữ");
-      else dto.patientGender = QString::fromUtf8("Khác");
-
-      dto.diagnosis = query.value("diagnosis").toString();
-      if (dto.diagnosis.isEmpty()) {
-          dto.diagnosis = QString::fromUtf8("Chưa ghi nhận");
-      }
-
-      // Nạp thông tin phát thuốc dựa theo cấu trúc PrescriptionActionInfoDTO
-      // mới
-      if (!query.value("dispensed_by").isNull()) {
-        PrescriptionActionInfoDTO dispInfo;
-        dispInfo.staffId = query.value("dispensed_by").toInt();
-        dispInfo.staffCode = query.value("dispensed_by_code").toString();
-        dispInfo.staffName = query.value("dispensed_by_name").toString();
-        dispInfo.actionAt = query.value("dispensed_at").toDateTime();
-        dispInfo.reason = ""; // Phát thuốc không cần lý do
-        dto.dispensedInfo = dispInfo;
-      }
-
-      // Nạp thông tin hủy đơn dựa theo cấu trúc PrescriptionActionInfoDTO mới
-      if (!query.value("cancelled_by").isNull()) {
-        PrescriptionActionInfoDTO cancInfo;
-        cancInfo.staffId = query.value("cancelled_by").toInt();
-        cancInfo.staffCode = query.value("cancelled_by_code").toString();
-        cancInfo.staffName = query.value("cancelled_by_name").toString();
-        cancInfo.actionAt = query.value("cancelled_at").toDateTime();
-        cancInfo.reason =
-            query.value("cancel_reason").toString(); // Lý do hủy đơn
-        dto.cancelledInfo = cancInfo;
-      }
-
+      PrescriptionResultDTO dto = mapRowToPrescriptionHeader(query);
       results.append(dto);
       idToIdxMap.insert(pId, results.size() - 1);
     }
 
-    // 2. Trích xuất vị trí index và nạp tiếp mảng danh sách thuốc (Items) đi
-    // kèm
     int targetIdx = idToIdxMap.value(pId);
 
-    PrescriptionItemDTO item;
-    item.medicationId = query.value("medication_id").toInt();
-    item.brandName = query.value("brand_name").toString();
-    item.unitPrice = query.value("unit_price").toDouble();
-    item.quantity = query.value("quantity").toInt();
-    item.dosage = query.value("dosage").toString();
-    item.frequency = query.value("frequency").toString();
-    item.durationDays = query.value("duration_days").toInt();
-    item.note = query.value("item_note").toString();
-
-    // Tích lũy tổng tiền và đẩy item vào đơn thuốc đích
+    PrescriptionItemDTO item = mapRowToPrescriptionItem(query);
     results[targetIdx].totalAmount += (item.quantity * item.unitPrice);
     results[targetIdx].items.append(item);
   }
@@ -451,15 +401,18 @@ PrescriptionRepository::findByPatientId(int patientId) const {
   QString sql = R"(
         SELECT 
             p.prescription_id, p.record_id, p.doctor_id, d.staff_code AS doctor_code, d.full_name AS doctor_name, 
+            pt.full_name AS patient_name, pt.date_of_birth AS patient_dob, pt.gender AS patient_gender,
+            COALESCE(
+                (SELECT description FROM diagnoses WHERE record_id = p.record_id LIMIT 1),
+                mr.chief_complaint
+            ) AS diagnosis,
             p.status, p.notes, p.prescribed_at, p.dispensed_by, s_disp.staff_code AS dispensed_by_code,
             s_disp.full_name AS dispensed_by_name, p.dispensed_at, p.cancelled_by, s_canc.staff_code AS cancelled_by_code,
             s_canc.full_name AS cancelled_by_name, p.cancelled_at, p.cancel_reason,
-            pat.full_name AS patient_name, pat.date_of_birth AS patient_dob, pat.gender AS patient_gender,
-            (SELECT description FROM diagnoses WHERE record_id = p.record_id LIMIT 1) AS diagnosis,
             pi.medication_id, pi.brand_name, pi.unit_price, pi.quantity, pi.dosage, pi.frequency, pi.duration_days, pi.note AS item_note
         FROM prescriptions p
-        INNER JOIN medical_records mr ON p.record_id = mr.record_id
-        INNER JOIN patients pat ON mr.patient_id = pat.patient_id
+        LEFT JOIN medical_records mr ON p.record_id = mr.record_id
+        LEFT JOIN patients pt ON mr.patient_id = pt.patient_id
         INNER JOIN staff d ON p.doctor_id = d.staff_id
         INNER JOIN prescription_items pi ON p.prescription_id = pi.prescription_id
         LEFT JOIN staff s_disp ON p.dispensed_by = s_disp.staff_id

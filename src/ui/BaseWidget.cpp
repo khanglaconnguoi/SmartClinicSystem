@@ -44,11 +44,68 @@ void BaseDashboardWidget::setupSidebarFrame() {
     m_sidebarLayout->setContentsMargins(15, 30, 15, 30);
     m_sidebarLayout->setSpacing(10);
 
-    m_logoLabel = new QLabel("Nova Care Clinic", m_sidebarFrame);
-    m_logoLabel->setStyleSheet("font-size: 20px; font-weight: bold; color: #2563EB; margin-bottom: 20px;");
+#include <QCoreApplication>
+
+    m_logoLabel = new QLabel(m_sidebarFrame);
+    QPixmap logoPix;
+    bool logoLoaded = false;
+#ifdef PROJECT_ROOT_DIR
+    QString defaultPath = QString::fromUtf8(PROJECT_ROOT_DIR) + "/assets/images/logo.png";
+    logoLoaded = logoPix.load(defaultPath);
+#endif
+    if (!logoLoaded) {
+        QString fallbackPath = QCoreApplication::applicationDirPath() + "/assets/images/logo.png";
+        logoLoaded = logoPix.load(fallbackPath);
+    }
+    if (!logoLoaded) {
+        logoLoaded = logoPix.load("assets/images/logo.png");
+    }
+    if (!logoPix.isNull()) {
+        QPixmap scaledLogo = logoPix.scaledToWidth(170, Qt::SmoothTransformation);
+        m_logoLabel->setPixmap(scaledLogo);
+        m_logoLabel->setAlignment(Qt::AlignCenter);
+        m_logoLabel->setStyleSheet("margin-top: 5px; margin-bottom: 15px; background: transparent; border: none;");
+    } else {
+        m_logoLabel->setText("SMART CLINIC SYSTEM");
+        m_logoLabel->setStyleSheet("font-size: 18px; font-weight: bold; color: #2563EB; margin-bottom: 20px;");
+    }
     m_sidebarLayout->addWidget(m_logoLabel);
 
     m_globalLayout->addWidget(m_sidebarFrame);
+}
+
+#include <QPainter>
+#include <QPainterPath>
+
+static QPixmap getCircularPixmap(const QPixmap &src, int size) {
+    if (src.isNull()) return QPixmap();
+    QPixmap result(size, size);
+    result.fill(Qt::transparent);
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    
+    qreal borderWidth = 1.5;
+    
+    QPainterPath clipPath;
+    clipPath.addEllipse(borderWidth, borderWidth, size - 2 * borderWidth, size - 2 * borderWidth);
+    
+    painter.save();
+    painter.setClipPath(clipPath);
+    
+    int innerSize = size - 2 * borderWidth;
+    QPixmap scaled = src.scaled(innerSize, innerSize, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    int x = (scaled.width() - innerSize) / 2;
+    int y = (scaled.height() - innerSize) / 2;
+    painter.drawPixmap(borderWidth, borderWidth, scaled, x, y, innerSize, innerSize);
+    painter.restore();
+    
+    QPen pen(QColor("#2563EB"), borderWidth);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    painter.drawEllipse(borderWidth / 2.0, borderWidth / 2.0, size - borderWidth, size - borderWidth);
+    
+    return result;
 }
 
 void BaseDashboardWidget::setupMainContentFrame() {
@@ -64,29 +121,50 @@ void BaseDashboardWidget::setupMainContentFrame() {
     userInfoLayout->setSpacing(10); 
 
     m_nameLabel = new ClickableLabel(m_mainContentWidget);
-    m_nameLabel->setText(m_currentUser ? m_currentUser->getFullName() : "Loading...");
+    m_nameLabel->setText(m_currentUser ? m_currentUser->getFullName().toUpper() : "LOADING...");
     m_nameLabel->setCursor(Qt::PointingHandCursor);
-    m_nameLabel->setStyleSheet("font-size: 14px; font-weight: bold; color: #1E293B; font-family: 'Arial';");
+    m_nameLabel->setStyleSheet("font-size: 13px; font-weight: bold; color: #1E293B; font-family: 'Segoe UI', sans-serif; letter-spacing: 0.5px;");
 
     m_avatarBtn = new QPushButton(m_mainContentWidget);
     m_avatarBtn->setFixedSize(36, 36);
     m_avatarBtn->setCursor(Qt::PointingHandCursor);
+
     if (m_currentUser && !m_currentUser->getAvatar().isNull()) {
-        m_avatarBtn->setIcon(QIcon(m_currentUser->getAvatar()));
+        QPixmap circularPix = getCircularPixmap(m_currentUser->getAvatar(), 36);
+        m_avatarBtn->setIcon(QIcon(circularPix));
         m_avatarBtn->setIconSize(QSize(36, 36));
+        m_avatarBtn->setText("");
+        m_avatarBtn->setStyleSheet(
+            "QPushButton { "
+            "   background-color: transparent; "
+            "   border: none; "
+            "   padding: 0px; "
+            "   margin: 0px; "
+            "}"
+            "QPushButton:hover { "
+            "   background-color: rgba(0, 0, 0, 0.05); "
+            "   border-radius: 18px; "
+            "}"
+        );
+    } else {
+        QString initial = m_currentUser ? m_currentUser->getFullName().left(1).toUpper() : "U";
+        m_avatarBtn->setText(initial);
+        m_avatarBtn->setStyleSheet(
+            "QPushButton { "
+            "   background-color: #EFF6FF; "
+            "   color: #2563EB; "
+            "   border: 1.5px solid #2563EB; "
+            "   border-radius: 18px; "
+            "   font-size: 15px; "
+            "   font-weight: bold; "
+            "   padding: 0px; "
+            "   margin: 0px; "
+            "}"
+            "QPushButton:hover { "
+            "   background-color: #DBEAFE; "
+            "}"
+        );
     }
-    m_avatarBtn->setStyleSheet(
-        "QPushButton { "
-        "   background-color: #EFF6FF; "
-        "   color: #2563EB; "
-        "   border: 1px solid #DBEAFE; "
-        "   border-radius: 18px; "
-        "   font-size: 16px; "
-        "   font-weight: bold; "
-        "   padding: 0px; "
-        "   margin: 0px; "
-        "}"
-    );
 
     QObject::connect(m_nameLabel, &ClickableLabel::clicked, this, &BaseDashboardWidget::handleAvatarClicked);
     QObject::connect(m_avatarBtn, &QPushButton::clicked, this, &BaseDashboardWidget::handleAvatarClicked);

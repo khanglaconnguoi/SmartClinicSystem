@@ -9,6 +9,8 @@
 #include <QDate>
 #include <QFrame>
 #include <QScrollArea>
+#include <QPainter>
+#include <QPainterPath>
 #include "../utils/UIValidationUtils.h"
 #include "../../service/Validation.h"
 
@@ -490,12 +492,26 @@ void ProfileWidget::loadProfile(int staffId) {
         return;
     }
     
-    QPixmap avatarPixmap = profile->avatar.scaled(
-            lblAvatar->size() / 1.75,
-            Qt::KeepAspectRatioByExpanding,
-            Qt::SmoothTransformation
-        );
-    lblAvatar->setPixmap(avatarPixmap);
+    if (!profile->avatar.isNull()) {
+        QPixmap circularPix(150, 150);
+        circularPix.fill(Qt::transparent);
+        QPainter painter(&circularPix);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        QPainterPath path;
+        path.addEllipse(0, 0, 150, 150);
+        painter.setClipPath(path);
+        QPixmap scaled = profile->avatar.scaled(150, 150, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        int x = (scaled.width() - 150) / 2;
+        int y = (scaled.height() - 150) / 2;
+        painter.drawPixmap(0, 0, scaled, x, y, 150, 150);
+
+        lblAvatar->setPixmap(circularPix);
+        lblAvatar->setText("");
+    } else {
+        lblAvatar->setPixmap(QPixmap());
+        lblAvatar->setText(profile->fullName.left(1).toUpper());
+    }
     lblAvatar->setAlignment(Qt::AlignCenter);
     lblName->setText(profile->fullName);
     lblStatus->setText(profile->isActive ? "Đang làm việc" : "Đã nghỉ việc");
