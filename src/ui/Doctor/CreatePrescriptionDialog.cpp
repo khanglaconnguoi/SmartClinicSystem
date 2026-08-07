@@ -579,10 +579,12 @@ void CreatePrescriptionDialog::onExportPdfClicked() {
     if (fileName.isEmpty()) return;
 
     QPdfWriter writer(fileName);
+    writer.setResolution(96);
     writer.setPageSize(QPageSize(QPageSize::A4));
-    writer.setPageMargins(QMarginsF(15, 15, 15, 15));
+    writer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
 
     QTextDocument doc;
+    doc.setPageSize(QSizeF(writer.width(), writer.height()));
 
     QString html = QString(R"(
         <h2 style='text-align: center; color: #000000;'>ĐƠN THUỐC CỦA BỆNH NHÂN</h2>

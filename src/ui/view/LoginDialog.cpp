@@ -134,8 +134,7 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     );
 
     lblDoctor = new QLabel(rightContainer);
-    lblDoctor->setScaledContents(true);
-    lblDoctor->setGeometry(0, 0, 500, 580);
+    lblDoctor->setGeometry(0, 0, 480, 560);
     QPixmap welcomePix;
     bool welcomeLoaded = false;
 #ifdef PROJECT_ROOT_DIR
@@ -150,8 +149,8 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
         welcomeLoaded = welcomePix.load("assets/images/welcome.png");
     }
     if (!welcomePix.isNull()) {
-        lblDoctor->setPixmap(welcomePix.scaled(lblDoctor->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        lblDoctor->setAlignment(Qt::AlignRight | Qt::AlignBottom);
+        lblDoctor->setPixmap(welcomePix.scaled(lblDoctor->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        lblDoctor->setAlignment(Qt::AlignCenter);
     }
     lblDoctor->setStyleSheet("background: transparent;");
 }

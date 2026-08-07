@@ -4,6 +4,7 @@
 #include "dto/BillingDTOs.h"
 #include "dto/MedicationDTOs.h"
 #include "dto/PrescriptionDTOs.h"
+#include "dto/StaffDTOs.h"
 #include "model/CommonEnums.h"
 #include "model/SystemUser.h"
 #include "service/BillingService.h"
@@ -1671,10 +1672,12 @@ void PharmacistDashboardWidget::handlePrintReceipt() {
               return;
 
             QPdfWriter writer(fileName);
+            writer.setResolution(96);
             writer.setPageSize(QPageSize(QPageSize::A4));
-            writer.setPageMargins(QMarginsF(15, 15, 15, 15));
+            writer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
 
             QTextDocument doc;
+            doc.setPageSize(QSizeF(writer.width(), writer.height()));
             doc.setHtml(html);
             doc.print(&writer);
 
@@ -2317,26 +2320,33 @@ void PharmacistDashboardWidget::showCreateInvoiceDialog(const PrescriptionResult
     lay->addWidget(lblDoc);
     lay->addWidget(lblDate);
     
+    double docFee = 100000.0; // Fallback if doctor info not found
+    if (m_staffService && presc.doctorId > 0) {
+        auto profile = m_staffService->getOwnProfile(presc.doctorId);
+        if (profile && profile->role == UserRole::Doctor) {
+            auto docProfile = dynamic_cast<DoctorProfileDTO*>(profile.get());
+            if (docProfile) {
+                docFee = docProfile->consultationFee;
+            }
+        }
+    }
+
     QHBoxLayout* feeLay = new QHBoxLayout();
-    feeLay->addWidget(new QLabel("Phí khám bệnh (VND):"));
-    QDoubleSpinBox* spinFee = new QDoubleSpinBox(&dlg);
-    spinFee->setRange(0, 10000000);
-    spinFee->setSingleStep(50000);
-    spinFee->setValue(100000);
-    spinFee->setDecimals(0);
-    feeLay->addWidget(spinFee);
+    QLabel* lblFeeTitle = new QLabel("<b>Phí khám bệnh (VND):</b>", &dlg);
+    lblFeeTitle->setStyleSheet("color: #172B4D;");
+    feeLay->addWidget(lblFeeTitle);
+    QLabel* lblFeeVal = new QLabel(QString("%1 VND").arg(QLocale(QLocale::Vietnamese).toString(docFee, 'f', 0)), &dlg);
+    lblFeeVal->setStyleSheet("color: #172B4D;");
+    feeLay->addWidget(lblFeeVal);
+    feeLay->addStretch();
     lay->addLayout(feeLay);
     
     double medTotal = m_billingService->calculateMedicationTotal(presc.items);
     lay->addWidget(new QLabel(QString("<b>Tiền thuốc:</b> %1 VND").arg(QLocale(QLocale::Vietnamese).toString(medTotal, 'f', 0))));
     
+    double grand = docFee + medTotal;
     QLabel* lblGrandTotal = new QLabel(&dlg);
-    auto updateGrandTotal = [spinFee, medTotal, lblGrandTotal]() {
-        double grand = spinFee->value() + medTotal;
-        lblGrandTotal->setText(QString("<h3 style='color: #172B4D;'>Tổng thanh toán: <span style='color:#E53E3E;'>%1 VND</span></h3>").arg(QLocale(QLocale::Vietnamese).toString(grand, 'f', 0)));
-    };
-    connect(spinFee, QOverload<double>::of(&QDoubleSpinBox::valueChanged), updateGrandTotal);
-    updateGrandTotal();
+    lblGrandTotal->setText(QString("<h3 style='color: #172B4D;'>Tổng thanh toán: <span style='color:#E53E3E;'>%1 VND</span></h3>").arg(QLocale(QLocale::Vietnamese).toString(grand, 'f', 0)));
     lay->addWidget(lblGrandTotal);
     
     QHBoxLayout* btnLay = new QHBoxLayout();
@@ -2348,12 +2358,12 @@ void PharmacistDashboardWidget::showCreateInvoiceDialog(const PrescriptionResult
     lay->addLayout(btnLay);
     
     connect(btnCancel, &QPushButton::clicked, &dlg, &QDialog::reject);
-    connect(btnSave, &QPushButton::clicked, &dlg, [this, &dlg, presc, patientId, spinFee]() {
+    connect(btnSave, &QPushButton::clicked, &dlg, [this, &dlg, presc, patientId, docFee]() {
         bool success = m_billingService->createInvoice(
             patientId, 
             presc.recordId, 
             PatientType::Outpatient, 
-            spinFee->value(), 
+            docFee, 
             presc.items
         );
         if (success) {
@@ -2584,10 +2594,12 @@ void PharmacistDashboardWidget::handlePrintInvoice() {
               return;
 
             QPdfWriter writer(fileName);
+            writer.setResolution(96);
             writer.setPageSize(QPageSize(QPageSize::A4));
-            writer.setPageMargins(QMarginsF(15, 15, 15, 15));
+            writer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
 
             QTextDocument doc;
+            doc.setPageSize(QSizeF(writer.width(), writer.height()));
             doc.setHtml(html);
             doc.print(&writer);
 

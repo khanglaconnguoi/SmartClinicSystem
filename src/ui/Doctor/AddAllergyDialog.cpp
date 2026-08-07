@@ -14,10 +14,12 @@ AddActiveIngredientAllergyDialog::AddActiveIngredientAllergyDialog(std::shared_p
 void AddActiveIngredientAllergyDialog::setupUI() {
     this->setStyleSheet(
         "QDialog { background-color: #FFFFFF; font-family: 'Segoe UI'; }"
-        "QLabel { font-size: 13px; font-weight: bold; color: #334155; }"
+        "QLabel { font-size: 13px; font-weight: bold; color: #334155; background-color: transparent; border: none; }"
         "QLineEdit, QComboBox { font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 10px; color: #0F172A; }"
         "QLineEdit:focus, QComboBox:focus { border: 1px solid #2563EB; }"
-        "QTableWidget { border: 1px solid #E2E8F0; border-radius: 6px; gridline-color: #F1F5F9; selection-background-color: #EFF6FF; selection-color: #1E40AF; }"
+        "QTableWidget { border: 1px solid #E2E8F0; border-radius: 6px; gridline-color: #F1F5F9; selection-background-color: #EFF6FF; selection-color: #1E40AF; outline: none; }"
+        "QTableWidget::item { outline: none; border: none; }"
+        "QTableWidget::item:focus { outline: none; border: none; }"
         "QHeaderView::section { background-color: #F8FAFC; padding: 6px; font-weight: bold; border: none; border-bottom: 1px solid #E2E8F0; color: #475569; font-size: 12px; }"
     );
 
@@ -25,13 +27,11 @@ void AddActiveIngredientAllergyDialog::setupUI() {
     mainLayout->setContentsMargins(18, 18, 18, 18);
     mainLayout->setSpacing(12);
 
-    // Auto Search Bar (No search button needed)
     m_searchBar = new QLineEdit(this);
     m_searchBar->setPlaceholderText("Nhập tên hoạt chất để tìm kiếm tự động...");
     m_searchBar->setClearButtonEnabled(true);
     mainLayout->addWidget(m_searchBar);
 
-    // Results Table
     m_resultsTable = new QTableWidget(this);
     m_resultsTable->setColumnCount(3);
     m_resultsTable->setHorizontalHeaderLabels({"ID", "Tên Hoạt Chất", "Mô Tả / Ghi Chú"});
@@ -39,6 +39,7 @@ void AddActiveIngredientAllergyDialog::setupUI() {
     m_resultsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_resultsTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_resultsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_resultsTable->setFocusPolicy(Qt::NoFocus);
     m_resultsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     m_resultsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Interactive);
     m_resultsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
@@ -46,12 +47,11 @@ void AddActiveIngredientAllergyDialog::setupUI() {
 
     mainLayout->addWidget(m_resultsTable);
 
-    // Pagination Row
     QHBoxLayout* pageLayout = new QHBoxLayout();
     m_btnPrev = new QPushButton("< Trước", this);
     m_btnNext = new QPushButton("Sau >", this);
     m_lblPageInfo = new QLabel("Trang 1 / 1", this);
-    m_lblPageInfo->setStyleSheet("font-weight: normal; color: #64748B;");
+    m_lblPageInfo->setStyleSheet("font-weight: normal; color: #64748B; background-color: transparent; border: none;");
 
     QString btnPageStyle = "QPushButton { border: 1px solid #CBD5E1; background: white; border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer; }"
                            "QPushButton:hover { background-color: #F1F5F9; }"
@@ -65,17 +65,18 @@ void AddActiveIngredientAllergyDialog::setupUI() {
     pageLayout->addStretch();
     mainLayout->addLayout(pageLayout);
 
-    // Severity & Notes Section (Placed directly below table)
     QGridLayout* optLayout = new QGridLayout();
     optLayout->setSpacing(10);
 
     QLabel* lblSeverity = new QLabel("Mức độ dị ứng:", this);
+    lblSeverity->setStyleSheet("background-color: transparent; border: none;");
     m_cbSeverity = new QComboBox(this);
     m_cbSeverity->addItem(severityToVi(Severity::Mild), static_cast<int>(Severity::Mild));
     m_cbSeverity->addItem(severityToVi(Severity::Moderate), static_cast<int>(Severity::Moderate));
     m_cbSeverity->addItem(severityToVi(Severity::Severe), static_cast<int>(Severity::Severe));
 
     QLabel* lblNotes = new QLabel("Ghi chú dị ứng:", this);
+    lblNotes->setStyleSheet("background-color: transparent; border: none;");
     m_txtNotes = new QLineEdit(this);
     m_txtNotes->setPlaceholderText("Ghi chú phản ứng (nổi mẩn đỏ, sưng môi, phế quản, phát ban...)...");
 
@@ -86,7 +87,6 @@ void AddActiveIngredientAllergyDialog::setupUI() {
 
     mainLayout->addLayout(optLayout);
 
-    // Bottom Action Buttons
     QHBoxLayout* actionLayout = new QHBoxLayout();
     actionLayout->addStretch();
 
@@ -104,7 +104,6 @@ void AddActiveIngredientAllergyDialog::setupUI() {
     actionLayout->addWidget(m_btnAdd);
     mainLayout->addLayout(actionLayout);
 
-    // Signals - Auto search on textChanged
     connect(m_searchBar, &QLineEdit::textChanged, this, &AddActiveIngredientAllergyDialog::performSearch);
     connect(m_btnPrev, &QPushButton::clicked, this, &AddActiveIngredientAllergyDialog::goToPreviousPage);
     connect(m_btnNext, &QPushButton::clicked, this, &AddActiveIngredientAllergyDialog::goToNextPage);
@@ -203,7 +202,7 @@ AddOtherAllergyDialog::AddOtherAllergyDialog(QWidget* parent) : QDialog(parent) 
 
     this->setStyleSheet(
         "QDialog { background-color: #FFFFFF; font-family: 'Segoe UI'; }"
-        "QLabel { font-size: 13px; font-weight: bold; color: #334155; }"
+        "QLabel { font-size: 13px; font-weight: bold; color: #334155; background-color: transparent; border: none; }"
         "QLineEdit, QComboBox { font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 10px; color: #0F172A; }"
         "QLineEdit:focus, QComboBox:focus { border: 1px solid #2563EB; }"
     );
@@ -216,16 +215,19 @@ AddOtherAllergyDialog::AddOtherAllergyDialog(QWidget* parent) : QDialog(parent) 
     formGrid->setSpacing(12);
 
     QLabel* lblName = new QLabel("Tên dị ứng / Tác nhân:", this);
+    lblName->setStyleSheet("background-color: transparent; border: none;");
     m_txtName = new QLineEdit(this);
     m_txtName->setPlaceholderText("Vd: Hải sản, Phấn hoa, Đậu phộng, Côn trùng...");
 
     QLabel* lblSeverity = new QLabel("Mức độ dị ứng:", this);
+    lblSeverity->setStyleSheet("background-color: transparent; border: none;");
     m_cbSeverity = new QComboBox(this);
     m_cbSeverity->addItem(severityToVi(Severity::Mild), static_cast<int>(Severity::Mild));
     m_cbSeverity->addItem(severityToVi(Severity::Moderate), static_cast<int>(Severity::Moderate));
     m_cbSeverity->addItem(severityToVi(Severity::Severe), static_cast<int>(Severity::Severe));
 
     QLabel* lblNotes = new QLabel("Ghi chú thêm:", this);
+    lblNotes->setStyleSheet("background-color: transparent; border: none;");
     m_txtNotes = new QLineEdit(this);
     m_txtNotes->setPlaceholderText("Mô tả phản ứng dị ứng...");
 
