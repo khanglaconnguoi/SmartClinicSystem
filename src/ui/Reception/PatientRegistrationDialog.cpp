@@ -342,34 +342,7 @@ void PatientRegistrationDialog::handleSave()
         }
     }
 
-    // 2. Kiểm tra trùng lặp Số điện thoại cá nhân (KHÔNG kiểm tra SĐT người thân)
-    if (!phone.isEmpty() && m_patientService) {
-        auto existPhone = m_patientService->getPatientByPhoneOrCitizenId(phone, "");
-        if (existPhone.has_value()) {
-            const auto &p = existPhone.value();
-            QMessageBox msgBox(this);
-            msgBox.setWindowTitle("Trùng Lặp Số Điện Thoại Cá Nhân");
-            msgBox.setText(
-                QString("Không thể đăng ký bệnh nhân mới!\n\n"
-                        "Số điện thoại cá nhân [%1] ĐÃ TỒN TẠI trên hệ thống.\n\n"
-                        "Thông tin bệnh nhân trùng khớp:\n"
-                        "• Họ tên: %2\n"
-                        "• Mã bệnh nhân: %3\n"
-                        "• SĐT cá nhân: %4\n\n"
-                        "Vui lòng kiểm tra lại thông tin hoặc chọn bệnh nhân đã có để tiếp tục.")
-                    .arg(phone, p.fullName, p.patientCode, p.phone));
-            msgBox.setIcon(QMessageBox::Critical);
-            msgBox.setStyleSheet(
-                "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
-                "QLabel { color: #111827; font-size: 14px; font-weight: bold; }"
-                "QPushButton { background-color: #EF4444; color: white; "
-                "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: "
-                "6px; border: none; font-size: 14px; }"
-                "QPushButton:hover { background-color: #DC2828; }");
-            msgBox.exec();
-            return;
-        }
-    }
+    // 2. Cho phép trùng lặp Số điện thoại cá nhân / người thân (Không cần kiểm tra unique)
 
     QString gender = GenderText::toEn(m_cbGender->currentText());
     QDate dob = m_dtDateOfBirth->date();

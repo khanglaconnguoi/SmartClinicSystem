@@ -18,15 +18,27 @@ bool PrescriptionRepository::insertHeader(
   QVariantList params = {prescription.recordId, prescription.doctorId,
                          prescription.notes};
 
-  QSqlQuery query = db.executeQuery(insert, params);
-
-  if (!query.isActive()) {
-    qWarning() << "PrescriptionRepository::insertPrescription - Lỗi ghi bảng "
-                  "prescription";
+  QSqlQuery query(db.database());
+  if (!query.prepare(insert)) {
+    qWarning() << "PrescriptionRepository::insertHeader - prepare query thất bại:"
+               << query.lastError().text();
+    return false;
+  }
+  for (const QVariant &param : params) {
+    query.addBindValue(param);
+  }
+  if (!query.exec()) {
+    qWarning() << "PrescriptionRepository::insertHeader - INSERT prescriptions thất bại:"
+               << query.lastError().text();
     return false;
   }
 
   prescriptionId = query.lastInsertId().toInt();
+  if (prescriptionId <= 0) {
+    qWarning() << "PrescriptionRepository::insertHeader - lastInsertId() trả về"
+               << prescriptionId;
+    return false;
+  }
 
   return true;
 }

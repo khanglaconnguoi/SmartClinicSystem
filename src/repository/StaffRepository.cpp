@@ -15,6 +15,7 @@
 
 bool StaffRepository::insertStaffBase(const StaffInsertDTO &staff,
                                       int &staffId) {
+  DatabaseManager &db = DatabaseManager::getInstance();
   QString insert = R"(
         INSERT INTO staff (
             staff_code,
@@ -42,12 +43,27 @@ bool StaffRepository::insertStaffBase(const StaffInsertDTO &staff,
       staff.email,       staff.address,      staff.departmentId,
       staff.hireDate,    staff.shift};
 
-  QSqlQuery query = DatabaseManager::getInstance().executeQuery(insert, params);
-  if (query.lastError().isValid()) {
+  QSqlQuery query(db.database());
+  if (!query.prepare(insert)) {
+    qWarning() << "StaffRepository::insertStaffBase - prepare query thất bại:"
+               << query.lastError().text();
+    return false;
+  }
+  for (const QVariant &param : params) {
+    query.addBindValue(param);
+  }
+  if (!query.exec()) {
+    qWarning() << "StaffRepository::insertStaffBase - Lỗi INSERT staff:"
+               << query.lastError().text();
     return false;
   }
 
   staffId = query.lastInsertId().toInt();
+  if (staffId <= 0) {
+    qWarning() << "StaffRepository::insertStaffBase - lastInsertId() trả về"
+               << staffId;
+    return false;
+  }
   return true;
 }
 

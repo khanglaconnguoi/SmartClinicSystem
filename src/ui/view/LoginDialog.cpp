@@ -37,7 +37,7 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     leftForm->setStyleSheet("background: transparent;");
 
     lblLeftLogo = new QLabel(leftForm);
-    lblLeftLogo->setGeometry(93, 10, 254, 127);
+    lblLeftLogo->setGeometry(40, 10, 360, 180);
     QPixmap logoPix;
     bool logoLoaded = false;
 #ifdef PROJECT_ROOT_DIR
@@ -61,12 +61,12 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     }
 
     lblSlogan = new QLabel("NovaCare - Nâng cao sức khỏe", leftForm);
-    lblSlogan->setGeometry(0, 142, 440, 20);
+    lblSlogan->setGeometry(0, 195, 440, 20);
     lblSlogan->setAlignment(Qt::AlignCenter);
     lblSlogan->setStyleSheet("font-size: 13px; font-weight: bold; color: #757575;");
 
     txtAccount = new QLineEdit(leftForm);
-    txtAccount->setGeometry(50, 180, 360, 48);
+    txtAccount->setGeometry(50, 230, 360, 48);
     txtAccount->setPlaceholderText("Nhập tài khoản");
     txtAccount->setStyleSheet(
         "QLineEdit { font-size: 14px; padding-left: 45px; border: 1px solid #E0E0E0; border-radius: 6px; background-color: white; color: #333333; }"
@@ -78,7 +78,7 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     icoUser->setStyleSheet("font-size: 16px; color: #4B94F2; border: none; background: transparent;");
 
     txtPassword = new QLineEdit(leftForm);
-    txtPassword->setGeometry(50, 245, 360, 48);
+    txtPassword->setGeometry(50, 290, 360, 48);
     txtPassword->setPlaceholderText("Nhập mật khẩu");
     txtPassword->setEchoMode(QLineEdit::Password);
 
@@ -107,7 +107,7 @@ LoginDialog::LoginDialog(std::shared_ptr<AuthService> authService,
     icoLock->setStyleSheet("font-size: 16px; color: #4B94F2; border: none; background: transparent;");
 
     btnLogin = new QPushButton("Đăng nhập", leftForm);
-    btnLogin->setGeometry(50, 320, 360, 48);
+    btnLogin->setGeometry(50, 355, 360, 48);
     btnLogin->setCursor(Qt::PointingHandCursor);
     btnLogin->setStyleSheet(
         "QPushButton { background-color: #4B94F2; color: white; font-size: 16px; font-weight: bold; border-radius: 6px; border: none; }"
@@ -201,7 +201,7 @@ void LoginDialog::showPasswordChangeDialog(std::shared_ptr<IAuthenticatable> use
     dialog.resize(460, 320);
     dialog.setStyleSheet(
         "QDialog { background-color: #FFFFFF; }"
-        "QLabel { color: #111827; }"
+        "QLabel { color: #111827; background-color: transparent; }"
         "QLineEdit { padding: 10px 12px; border: 1px solid #D1D5DB; border-radius: 8px; background-color: #FFFFFF; color: #111827; }"
         "QLineEdit:focus { border: 1px solid #4B94F2; }"
         "QPushButton { padding: 8px 16px; border-radius: 8px; font-weight: 600; }"
@@ -211,7 +211,7 @@ void LoginDialog::showPasswordChangeDialog(std::shared_ptr<IAuthenticatable> use
     layout->setSpacing(14);
     layout->setContentsMargins(24, 24, 24, 24);
 
-    QLabel *titleLabel = new QLabel("Bạn cần đổi mật khẩu trước AAA khi tiếp tục", &dialog);
+    QLabel *titleLabel = new QLabel("Bạn cần đổi mật khẩu trước khi tiếp tục", &dialog);
     titleLabel->setStyleSheet("font-size: 17px; font-weight: bold; color: #111827;");
     layout->addWidget(titleLabel);
 

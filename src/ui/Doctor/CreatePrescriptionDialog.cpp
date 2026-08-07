@@ -424,9 +424,10 @@ void CreatePrescriptionDialog::addMedicineRow(int medicationId, const QString &n
     QLineEdit *txtDosage = new QLineEdit(dosage, this);
     txtDosage->setPlaceholderText(QString::fromUtf8("Ví dụ: 1"));
     txtDosage->setValidator(new QRegularExpressionValidator(QRegularExpression("^[0-9]+(?:\\.[0-9]+)?$"), txtDosage));
+    txtDosage->setStyleSheet("QLineEdit { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; background-color: #ffffff; color: #0f172a; min-height: 24px; }");
     connect(txtDosage, &QLineEdit::editingFinished, this, [txtDosage]() {
         QString err = txtDosage->text().trimmed().isEmpty() ? "Vui lòng nhập liều lượng" : "";
-        UIValidationUtils::applyFieldValidationStyle(txtDosage, err);
+        UIValidationUtils::applyTableFieldValidationStyle(txtDosage, err);
     });
     tblPrescription->setCellWidget(row, 3, txtDosage);
 
@@ -434,9 +435,10 @@ void CreatePrescriptionDialog::addMedicineRow(int medicationId, const QString &n
     QLineEdit *txtFreq = new QLineEdit(freq, this);
     txtFreq->setPlaceholderText(QString::fromUtf8("Ví dụ: 2"));
     txtFreq->setValidator(new QRegularExpressionValidator(QRegularExpression("^[0-9]+$"), txtFreq));
+    txtFreq->setStyleSheet("QLineEdit { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; background-color: #ffffff; color: #0f172a; min-height: 24px; }");
     connect(txtFreq, &QLineEdit::editingFinished, this, [txtFreq]() {
         QString err = txtFreq->text().trimmed().isEmpty() ? "Vui lòng nhập tần suất" : "";
-        UIValidationUtils::applyFieldValidationStyle(txtFreq, err);
+        UIValidationUtils::applyTableFieldValidationStyle(txtFreq, err);
     });
     tblPrescription->setCellWidget(row, 4, txtFreq);
 
@@ -449,6 +451,7 @@ void CreatePrescriptionDialog::addMedicineRow(int medicationId, const QString &n
     // 6. Ghi Chú
     QLineEdit *txtNote = new QLineEdit(note, this);
     txtNote->setPlaceholderText(QString::fromUtf8("Ghi chú..."));
+    txtNote->setStyleSheet("QLineEdit { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; background-color: #ffffff; color: #0f172a; min-height: 24px; }");
     tblPrescription->setCellWidget(row, 6, txtNote);
 
     // 7. Nút Xóa
@@ -497,22 +500,21 @@ void CreatePrescriptionDialog::onSaveClicked() {
 
         // 1. Handle Severe Allergy Conflicts (BLOCK SAVING)
         if (report.hasSevereConflict()) {
-            warningMsg = QString::fromUtf8("<b>NGUY HIỂM: Phát hiện dị ứng thuốc Nghiêm Trọng!</b><br/>"
-                                           "Bệnh nhân có tiền sử dị ứng ở mức độ <b>NẶNG (SEVERE)</b> với thành phần hoạt chất sau:<br/><br/>");
+            warningMsg = QString::fromUtf8("<b>CẢNH BÁO AN TOÀN ĐƠN THUỐC: Phát hiện dị ứng nghiêm trọng!</b><br/>"
+                                           "Thuốc được kê chứa hoạt chất mà bệnh nhân có tiền sử dị ứng <b>NẶNG</b>:<br/><br/>");
             for (const auto &conflict : report.allergyConflicts) {
                 if (conflict.severity == Severity::Severe) {
                     QStringList meds;
                     for (const auto &m : conflict.conflictingMedications) meds.append(m.second);
-                    warningMsg += QString::fromUtf8("- Hoạt chất: <b>%1</b> (Ghi chú: %2)<br/>  Thuốc kê xung đột: <i>%3</i><br/><br/>")
+                    warningMsg += QString::fromUtf8("- Hoạt chất: <b>%1</b><br/>  Thuốc kê xung đột: <i>%2</i><br/><br/>")
                                   .arg(conflict.ingredientName, 
-                                       conflict.allergyNotes.isEmpty() ? QString::fromUtf8("Không có") : conflict.allergyNotes, 
                                        meds.join(", "));
                 }
             }
-            warningMsg += QString::fromUtf8("<b>Vì lý do an toàn, không thể lưu đơn thuốc này. Vui lòng loại bỏ thuốc gây dị ứng nặng.</b>");
+            warningMsg += QString::fromUtf8("<b>Vì lý do an toàn, hệ thống không thể lưu đơn thuốc này. Vui lòng điều chỉnh lại thuốc gây dị ứng.</b>");
             
             QMessageBox msgBox(this);
-            msgBox.setWindowTitle(QString::fromUtf8("Xung Đột Dị Ứng Nghiêm Trọng"));
+            msgBox.setWindowTitle(QString::fromUtf8("Cảnh Báo Dị Ứng Nghiêm Trọng"));
             msgBox.setIcon(QMessageBox::Critical);
             msgBox.setText(warningMsg);
             msgBox.setStandardButtons(QMessageBox::Ok);
@@ -531,9 +533,8 @@ void CreatePrescriptionDialog::onSaveClicked() {
                     QStringList meds;
                     for (const auto &m : conflict.conflictingMedications) meds.append(m.second);
                     QString severityText = (conflict.severity == Severity::Mild) ? QString::fromUtf8("Nhẹ") : QString::fromUtf8("Vừa");
-                    warningMsg += QString::fromUtf8("- Bệnh nhân dị ứng mức <b>%1</b> với hoạt chất <b>%2</b> (Ghi chú: %3). Thuốc kê: <i>%4</i><br/>")
+                    warningMsg += QString::fromUtf8("- Bệnh nhân dị ứng mức <b>%1</b> với hoạt chất <b>%2</b>. Thuốc kê: <i>%3</i><br/>")
                                   .arg(severityText, conflict.ingredientName, 
-                                       conflict.allergyNotes.isEmpty() ? QString::fromUtf8("Không có") : conflict.allergyNotes, 
                                        meds.join(", "));
                 }
             }

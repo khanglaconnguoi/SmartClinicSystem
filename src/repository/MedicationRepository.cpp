@@ -5,6 +5,7 @@
 
 bool MedicationRepository::insertMedicationBase(const MedicationInputDTO& medication,
                                                 int& outMedicationId) {
+    DatabaseManager &db = DatabaseManager::getInstance();
     QString sql = R"(
         INSERT INTO medications (
             brand_name,
@@ -33,14 +34,27 @@ bool MedicationRepository::insertMedicationBase(const MedicationInputDTO& medica
         medication.expiryDate.toString("yyyy-MM-dd")
     };
 
-    QSqlQuery query = DatabaseManager::getInstance().executeQuery(sql, params);
-    if (!query.isActive()) {
-        qWarning() << "MedicationRepository::insertMedicationBase - Lỗi:"
+    QSqlQuery query(db.database());
+    if (!query.prepare(sql)) {
+        qWarning() << "MedicationRepository::insertMedicationBase - prepare query thất bại:"
+                   << query.lastError().text();
+        return false;
+    }
+    for (const QVariant &param : params) {
+        query.addBindValue(param);
+    }
+    if (!query.exec()) {
+        qWarning() << "MedicationRepository::insertMedicationBase - Lỗi INSERT medications:"
                    << query.lastError().text();
         return false;
     }
 
     outMedicationId = query.lastInsertId().toInt();
+    if (outMedicationId <= 0) {
+        qWarning() << "MedicationRepository::insertMedicationBase - lastInsertId() trả về"
+                   << outMedicationId;
+        return false;
+    }
     return true;
 }
 

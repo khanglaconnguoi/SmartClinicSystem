@@ -395,7 +395,7 @@ QString PatientService::validateBaseInput(const PatientInputDTO &dto,
     return err;
 
   if (!(err = validateCitizenIdUnique(dto.citizenId)).isEmpty()) return err;
-  if (!(err = validatePhoneNumberUnique(dto.phone)).isEmpty()) return err;
+  // Cho phép trùng lặp số điện thoại (Không cần check unique)
 
   if (!(err = validateBloodType(dto.bloodType)).isEmpty()) return err;
   if (!(err = Validation::validateTrimmedNotEmpty(dto.emergencyContactName, "Người liên hệ khẩn cấp không được để trống.")).isEmpty()) return err;

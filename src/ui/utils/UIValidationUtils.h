@@ -35,6 +35,32 @@ namespace UIValidationUtils {
         }
     }
 
+    inline void applyTableFieldValidationStyle(QLineEdit* lineEdit, const QString& errorMessage) {
+        if (!lineEdit) return;
+
+        // Store original style if not already stored
+        if (lineEdit->property("originalStyle").isNull()) {
+            QString currentStyle = lineEdit->styleSheet();
+            if (currentStyle.trimmed().isEmpty()) {
+                currentStyle = "QLineEdit { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; background-color: #ffffff; color: #0f172a; min-height: 24px; }";
+            }
+            lineEdit->setProperty("originalStyle", currentStyle);
+        }
+
+        if (!errorMessage.isEmpty()) {
+            lineEdit->setStyleSheet("QLineEdit { border: 1px solid #FF3B30; border-radius: 4px; background-color: #FFE5E5; padding: 2px 6px; color: #0f172a; min-height: 24px; }");
+            lineEdit->setToolTip(errorMessage);
+        } else {
+            // Restore original style
+            QString orig = lineEdit->property("originalStyle").toString();
+            if (orig.trimmed().isEmpty()) {
+                orig = "QLineEdit { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; background-color: #ffffff; color: #0f172a; min-height: 24px; }";
+            }
+            lineEdit->setStyleSheet(orig);
+            lineEdit->setToolTip("");
+        }
+    }
+
     inline void attachPrimitiveValidators(QLineEdit* txtCitizenId, QLineEdit* txtPhone) {
         if (txtCitizenId) {
             // 12 digits max, only numbers

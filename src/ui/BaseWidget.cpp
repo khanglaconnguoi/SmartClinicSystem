@@ -31,7 +31,7 @@ void BaseDashboardWidget::setupSidebarFrame() {
 
     m_sidebarFrame = new QFrame(this);
     m_sidebarFrame->setObjectName("Sidebar");
-    m_sidebarFrame->setFixedWidth(240); 
+    m_sidebarFrame->setFixedWidth(280); 
     
     m_sidebarFrame->setStyleSheet(
         "QFrame#Sidebar { background-color: #FFFFFF; border-right: 1px solid #E2E8F0; }"
@@ -41,7 +41,7 @@ void BaseDashboardWidget::setupSidebarFrame() {
     );
 
     m_sidebarLayout = new QVBoxLayout(m_sidebarFrame);
-    m_sidebarLayout->setContentsMargins(15, 30, 15, 30);
+    m_sidebarLayout->setContentsMargins(15, 10, 15, 30);
     m_sidebarLayout->setSpacing(10);
 
 #include <QCoreApplication>
@@ -61,13 +61,13 @@ void BaseDashboardWidget::setupSidebarFrame() {
         logoLoaded = logoPix.load("assets/images/logo.png");
     }
     if (!logoPix.isNull()) {
-        QPixmap scaledLogo = logoPix.scaledToWidth(170, Qt::SmoothTransformation);
+        QPixmap scaledLogo = logoPix.scaledToWidth(250, Qt::SmoothTransformation);
         m_logoLabel->setPixmap(scaledLogo);
         m_logoLabel->setAlignment(Qt::AlignCenter);
-        m_logoLabel->setStyleSheet("margin-top: 5px; margin-bottom: 15px; background: transparent; border: none;");
+        m_logoLabel->setStyleSheet("margin-top: 0px; margin-bottom: 10px; background: transparent; border: none;");
     } else {
         m_logoLabel->setText("SMART CLINIC SYSTEM");
-        m_logoLabel->setStyleSheet("font-size: 18px; font-weight: bold; color: #2563EB; margin-bottom: 20px;");
+        m_logoLabel->setStyleSheet("font-size: 24px; font-weight: bold; color: #2563EB; margin-bottom: 15px;");
     }
     m_sidebarLayout->addWidget(m_logoLabel);
 

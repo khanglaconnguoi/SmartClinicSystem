@@ -22,13 +22,26 @@ int ServiceRequestRepository::createRequest(const ServiceRequestInputDTO& input)
         input.serviceName
     };
 
-    QSqlQuery query = db.executeQuery(sql, params);
-    if (query.lastError().isValid()) {
+    QSqlQuery query(db.database());
+    if (!query.prepare(sql)) {
+        qWarning() << "ServiceRequestRepository::createRequest - prepare query thất bại:"
+                   << query.lastError().text();
+        return -1;
+    }
+    for (const QVariant &param : params) {
+        query.addBindValue(param);
+    }
+    if (!query.exec()) {
         qWarning() << "ServiceRequestRepository::createRequest error:" << query.lastError().text();
         return -1;
     }
 
-    return query.lastInsertId().toInt();
+    int requestId = query.lastInsertId().toInt();
+    if (requestId <= 0) {
+        qWarning() << "ServiceRequestRepository::createRequest - lastInsertId() trả về" << requestId;
+        return -1;
+    }
+    return requestId;
 }
 
 QList<ServiceRequestDTO> ServiceRequestRepository::getRequestsByRoom(
