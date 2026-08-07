@@ -177,6 +177,10 @@ private:
     PagedResult<std::shared_ptr<SystemUser>> searchReceptionistsPaged(ReceptionistSearchCriteria criteria) const;
     PagedResult<std::shared_ptr<SystemUser>> searchPharmacistsPaged(PharmacistSearchCriteria criteria) const;
 
+    QList<QPair<int, QString>> getRoomsForFilter() const {
+        return m_staffRepository->getRoomsForFilter();
+    }
+
 
 
     /*

@@ -76,6 +76,10 @@ private:
 
   // Registration UI elements
   class QFrame *m_apptCard = nullptr;
+  class QFrame *m_patientInfoCard = nullptr;
+  QLabel *m_lblInfoFullName = nullptr;
+  QLabel *m_lblInfoDateOfBirth = nullptr;
+  QLabel *m_lblInfoGender = nullptr;
   QLineEdit *m_txtPatientPhone = nullptr;
   QLineEdit *m_txtPatientCitizenId = nullptr;
   QPushButton *m_btnContinue = nullptr;
@@ -134,6 +138,8 @@ private:
   class QFrame *makeCard(QWidget *parent = nullptr);
 
   // Helpers
+  void updatePatientInfoWidget(int patientId);
+  void clearPatientInfoWidget();
   void clearLayout(QLayout *layout);
   void switchPage(int index, QPushButton *activeBtn);
   void refreshOverviewStats();

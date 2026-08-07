@@ -10,6 +10,7 @@
 #include "../view/Profile.h"
 #include "PatientEditDialog.h"
 #include "PatientRegistrationDialog.h"
+#include "PatientSelectionDialog.h"
 #include "RoomQueueDialog.h"
 #include "RoomQueueWidget.h"
 #include <QCalendarWidget>
@@ -388,6 +389,43 @@ void ReceptionDashboardWidget::refreshRecentActivity() {
   }
 }
 
+void ReceptionDashboardWidget::updatePatientInfoWidget(int patientId) {
+  if (!m_patientService || patientId <= 0) {
+    clearPatientInfoWidget();
+    return;
+  }
+
+  auto patientOpt = m_patientService->getPatientById(patientId);
+  if (patientOpt.has_value()) {
+    const auto &p = patientOpt.value();
+    if (m_lblInfoFullName) {
+      m_lblInfoFullName->setText(p.fullName.isEmpty() ? "--" : p.fullName);
+    }
+    if (m_lblInfoDateOfBirth) {
+      m_lblInfoDateOfBirth->setText(p.dateOfBirth.isValid() ? p.dateOfBirth.toString("dd/MM/yyyy") : "--");
+    }
+    if (m_lblInfoGender) {
+      m_lblInfoGender->setText(GenderText::toVi(p.gender));
+    }
+    if (m_patientInfoCard) {
+      m_patientInfoCard->setVisible(true);
+    }
+  } else {
+    clearPatientInfoWidget();
+  }
+}
+
+void ReceptionDashboardWidget::clearPatientInfoWidget() {
+  if (m_lblInfoFullName)
+    m_lblInfoFullName->setText("--");
+  if (m_lblInfoDateOfBirth)
+    m_lblInfoDateOfBirth->setText("--");
+  if (m_lblInfoGender)
+    m_lblInfoGender->setText("--");
+  if (m_patientInfoCard)
+    m_patientInfoCard->setVisible(false);
+}
+
 void ReceptionDashboardWidget::onContinueClicked() {
   QString phone = m_txtPatientPhone->text().trimmed();
   QString citizenId = m_txtPatientCitizenId->text().trimmed();
@@ -397,25 +435,42 @@ void ReceptionDashboardWidget::onContinueClicked() {
     return;
   }
 
-  auto patientOpt =
-      m_patientService->getPatientByPhoneOrCitizenId(phone, citizenId);
-  if (patientOpt) {
-    m_currentPatientId = patientOpt->patientId;
-    m_txtPatientPhone->setText(patientOpt->phone);
-    m_txtPatientPhone->setReadOnly(true);
-    m_txtPatientCitizenId->setReadOnly(true);
-
-    m_apptCard->setVisible(true);
-    m_btnContinue->setText("Đã xác nhận");
-    m_btnContinue->setEnabled(false);
-    m_btnContinue->setStyleSheet(
-        "background-color: #EAEAEA; color: #999; padding: 10px 25px; "
-        "border-radius: 6px; font-size: 15px; font-weight: bold;");
-  } else {
+  auto matches = m_patientService->getPatientsByPhoneOrCitizenId(phone, citizenId);
+  if (matches.isEmpty()) {
     QMessageBox::warning(this, "Lỗi",
                          "Không tìm thấy bệnh nhân. Vui lòng tạo bệnh nhân mới "
                          "trước khi đăng ký khám.");
+    return;
   }
+
+  PatientShortDTO selectedPatient;
+  if (matches.size() == 1) {
+    selectedPatient = matches.first();
+  } else {
+    PatientSelectionDialog dialog(matches, this);
+    if (dialog.exec() == QDialog::Accepted) {
+      selectedPatient = dialog.getSelectedPatient();
+    } else {
+      return;
+    }
+  }
+
+  m_currentPatientId = selectedPatient.patientId;
+  m_txtPatientPhone->setText(selectedPatient.phone);
+  if (!selectedPatient.citizenId.isEmpty()) {
+    m_txtPatientCitizenId->setText(selectedPatient.citizenId);
+  }
+  m_txtPatientPhone->setReadOnly(true);
+  m_txtPatientCitizenId->setReadOnly(true);
+
+  updatePatientInfoWidget(m_currentPatientId);
+
+  m_apptCard->setVisible(true);
+  m_btnContinue->setText("Đã xác nhận");
+  m_btnContinue->setEnabled(false);
+  m_btnContinue->setStyleSheet(
+      "background-color: #EAEAEA; color: #999; padding: 10px 25px; "
+      "border-radius: 6px; font-size: 15px; font-weight: bold;");
 }
 
 void ReceptionDashboardWidget::onConfirmClicked() {
@@ -462,13 +517,14 @@ void ReceptionDashboardWidget::onConfirmClicked() {
 
     // Reset form
     m_currentPatientId = -1;
+    clearPatientInfoWidget();
     m_txtPatientPhone->clear();
     m_txtPatientPhone->setReadOnly(false);
     m_txtPatientCitizenId->clear();
     m_txtPatientCitizenId->setReadOnly(false);
 
     m_apptCard->setVisible(false);
-    m_btnContinue->setText("Xác nhận & Tiếp tục");
+    m_btnContinue->setText("Xác nhận");
     m_btnContinue->setEnabled(true);
     m_btnContinue->setStyleSheet(
         "background-color: #4B94F2; color: white; padding: 10px 25px; "
@@ -532,6 +588,8 @@ void ReceptionDashboardWidget::buildRegisterPage() {
               m_txtPatientPhone->setText(patientOpt->phone);
             if (m_txtPatientCitizenId)
               m_txtPatientCitizenId->setText(citizenId);
+
+            updatePatientInfoWidget(m_currentPatientId);
 
             QMessageBox::information(
                 this, "Xác Nhận Thông Tin Bệnh Nhân",
@@ -606,6 +664,56 @@ void ReceptionDashboardWidget::buildRegisterPage() {
   patientFieldsLayout->addLayout(col1);
   patientFieldsLayout->addLayout(col2);
   patientLayout->addLayout(patientFieldsLayout);
+
+  // Selected Patient Summary Card
+  m_patientInfoCard = new QFrame(patientCard);
+  m_patientInfoCard->setStyleSheet(
+      "QFrame { background-color: #F8FAFC; border: 1px solid #E2E8F0; "
+      "border-radius: 8px; } QLabel { border: none; }");
+  m_patientInfoCard->setVisible(false);
+
+  QVBoxLayout *infoCardLayout = new QVBoxLayout(m_patientInfoCard);
+  infoCardLayout->setContentsMargins(15, 12, 15, 12);
+  infoCardLayout->setSpacing(8);
+
+  QLabel *lblInfoTitle = new QLabel("Thông tin bệnh nhân đã chọn:", m_patientInfoCard);
+  lblInfoTitle->setStyleSheet("font-weight: bold; font-size: 14px; color: #1E293B;");
+  infoCardLayout->addWidget(lblInfoTitle);
+
+  QHBoxLayout *infoDetailsLayout = new QHBoxLayout();
+  infoDetailsLayout->setSpacing(25);
+
+  QVBoxLayout *colInfoName = new QVBoxLayout();
+  QLabel *lblHeadName = new QLabel("Họ và tên:", m_patientInfoCard);
+  lblHeadName->setStyleSheet("font-size: 13px; font-weight: bold; color: #64748B;");
+  m_lblInfoFullName = new QLabel("--", m_patientInfoCard);
+  m_lblInfoFullName->setStyleSheet("font-size: 14px; font-weight: bold; color: #0F172A;");
+  colInfoName->addWidget(lblHeadName);
+  colInfoName->addWidget(m_lblInfoFullName);
+
+  QVBoxLayout *colInfoDob = new QVBoxLayout();
+  QLabel *lblHeadDob = new QLabel("Ngày sinh:", m_patientInfoCard);
+  lblHeadDob->setStyleSheet("font-size: 13px; font-weight: bold; color: #64748B;");
+  m_lblInfoDateOfBirth = new QLabel("--", m_patientInfoCard);
+  m_lblInfoDateOfBirth->setStyleSheet("font-size: 14px; font-weight: bold; color: #0F172A;");
+  colInfoDob->addWidget(lblHeadDob);
+  colInfoDob->addWidget(m_lblInfoDateOfBirth);
+
+  QVBoxLayout *colInfoGender = new QVBoxLayout();
+  QLabel *lblHeadGender = new QLabel("Giới tính:", m_patientInfoCard);
+  lblHeadGender->setStyleSheet("font-size: 13px; font-weight: bold; color: #64748B;");
+  m_lblInfoGender = new QLabel("--", m_patientInfoCard);
+  m_lblInfoGender->setStyleSheet("font-size: 14px; font-weight: bold; color: #0F172A;");
+  colInfoGender->addWidget(lblHeadGender);
+  colInfoGender->addWidget(m_lblInfoGender);
+
+  infoDetailsLayout->addLayout(colInfoName);
+  infoDetailsLayout->addLayout(colInfoDob);
+  infoDetailsLayout->addLayout(colInfoGender);
+  infoDetailsLayout->addStretch();
+
+  infoCardLayout->addLayout(infoDetailsLayout);
+  patientLayout->addWidget(m_patientInfoCard);
 
   QHBoxLayout *btnNextLayout = new QHBoxLayout();
   btnNextLayout->addStretch();
@@ -721,11 +829,12 @@ void ReceptionDashboardWidget::buildRegisterPage() {
 
   connect(m_btnCancel, &QPushButton::clicked, this, [this]() {
     m_currentPatientId = -1;
+    clearPatientInfoWidget();
     m_txtPatientPhone->clear();
     m_txtPatientCitizenId->clear();
     m_txtPatientPhone->setReadOnly(false);
     m_txtPatientCitizenId->setReadOnly(false);
-    m_btnContinue->setText("Xác nhận & Tiếp tục");
+    m_btnContinue->setText("Xác nhận");
     m_btnContinue->setEnabled(true);
     m_btnContinue->setStyleSheet(
         "background-color: #4B94F2; color: white; padding: 10px 25px; "

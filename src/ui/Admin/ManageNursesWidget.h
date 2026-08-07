@@ -39,6 +39,7 @@ private:
     QLineEdit* m_txtSearchKey;
     QComboBox* m_cbLevelFilter;
     QComboBox* m_cbDepartmentFilter;
+    QComboBox* m_cbRoomFilter;
     QComboBox* m_cbShiftFilter;
     QComboBox* m_cbStatusFilter;
     QPushButton* m_btnResetFilters;

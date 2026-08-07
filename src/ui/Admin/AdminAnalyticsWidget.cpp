@@ -72,9 +72,9 @@ void AdminAnalyticsWidget::setupUI() {
         QPushButton *btn = new QPushButton(text, filterFrame);
         btn->setCursor(Qt::PointingHandCursor);
         btn->setStyleSheet(
-            "QPushButton { background-color: #F4F5F7; color: #42526E; font-size: 12px; "
-            "font-weight: 600; border-radius: 6px; padding: 6px 12px; border: 1px solid #DFE1E6; }"
-            "QPushButton:hover { background-color: #DEEBFF; color: #0052CC; border-color: #B3D4FF; }"
+            "QPushButton { background-color: #E2E8F0; color: #1E293B; font-size: 12px; "
+            "font-weight: 600; border-radius: 6px; padding: 6px 12px; border: none; }"
+            "QPushButton:hover { background-color: #CBD5E1; color: #0F172A; }"
         );
         return btn;
     };

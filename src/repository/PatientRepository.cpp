@@ -1099,10 +1099,11 @@ double PatientRepository::getInsuranceCoveragePercent(int patientId) const {
   return 0.0;
 }
 
-std::optional<PatientShortDTO>
-PatientRepository::getPatientByPhoneOrCitizenId(
+QList<PatientShortDTO>
+PatientRepository::getPatientsByPhoneOrCitizenId(
     const QString &phone, const QString &citizenId) const {
-  QString sql = "SELECT patient_id, patient_code, full_name, phone_number FROM "
+  QList<PatientShortDTO> results;
+  QString sql = "SELECT patient_id, patient_code, full_name, phone_number, citizen_id, date_of_birth, gender FROM "
                 "patients WHERE is_deleted = 0 AND (";
   QVariantList params;
   QStringList conditions;
@@ -1115,17 +1116,33 @@ PatientRepository::getPatientByPhoneOrCitizenId(
     params << citizenId;
   }
   if (conditions.isEmpty())
-    return std::nullopt;
+    return results;
   sql += conditions.join(" OR ") + ")";
 
   QSqlQuery query = DatabaseManager::getInstance().selectQuery(sql, params);
-  if (query.next()) {
+  while (query.next()) {
     PatientShortDTO rec;
     rec.patientId = query.value(0).toInt();
     rec.patientCode = query.value(1).toString();
     rec.fullName = query.value(2).toString();
     rec.phone = query.value(3).toString();
-    return rec;
+    rec.citizenId = query.value(4).toString();
+    rec.dateOfBirth = QDate::fromString(query.value(5).toString(), "yyyy-MM-dd");
+    if (!rec.dateOfBirth.isValid()) {
+      rec.dateOfBirth = query.value(5).toDate();
+    }
+    rec.gender = query.value(6).toString();
+    results.append(rec);
+  }
+  return results;
+}
+
+std::optional<PatientShortDTO>
+PatientRepository::getPatientByPhoneOrCitizenId(
+    const QString &phone, const QString &citizenId) const {
+  auto list = getPatientsByPhoneOrCitizenId(phone, citizenId);
+  if (!list.isEmpty()) {
+    return list.first();
   }
   return std::nullopt;
 }

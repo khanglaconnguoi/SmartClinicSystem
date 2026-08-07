@@ -518,12 +518,20 @@ static QString buildStaffWhereClause(const StaffSearchCriteria& criteria, QVaria
             where += " AND LOWER(dp.specialty) LIKE ?";
             outParams.append("%" + docCriteria->specialty.trimmed().toLower() + "%");
         }
+        if (docCriteria->roomId > 0) {
+            where += " AND dp.room_id = ?";
+            outParams.append(docCriteria->roomId);
+        }
     }
 
     if (auto nurseCriteria = dynamic_cast<const NurseSearchCriteria*>(&criteria)) {
         if (!nurseCriteria->nurseLevel.trimmed().isEmpty()) {
             where += " AND np.nurse_level = ?";
             outParams.append(nurseCriteria->nurseLevel.trimmed());
+        }
+        if (nurseCriteria->roomId > 0) {
+            where += " AND np.room_id = ?";
+            outParams.append(nurseCriteria->roomId);
         }
     }
 
@@ -549,6 +557,17 @@ static QString buildStaffWhereClause(const StaffSearchCriteria& criteria, QVaria
     if (!criteria.includeDeleted) { where += " AND s.is_deleted = 0"; }
 
     return where;
+}
+
+QList<QPair<int, QString>> StaffRepository::getRoomsForFilter() const {
+    QList<QPair<int, QString>> rooms;
+    DatabaseManager& db = DatabaseManager::getInstance();
+    QString sql = "SELECT room_id, room_number FROM rooms WHERE is_deleted = 0 ORDER BY room_number ASC";
+    QSqlQuery query = db.selectQuery(sql);
+    while (query.next()) {
+        rooms.append({query.value("room_id").toInt(), query.value("room_number").toString()});
+    }
+    return rooms;
 }
 
 PagedResult<std::shared_ptr<SystemUser>> StaffRepository::searchStaffPaged(

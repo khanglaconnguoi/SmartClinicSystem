@@ -89,6 +89,19 @@ void ManageNursesWidget::buildUI() {
     m_cbDepartmentFilter->addItem(pair.second, depId);
   }
 
+  m_cbRoomFilter = new QComboBox(filterCard);
+  m_cbRoomFilter->setStyleSheet(
+      "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; "
+      "border-radius: 6px; font-size: 13px; min-height: 32px; background: "
+      "white; }"
+      "QComboBox:focus { border: 1px solid #2563EB; }");
+  m_cbRoomFilter->addItem("Tất cả phòng", -1);
+  if (m_staffService) {
+    for (const auto &room : m_staffService->getRoomsForFilter()) {
+      m_cbRoomFilter->addItem(room.second, room.first);
+    }
+  }
+
   m_cbShiftFilter = new QComboBox(filterCard);
   m_cbShiftFilter->setStyleSheet(
       "QComboBox { padding: 6px 12px; border: 1px solid #D1D5DB; "
@@ -115,6 +128,16 @@ void ManageNursesWidget::buildUI() {
       "QPushButton { background-color: #6B7280; color: white; border: none; "
       "border-radius: 6px; padding: 4px 12px; font-weight: bold; min-height: 28px; "
       "font-size: 12px; } QPushButton:hover { background-color: #4B5563; }");
+
+  filterLayout->addWidget(m_txtSearchKey);
+  filterLayout->addWidget(m_cbLevelFilter);
+  filterLayout->addWidget(m_cbDepartmentFilter);
+  filterLayout->addWidget(m_cbRoomFilter);
+  filterLayout->addWidget(m_cbShiftFilter);
+  filterLayout->addWidget(m_cbStatusFilter);
+  filterLayout->addWidget(m_btnResetFilters);
+  filterLayout->addStretch();
+  pageLayout->addWidget(filterCard);
 
 
   // Card bao bọc Table
@@ -199,6 +222,8 @@ void ManageNursesWidget::buildUI() {
   connect(m_cbDepartmentFilter,
           QOverload<int>::of(&QComboBox::currentIndexChanged), this,
           &ManageNursesWidget::handleFilterChanged);
+  connect(m_cbRoomFilter, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &ManageNursesWidget::handleFilterChanged);
   connect(m_cbShiftFilter, QOverload<int>::of(&QComboBox::currentIndexChanged),
           this, &ManageNursesWidget::handleFilterChanged);
   connect(m_cbStatusFilter, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -230,6 +255,9 @@ void ManageNursesWidget::loadNursesList() {
     criteria.nurseLevel = "";
   }
   criteria.departmentId = m_cbDepartmentFilter->currentData().toInt();
+  if (m_cbRoomFilter) {
+    criteria.roomId = m_cbRoomFilter->currentData().toInt();
+  }
   criteria.shift = m_cbShiftFilter->currentData().toString();
   criteria.onlyActive = m_cbStatusFilter->currentData().toBool();
   criteria.includeDeleted = false;
@@ -289,36 +317,36 @@ void ManageNursesWidget::loadNursesList() {
     QPushButton *btnEdit = new QPushButton("Xem chi tiết");
     btnEdit->setCursor(Qt::PointingHandCursor);
     btnEdit->setStyleSheet(
-        "QPushButton { color: #2563EB; border: 1px solid #2563EB; padding: 6px "
-        "12px; border-radius: 6px; background-color: white; font-weight: bold; "
+        "QPushButton { background-color: #2563EB; color: white; border: none; padding: 6px "
+        "12px; border-radius: 6px; font-weight: bold; "
         "} QPushButton:hover "
-        "{ background-color: #EFF6FF; }");
+        "{ background-color: #1D4ED8; }");
 
     QPushButton *btnResetPwd = new QPushButton("Reset MK");
     btnResetPwd->setCursor(Qt::PointingHandCursor);
     btnResetPwd->setStyleSheet(
-        "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 6px "
-        "12px; border-radius: 6px; background-color: white; font-weight: bold; "
+        "QPushButton { background-color: #D97706; color: white; border: none; padding: 6px "
+        "12px; border-radius: 6px; font-weight: bold; "
         "} QPushButton:hover "
-        "{ background-color: #FEF3C7; }");
+        "{ background-color: #B45309; }");
 
     QPushButton *btnDeactivate =
         new QPushButton(nurse->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
     btnDeactivate->setCursor(Qt::PointingHandCursor);
     if (nurse->isActive()) {
       btnDeactivate->setStyleSheet(
-          "QPushButton { color: #DC2626; border: 1px solid #DC2626; padding: "
+          "QPushButton { background-color: #DC2626; color: white; border: none; padding: "
           "6px "
-          "12px; border-radius: 6px; background-color: white; font-weight: "
+          "12px; border-radius: 6px; font-weight: "
           "bold; } QPushButton:hover "
-          "{ background-color: #FEE2E2; }");
+          "{ background-color: #B91C1C; }");
     } else {
       btnDeactivate->setStyleSheet(
-          "QPushButton { color: #22C55E; border: 1px solid #22C55E; padding: "
+          "QPushButton { background-color: #16A34A; color: white; border: none; padding: "
           "6px "
-          "12px; border-radius: 6px; background-color: white; font-weight: "
+          "12px; border-radius: 6px; font-weight: "
           "bold; } QPushButton:hover "
-          "{ background-color: #DCFCE7; }");
+          "{ background-color: #15803D; }");
     }
 
     actionLayout->addWidget(btnEdit);
@@ -378,6 +406,7 @@ void ManageNursesWidget::handleResetFilters() {
   m_txtSearchKey->clear();
   m_cbLevelFilter->setCurrentIndex(0);
   m_cbDepartmentFilter->setCurrentIndex(0);
+  if (m_cbRoomFilter) m_cbRoomFilter->setCurrentIndex(0);
   m_cbShiftFilter->setCurrentIndex(0);
   m_cbStatusFilter->setCurrentIndex(0);
   m_currentPage = 1;

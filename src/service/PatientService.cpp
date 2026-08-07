@@ -653,6 +653,11 @@ std::optional<PatientShortDTO> PatientService::getPatientByPhoneOrCitizenId(cons
     return m_patientRepository->getPatientByPhoneOrCitizenId(phone, citizenId);
 }
 
+QList<PatientShortDTO> PatientService::getPatientsByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const {
+    if (!m_patientRepository) return {};
+    return m_patientRepository->getPatientsByPhoneOrCitizenId(phone, citizenId);
+}
+
 QString PatientService::validateCitizenIdUnique(const QString &citizenId, int excludePatientId) const {
   if (citizenId.trimmed().isEmpty()) return "";
   if (m_patientRepository && m_patientRepository->existsByCitizenId(citizenId.trimmed(), excludePatientId)) {

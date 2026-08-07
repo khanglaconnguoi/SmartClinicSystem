@@ -65,6 +65,7 @@ public:
   bool updatePatient(const PatientUpdateDTO &dto);
 
   std::optional<PatientShortDTO> getPatientByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
+  QList<PatientShortDTO> getPatientsByPhoneOrCitizenId(const QString &phone, const QString &citizenId) const;
   bool existsByCitizenId(const QString &citizenId, int excludePatientId = -1) const;
   bool existsByPhoneNumber(const QString &phone, int excludePatientId = -1) const;
 

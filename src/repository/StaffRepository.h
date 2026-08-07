@@ -39,6 +39,7 @@ public:
     // --- Danh sách & Tìm kiếm ---
     // QList<std::shared_ptr<SystemUser>> search(const StaffSearchCriteria& criteria) const;
     PagedResult<std::shared_ptr<SystemUser>> searchStaffPaged(const StaffSearchCriteria& criteria) const;
+    QList<QPair<int, QString>> getRoomsForFilter() const;
 
     // Tìm kiếm profile theo ID / staff code phục vụ Auth Service
     std::shared_ptr<SystemUser> findById(int staffId) const;

@@ -172,12 +172,14 @@ struct StaffSearchCriteria {
 
 struct DoctorSearchCriteria : public StaffSearchCriteria {
     QString specialty;
+    int roomId = -1;
 
     DoctorSearchCriteria() { role = UserRole::Doctor; }
 };
 
 struct NurseSearchCriteria : public StaffSearchCriteria {
     QString nurseLevel;
+    int roomId = -1;
 
     NurseSearchCriteria() { role = UserRole::Nurse; }
 };

@@ -297,36 +297,36 @@ void ManageReceptionWidget::loadReceptionList() {
     QPushButton *btnEdit = new QPushButton("Xem chi tiết");
     btnEdit->setCursor(Qt::PointingHandCursor);
     btnEdit->setStyleSheet(
-        "QPushButton { color: #2563EB; border: 1px solid #2563EB; padding: 6px "
-        "12px; border-radius: 6px; background-color: white; font-weight: bold; "
+        "QPushButton { background-color: #2563EB; color: white; border: none; padding: 6px "
+        "12px; border-radius: 6px; font-weight: bold; "
         "} QPushButton:hover "
-        "{ background-color: #EFF6FF; }");
+        "{ background-color: #1D4ED8; }");
 
     QPushButton *btnResetPwd = new QPushButton("Reset MK");
     btnResetPwd->setCursor(Qt::PointingHandCursor);
     btnResetPwd->setStyleSheet(
-        "QPushButton { color: #D97706; border: 1px solid #D97706; padding: 6px "
-        "12px; border-radius: 6px; background-color: white; font-weight: bold; "
+        "QPushButton { background-color: #D97706; color: white; border: none; padding: 6px "
+        "12px; border-radius: 6px; font-weight: bold; "
         "} QPushButton:hover "
-        "{ background-color: #FEF3C7; }");
+        "{ background-color: #B45309; }");
 
     QPushButton *btnDeactivate =
         new QPushButton(receptionist->isActive() ? "Vô hiệu hóa" : "Kích hoạt");
     btnDeactivate->setCursor(Qt::PointingHandCursor);
     if (receptionist->isActive()) {
       btnDeactivate->setStyleSheet(
-          "QPushButton { color: #DC2626; border: 1px solid #DC2626; padding: "
+          "QPushButton { background-color: #DC2626; color: white; border: none; padding: "
           "6px "
-          "12px; border-radius: 6px; background-color: white; font-weight: "
+          "12px; border-radius: 6px; font-weight: "
           "bold; } QPushButton:hover "
-          "{ background-color: #FEE2E2; }");
+          "{ background-color: #B91C1C; }");
     } else {
       btnDeactivate->setStyleSheet(
-          "QPushButton { color: #22C55E; border: 1px solid #22C55E; padding: "
+          "QPushButton { background-color: #16A34A; color: white; border: none; padding: "
           "6px "
-          "12px; border-radius: 6px; background-color: white; font-weight: "
+          "12px; border-radius: 6px; font-weight: "
           "bold; } QPushButton:hover "
-          "{ background-color: #DCFCE7; }");
+          "{ background-color: #15803D; }");
     }
 
     actionLayout->addWidget(btnEdit);

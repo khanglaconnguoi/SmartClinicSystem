@@ -33,6 +33,9 @@ struct PatientShortDTO {
     QString patientCode;
     QString fullName;
     QString phone;
+    QString citizenId;
+    QDate dateOfBirth;
+    QString gender;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
