@@ -68,6 +68,7 @@ void runAppointmentServiceTestSuite() {
         appt1.date = QDate::currentDate().addDays(2);
         appt1.startTime = QTime(9, 0);
         appt1.endTime = QTime(9, 30);
+        appt1.reason = "General Examination";
         
         QString err = appointmentService.createAppointment(appt1);
         TEST_ASSERT_TRUE(err.isEmpty());
@@ -79,6 +80,7 @@ void runAppointmentServiceTestSuite() {
         apptConflict.date = QDate::currentDate().addDays(2);
         apptConflict.startTime = QTime(9, 0);
         apptConflict.endTime = QTime(9, 30);
+        apptConflict.reason = "Follow up examination";
 
         QString errConflict = appointmentService.createAppointment(apptConflict);
         // Expecting an error due to conflict
@@ -86,9 +88,9 @@ void runAppointmentServiceTestSuite() {
         std::cout << "    [OK] scheduleAppointment -> conflict prevented properly" << std::endl;
 
         // 4. Test Auto-Mark No-Show
-        // Insert a raw past appointment that was PENDING
+        // Insert a raw past appointment that was SCHEDULED
         QString pastDate = QDate::currentDate().addDays(-2).toString("yyyy-MM-dd");
-        q.exec(QString("INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, status) VALUES (77, 77, '%1', '08:00', 'PENDING')").arg(pastDate));
+        q.exec(QString("INSERT INTO appointments (ticket_number, patient_id, doctor_id, appointment_date, start_time, status) VALUES (1, 77, 77, '%1', '08:00', 'SCHEDULED')").arg(pastDate));
         
         // Auto mark
         appointmentRepo->autoMarkNoShowAppointments();

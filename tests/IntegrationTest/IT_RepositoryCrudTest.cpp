@@ -139,9 +139,9 @@ void runRepositoryCrudTestSuite() {
         bool okInsert = staffRepo.insertDoctor(docDto);
         TEST_ASSERT_TRUE(okInsert == true);
 
-        // Direct SQL query on `staff` table
+        // Direct SQL query on `staff` table JOIN doctor_profiles
         QSqlQuery q;
-        q.prepare("SELECT staff_id, full_name, role, specialty, is_active FROM staff WHERE staff_code = :code");
+        q.prepare("SELECT s.staff_id, s.full_name, s.role, d.specialty, s.is_active FROM staff s JOIN doctor_profiles d ON s.staff_id = d.staff_id WHERE s.staff_code = :code");
         q.bindValue(":code", "DOC-REPO-001");
         TEST_ASSERT_TRUE(q.exec() && q.next());
 
@@ -242,8 +242,8 @@ void runRepositoryCrudTestSuite() {
                     "VALUES (888, 'PAT-888', 'Tx Patient', '1990-01-01', 'MALE', '079888888888', '0900000888', 'tx888@test.com', 'Address', 'Contact', '0900000000')");
         qSetup.exec("INSERT OR IGNORE INTO staff (staff_id, staff_code, password_hash, full_name, role, gender, date_of_birth, citizen_id, phone_number, email, address, department_id, shift) "
                     "VALUES (888, 'D888', 'hash', 'Tx Doctor', 'DOCTOR', 'MALE', '1985-01-01', '079000000888', '0900000888', 'doc888@test.com', 'Address', 1, 'FULL_DAY')");
-        qSetup.exec("INSERT OR IGNORE INTO appointments (appointment_id, patient_id, doctor_id, appointment_date, appointment_time, status) "
-                    "VALUES (888, 888, 888, '2026-08-08', '09:00', 'COMPLETED')");
+        qSetup.exec("INSERT OR IGNORE INTO appointments (appointment_id, ticket_number, patient_id, doctor_id, appointment_date, start_time, status) "
+                    "VALUES (888, 1, 888, 888, '2026-08-08', '09:00', 'COMPLETED')");
 
         MedicalRecordInsertDTO recDto;
         recDto.patientId = 888;
@@ -269,7 +269,7 @@ void runRepositoryCrudTestSuite() {
 
         // Verify direct SQLite row
         QSqlQuery qRec;
-        qRec.prepare("SELECT chief_complaint, status FROM medical_records WHERE record_id = :rid");
+        qRec.prepare("SELECT chief_complaint, is_deleted FROM medical_records WHERE record_id = :rid");
         qRec.bindValue(":rid", recordId);
         TEST_ASSERT_TRUE(qRec.exec() && qRec.next());
         TEST_ASSERT_TRUE(qRec.value("chief_complaint").toString() == "Đau ngực nhẹ");

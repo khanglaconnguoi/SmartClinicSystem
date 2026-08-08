@@ -62,11 +62,12 @@ void runBillingServiceTestSuite() {
                "VALUES (88, 'PAT-88', 'Billing Test Patient', '1990-01-01', 'MALE', '078888888888', '0900000088', 'bill88@test.com', 'Address', 'Contact', '0900000000')");
         q.exec("INSERT OR IGNORE INTO staff (staff_id, staff_code, password_hash, full_name, role, gender, date_of_birth, citizen_id, phone_number, email, address, department_id, shift) "
                "VALUES (88, 'D8801', 'hash', 'Billing Test Doctor', 'DOCTOR', 'MALE', '1985-01-01', '079000000088', '0900000088', 'doc88@test.com', 'Address', 1, 'FULL_DAY')");
-        q.exec("INSERT OR IGNORE INTO appointments (appointment_id, patient_id, doctor_id, appointment_date, appointment_time, status) VALUES (88, 88, 88, '2026-01-01', '08:00', 'COMPLETED')");
-        q.exec("INSERT OR IGNORE INTO medical_records (record_id, patient_id, doctor_id, appointment_id, status) VALUES (88, 88, 88, 88, 'OPEN')");
+        q.exec("INSERT OR IGNORE INTO appointments (appointment_id, ticket_number, patient_id, doctor_id, appointment_date, start_time, status) VALUES (88, 1, 88, 88, '2026-01-01', '08:00', 'COMPLETED')");
+        q.exec("INSERT OR IGNORE INTO medical_records (record_id, patient_id, doctor_id, appointment_id, visit_datetime) VALUES (88, 88, 88, 88, '2026-01-01 08:00:00')");
 
         // 2. Create Invoice
         InvoiceInsertDTO invDto;
+        invDto.invoiceCode = "INV-TEST-0088";
         invDto.patientId = 88;
         invDto.recordId = 88;
         invDto.patientType = "OUTPATIENT";
