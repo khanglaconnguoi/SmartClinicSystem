@@ -56,15 +56,9 @@ void CreatePrescriptionDialog::setupUI() {
     lblSearchTitle->setObjectName("lblDetail");
     leftLayout->addWidget(lblSearchTitle);
 
-    QHBoxLayout *searchBarLayout = new QHBoxLayout();
     txtSearchKeyword = new QLineEdit(this);
-    txtSearchKeyword->setPlaceholderText(QString::fromUtf8("Nhập tên thuốc hoặc hoạt chất..."));
-    btnSearch = new QPushButton(QString::fromUtf8("Tìm kiếm"), this);
-    btnSearch->setObjectName("btnSearch");
-    btnSearch->setFixedWidth(100);
-    searchBarLayout->addWidget(txtSearchKeyword);
-    searchBarLayout->addWidget(btnSearch);
-    leftLayout->addLayout(searchBarLayout);
+    txtSearchKeyword->setPlaceholderText(QString::fromUtf8("Nhập tên thuốc hoặc hoạt chất để tìm kiếm..."));
+    leftLayout->addWidget(txtSearchKeyword);
 
     tblSearchResults = new QTableWidget(0, 5, this);
     tblSearchResults->setHorizontalHeaderLabels(QStringList{
@@ -222,8 +216,7 @@ void CreatePrescriptionDialog::setupUI() {
     mainLayout->addWidget(rightPanel, 6); 
 
     // Connections
-    connect(btnSearch, &QPushButton::clicked, this, &CreatePrescriptionDialog::onSearchClicked);
-    connect(txtSearchKeyword, &QLineEdit::returnPressed, this, &CreatePrescriptionDialog::onSearchClicked);
+    connect(txtSearchKeyword, &QLineEdit::textChanged, this, &CreatePrescriptionDialog::onSearchClicked);
     connect(btnPrevPage, &QPushButton::clicked, this, &CreatePrescriptionDialog::onPrevPageClicked);
     connect(btnNextPage, &QPushButton::clicked, this, &CreatePrescriptionDialog::onNextPageClicked);
     connect(tblSearchResults, &QTableWidget::itemSelectionChanged, this, &CreatePrescriptionDialog::onSearchTableSelectionChanged);

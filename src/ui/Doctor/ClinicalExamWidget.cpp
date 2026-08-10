@@ -98,8 +98,8 @@ ClinicalExamWidget::ClinicalExamWidget(
           &ClinicalExamWidget::validateHeightInput);
   connect(m_txtReason, &QTextEdit::textChanged, this,
           &ClinicalExamWidget::validateChiefComplaintInput);
-  connect(m_cbDiagnosis, QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this, &ClinicalExamWidget::validateDiagnosisInput);
+  connect(m_txtDiagnosis, &QLineEdit::textChanged, this,
+          &ClinicalExamWidget::validateDiagnosisInput);
   connect(m_txtMainDisease, &QLineEdit::textChanged, this,
           &ClinicalExamWidget::validateDiagnosisInput);
 }
@@ -254,9 +254,10 @@ QFrame *ClinicalExamWidget::setupPatientInfoCard() {
       "#EFF6FF; border-radius: 18px; padding: 8px;");
   patDetailsLayout->addWidget(avatarIcon);
 
-  QVBoxLayout *detailsText = new QVBoxLayout();
-  detailsText->setSpacing(4);
-  QHBoxLayout *detLine1 = new QHBoxLayout();
+  QGridLayout *detailsText = new QGridLayout();
+  detailsText->setHorizontalSpacing(24);
+  detailsText->setVerticalSpacing(4);
+
   QLabel *lblCodeTitle = new QLabel("Mã BN:", infoCard);
   lblCodeTitle->setStyleSheet("color: #6B7280; font-size: 12px; font-weight: "
                               "600; background: transparent;");
@@ -273,14 +274,6 @@ QFrame *ClinicalExamWidget::setupPatientInfoCard() {
       "color: #DC2626; font-size: 14px; font-weight: bold; background: "
       "transparent;");
 
-  detLine1->addWidget(lblCodeTitle);
-  detLine1->addWidget(m_lblPatientCodeVal);
-  detLine1->addSpacing(16);
-  detLine1->addWidget(lblNameTitle);
-  detLine1->addWidget(m_lblPatientNameVal);
-  detLine1->addStretch();
-
-  QHBoxLayout *detLine2 = new QHBoxLayout();
   QLabel *lblDobTitle = new QLabel("Ngày sinh:", infoCard);
   lblDobTitle->setStyleSheet(
       "color: #6B7280; font-size: 12px; background: transparent;");
@@ -289,7 +282,7 @@ QFrame *ClinicalExamWidget::setupPatientInfoCard() {
       "color: #111827; font-size: 12px; font-weight: 600; background: "
       "transparent;");
 
-  QLabel *lblGenderTitle = new QLabel("GT:", infoCard);
+  QLabel *lblGenderTitle = new QLabel("Giới Tính:", infoCard);
   lblGenderTitle->setStyleSheet(
       "color: #6B7280; font-size: 12px; background: transparent;");
   m_lblPatientGenderVal = new QLabel("Nữ", infoCard);
@@ -323,21 +316,43 @@ QFrame *ClinicalExamWidget::setupPatientInfoCard() {
     m_cbBloodType->addItem(pair.second, pair.first);
   }
 
-  detLine2->addWidget(lblDobTitle);
-  detLine2->addWidget(m_lblPatientDobVal);
-  detLine2->addSpacing(16);
-  detLine2->addWidget(lblGenderTitle);
-  detLine2->addWidget(m_lblPatientGenderVal);
-  detLine2->addSpacing(16);
-  detLine2->addWidget(lblAgeTitle);
-  detLine2->addWidget(m_lblPatientAgeVal);
-  detLine2->addSpacing(16);
-  detLine2->addWidget(lblBloodTitle);
-  detLine2->addWidget(m_cbBloodType);
-  detLine2->addStretch();
+  QHBoxLayout *boxCode = new QHBoxLayout();
+  boxCode->setSpacing(6);
+  boxCode->addWidget(lblCodeTitle);
+  boxCode->addWidget(m_lblPatientCodeVal);
 
-  detailsText->addLayout(detLine1);
-  detailsText->addLayout(detLine2);
+  QHBoxLayout *boxName = new QHBoxLayout();
+  boxName->setSpacing(6);
+  boxName->addWidget(lblNameTitle);
+  boxName->addWidget(m_lblPatientNameVal);
+
+  QHBoxLayout *boxDob = new QHBoxLayout();
+  boxDob->setSpacing(6);
+  boxDob->addWidget(lblDobTitle);
+  boxDob->addWidget(m_lblPatientDobVal);
+
+  QHBoxLayout *boxGender = new QHBoxLayout();
+  boxGender->setSpacing(6);
+  boxGender->addWidget(lblGenderTitle);
+  boxGender->addWidget(m_lblPatientGenderVal);
+
+  QHBoxLayout *boxAge = new QHBoxLayout();
+  boxAge->setSpacing(6);
+  boxAge->addWidget(lblAgeTitle);
+  boxAge->addWidget(m_lblPatientAgeVal);
+
+  QHBoxLayout *boxBlood = new QHBoxLayout();
+  boxBlood->setSpacing(6);
+  boxBlood->addWidget(lblBloodTitle);
+  boxBlood->addWidget(m_cbBloodType);
+
+  detailsText->addLayout(boxCode, 0, 0, Qt::AlignLeft);
+  detailsText->addLayout(boxName, 0, 1, Qt::AlignLeft);
+  detailsText->addLayout(boxDob, 1, 0, Qt::AlignLeft);
+  detailsText->addLayout(boxGender, 1, 1, Qt::AlignLeft);
+  detailsText->addLayout(boxAge, 2, 0, Qt::AlignLeft);
+  detailsText->addLayout(boxBlood, 2, 1, Qt::AlignLeft);
+
   patDetailsLayout->addLayout(detailsText);
 
   QHBoxLayout *actionButtonsLayout = new QHBoxLayout();
@@ -369,8 +384,9 @@ QFrame *ClinicalExamWidget::setupPatientInfoCard() {
     actionButtonsLayout->addWidget(actionBtns[i]);
   }
 
-  topInfoRow->addLayout(patDetailsLayout, 4);
-  topInfoRow->addLayout(actionButtonsLayout, 6);
+  topInfoRow->addLayout(patDetailsLayout);
+  topInfoRow->addStretch();
+  topInfoRow->addLayout(actionButtonsLayout);
   infoCardLayout->addLayout(topInfoRow);
 
   infoCardLayout->addWidget(createSeparator());
@@ -414,12 +430,11 @@ QWidget *ClinicalExamWidget::setupMainExamForm() {
 
   QHBoxLayout *templateRow = new QHBoxLayout();
   QLabel *lblTemplate = new QLabel("Chọn mẫu:", mainForm);
-  m_cbTemplate = new QComboBox(mainForm);
-  for (const auto &pair : ClinicalTemplateText::getList())
-    m_cbTemplate->addItem(pair.second, pair.first);
-  m_cbTemplate->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  m_txtTemplate = new QLineEdit(mainForm);
+  m_txtTemplate->setPlaceholderText("Ví dụ: Khám tổng quát, Khám nội nhi...");
+  m_txtTemplate->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   templateRow->addWidget(lblTemplate);
-  templateRow->addWidget(m_cbTemplate);
+  templateRow->addWidget(m_txtTemplate);
   mainFormLayout->addLayout(templateRow);
 
   QFrame *vitalBox = new QFrame(mainForm);
@@ -487,13 +502,12 @@ QWidget *ClinicalExamWidget::setupMainExamForm() {
   formGrid->addWidget(new QLabel("Chẩn đoán ban đầu:", mainForm), 0, 0);
   QHBoxLayout *diagRowLayout = new QHBoxLayout();
   diagRowLayout->setSpacing(6);
-  m_cbDiagnosis = new QComboBox(mainForm);
-  for (const auto &pair : DiagnosisText::getList())
-    m_cbDiagnosis->addItem(pair.second, pair.first);
+  m_txtDiagnosis = new QLineEdit(mainForm);
+  m_txtDiagnosis->setPlaceholderText("Ví dụ: Viêm dạ dày cấp, Cảm cúm...");
   m_cbSeverity = new QComboBox(mainForm);
   for (const auto &pair : DiagnosisSeverityText::getList())
     m_cbSeverity->addItem(pair.second, pair.first);
-  diagRowLayout->addWidget(m_cbDiagnosis, 3);
+  diagRowLayout->addWidget(m_txtDiagnosis, 3);
   diagRowLayout->addWidget(m_cbSeverity, 1);
   formGrid->addLayout(diagRowLayout, 1, 0);
 
@@ -503,10 +517,9 @@ QWidget *ClinicalExamWidget::setupMainExamForm() {
   formGrid->addWidget(m_txtMainDisease, 1, 1);
 
   formGrid->addWidget(new QLabel("Hướng xử lý:", mainForm), 2, 0);
-  m_cbDirection = new QComboBox(mainForm);
-  for (const auto &pair : DirectionText::getList())
-    m_cbDirection->addItem(pair.second, pair.first);
-  formGrid->addWidget(m_cbDirection, 3, 0);
+  m_txtDirection = new QLineEdit(mainForm);
+  m_txtDirection->setPlaceholderText("Ví dụ: Cho về nhà, cấp toa thuốc; Nhập viện...");
+  formGrid->addWidget(m_txtDirection, 3, 0);
 
   formGrid->addWidget(new QLabel("Xử trí cụ thể:", mainForm), 2, 1);
   m_cbAction = new QComboBox(mainForm);
@@ -674,8 +687,12 @@ void ClinicalExamWidget::clearExamForm() {
     m_txtClsSummary->clear();
   if (m_lblBmiVal)
     m_lblBmiVal->setText("0.0");
-  if (m_cbDiagnosis)
-    m_cbDiagnosis->setCurrentIndex(0);
+  if (m_txtTemplate)
+    m_txtTemplate->clear();
+  if (m_txtDiagnosis)
+    m_txtDiagnosis->clear();
+  if (m_txtDirection)
+    m_txtDirection->clear();
   if (m_cbSeverity)
     m_cbSeverity->setCurrentIndex(0);
   if (m_cbBloodType) {
@@ -796,8 +813,8 @@ void ClinicalExamWidget::loadPatientInfo(int patientId, int appointmentId,
           QRegularExpression::DotMatchesEverythingOption);
       QRegularExpressionMatch matchTreatment = rxTreatment.match(rec.treatment);
       if (matchTreatment.hasMatch()) {
-        if (m_cbDirection)
-          m_cbDirection->setCurrentText(matchTreatment.captured(1).trimmed());
+        if (m_txtDirection)
+          m_txtDirection->setText(matchTreatment.captured(1).trimmed());
         if (m_cbAction)
           m_cbAction->setCurrentText(matchTreatment.captured(2).trimmed());
         if (m_txtAdvice)
@@ -808,8 +825,8 @@ void ClinicalExamWidget::loadPatientInfo(int patientId, int appointmentId,
         const auto &d = rec.diagnoses.first();
         if (m_txtMainDisease)
           m_txtMainDisease->setText(d.icdCode);
-        if (m_cbDiagnosis)
-          m_cbDiagnosis->setCurrentText(d.description);
+        if (m_txtDiagnosis)
+          m_txtDiagnosis->setText(d.description);
         if (m_cbSeverity)
           m_cbSeverity->setCurrentText(DiagnosisSeverityText::toVi(d.severity));
       }
@@ -872,8 +889,9 @@ QFrame *ClinicalExamWidget::createSeparator() {
 QList<Diagnosis> ClinicalExamWidget::getDiagnosesFromUi() const {
   QList<Diagnosis> list;
   QString diagnosisDesc =
-      m_cbDiagnosis->currentIndex() > 0 ? m_cbDiagnosis->currentText() : "";
-  QString mainDisease = m_txtMainDisease->text().trimmed();
+      m_txtDiagnosis ? m_txtDiagnosis->text().trimmed() : "";
+  QString mainDisease =
+      m_txtMainDisease ? m_txtMainDisease->text().trimmed() : "";
 
   if (!diagnosisDesc.isEmpty() || !mainDisease.isEmpty()) {
     Diagnosis d;
@@ -1009,23 +1027,28 @@ void ClinicalExamWidget::validateDiagnosisInput() {
   static const QString normalLineEditStyle =
       "QLineEdit { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px "
       "10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
-  static const QString normalComboStyle =
-      "QComboBox { border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px "
-      "10px; font-size: 12px; color: #111827; background-color: #FFFFFF; }";
   if (!err.isEmpty()) {
-    m_cbDiagnosis->setStyleSheet(
-        "QComboBox { border: 1px solid #DC2626; background-color: #FEF2F2; "
-        "color: #111827; }");
-    m_txtMainDisease->setStyleSheet(
-        "QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; "
-        "color: #111827; }");
-    m_cbDiagnosis->setToolTip(err);
-    m_txtMainDisease->setToolTip(err);
+    if (m_txtDiagnosis) {
+      m_txtDiagnosis->setStyleSheet(
+          "QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; "
+          "color: #111827; }");
+      m_txtDiagnosis->setToolTip(err);
+    }
+    if (m_txtMainDisease) {
+      m_txtMainDisease->setStyleSheet(
+          "QLineEdit { border: 1px solid #DC2626; background-color: #FEF2F2; "
+          "color: #111827; }");
+      m_txtMainDisease->setToolTip(err);
+    }
   } else {
-    m_cbDiagnosis->setStyleSheet(normalComboStyle);
-    m_txtMainDisease->setStyleSheet(normalLineEditStyle);
-    m_cbDiagnosis->setToolTip("");
-    m_txtMainDisease->setToolTip("");
+    if (m_txtDiagnosis) {
+      m_txtDiagnosis->setStyleSheet(normalLineEditStyle);
+      m_txtDiagnosis->setToolTip("");
+    }
+    if (m_txtMainDisease) {
+      m_txtMainDisease->setStyleSheet(normalLineEditStyle);
+      m_txtMainDisease->setToolTip("");
+    }
   }
 }
 
@@ -1109,7 +1132,8 @@ void ClinicalExamWidget::onSaveClicked() {
                                m_txtClsSummary->toPlainText().trimmed());
   dto.treatment =
       QString("Hướng xử lý: %1. Xử trí: %2. Lời dặn: %3")
-          .arg(m_cbDirection->currentText(), m_cbAction->currentText(),
+          .arg(m_txtDirection ? m_txtDirection->text().trimmed() : "",
+               m_cbAction->currentText(),
                m_txtAdvice->text().trimmed());
 
   dto.nextVisitDate = std::nullopt;
@@ -1165,7 +1189,8 @@ void ClinicalExamWidget::onSaveClicked() {
   m_txtWeight->setStyleSheet(lineEditStyle);
   m_txtHeight->setStyleSheet(lineEditStyle);
   m_txtReason->setStyleSheet(textEditStyle);
-  m_cbDiagnosis->setStyleSheet(comboStyle);
+  if (m_txtDiagnosis)
+    m_txtDiagnosis->setStyleSheet(lineEditStyle);
   m_txtMainDisease->setStyleSheet(lineEditStyle);
 }
 

@@ -97,7 +97,7 @@ private:
     QPushButton* m_btnPrint;
 
     // --- MAIN FORM INPUTS ---
-    QComboBox* m_cbTemplate;
+    QLineEdit* m_txtTemplate;
     QLineEdit* m_txtWeight;
     QLineEdit* m_txtHeight;
     QLineEdit* m_txtTemp;
@@ -108,11 +108,11 @@ private:
     QLabel*    m_lblBmiVal;
 
     QTextEdit* m_txtReason;
-    QComboBox* m_cbDiagnosis;
+    QLineEdit* m_txtDiagnosis;
     QComboBox* m_cbSeverity;
     QLineEdit* m_txtMainDisease;
     QLineEdit* m_txtSubDisease = nullptr;
-    QComboBox* m_cbDirection;
+    QLineEdit* m_txtDirection;
     QComboBox* m_cbAction;
     QComboBox* m_cbService;
     QComboBox* m_cbRoom;

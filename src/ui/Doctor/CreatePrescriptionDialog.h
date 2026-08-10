@@ -67,7 +67,6 @@ private:
 
     // UI Elements - Left Search Panel
     QLineEdit    *txtSearchKeyword;
-    QPushButton  *btnSearch;
     QTableWidget *tblSearchResults;
     QPushButton  *btnPrevPage;
     QPushButton  *btnNextPage;
