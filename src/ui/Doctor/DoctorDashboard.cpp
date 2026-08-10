@@ -47,6 +47,7 @@ public:
 
 
 #include "ClinicalExamWidget.h"
+#include "PatientDetailDialog.h"
 #include "PatientRecordHistoryDialog.h"
 #include "PatientWidget.h"
 #include "ScheduleFollowUpDialog.h"
@@ -682,6 +683,15 @@ void DoctorDashboardWidget::createDoctorTable(QWidget *parentPage,
   m_patientTable->setItemDelegate(new StartedRowDelegate(m_patientTable));
 
   m_patientTable->setMinimumHeight(220);
+  connect(m_patientTable, &QTableWidget::cellDoubleClicked, this,
+          [this](int row, int) {
+            if (row >= 0 && row < m_rowApptMeta.size()) {
+              const auto &meta = m_rowApptMeta[row];
+              openClinicalExamWithIds(meta.patientId, meta.appointmentId,
+                                      meta.name, meta.code, meta.time,
+                                      meta.reason);
+            }
+          });
   cardLayout->addWidget(m_patientTable);
   pageLayout->addWidget(tableCard);
 }
@@ -996,37 +1006,53 @@ void DoctorDashboardWidget::refreshAppointmentsTables() {
           "6px; padding: 6px 14px; border: none; }"
           "QPushButton:hover { background-color: #0369A1; }");
       connect(btnDetail, &QPushButton::clicked, this,
-              [this, capturePatientId, captureApptId, captureName, captureCode,
-               captureTime, captureReason]() {
-                openClinicalExamWithIds(capturePatientId, captureApptId,
-                                        captureName, captureCode, captureTime,
-                                        captureReason);
+              [this, capturePatientId]() {
+                if (capturePatientId > 0 && m_patientService) {
+                  PatientDetailDialog dialog(m_patientService, m_pharmacyService,
+                                             m_medicalRecordService,
+                                             capturePatientId, this);
+                  dialog.exec();
+                } else {
+                  QMessageBox::warning(this, "Thông báo",
+                                       "Không tìm thấy dữ liệu bệnh nhân.");
+                }
               });
       actLayout->addWidget(btnDetail);
 
       if (rec.status != AppointmentStatusText::COMPLETED) {
-        QPushButton *btnCall = new QPushButton("Gọi Khám", actWidget);
+        bool isStarted = (rec.status == AppointmentStatusText::STARTED);
+        QPushButton *btnCall = new QPushButton(isStarted ? "Tiếp tục khám" : "Gọi Khám", actWidget);
         btnCall->setCursor(Qt::PointingHandCursor);
         btnCall->setMinimumHeight(38);
-        btnCall->setStyleSheet(
-            "QPushButton { background-color: #D97706; color: white; font-size: "
-            "12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: "
-            "6px; padding: 6px 14px; border: none; }"
-            "QPushButton:hover { background-color: #B45309; }");
+        if (isStarted) {
+          btnCall->setStyleSheet(
+              "QPushButton { background-color: #059669; color: white; font-size: "
+              "12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: "
+              "6px; padding: 6px 14px; border: none; }"
+              "QPushButton:hover { background-color: #047857; }");
+        } else {
+          btnCall->setStyleSheet(
+              "QPushButton { background-color: #D97706; color: white; font-size: "
+              "12px; font-weight: bold; font-family: 'Segoe UI'; border-radius: "
+              "6px; padding: 6px 14px; border: none; }"
+              "QPushButton:hover { background-color: #B45309; }");
+        }
 
         connect(btnCall, &QPushButton::clicked, this,
                 [this, capturePatientId, captureApptId, captureName,
-                 captureCode, captureTime, captureReason]() {
+                 captureCode, captureTime, captureReason, isStarted]() {
                   if (!m_appointmentService)
                     return;
-                  auto res =
-                      m_appointmentService->callSpecificPatient(captureApptId);
-                  if (res.first > 0) {
-                    QMessageBox::information(
-                        this, "Gọi Khám Thành Công",
-                        QString("Đã gọi bệnh nhân: %1 (Vé: %2)")
-                            .arg(res.second)
-                            .arg(res.first));
+                  if (!isStarted) {
+                    auto res =
+                        m_appointmentService->callSpecificPatient(captureApptId);
+                    if (res.first > 0) {
+                      QMessageBox::information(
+                          this, "Gọi Khám Thành Công",
+                          QString("Đã gọi bệnh nhân: %1 (Vé: %2)")
+                              .arg(res.second)
+                              .arg(res.first));
+                    }
                   }
                   QTimer::singleShot(
                       0, this,

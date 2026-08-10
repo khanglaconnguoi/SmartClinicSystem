@@ -160,7 +160,7 @@ void ClinicalExamWidget::loadLabResults() {
   if (!m_serviceRequestService || m_currentMedicalRecordId <= 0)
     return;
 
-  auto requests = m_serviceRequestService->getRequestsByRoom(-1, "");
+  auto requests = m_serviceRequestService->getRequestsByRoom(-1, "ALL");
   QString summaryText;
 
   for (const auto &req : requests) {
@@ -181,7 +181,7 @@ void ClinicalExamWidget::loadLabResults() {
       box->setPlainText(req.resultNote.isEmpty() ? "Chưa có kết quả."
                                                  : req.resultNote);
       box->setStyleSheet(
-          "QTextEdit { background: transparent; border: 1px solid #D1D5DB; "
+          "QTextEdit { background: #FFFFFF; border: 1px solid #D1D5DB; "
           "border-radius: 6px; padding: 6px 10px; font-size: 12px; color: "
           "#111827; }");
       m_serviceResultsLayout->addWidget(box);
@@ -684,12 +684,20 @@ void ClinicalExamWidget::clearExamForm() {
   }
   m_currentAllergies.clear();
   refreshAllergyTable();
+  m_currentMedicalRecordId = 0;
+  loadLabResults();
 }
 
 void ClinicalExamWidget::loadPatientInfo(int patientId, int appointmentId,
                                          const QString &name, const QString &id,
                                          const QString &time,
                                          const QString &specialty) {
+  if (m_currentAppointmentId == appointmentId && appointmentId > 0) {
+    // Đang mở đúng ca khám này, cập nhật lại kết quả xét nghiệm mới nhất
+    loadLabResults();
+    return;
+  }
+
   clearExamForm();
   m_currentPatientId = patientId;
   m_currentAppointmentId = appointmentId;
@@ -807,6 +815,8 @@ void ClinicalExamWidget::loadPatientInfo(int patientId, int appointmentId,
       }
     }
   }
+
+  loadLabResults();
 
   qDebug() << "Loaded patient info to clinical workspace:" << name << id << time
            << specialty << "patientId:" << patientId

@@ -201,7 +201,11 @@ bool StaffRepository::insertPharmacist(const PharmacistInsertDTO &pharmacist) {
 }
 
 bool StaffRepository::updateStaff(const StaffUpdateDTO &staff) {
-  QString sql = R"(
+  QString sql;
+  QVariantList params;
+
+  if (!staff.avatarBytes.isEmpty()) {
+    sql = R"(
         UPDATE staff
         SET
             full_name = ?,
@@ -216,11 +220,31 @@ bool StaffRepository::updateStaff(const StaffUpdateDTO &staff) {
             shift = ?
         WHERE staff_id = ?;
     )";
-
-  QVariantList params = {
-      staff.fullName,     staff.avatarBytes, staff.gender, staff.dateOfBirth,
-      staff.citizenId,    staff.phoneNumber, staff.email,  staff.address,
-      staff.departmentId, staff.shift,       staff.staffId};
+    params = {
+        staff.fullName,     staff.avatarBytes, staff.gender, staff.dateOfBirth,
+        staff.citizenId,    staff.phoneNumber, staff.email,  staff.address,
+        staff.departmentId, staff.shift,       staff.staffId};
+  } else {
+    sql = R"(
+        UPDATE staff
+        SET
+            full_name = ?,
+            gender = ?,
+            date_of_birth = ?,
+            citizen_id = ?,
+            phone_number = ?,
+            email = ?,
+            address = ?,
+            department_id = ?,
+            shift = ?
+        WHERE staff_id = ?;
+    )";
+    params = {
+        staff.fullName,     staff.gender,       staff.dateOfBirth,
+        staff.citizenId,    staff.phoneNumber,  staff.email,
+        staff.address,      staff.departmentId, staff.shift,
+        staff.staffId};
+  }
 
   QSqlQuery query = DatabaseManager::getInstance().executeQuery(sql, params);
   if (query.lastError().isValid()) {

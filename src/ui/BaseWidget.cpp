@@ -66,7 +66,7 @@ void BaseDashboardWidget::setupSidebarFrame() {
         m_logoLabel->setAlignment(Qt::AlignCenter);
         m_logoLabel->setStyleSheet("margin-top: 0px; margin-bottom: 10px; background: transparent; border: none;");
     } else {
-        m_logoLabel->setText("SMART CLINIC SYSTEM");
+        m_logoLabel->setText("SMART CLINIC SYSTEM"); 
         m_logoLabel->setStyleSheet("font-size: 24px; font-weight: bold; color: #2563EB; margin-bottom: 15px;");
     }
     m_sidebarLayout->addWidget(m_logoLabel);

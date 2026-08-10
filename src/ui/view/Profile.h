@@ -12,6 +12,8 @@
 #include "../../model/CommonEnums.h"
 #include "../../service/Validation.h"
 #include <QTextEdit>
+#include "AvatarPickerWidget.h"
+
 class ProfileWidget : public QDialog {
     Q_OBJECT
 
@@ -31,7 +33,7 @@ private:
 
     std::shared_ptr<StaffService> m_staffService;
 
-    QLabel *lblAvatar;
+    AvatarPickerWidget *lblAvatar;
     QLabel *lblStatus;
     QLabel *lblName;
     QLabel *lblRole;
@@ -72,6 +74,7 @@ private:
     int currentExperienceYears = 0;  
     QString currentStaffCode;
     UserRole currentRole;
+    QPixmap currentAvatar;
 };
 
 #endif

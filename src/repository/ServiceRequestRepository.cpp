@@ -74,7 +74,7 @@ QList<ServiceRequestDTO> ServiceRequestRepository::getRequestsByRoom(
         params.append(roomId);
     }
 
-    if (!filterDate.isEmpty()) {
+    if (!filterDate.isEmpty() && filterDate != "ALL") {
         sql += " AND DATE(sr.prescribed_at) = ?";
         params.append(filterDate);
     }

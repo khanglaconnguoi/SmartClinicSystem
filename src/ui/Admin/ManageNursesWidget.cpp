@@ -11,6 +11,9 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QDialog>
+#include <QLineEdit>
+#include <QFormLayout>
 
 ManageNursesWidget::ManageNursesWidget(
     std::shared_ptr<StaffService> staffService, QWidget *parent)
@@ -366,12 +369,59 @@ void ManageNursesWidget::loadNursesList() {
       if (confirm == QMessageBox::Yes) {
         auto res = m_staffService->resetPassword(nurse->getAccountId());
         if (res.result) {
-          QMessageBox::information(
-              this, "Reset Mật khẩu thành công",
-              QString("Mật khẩu mới cho Y tá %1 (%2) là:\n\n%3\n\nTài khoản sẽ "
-                      "yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo.")
-                  .arg(nurse->getFullName(), nurse->getStaffCode(),
-                       res.newPassword));
+          QDialog successDialog(this);
+          successDialog.setWindowTitle("Reset Mật khẩu thành công");
+          successDialog.setMinimumWidth(380);
+          successDialog.setStyleSheet(
+              "QDialog { background-color: #FFFFFF; border-radius: 8px; }"
+              "QLabel { color: #1F2937; font-size: 14px; }"
+              "QLineEdit { background-color: #F9FAFB; border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 14px; font-weight: bold; color: #111827; }"
+              "QPushButton { background-color: #34A853; color: white; font-weight: bold; min-width: 100px; min-height: 35px; border-radius: 6px; border: none; font-size: 14px; }"
+              "QPushButton:hover { background-color: #2C8E46; }"
+          );
+
+          QVBoxLayout *dlgLayout = new QVBoxLayout(&successDialog);
+          dlgLayout->setSpacing(15);
+          dlgLayout->setContentsMargins(24, 24, 24, 20);
+
+          QLabel *lblTitle = new QLabel(QString("Reset mật khẩu cho Y tá %1 thành công!").arg(nurse->getFullName()), &successDialog);
+          lblTitle->setStyleSheet("font-size: 15px; font-weight: bold; color: #111827;");
+          lblTitle->setWordWrap(true);
+          dlgLayout->addWidget(lblTitle);
+
+          QFormLayout *formLayout = new QFormLayout();
+          formLayout->setSpacing(10);
+
+          QLineEdit *txtStaffCode = new QLineEdit(nurse->getStaffCode(), &successDialog);
+          txtStaffCode->setReadOnly(true);
+          QLabel *lblCode = new QLabel("Mã nhân viên:", &successDialog);
+          lblCode->setStyleSheet("font-weight: 600; color: #374151;");
+          formLayout->addRow(lblCode, txtStaffCode);
+
+          QLineEdit *txtPassword = new QLineEdit(res.newPassword, &successDialog);
+          txtPassword->setReadOnly(true);
+          QLabel *lblPass = new QLabel("Mật khẩu mới:", &successDialog);
+          lblPass->setStyleSheet("font-weight: 600; color: #374151;");
+          formLayout->addRow(lblPass, txtPassword);
+
+          dlgLayout->addLayout(formLayout);
+
+          QLabel *lblNote = new QLabel("Tài khoản sẽ yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo.", &successDialog);
+          lblNote->setStyleSheet("font-size: 13px; color: #6B7280; font-style: italic;");
+          lblNote->setWordWrap(true);
+          dlgLayout->addWidget(lblNote);
+
+          QHBoxLayout *btnLayout = new QHBoxLayout();
+          btnLayout->addStretch();
+          QPushButton *btnOk = new QPushButton("OK", &successDialog);
+          btnOk->setCursor(Qt::PointingHandCursor);
+          connect(btnOk, &QPushButton::clicked, &successDialog, &QDialog::accept);
+          btnLayout->addWidget(btnOk);
+          btnLayout->addStretch();
+
+          dlgLayout->addLayout(btnLayout);
+
+          successDialog.exec();
         } else {
           QMessageBox::warning(this, "Lỗi",
                                "Không thể reset mật khẩu cho Y tá này.");

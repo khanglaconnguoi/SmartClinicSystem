@@ -20,14 +20,12 @@ ProfileWidget::ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget
     setMinimumSize(1100, 700);
 
     setStyleSheet(
-        "ProfileWidget { background-color: #F4F6FA; }"
-        "QWidget { font-family: 'Segoe UI', Arial, sans-serif; color: #172B4D; }"
+        "ProfileWidget { background-color: #F8FAFC; }"
+        "QWidget { font-family: 'Segoe UI', Arial, sans-serif; color: #0F172A; }"
         "QMessageBox { background-color: #FFFFFF; }"
-        "QMessageBox QLabel { color: #172B4D; font-size: 16px; }"
-        "QMessageBox QPushButton { background-color: #0052CC; color: white; font-weight: bold; min-width: 90px; min-height: 32px; border-radius: 4px; border: none; }"
-        "QMessageBox QPushButton:hover { background-color: #0043A4; }"
-        "QLineEdit { border: none; background: transparent; padding: 0px; }" 
-        "QLineEdit:!read-only { border: 1px solid #0052CC; border-radius: 4px; background-color: #FFFFFF; padding: 2px 6px; min-height: 26px; }" 
+        "QMessageBox QLabel { color: #0F172A; font-size: 15px; }"
+        "QMessageBox QPushButton { background-color: #2563EB; color: white; font-weight: bold; min-width: 90px; min-height: 34px; border-radius: 6px; border: none; font-size: 14px; }"
+        "QMessageBox QPushButton:hover { background-color: #1D4ED8; }"
     );
     showMaximized();
 
@@ -60,92 +58,137 @@ ProfileWidget::ProfileWidget(std::shared_ptr<StaffService> staffService, QWidget
     mainLayout->addWidget(topBar);
 
     QHBoxLayout *contentLayout = new QHBoxLayout();
-    contentLayout->setContentsMargins(40, 20, 40, 30);
-    contentLayout->setSpacing(35);
+    contentLayout->setContentsMargins(36, 20, 36, 24);
+    contentLayout->setSpacing(28);
 
     QWidget *leftPanel = createLeftPanel();
     leftPanel->setFixedWidth(380);
     
     QWidget *rightPanel = createRightPanel();
-    rightPanel->setMaximumWidth(800);
+    rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    contentLayout->addStretch();
-    contentLayout->addWidget(leftPanel);
-    contentLayout->addWidget(rightPanel);
-    contentLayout->addStretch();
+    contentLayout->addWidget(leftPanel, 0, Qt::AlignTop);
+    contentLayout->addWidget(rightPanel, 1);
 
     mainLayout->addLayout(contentLayout, 1);
 }
+
+static const char* kProfileFieldStyle = 
+    "QLineEdit { "
+    "   font-size: 15px; "
+    "   color: #1E293B; "
+    "   font-weight: 500; "
+    "   border: 1px solid transparent; "
+    "   background: transparent; "
+    "   padding: 5px 10px; "
+    "   min-height: 36px; "
+    "   border-radius: 6px; "
+    "} "
+    "QLineEdit:!read-only { "
+    "   border: 1.5px solid #3B82F6; "
+    "   border-radius: 6px; "
+    "   background-color: #FFFFFF; "
+    "   color: #0F172A; "
+    "   padding: 5px 10px; "
+    "   min-height: 36px; "
+    "} "
+    "QLineEdit:!read-only:focus { "
+    "   border: 1.5px solid #1D4ED8; "
+    "   background-color: #F8FAFC; "
+    "}";
+
+static const char* kProfileBioStyle = 
+    "QTextEdit { "
+    "   font-size: 15px; "
+    "   color: #1E293B; "
+    "   font-weight: 500; "
+    "   border: 1px solid transparent; "
+    "   background: transparent; "
+    "   padding: 8px 10px; "
+    "   line-height: 1.4; "
+    "   border-radius: 6px; "
+    "} "
+    "QTextEdit:!read-only { "
+    "   border: 1.5px solid #3B82F6; "
+    "   border-radius: 6px; "
+    "   background-color: #FFFFFF; "
+    "   color: #0F172A; "
+    "   padding: 10px 12px; "
+    "} "
+    "QTextEdit:!read-only:focus { "
+    "   border: 1.5px solid #1D4ED8; "
+    "   background-color: #F8FAFC; "
+    "}";
 
 QWidget* ProfileWidget::createLeftPanel() {
     QWidget *panel = new QWidget(this);
     QVBoxLayout *layout = new QVBoxLayout(panel);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(25);
+    layout->setSpacing(20);
 
     QWidget *idCard = new QWidget(panel);
-    idCard->setStyleSheet("background-color: #FFFFFF; border-radius: 10px; border: 1px solid #E1E4E8;");
+    idCard->setStyleSheet("background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0;");
     QGraphicsDropShadowEffect *shadow1 = new QGraphicsDropShadowEffect(idCard);
-    shadow1->setBlurRadius(12); shadow1->setColor(QColor(0, 0, 0, 12)); shadow1->setOffset(0, 3);
+    shadow1->setBlurRadius(14); shadow1->setColor(QColor(0, 0, 0, 10)); shadow1->setOffset(0, 3);
     idCard->setGraphicsEffect(shadow1);
 
     QVBoxLayout *idLayout = new QVBoxLayout(idCard);
-    idLayout->setContentsMargins(30, 35, 30, 30);
-    idLayout->setSpacing(15);
+    idLayout->setContentsMargins(24, 28, 24, 24);
+    idLayout->setSpacing(12);
 
-    lblAvatar = new QLabel(idCard);
-    lblAvatar->setFixedSize(150, 150);
-    lblAvatar->setStyleSheet("background-color: #DEEBFF; border-radius: 75px; color: #0052CC; font-size: 65px; border: none;");
-    lblAvatar->setAlignment(Qt::AlignCenter);
+    lblAvatar = new AvatarPickerWidget(idCard);
+    lblAvatar->setFixedSize(140, 140);
+    lblAvatar->setEnabled(false);
+    lblAvatar->setCursor(Qt::ArrowCursor);
 
     lblName = new QLabel("", idCard);
-    lblName->setStyleSheet("font-size: 22px; font-weight: bold; color: #172B4D; border: none;");
+    lblName->setStyleSheet("font-size: 20px; font-weight: bold; color: #0F172A; border: none; background: transparent;");
     lblName->setAlignment(Qt::AlignCenter);
     lblName->setWordWrap(true);
 
     lblRole = new QLabel("", idCard);
-    lblRole->setStyleSheet("font-size: 16px; color: #5E6C84; border: none;");
+    lblRole->setStyleSheet("font-size: 14px; color: #64748B; border: none; background: transparent; font-weight: 500;");
     lblRole->setAlignment(Qt::AlignCenter);
 
     lblStaffCode = new QLabel("", idCard);
-    lblStaffCode->setStyleSheet("font-size: 14px; color: #5E6C84; border: none;");
+    lblStaffCode->setStyleSheet("font-size: 14px; color: #64748B; border: none; background: transparent;");
     lblStaffCode->setAlignment(Qt::AlignCenter);
 
     lblStatus = new QLabel("", idCard);
-    lblStatus->setStyleSheet("font-size: 14px; color: #5E6C84; border: none;");
+    lblStatus->setStyleSheet("font-size: 13px; color: #059669; font-weight: 600; border: none; background: transparent;");
     lblStatus->setAlignment(Qt::AlignCenter);
 
     QFrame *line1 = new QFrame(idCard);
     line1->setFrameShape(QFrame::HLine);
-    line1->setStyleSheet("background-color: #E1E4E8; border: none; max-height: 1px;");
+    line1->setStyleSheet("background-color: #E2E8F0; border: none; max-height: 1px;");
 
     idLayout->addWidget(lblAvatar, 0, Qt::AlignCenter);
-    idLayout->addSpacing(5);
+    idLayout->addSpacing(4);
     idLayout->addWidget(lblName);
     idLayout->addWidget(lblStatus);
-    idLayout->addSpacing(10);
+    idLayout->addSpacing(6);
     idLayout->addWidget(line1);
-    idLayout->addSpacing(10);
+    idLayout->addSpacing(8);
 
     QFormLayout *leftForm = new QFormLayout();
-    leftForm->setHorizontalSpacing(20);
-    leftForm->setVerticalSpacing(12);
+    leftForm->setHorizontalSpacing(16);
+    leftForm->setVerticalSpacing(10);
 
     auto addLeftFormRow = [](QFormLayout *form, const QString &text, QWidget *edit) {
-        QLabel *l = new QLabel( text);
-        l->setStyleSheet("font-size: 15px; color: #172B4D; border: none; font-weight: 600;");
+        QLabel *l = new QLabel(text);
+        l->setStyleSheet("font-size: 14px; color: #475569; border: none; font-weight: 600; background: transparent;");
         l->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        l->setFixedWidth(125);
+        l->setFixedWidth(110);
         
         if (QLabel *lbl = qobject_cast<QLabel*>(edit)) {
             lbl->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-            edit->setStyleSheet("font-size: 15px; color: #172B4D; border: none; background: transparent; padding: 0px;");
+            lbl->setStyleSheet("font-size: 14px; color: #1E293B; border: none; background: transparent; font-weight: 500; padding: 5px 10px; min-height: 36px;");
         } else if (QLineEdit *le = qobject_cast<QLineEdit*>(edit)) {
             le->setAlignment(Qt::AlignLeft);
-            edit->setStyleSheet("font-size: 15px; color: #172B4D; border: none; background: transparent; padding: 0px; margin-left: -1px;");
+            le->setStyleSheet(kProfileFieldStyle);
         }
         
-        edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         form->addRow(l, edit);
     };
 
@@ -164,65 +207,45 @@ QWidget* ProfileWidget::createLeftPanel() {
     addLeftFormRow(leftForm, "Email", txtEmail);
 
     idLayout->addLayout(leftForm);
-    idLayout->addSpacing(15);
 
     QWidget *shiftCard = new QWidget(panel);
-    shiftCard->setStyleSheet("background-color: #FFFFFF; border-radius: 10px; border: 1px solid #E1E4E8;");
+    shiftCard->setStyleSheet("background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0;");
     QGraphicsDropShadowEffect *shadow2 = new QGraphicsDropShadowEffect(shiftCard);
-    shadow2->setBlurRadius(12); shadow2->setColor(QColor(0, 0, 0, 12)); shadow2->setOffset(0, 3);
+    shadow2->setBlurRadius(14); shadow2->setColor(QColor(0, 0, 0, 10)); shadow2->setOffset(0, 3);
     shiftCard->setGraphicsEffect(shadow2);
 
     QVBoxLayout *shiftLayout = new QVBoxLayout(shiftCard);
-    shiftLayout->setContentsMargins(25, 25, 25, 25);
-    shiftLayout->setSpacing(15);
+    shiftLayout->setContentsMargins(24, 20, 24, 20);
+    shiftLayout->setSpacing(10);
 
     QLabel *lblShiftTitle = new QLabel("Ca trực hiện tại", shiftCard);
-    lblShiftTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #172B4D; border: none;");
+    lblShiftTitle->setStyleSheet("font-size: 15px; font-weight: bold; color: #0F172A; border: none; background: transparent;");
 
     cmbShift = new QComboBox(shiftCard);
     for (const auto& pair : ShiftText::getList()) cmbShift->addItem(pair.second, pair.first);
     cmbShift->setEnabled(false);
-    cmbShift->setFixedHeight(40);
+    cmbShift->setFixedHeight(38);
     cmbShift->setStyleSheet(
-        "QComboBox { font-size: 16px; color: #172B4D; border: 1px solid #DFE1E6; border-radius: 6px; background: #F4F5F7; padding: 5px 12px;  } "
+        "QComboBox { font-size: 14px; color: #1E293B; border: 1px solid #CBD5E1; border-radius: 6px; background: #F8FAFC; padding: 4px 12px; font-weight: 500; } "
         "QComboBox::drop-down { border: none; width: 25px; } "
-        
     );
 
     shiftLayout->addWidget(lblShiftTitle);
     shiftLayout->addWidget(cmbShift);
+
     btnEdit = new QPushButton("Chỉnh Sửa", panel);
-    btnEdit->setFixedHeight(45);
-    btnEdit->setFixedWidth(120);
+    btnEdit->setFixedHeight(42);
+    btnEdit->setFixedWidth(140);
+    btnEdit->setCursor(Qt::PointingHandCursor);
     btnEdit->setStyleSheet(
-        "QPushButton { background-color: #1D54C4; color: white; font-weight: bold; border-radius: 6px; border: none; font-size: 16px; }"
-        "QPushButton:hover { background-color: #154096; }"
+        "QPushButton { background-color: #2563EB; color: white; font-weight: bold; border-radius: 8px; border: none; font-size: 14px; }"
+        "QPushButton:hover { background-color: #1D4ED8; }"
     );
 
     layout->addWidget(idCard);
     layout->addWidget(shiftCard);
     layout->addWidget(btnEdit, 0, Qt::AlignCenter);
     layout->addStretch();
-
-    QString leftStyle = 
-        "QLineEdit { "
-        "   font-size: 15px; "
-        "   color: #172B4D; "
-        "   border: none; "
-        "   background: transparent; "
-        "   padding: 0px; "
-        "   margin-left: -1px; "
-        "} "
-        "QLineEdit:!read-only { "
-        "   border: 1px solid #0052CC; "
-        "   border-radius: 4px; "
-        "   background-color: #FFFFFF; "
-        "   padding: 2px 6px; "
-        "   min-height: 26px; "
-        "   margin-left: 0px; "
-        "}";
-    txtPhone->setStyleSheet(leftStyle);
-    txtEmail->setStyleSheet(leftStyle);
 
     connect(btnEdit, &QPushButton::clicked, this, &ProfileWidget::onEditClicked);
     connect(txtPhone, &QLineEdit::editingFinished, this, &ProfileWidget::validatePhoneNumber);
@@ -240,19 +263,28 @@ QWidget* ProfileWidget::createRightPanel() {
     QScrollArea *scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setStyleSheet("QScrollArea { background-color: transparent; border: none; }");
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea->setStyleSheet(
+        "QScrollArea { background-color: transparent; border: none; }"
+        "QScrollBar:vertical { background: transparent; width: 8px; margin: 0px; border-radius: 4px; }"
+        "QScrollBar::handle:vertical { background: #CBD5E1; min-height: 40px; border-radius: 4px; }"
+        "QScrollBar::handle:vertical:hover { background: #94A3B8; }"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
+        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }"
+    );
 
     QWidget *scrollContent = new QWidget(scrollArea);
     scrollContent->setStyleSheet("background-color: transparent;");
     QVBoxLayout *layout = new QVBoxLayout(scrollContent);
-    layout->setContentsMargins(0, 0, 15, 0);
-    layout->setSpacing(25);
+    layout->setContentsMargins(0, 0, 12, 0);
+    layout->setSpacing(20);
 
     auto createCard = [this](const QString& titleText, QVBoxLayout*& contentLayoutOut) -> QWidget* {
         QWidget *card = new QWidget(this);
-        card->setStyleSheet("background-color: #FFFFFF; border-radius: 10px; border: 1px solid #E1E4E8;");
+        card->setStyleSheet("background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0;");
         QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(card);
-        shadow->setBlurRadius(12); shadow->setColor(QColor(0, 0, 0, 12)); shadow->setOffset(0, 3);
+        shadow->setBlurRadius(14); shadow->setColor(QColor(0, 0, 0, 10)); shadow->setOffset(0, 3);
         card->setGraphicsEffect(shadow);
 
         QVBoxLayout *cardLayout = new QVBoxLayout(card);
@@ -260,17 +292,17 @@ QWidget* ProfileWidget::createRightPanel() {
         cardLayout->setSpacing(0);
 
         QWidget *headerWidget = new QWidget(card);
-        headerWidget->setStyleSheet("border: none; border-bottom: 1px solid #E1E4E8; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px;");
+        headerWidget->setStyleSheet("border: none; border-bottom: 1px solid #E2E8F0; border-top-left-radius: 12px; border-top-right-radius: 12px;");
         QHBoxLayout *headerLayout = new QHBoxLayout(headerWidget);
-        headerLayout->setContentsMargins(30, 18, 30, 18);
+        headerLayout->setContentsMargins(26, 16, 26, 16);
         QLabel *lblTitle = new QLabel(titleText, headerWidget);
-        lblTitle->setStyleSheet("font-size: 18px; font-weight: bold; color: #172B4D; border: none;");
+        lblTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #0F172A; border: none; background: transparent;");
         headerLayout->addWidget(lblTitle);
         
         QWidget *contentWidget = new QWidget(card);
-        contentWidget->setStyleSheet("border: none;");
+        contentWidget->setStyleSheet("border: none; background: transparent;");
         QVBoxLayout *contentLayout = new QVBoxLayout(contentWidget);
-        contentLayout->setContentsMargins(30, 25, 30, 25);
+        contentLayout->setContentsMargins(26, 22, 26, 22);
         
         cardLayout->addWidget(headerWidget);
         cardLayout->addWidget(contentWidget);
@@ -280,34 +312,33 @@ QWidget* ProfileWidget::createRightPanel() {
     };
 
     auto addFormRow = [](QFormLayout *form, const QString &text, QWidget *edit) {
-        QLabel *l = new QLabel( text);
-        l->setStyleSheet("font-size: 16px; color: #172B4D; border: none; font-weight: bold;");
-        edit->setStyleSheet("font-size: 16px; color: #172B4D; border: none; background: transparent; padding: 0px;");
+        QLabel *l = new QLabel(text);
+        l->setStyleSheet("font-size: 14px; color: #475569; border: none; font-weight: 600; background: transparent;");
+        l->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        l->setFixedWidth(135);
+
+        if (QLabel *lbl = qobject_cast<QLabel*>(edit)) {
+            lbl->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+            lbl->setStyleSheet("font-size: 14px; color: #1E293B; border: none; background: transparent; font-weight: 500; padding: 5px 10px; min-height: 36px;");
+        } else if (QLineEdit *le = qobject_cast<QLineEdit*>(edit)) {
+            le->setAlignment(Qt::AlignLeft);
+            le->setStyleSheet(kProfileFieldStyle);
+        }
+        edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         form->addRow(l, edit);
     };
 
     QVBoxLayout *layout1;
     QWidget *card1 = createCard("Thông tin cá nhân", layout1);
     QFormLayout *form1 = new QFormLayout();
-    form1->setHorizontalSpacing(80);
-    form1->setVerticalSpacing(18);
+    form1->setHorizontalSpacing(24);
+    form1->setVerticalSpacing(12);
     form1->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 
     txtFullName = new QLineEdit(card1);
-    txtFullName->setMinimumWidth(520);
-    txtFullName->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     txtDob = new QLineEdit(card1);
-    txtDob->setMinimumWidth(520);
-    txtDob->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     txtCitizenId = new QLineEdit(card1);
-    txtCitizenId->setMinimumWidth(520);
-    txtCitizenId->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     txtAddress = new QLineEdit(card1);
-    txtAddress->setMinimumWidth(520);
-    txtAddress->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     addFormRow(form1, "Họ và tên", txtFullName);
     addFormRow(form1, "Ngày sinh", txtDob);
@@ -319,8 +350,8 @@ QWidget* ProfileWidget::createRightPanel() {
     QVBoxLayout *layout2;
     QWidget *card2 = createCard("Chi tiết công việc", layout2);
     QFormLayout *form2 = new QFormLayout();
-    form2->setHorizontalSpacing(80);
-    form2->setVerticalSpacing(18);
+    form2->setHorizontalSpacing(24);
+    form2->setVerticalSpacing(12);
 
     lblDepartment = new QLabel(card2);
     lblHireDate = new QLabel(card2);
@@ -334,28 +365,17 @@ QWidget* ProfileWidget::createRightPanel() {
     cardRoleSpecific = createCard("Chi tiết chuyên môn", layout3);
 
     widgetDoctorFields = new QWidget(cardRoleSpecific);
-    widgetDoctorFields->setStyleSheet("border: none;");
+    widgetDoctorFields->setStyleSheet("border: none; background: transparent;");
     QVBoxLayout *vboxDoc = new QVBoxLayout(widgetDoctorFields);
     vboxDoc->setContentsMargins(0, 0, 0, 0);
     QFormLayout *formDoc = new QFormLayout();
-    formDoc->setHorizontalSpacing(80);
-    formDoc->setVerticalSpacing(18);
+    formDoc->setHorizontalSpacing(24);
+    formDoc->setVerticalSpacing(12);
 
     txtSpecialty = new QLineEdit(widgetDoctorFields);
-    txtSpecialty->setMinimumWidth(520);
-    txtSpecialty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     txtLicenseNumber = new QLineEdit(widgetDoctorFields);
-    txtLicenseNumber->setMinimumWidth(520);
-    txtLicenseNumber->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     txtConsultationFee = new QLineEdit(widgetDoctorFields);
-    txtConsultationFee->setMinimumWidth(520);
-    txtConsultationFee->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
     txtDocRoom = new QLineEdit(widgetDoctorFields);
-    txtDocRoom->setMinimumWidth(520);
-    txtDocRoom->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     addFormRow(formDoc, "Chuyên khoa", txtSpecialty);
     addFormRow(formDoc, "Số CCHN", txtLicenseNumber);
@@ -366,12 +386,12 @@ QWidget* ProfileWidget::createRightPanel() {
     layout3->addWidget(widgetDoctorFields);
 
     widgetNurseFields = new QWidget(cardRoleSpecific);
-    widgetNurseFields->setStyleSheet("border: none;");
+    widgetNurseFields->setStyleSheet("border: none; background: transparent;");
     QVBoxLayout *vboxNurse = new QVBoxLayout(widgetNurseFields);
     vboxNurse->setContentsMargins(0, 0, 0, 0);
     QFormLayout *formNurse = new QFormLayout();
-    formNurse->setHorizontalSpacing(50);
-    formNurse->setVerticalSpacing(18);
+    formNurse->setHorizontalSpacing(24);
+    formNurse->setVerticalSpacing(12);
 
     txtNurseLevel = new QLineEdit(widgetNurseFields);
     txtCertification = new QLineEdit(widgetNurseFields);
@@ -391,22 +411,7 @@ QWidget* ProfileWidget::createRightPanel() {
     txtBio = new QTextEdit(cardBio); 
     txtBio->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     txtBio->setAcceptRichText(false); 
-    txtBio->setStyleSheet(
-        "QTextEdit { "
-        "   font-size: 16px; "
-        "   color: #172B4D; "
-        "   border: none; "
-        "   background: transparent; "
-        "   padding: 5px 0px; "
-        "   line-height: 1.4; "
-        "} "
-        "QTextEdit:!read-only { "
-        "   border: 1px solid #0052CC; "
-        "   border-radius: 6px; "
-        "   background: #FFFFFF; "
-        "   padding: 8px; "
-        "}"
-    );
+    txtBio->setStyleSheet(kProfileBioStyle);
     layoutBio->addWidget(txtBio);
     layout->addWidget(cardBio);
 
@@ -418,28 +423,8 @@ QWidget* ProfileWidget::createRightPanel() {
     txtBio->setReadOnly(true);
     for (QLineEdit* field : allFields) {
         field->setReadOnly(true);
+        field->setStyleSheet(kProfileFieldStyle);
     }
-
-    QString rightStyle = 
-        "QLineEdit { "
-        "   font-size: 16px; "
-        "   color: #172B4D; "
-        "   border: none; "
-        "   background: transparent; "
-        "   padding: 0px; "
-        "} "
-        "QLineEdit:!read-only { "
-        "   border: 1px solid #0052CC; "
-        "   border-radius: 4px; "
-        "   background-color: #FFFFFF; "
-        "   padding: 2px 6px; "
-        "   min-height: 28px; "
-        "}";
-    txtAddress->setStyleSheet(rightStyle);
-    txtNurseLevel->setStyleSheet(rightStyle);
-    txtCertification->setStyleSheet(rightStyle);
-    txtDocRoom->setStyleSheet(rightStyle);
-    txtNurseRoom->setStyleSheet(rightStyle);
 
     cardRoleSpecific->hide();
     cardBio->hide();
@@ -466,9 +451,6 @@ QWidget* ProfileWidget::createRightPanel() {
             UIValidationUtils::applyFieldValidationStyle(txtAddress, err);
         }
     });
-    connect(txtBio, &QTextEdit::cursorPositionChanged, this, [this]() {
-        // TextEdit doesn't have editingFinished in the same way, but we can style if needed. We'll skip for now or apply on focus out via event filter.
-    });
     connect(txtNurseLevel, &QLineEdit::editingFinished, this, [this]() {
         if (!txtNurseLevel->isReadOnly()) {
             QString err = Validation::validateTrimmedNotEmpty(txtNurseLevel->text(), "Vui lòng nhập cấp độ y tá");
@@ -491,42 +473,34 @@ void ProfileWidget::loadProfile(int staffId) {
     if (!profile) {
         return;
     }
+    currentAvatar = profile->avatar;
     
-    if (!profile->avatar.isNull()) {
-        QPixmap circularPix(150, 150);
-        circularPix.fill(Qt::transparent);
-        QPainter painter(&circularPix);
-        painter.setRenderHint(QPainter::Antialiasing, true);
-        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        QPainterPath path;
-        path.addEllipse(0, 0, 150, 150);
-        painter.setClipPath(path);
-        QPixmap scaled = profile->avatar.scaled(150, 150, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-        int x = (scaled.width() - 150) / 2;
-        int y = (scaled.height() - 150) / 2;
-        painter.drawPixmap(0, 0, scaled, x, y, 150, 150);
-
-        lblAvatar->setPixmap(circularPix);
-        lblAvatar->setText("");
-    } else {
-        lblAvatar->setPixmap(QPixmap());
+    lblAvatar->setAvatarPixmap(profile->avatar);
+    if (profile->avatar.isNull()) {
         lblAvatar->setText(profile->fullName.left(1).toUpper());
     }
     lblAvatar->setAlignment(Qt::AlignCenter);
     lblName->setText(profile->fullName);
     lblStatus->setText(profile->isActive ? "Đang làm việc" : "Đã nghỉ việc");
     txtFullName->setText(profile->fullName);
+    txtFullName->setCursorPosition(0);
     txtPhone->setText(profile->phoneNumber);
+    txtPhone->setCursorPosition(0);
     txtEmail->setText(profile->email);
+    txtEmail->setCursorPosition(0);
     txtAddress->setText(profile->address);
+    txtAddress->setCursorPosition(0);
     txtDob->setText(profile->dateOfBirth.toString("dd/MM/yyyy"));
+    txtDob->setCursorPosition(0);
     txtCitizenId->setText(profile->citizenId);
+    txtCitizenId->setCursorPosition(0);
     lblDepartment->setText(profile->departmentName.isEmpty() ? "Chưa phân khoa" : profile->departmentName);
     currentDepartmentId = profile->departmentId;
     lblStaffCode->setText(profile->staffCode);
-    lblHireDate -> setText(profile->hireDate.toString("dd/MM/yyyy"));
+    lblHireDate->setText(profile->hireDate.toString("dd/MM/yyyy"));
     
     txtGender->setText(GenderText::toVi(profile->gender));
+    txtGender->setCursorPosition(0);
 
     if (auto docProfile = dynamic_cast<DoctorProfileDTO*>(profile.get())) {
         lblRole->setText("Bác sĩ");
@@ -537,9 +511,13 @@ void ProfileWidget::loadProfile(int staffId) {
         
         lblRole->setText(userRoleToVi(profile->role));
         txtSpecialty->setText(docProfile->specialty);
+        txtSpecialty->setCursorPosition(0);
         txtLicenseNumber->setText(docProfile->licenseNumber);
+        txtLicenseNumber->setCursorPosition(0);
         txtConsultationFee->setText(QString::number(docProfile->consultationFee));
+        txtConsultationFee->setCursorPosition(0);
         txtDocRoom->setText(docProfile->roomNumber.isEmpty() ? "Chưa gán phòng" : docProfile->roomNumber);
+        txtDocRoom->setCursorPosition(0);
         txtBio->setPlainText(docProfile->bio);
         currentExperienceYears = docProfile->experienceYears;
     } 
@@ -552,9 +530,12 @@ void ProfileWidget::loadProfile(int staffId) {
         
         lblRole->setText(userRoleToVi(profile->role));
         txtNurseLevel->setText(NurseLevelText::toVi(nurseProfile->nurseLevel));
+        txtNurseLevel->setCursorPosition(0);
         txtCertification->setText(nurseProfile->certification);
+        txtCertification->setCursorPosition(0);
         txtNurseRoom->setText(nurseProfile->roomName.isEmpty() ? "Chưa gán phòng" : nurseProfile->roomName);
-    }
+        txtNurseRoom->setCursorPosition(0);
+    } 
     else {
         lblRole->setText("Nhân viên");
         cardRoleSpecific->hide();
@@ -565,6 +546,10 @@ void ProfileWidget::loadProfile(int staffId) {
 
 void ProfileWidget::onEditClicked() {
     if (btnEdit->text() == "Chỉnh Sửa" || btnEdit->text() == "Chỉnh sửa") {
+        lblAvatar->setEnabled(true);
+        lblAvatar->setCursor(Qt::PointingHandCursor);
+        lblAvatar->setToolTip("Nhấn hoặc kéo thả ảnh vào đây để đổi Avatar");
+
         txtPhone->setReadOnly(false);
         txtEmail->setReadOnly(false);
         txtAddress->setReadOnly(false);
@@ -580,6 +565,10 @@ void ProfileWidget::onEditClicked() {
         }
 
         btnEdit->setText("Lưu");
+        btnEdit->setStyleSheet(
+            "QPushButton { background-color: #059669; color: white; font-weight: bold; border-radius: 8px; border: none; font-size: 14px; }"
+            "QPushButton:hover { background-color: #047857; }"
+        );
         return;
     }
 
@@ -602,7 +591,13 @@ void ProfileWidget::onEditClicked() {
         inputDTO = std::make_unique<StaffInputDTO>();
     }
 
+    QPixmap pickedAvatar = lblAvatar->getAvatarPixmap();
+    if (!pickedAvatar.isNull()) {
+        currentAvatar = pickedAvatar;
+    }
+
     inputDTO->fullName = txtFullName->text();
+    inputDTO->avatar = currentAvatar;
     inputDTO->phoneNumber = txtPhone->text();
     inputDTO->email = txtEmail->text();
     inputDTO->address = txtAddress->text();
@@ -621,12 +616,15 @@ void ProfileWidget::onEditClicked() {
         errorMsg = m_staffService->editStaffBaseInformation(*inputDTO, currentStaffId);
     }
 
-
     bool success = errorMsg.isEmpty();
 
     if (success) {
         QMessageBox::information(this, "Thành công", "Đã cập nhật hồ sơ!");
         
+        lblAvatar->setEnabled(false);
+        lblAvatar->setCursor(Qt::ArrowCursor);
+        lblAvatar->setToolTip("");
+
         txtFullName->setReadOnly(true);
         txtPhone->setReadOnly(true);
         txtEmail->setReadOnly(true);
@@ -641,61 +639,11 @@ void ProfileWidget::onEditClicked() {
         txtNurseLevel->setReadOnly(true);
         txtCertification->setReadOnly(true);
         cmbShift->setEnabled(false);
-        btnEdit->setText("Chỉnh Sửa");
 
-       txtPhone->setStyleSheet(
-            "QLineEdit { "
-            "   font-size: 15px; "
-            "   color: #172B4D; "
-            "   border: none; "
-            "   background: transparent; "
-            "   padding: 0px; "
-            "   margin-left: -1px; "
-            "} "
-            "QLineEdit:!read-only { "
-            "   border: 1px solid #0052CC; "
-            "   border-radius: 4px; "
-            "   background-color: #FFFFFF; "
-            "   padding: 2px 6px; "
-            "   min-height: 26px; "
-            "   margin-left: 0px; "
-            "}"
-        );
-        txtPhone->setStyleSheet(
-            "QLineEdit { "
-            "   font-size: 15px; "
-            "   color: #172B4D; "
-            "   border: none; "
-            "   background: transparent; "
-            "   padding: 0px; "
-            "   margin-left: -1px; "
-            "} "
-            "QLineEdit:!read-only { "
-            "   border: 1px solid #0052CC; "
-            "   border-radius: 4px; "
-            "   background-color: #FFFFFF; "
-            "   padding: 2px 6px; "
-            "   min-height: 26px; "
-            "   margin-left: 0px; "
-            "}"
-        );
-txtEmail->setStyleSheet(
-            "QLineEdit { "
-            "   font-size: 15px; "
-            "   color: #172B4D; "
-            "   border: none; "
-            "   background: transparent; "
-            "   padding: 0px; "
-            "   margin-left: -1px; "
-            "} "
-            "QLineEdit:!read-only { "
-            "   border: 1px solid #0052CC; "
-            "   border-radius: 4px; "
-            "   background-color: #FFFFFF; "
-            "   padding: 2px 6px; "
-            "   min-height: 26px; "
-            "   margin-left: 0px; "
-            "}"
+        btnEdit->setText("Chỉnh Sửa");
+        btnEdit->setStyleSheet(
+            "QPushButton { background-color: #2563EB; color: white; font-weight: bold; border-radius: 8px; border: none; font-size: 14px; }"
+            "QPushButton:hover { background-color: #1D4ED8; }"
         );
 
         loadProfile(currentStaffId);
@@ -708,32 +656,11 @@ void ProfileWidget::validatePhoneNumber() {
     if (txtPhone->isReadOnly()) return;
     
     QString erro = Validation::validatePhoneNumber(txtPhone->text());
-    
     if (!erro.isEmpty()) { 
-        txtPhone->setStyleSheet(
-            "QLineEdit { border: 1px solid #FF3B30; border-radius: 4px; background-color: #FFE5E5; padding: 2px 6px; min-height: 26px; }"
-        );
+        txtPhone->setStyleSheet("QLineEdit { border: 1.5px solid #EF4444; border-radius: 6px; background-color: #FEF2F2; color: #991B1B; padding: 4px 8px; min-height: 32px; font-size: 14px; }");
         QMessageBox::warning(this, "Định dạng sai", erro);
-    }
-    else {
-        txtPhone->setStyleSheet(
-            "QLineEdit { "
-            "   font-size: 15px; "
-            "   color: #172B4D; "
-            "   border: none; "
-            "   background: transparent; "
-            "   padding: 0px; "
-            "   margin-left: -1px; "
-            "} "
-            "QLineEdit:!read-only { "
-            "   border: 1px solid #0052CC; "
-            "   border-radius: 4px; "
-            "   background-color: #FFFFFF; "
-            "   padding: 2px 6px; "
-            "   min-height: 26px; "
-            "   margin-left: 0px; "
-            "}"
-        );
+    } else {
+        txtPhone->setStyleSheet(kProfileFieldStyle);
     }
 }
 
@@ -741,32 +668,11 @@ void ProfileWidget::validateEmail() {
     if (txtEmail->isReadOnly()) return;
     
     QString erro = Validation::validateEmail(txtEmail->text());
-    
     if (!erro.isEmpty()) { 
-        txtEmail->setStyleSheet(
-            "QLineEdit { border: 1px solid #FF3B30; border-radius: 4px; background-color: #FFE5E5; padding: 2px 6px; min-height: 26px; }"
-        );
+        txtEmail->setStyleSheet("QLineEdit { border: 1.5px solid #EF4444; border-radius: 6px; background-color: #FEF2F2; color: #991B1B; padding: 4px 8px; min-height: 32px; font-size: 14px; }");
         QMessageBox::warning(this, "Định dạng sai", erro);
-    }
-    else {
-        txtEmail->setStyleSheet(
-            "QLineEdit { "
-            "   font-size: 15px; "
-            "   color: #172B4D; "
-            "   border: none; "
-            "   background: transparent; "
-            "   padding: 0px; "
-            "   margin-left: -1px; "
-            "} "
-            "QLineEdit:!read-only { "
-            "   border: 1px solid #0052CC; "
-            "   border-radius: 4px; "
-            "   background-color: #FFFFFF; "
-            "   padding: 2px 6px; "
-            "   min-height: 26px; "
-            "   margin-left: 0px; "
-            "}"
-        );
+    } else {
+        txtEmail->setStyleSheet(kProfileFieldStyle);
     }
 }
 

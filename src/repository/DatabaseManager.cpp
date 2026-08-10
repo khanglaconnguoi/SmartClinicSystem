@@ -767,6 +767,10 @@ bool DatabaseManager::createTables() {
         INSERT INTO rooms (room_number, department_id, room_type, capacity, status) VALUES
         ('P101', 1, 'EXAM', 1, 'AVAILABLE'),
         ('P102', 1, 'EXAM', 1, 'AVAILABLE'),
+        ('P103', 1, 'EXAM', 1, 'AVAILABLE'),
+        ('P104', 1, 'EXAM', 1, 'AVAILABLE'),
+        ('P105', 1, 'EXAM', 1, 'AVAILABLE'),
+        ('P106', 1, 'EXAM', 1, 'AVAILABLE'),
         ('LAB_101', 1, 'LAB', 2, 'AVAILABLE'),
         ('PHARM_101', 1, 'PHARMACY', 5, 'AVAILABLE');
       )");

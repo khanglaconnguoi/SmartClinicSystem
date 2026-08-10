@@ -452,20 +452,54 @@ void DoctorRegistrationDialog::handleSave() {
     StaffHireResult result = m_staffService->hireNewDoctor(dto);
     errorMsg = result.errorMessage;
     if (errorMsg.isEmpty()) {
-      QMessageBox msgBox(this);
-      msgBox.setWindowTitle("Thành công");
-      msgBox.setText(QString("Tạo tài khoản Bác sĩ thành công!\nMã nhân viên: %1\nMật khẩu: %2")
-                     .arg(result.staffCode)
-                     .arg(result.plainPassword));
-      msgBox.setIcon(QMessageBox::Information);
-      msgBox.setStyleSheet(
-          "QMessageBox { background-color: #FFFFFF; border-radius: 8px; }"
-          "QLabel { color: #111827; font-size: 15px; font-weight: bold; }"
+      QDialog successDialog(this);
+      successDialog.setWindowTitle("Thành công");
+      successDialog.setMinimumWidth(380);
+      successDialog.setStyleSheet(
+          "QDialog { background-color: #FFFFFF; border-radius: 8px; }"
+          "QLabel { color: #1F2937; font-size: 14px; }"
+          "QLineEdit { background-color: #F9FAFB; border: 1px solid #D1D5DB; border-radius: 6px; padding: 6px 10px; font-size: 14px; font-weight: bold; color: #111827; }"
           "QPushButton { background-color: #34A853; color: white; "
           "font-weight: bold; min-width: 100px; min-height: 35px; border-radius: 6px; border: none; font-size: 14px; }"
           "QPushButton:hover { background-color: #2C8E46; }"
       );
-      msgBox.exec();
+
+      QVBoxLayout *dlgLayout = new QVBoxLayout(&successDialog);
+      dlgLayout->setSpacing(15);
+      dlgLayout->setContentsMargins(24, 24, 24, 20);
+
+      QLabel *lblTitle = new QLabel("Tạo tài khoản Bác sĩ thành công!", &successDialog);
+      lblTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #111827;");
+      dlgLayout->addWidget(lblTitle);
+
+      QFormLayout *formLayout = new QFormLayout();
+      formLayout->setSpacing(10);
+
+      QLineEdit *txtStaffCode = new QLineEdit(result.staffCode, &successDialog);
+      txtStaffCode->setReadOnly(true);
+      QLabel *lblCode = new QLabel("Mã nhân viên:", &successDialog);
+      lblCode->setStyleSheet("font-weight: 600; color: #374151;");
+      formLayout->addRow(lblCode, txtStaffCode);
+
+      QLineEdit *txtPassword = new QLineEdit(result.plainPassword, &successDialog);
+      txtPassword->setReadOnly(true);
+      QLabel *lblPass = new QLabel("Mật khẩu:", &successDialog);
+      lblPass->setStyleSheet("font-weight: 600; color: #374151;");
+      formLayout->addRow(lblPass, txtPassword);
+
+      dlgLayout->addLayout(formLayout);
+
+      QHBoxLayout *btnLayout = new QHBoxLayout();
+      btnLayout->addStretch();
+      QPushButton *btnOk = new QPushButton("OK", &successDialog);
+      btnOk->setCursor(Qt::PointingHandCursor);
+      connect(btnOk, &QPushButton::clicked, &successDialog, &QDialog::accept);
+      btnLayout->addWidget(btnOk);
+      btnLayout->addStretch();
+
+      dlgLayout->addLayout(btnLayout);
+
+      successDialog.exec();
       accept();
       return;
     }
