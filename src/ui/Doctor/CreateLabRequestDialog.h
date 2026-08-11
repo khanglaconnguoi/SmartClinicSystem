@@ -39,6 +39,7 @@ private slots:
 private:
     void setupUI();
     void loadLabRooms();
+    void showNotification(const QString& title, const QString& text, QMessageBox::Icon icon = QMessageBox::Information);
 
     std::shared_ptr<ServiceRequestService> m_serviceRequestService;
     std::shared_ptr<AppointmentService> m_appointmentService;

@@ -26,8 +26,9 @@ CreateLabRequestDialog::CreateLabRequestDialog(
 }
 
 void CreateLabRequestDialog::setupUI() {
+    this->setObjectName("CreateLabRequestDialog");
     this->setAttribute(Qt::WA_TranslucentBackground);
-    this->setStyleSheet("QDialog { background-color: transparent; } QLabel { color: #1E293B; }");
+    this->setStyleSheet("#CreateLabRequestDialog { background-color: transparent; } QLabel { color: #1E293B; }");
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(15, 15, 15, 28);
@@ -143,15 +144,36 @@ void CreateLabRequestDialog::loadLabRooms() {
     }
 }
 
+void CreateLabRequestDialog::showNotification(const QString& title, const QString& text, QMessageBox::Icon icon) {
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(title);
+    msgBox.setText(text);
+    msgBox.setIcon(icon);
+
+    QString btnBg = (icon == QMessageBox::Critical) ? "#EF4444" : 
+                    (icon == QMessageBox::Warning) ? "#F59E0B" : "#2563EB";
+    QString btnHover = (icon == QMessageBox::Critical) ? "#DC2626" : 
+                       (icon == QMessageBox::Warning) ? "#D97706" : "#1D4ED8";
+
+    msgBox.setStyleSheet(QString(
+        "QMessageBox { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; }"
+        "QLabel { color: #0F172A; font-size: 13px; font-weight: 500; qproperty-alignment: AlignCenter; }"
+        "QPushButton { background-color: %1; color: #FFFFFF; font-weight: bold; min-width: 80px; min-height: 32px; border-radius: 6px; border: none; font-size: 13px; padding: 4px 14px; }"
+        "QPushButton:hover { background-color: %2; }"
+    ).arg(btnBg, btnHover));
+
+    msgBox.exec();
+}
+
 void CreateLabRequestDialog::handleSubmit() {
     if (!m_serviceRequestService) {
-        QMessageBox::critical(this, "Lỗi", "Service không khả dụng.");
+        showNotification("Lỗi", "Service không khả dụng.", QMessageBox::Critical);
         return;
     }
 
     int roomId = m_cbLabRoom->currentData().toInt();
     if (roomId <= 0) {
-        QMessageBox::warning(this, "Thiếu thông tin", "Vui lòng chọn phòng xét nghiệm hợp lệ.");
+        showNotification("Thiếu thông tin", "Vui lòng chọn phòng xét nghiệm hợp lệ.", QMessageBox::Warning);
         return;
     }
 
@@ -162,12 +184,12 @@ void CreateLabRequestDialog::handleSubmit() {
     }
 
     if (serviceName.isEmpty()) {
-        QMessageBox::warning(this, "Thiếu thông tin", "Vui lòng chọn hoặc nhập tên dịch vụ xét nghiệm.");
+        showNotification("Thiếu thông tin", "Vui lòng chọn hoặc nhập tên dịch vụ xét nghiệm.", QMessageBox::Warning);
         return;
     }
 
     if (m_recordId <= 0) {
-        QMessageBox::warning(this, "Thiếu thông tin", "Vui lòng lưu thông tin hồ sơ bệnh án trước khi gửi yêu cầu xét nghiệm.");
+        showNotification("Thiếu thông tin", "Vui lòng lưu thông tin hồ sơ bệnh án trước khi gửi yêu cầu xét nghiệm.", QMessageBox::Warning);
         return;
     }
 
@@ -179,13 +201,9 @@ void CreateLabRequestDialog::handleSubmit() {
 
     int reqId = m_serviceRequestService->createRequest(input);
     if (reqId > 0) {
-        QMessageBox::information(this, "Thành công", 
-            QString("Đã gửi yêu cầu xét nghiệm thành công!\nYêu cầu ID: %1\nPhòng: %2\nDịch vụ: %3")
-            .arg(reqId)
-            .arg(m_cbLabRoom->currentText())
-            .arg(serviceName));
+        showNotification("Thành công", "Đã gửi yêu cầu xét nghiệm thành công!", QMessageBox::Information);
         accept();
     } else {
-        QMessageBox::critical(this, "Lỗi", "Không thể tạo yêu cầu xét nghiệm. Vui lòng kiểm tra lại dữ liệu.");
+        showNotification("Lỗi", "Không thể tạo yêu cầu xét nghiệm. Vui lòng kiểm tra lại dữ liệu.", QMessageBox::Critical);
     }
 }
