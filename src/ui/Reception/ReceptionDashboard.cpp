@@ -7,6 +7,7 @@
 #include "../../service/AppointmentService.h"
 #include "../../service/PatientService.h"
 #include "../../service/StaffService.h"
+#include "../../dto/StaffDTOs.h"
 #include "../view/Profile.h"
 #include "PatientEditDialog.h"
 #include "PatientRegistrationDialog.h"
@@ -512,8 +513,53 @@ void ReceptionDashboardWidget::onConfirmClicked() {
 
   QString errorMsg = m_appointmentService->createAppointment(input);
   if (errorMsg.isEmpty()) {
-    QMessageBox::information(this, "Thành công",
-                             "Đăng ký lịch khám thành công!");
+    QString patientName = "--";
+    if (m_patientService && m_currentPatientId > 0) {
+      auto patientOpt = m_patientService->getPatientById(m_currentPatientId);
+      if (patientOpt.has_value()) {
+        patientName = patientOpt->fullName;
+      }
+    }
+    if ((patientName.isEmpty() || patientName == "--") && m_lblInfoFullName &&
+        !m_lblInfoFullName->text().isEmpty() && m_lblInfoFullName->text() != "--") {
+      patientName = m_lblInfoFullName->text();
+    }
+
+    QString doctorName = "--";
+    QString roomNumber = "Chưa gán phòng";
+    if (m_staffService && doctorId > 0) {
+      auto docProfile = m_staffService->getOwnProfile(doctorId);
+      if (docProfile) {
+        doctorName = docProfile->fullName;
+        auto docSpecific = dynamic_cast<DoctorProfileDTO*>(docProfile.get());
+        if (docSpecific && !docSpecific->roomNumber.trimmed().isEmpty()) {
+          roomNumber = docSpecific->roomNumber;
+        }
+      }
+    }
+
+    QString dateStr = date.toString("dd/MM/yyyy");
+    QString timeStr = timeSlot;
+
+    QString message = QString(
+        "<b>ĐĂNG KÝ LỊCH KHÁM THÀNH CÔNG!</b><br><br>"
+        "<b>• Bệnh nhân:</b> %1<br>"
+        "<b>• Bác sĩ khám:</b> %2<br>"
+        "<b>• Ngày khám:</b> %3<br>"
+        "<b>• Khung giờ:</b> %4<br>"
+        "<b>• Phòng khám:</b> %5")
+        .arg(patientName, doctorName, dateStr, timeStr, roomNumber);
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Thành công");
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setText(message);
+    msgBox.setStyleSheet(
+        "QMessageBox { background-color: #FFFFFF; border: 2px solid #059669; border-radius: 8px; }"
+        "QLabel { color: #111827; font-size: 14px; font-weight: 500; }"
+        "QPushButton { background-color: #059669; color: white; border-radius: 4px; padding: 6px 20px; font-weight: bold; font-size: 13px; }"
+        "QPushButton:hover { background-color: #047857; }");
+    msgBox.exec();
 
     // Reset form
     m_currentPatientId = -1;
